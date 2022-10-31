@@ -143,28 +143,5 @@ class CaliperAggregationTest(unittest.TestCase):
                 'iteration': '3',
                 'count'    : '1' }))
 
-    def test_aggregate_attributes(self):
-        target_cmd = [ './ci_test_aggregate' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
-
-        caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'aggregate:event:recorder:timestamp',
-            'CALI_TIMER_SNAPSHOT_DURATION' : 'true',
-            'CALI_TIMER_INCLUSIVE_DURATION' : 'true',
-            'CALI_AGGREGATE_ATTRIBUTES' : 'time.duration',
-            'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0'
-        }
-
-        query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = calitest.get_snapshots_from_text(query_output)
-
-        self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, [ 'loop.id', 'function',
-                         'sum#time.duration',
-                         'count' ] ))
-        self.assertFalse(calitest.has_snapshot_with_keys(
-            snapshots, [ 'sum#time.inclusive.duration' ] ))
-
 if __name__ == "__main__":
     unittest.main()

@@ -55,24 +55,20 @@ class AggregationDB
 
 public:
 
-    AggregationDB();
-    
+    AggregationDB(cali::Caliper* c, const AttributeInfo& info);
+
     ~AggregationDB();
-    
+
     void   process_snapshot(cali::Caliper*, cali::SnapshotView, const AttributeInfo&);
-    
+
     void   clear();
     size_t flush(const AttributeInfo&, cali::Caliper*, cali::SnapshotFlushFn);
 
-    size_t num_trie_entries() const;
-    size_t num_kernel_entries() const;
     size_t num_dropped() const;
-    size_t num_skipped_keys() const;
-    size_t max_keylen() const;
-    size_t num_trie_blocks() const;
-    size_t num_kernel_blocks() const;
+    size_t max_hash_len() const;
+    size_t num_entries() const;
+    size_t num_kernels() const;
     size_t bytes_reserved() const;
-
 };
 
 } // namespace aggregate

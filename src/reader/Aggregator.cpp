@@ -31,6 +31,40 @@ using namespace std;
 namespace
 {
 
+std::vector<Entry>
+make_key(std::vector<const Node*>::const_iterator nodes_begin,
+         std::vector<const Node*>::const_iterator nodes_end,
+         const std::vector<Entry>& immediates, CaliperMetadataAccessInterface& db)
+{
+    std::vector<Entry> key;
+    key.reserve(immediates.size() + 1);
+
+    std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
+    std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
+
+    Node* node = db.make_tree_entry(rv_nodes.size(), rv_nodes.data());
+
+    if (node)
+        key.push_back(Entry(node));
+
+    std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
+
+    return key;
+}
+
+std::size_t
+hash_key(const std::vector<Entry>& key)
+{
+    std::size_t hash = 0;
+    for (const Entry& e : key) {
+        hash += e.node()->id();
+        if (e.is_immediate())
+            hash += e.value().to_uint();
+    }
+    return hash;
+}
+
+
 class AggregateKernelConfig;
 
 class AggregateKernel {
@@ -1316,19 +1350,16 @@ struct Aggregator::AggregatorImpl
 
     vector<AggregateKernelConfig*> m_kernel_configs;
 
-    struct TrieNode {
-        uint32_t next[256] = { 0 };
-        vector<AggregateKernel*> kernels;
-
-        ~TrieNode() {
-            for (AggregateKernel* k : kernels)
-                delete k;
-            kernels.clear();
-        }
+    struct AggregateEntry {
+        std::vector<Entry> key;
+        std::vector< std::unique_ptr<AggregateKernel> > kernels;
+        std::size_t next_entry_idx;
     };
 
-    std::vector<TrieNode*> m_trie;
-    std::mutex             m_trie_lock;
+    std::vector< std::shared_ptr<AggregateEntry> > m_entries;
+
+    std::vector<std::size_t> m_hashmap;
+    std::mutex m_entries_lock;
 
     //
     // --- parse config
@@ -1396,46 +1427,6 @@ struct Aggregator::AggregatorImpl
     }
 
     //
-    // --- aggregation db ops
-    //
-
-    TrieNode* get_trienode(uint32_t id) {
-        // Assume trie is locked!!
-
-        if (id >= m_trie.size())
-            m_trie.resize(id+1);
-
-        if (!m_trie[id])
-            m_trie[id] = new TrieNode;
-
-        return m_trie[id];
-    }
-
-    TrieNode* find_trienode(size_t n, unsigned char* key) {
-        std::lock_guard<std::mutex>
-            g(m_trie_lock);
-
-        TrieNode* trie = get_trienode(0);
-
-        for ( size_t i = 0; trie && i < n; ++i ) {
-            uint32_t id = trie->next[key[i]];
-
-            if (!id) {
-                id = static_cast<uint32_t>(m_trie.size()+1);
-                trie->next[key[i]] = id;
-            }
-
-            trie = get_trienode(id);
-        }
-
-        if (trie->kernels.empty())
-            for (AggregateKernelConfig* c : m_kernel_configs)
-                trie->kernels.push_back(c->make_kernel());
-
-        return trie;
-    }
-
-    //
     // --- snapshot processing
     //
 
@@ -1474,75 +1465,62 @@ struct Aggregator::AggregatorImpl
         return false;
     }
 
-    inline size_t pack_key(const Node* key_node, const vector<Entry>& immediates, unsigned char* key) {
-        unsigned char node_key[10];
-        size_t        node_key_len  = 0;
+    std::shared_ptr<AggregateEntry>
+    get_aggregation_entry(std::vector<const Node*>::const_iterator nodes_begin,
+                          std::vector<const Node*>::const_iterator nodes_end,
+                          const std::vector<Entry>& immediates,
+                          CaliperMetadataAccessInterface& db)
+    {
+        std::vector<Entry> key = make_key(nodes_begin, nodes_end, immediates, db);
+        std::size_t hash = hash_key(key) % m_hashmap.size();
 
-        if (key_node)
-            node_key_len = vlenc_u64(key_node->id(), node_key);
+        {
+            std::lock_guard<std::mutex>
+                g(m_entries_lock);
 
-        uint64_t      num_immediate = 0;
-        unsigned char imm_key[MAX_KEYLEN];
-        size_t        imm_key_len = 0;
-
-        for (const Entry& e : immediates) {
-            unsigned char buf[32]; // max space for one immediate entry
-            size_t        p = 0;
-
-            p += vlenc_u64(e.attribute(), buf+p);
-            p += e.value().pack(buf+p);
-
-            // discard entry if it won't fit in the key buf :-(
-            if (p + imm_key_len + node_key_len + 1 >= MAX_KEYLEN)
-                break;
-
-            ++num_immediate;
-            memcpy(imm_key+imm_key_len, buf, p);
-            imm_key_len += p;
+            for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
+                auto e = m_entries[i];
+                if (key == e->key)
+                    return e;
+            }
         }
 
-        size_t pos = vlenc_u64(2*num_immediate + (key_node ? 1 : 0), key);
+        std::vector< std::unique_ptr<AggregateKernel> > kernels;
+        kernels.reserve(m_kernel_configs.size());
 
-        memcpy(key+pos, node_key, node_key_len);
-        pos += node_key_len;
-        memcpy(key+pos, imm_key,  imm_key_len);
-        pos += imm_key_len;
+        for (AggregateKernelConfig* k_cfg : m_kernel_configs)
+            kernels.emplace_back(k_cfg->make_kernel());
 
-        return pos;
+        std::lock_guard<std::mutex>
+            g(m_entries_lock);
+
+        auto e = std::make_shared<AggregateEntry>();
+
+        e->key = std::move(key);
+        e->kernels = std::move(kernels);
+        e->next_entry_idx = m_hashmap[hash];
+
+        size_t idx = m_entries.size();
+        m_entries.push_back(e);
+        m_hashmap[hash] = idx;
+
+        return e;
     }
 
-    TrieNode* get_aggregation_entry(std::vector<const Node*>::const_iterator nodes_begin,
-                                    std::vector<const Node*>::const_iterator nodes_end,
-                                    const std::vector<Entry>& immediates, CaliperMetadataAccessInterface& db) {
-        std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
-
-        std::reverse_copy(nodes_begin, nodes_end,
-                          rv_nodes.begin());
-
-        const Node*   key_node = db.make_tree_entry(rv_nodes.size(), rv_nodes.data());
-
-        // --- Pack key
-
-        unsigned char key[MAX_KEYLEN];
-        size_t        pos  = pack_key(key_node, immediates, key);
-
-        return find_trienode(pos, key);
-    }
-
-    void process(CaliperMetadataAccessInterface& db, const EntryList& list) {
+    void process(CaliperMetadataAccessInterface& db, const EntryList& rec) {
         std::vector<Attribute>   key_attrs = update_key_attributes(db);
 
         // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
-        std::vector<Entry>       immediates;
+        std::vector<Entry> immediates;
 
         nodes.reserve(80);
         immediates.reserve(key_attrs.size());
 
         bool select_all = m_select_all;
 
-        for (const Entry& e : list) {
+        for (const Entry& e : rec) {
             if (e.is_reference()) {
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
                     if (select_all || is_key(db, key_attrs, node->attribute()))
@@ -1564,28 +1542,27 @@ struct Aggregator::AggregatorImpl
         std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b){
                 return a.attribute() < b.attribute(); } );
 
-        TrieNode* trie = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
+        auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
-        if (!trie)
+        if (!entry)
             return;
 
         // --- Aggregate
 
-        for (size_t k = 0; k < trie->kernels.size(); ++k) {
-            trie->kernels[k]->aggregate(db, list);
+        for (size_t k = 0; k < entry->kernels.size(); ++k) {
+            entry->kernels[k]->aggregate(db, rec);
 
             // for inclusive kernels, aggregate for all parent nodes as well
-
-            if (trie->kernels[k]->config()->is_inclusive() && nodes.begin() != nonnested_begin) {
+            if (entry->kernels[k]->config()->is_inclusive() && nodes.begin() != nonnested_begin) {
                 auto it = nodes.begin();
 
                 for (++it; it != nonnested_begin; ++it) {
-                    TrieNode* p_trie = get_aggregation_entry(it, nodes.end(), immediates, db);
+                    auto p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
 
-                    if (!p_trie)
+                    if (!p_entry)
                         break;
 
-                    p_trie->kernels[k]->parent_aggregate(db, list);
+                    p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
         }
@@ -1595,92 +1572,41 @@ struct Aggregator::AggregatorImpl
     // --- Flush
     //
 
-    void unpack_key(const unsigned char* key, const CaliperMetadataAccessInterface& db, EntryList& list) {
-        // key format: 2*N + node flag, node id, N * (attr id, Variant)
-
-        size_t   p = 0;
-        uint64_t n = vldec_u64(key + p, &p);
-
-        if (n % 2 == 1)
-            list.push_back(Entry(db.node(vldec_u64(key + p, &p))));
-
-        for (unsigned i = 0; i < n/2; ++i) {
-            bool      ok   = true;
-
-            cali_id_t id   = static_cast<cali_id_t>(vldec_u64(key+p, &p));
-            Variant   data = Variant::unpack(key+p, &p, &ok);
-
-            if (ok)
-                list.push_back(Entry(db.get_attribute(id), data));
-        }
-    }
-
-    void recursive_flush(size_t n, unsigned char* key, TrieNode* trie,
-                         CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
-        if (!trie)
-            return;
-
-        // --- Write current entry (if it represents a snapshot)
-
-        if (!trie->kernels.empty()) {
-            EntryList list;
-
-            // Decode & add key node entry
-            unpack_key(key, db, list);
-
-            // Write aggregation variables
-            for (AggregateKernel* k : trie->kernels)
-                k->append_result(db, list);
-
-            push(db, list);
-        }
-
-        // --- Recursively iterate over subsequent DB entries
-
-        unsigned char* next_key = static_cast<unsigned char*>(alloca(n+2));
-
-        memset(next_key, 0, n+2);
-        memcpy(next_key, key, n);
-
-        for (size_t i = 0; i < 256; ++i) {
-            if (trie->next[i] == 0)
-                continue;
-
-            TrieNode* next = get_trienode(trie->next[i]);
-            next_key[n]    = static_cast<unsigned char>(i);
-
-            recursive_flush(n+1, next_key, next, db, push);
-        }
-    }
-
     void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
         // NOTE: No locking: we assume flush() runs serially!
 
-        TrieNode*     trie = get_trienode(0);
-        unsigned char key  = 0;
+        for (auto entry : m_entries) {
+            if (!entry)
+                continue;
 
-        recursive_flush(0, &key, trie, db, push);
+            std::vector<Entry> rec(entry->key);
+
+            for (auto const &k : entry->kernels)
+                k->append_result(db, rec);
+
+            push(db, rec);
+        }
     }
 
     AggregatorImpl()
         : m_select_all(false)
     {
-        m_trie.reserve(4096);
+        m_entries.reserve(4096);
+        m_hashmap.assign(4096, static_cast<size_t>(0));
+        m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
     }
 
     AggregatorImpl(const QuerySpec& spec)
         : m_select_all(false)
     {
         configure(spec);
-        m_trie.reserve(4096);
+
+        m_entries.reserve(4096);
+        m_hashmap.assign(4096, static_cast<size_t>(0));
+        m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
     }
 
     ~AggregatorImpl() {
-        for (TrieNode* e : m_trie)
-            delete e;
-
-        m_trie.clear();
-
         for (AggregateKernelConfig* c : m_kernel_configs)
             delete c;
 

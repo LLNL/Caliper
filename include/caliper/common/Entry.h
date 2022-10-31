@@ -113,17 +113,16 @@ public:
 
 inline bool operator == (const Entry& lhs, const Entry& rhs)
 {
-    if (lhs.empty() || rhs.empty())
-        return lhs.m_node == rhs.m_node;
+    bool node_eq = lhs.m_node == rhs.m_node ||
+        (lhs.m_node && rhs.m_node && lhs.m_node->id() == rhs.m_node->id());
+    bool is_imm = lhs.is_immediate();
 
-    if (lhs.m_node->id() == rhs.m_node->id()) {
-        if (Attribute::is_attribute(lhs.m_node))
-            return lhs.m_value == rhs.m_value;
-        else
-            return true;
-    }
+    return node_eq && (!is_imm || (is_imm && lhs.m_value == rhs.m_value));
+}
 
-    return false;
+inline bool operator != (const Entry& lhs, const Entry& rhs)
+{
+    return !(lhs == rhs);
 }
 
 } // namespace cali

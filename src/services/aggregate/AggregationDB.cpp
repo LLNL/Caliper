@@ -9,16 +9,15 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/Variant.h"
 
-#include "caliper/common/c-util/vlenc.h"
-
 #include <algorithm>
 #include <cstring>
 #include <limits>
+#include <vector>
 
 using namespace cali;
 using namespace aggregate;
 
-#define MAX_KEYLEN          32
+#define MAX_KEYLEN 20
 
 namespace
 {
@@ -92,82 +91,34 @@ struct AggregateKernel {
     }
 };
 
-struct TrieNode {
-    uint32_t next[256] = { 0 };
-    uint32_t k_id      = 0xFFFFFFFF;
-    uint32_t count     = 0;
-};
+struct AggregateEntry {
+    FixedSizeSnapshotRecord<MAX_KEYLEN> key;
+    size_t count;
+    size_t kernels_idx;
+    size_t num_kernels;
+    size_t next_entry_idx;
 
-template<typename T, size_t MAX_BLOCKS = 2048, size_t ENTRIES_PER_BLOCK = 1024>
-class BlockAlloc {
-    T*     m_blocks[MAX_BLOCKS] = { nullptr };
-    size_t m_num_blocks;
+    AggregateEntry()
+        : count { 0 }, kernels_idx { 0 }, num_kernels { 0 }, next_entry_idx { 0 }
+    { }
 
-public:
-
-    T* get(size_t id, bool alloc) {
-        size_t block = id / ENTRIES_PER_BLOCK;
-
-        if (block >= MAX_BLOCKS)
-            return nullptr;
-
-        if (!m_blocks[block]) {
-            if (alloc) {
-                m_blocks[block] = new T[ENTRIES_PER_BLOCK];
-                ++m_num_blocks;
-            } else
-                return nullptr;
-        }
-
-        return m_blocks[block] + (id % ENTRIES_PER_BLOCK);
-    }
-
-    void clear() {
-        for (size_t b = 0; b < MAX_BLOCKS; ++b)
-            delete[] m_blocks[b];
-
-        std::fill_n(m_blocks, MAX_BLOCKS, nullptr);
-
-        m_num_blocks = 0;
-    }
-
-    size_t num_blocks() const {
-        return m_num_blocks;
-    }
-
-    BlockAlloc()
-        : m_num_blocks(0)
-        { }
-
-    ~BlockAlloc() {
-        clear();
+    AggregateEntry(SnapshotView kv, size_t k_idx, size_t n_k, size_t next_idx )
+        : count { 0 }, kernels_idx { k_idx}, num_kernels { n_k }, next_entry_idx { next_idx }
+    {
+        key.builder().append(kv);
     }
 };
 
-size_t pack_key(unsigned char* key, SnapshotView key_entries, size_t &skipped)
+bool key_equal(SnapshotView lhs, SnapshotView rhs)
 {
-    unsigned char packbuf[MAX_KEYLEN];
-    size_t len = 0;
-    size_t count = 0;
+    if (lhs.size() != rhs.size())
+        return false;
 
-    for (const Entry& e : key_entries) {
-        unsigned char tmp[32]; // 32bytes > max packed size for Entry
-        size_t p = e.pack(tmp);
+    for (size_t i = 0; i < lhs.size(); ++i)
+        if (lhs[i] != rhs[i])
+            return false;
 
-        // check if entry fits
-        if (len + p + 1 < MAX_KEYLEN) {
-            memcpy(packbuf+len, tmp, p);
-            ++count;
-            len += p;
-        } else {
-            ++skipped;
-        }
-    }
-
-    size_t p = vlenc_u64(count, key); // p should always be 1
-    memcpy(key+p, packbuf, len);
-
-    return len+p;
+    return true;
 }
 
 } // namespace [anonymous]
@@ -175,143 +126,19 @@ size_t pack_key(unsigned char* key, SnapshotView key_entries, size_t &skipped)
 
 struct AggregationDB::AggregationDBImpl
 {
-    BlockAlloc<TrieNode>        m_trie;
-    BlockAlloc<AggregateKernel> m_kernels;
+    Node                         m_aggr_root_node;
 
-    Node                        m_aggr_root_node;
+    size_t                       m_max_hash_len;
 
-    // we maintain some internal statistics
-    size_t                      m_num_trie_entries;
-    size_t                      m_num_kernel_entries;
-    size_t                      m_num_dropped;
-    size_t                      m_num_skipped_keys;
-    size_t                      m_max_keylen;
+    std::vector<AggregateEntry>  m_entries;
+    std::vector<AggregateKernel> m_kernels;
+    std::vector<size_t>          m_hashmap;
 
     //
-    // --- functions
+    // ---
     //
 
-    TrieNode* find_entry(size_t n, unsigned char* key, size_t num_ids, bool alloc) {
-        TrieNode* entry = m_trie.get(0, alloc);
-
-        for ( size_t i = 0; entry && i < n; ++i ) {
-            uint32_t id = entry->next[key[i]];
-
-            if (!id) {
-                id = static_cast<uint32_t>(++m_num_trie_entries);
-                entry->next[key[i]] = id;
-            }
-
-            entry = m_trie.get(id, alloc);
-        }
-
-        if (entry && entry->k_id == 0xFFFFFFFF) {
-            if (num_ids > 0) {
-                uint32_t first_id = static_cast<uint32_t>(m_num_kernel_entries + 1);
-
-                m_num_kernel_entries += num_ids;
-
-                for (unsigned i = 0; i < num_ids; ++i)
-                    if (m_kernels.get(first_id + i, alloc) == 0)
-                        return 0;
-
-                entry->k_id = first_id;
-            }
-        }
-
-        return entry;
-    }
-
-    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
-        // --- decode key
-
-        size_t    p = 0;
-        uint64_t  count = vldec_u64(key+p, &p);
-
-        std::vector<Entry> rec;
-        rec.reserve(count + info.aggr_attrs.size());
-
-        while (count--)
-            rec.push_back(Entry::unpack(*c, key+p, &p));
-
-        // --- write aggregate entries
-
-        int num_aggr_attr = info.aggr_attrs.size();
-
-        for (int a = 0; a < num_aggr_attr; ++a) {
-            AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
-
-            if (!k)
-                break;
-            if (k->count == 0)
-                continue;
-
-            rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
-            rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
-            rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
-            rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(k->avg)));
-#ifdef CALIPER_ENABLE_HISTOGRAMS
-            for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
-                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii], Variant(cali_make_variant_from_uint(k->histogram[ii]))));
-            }
-#endif
-        }
-
-        rec.push_back(Entry(info.count_attr, Variant(cali_make_variant_from_uint(entry->count))));
-
-        // --- write snapshot record
-
-        proc_fn(*c, rec);
-    }
-
-    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
-        if (!entry)
-            return 0;
-
-        size_t num_written = 0;
-
-        // --- write current entry if it represents a snapshot
-
-        if (entry->count > 0)
-            write_aggregated_snapshot(key, entry, info, c, proc_fn);
-
-        num_written += (entry->count > 0 ? 1 : 0);
-
-        // --- iterate over sub-records
-
-        unsigned char* next_key = static_cast<unsigned char*>(alloca(n+2));
-
-        memset(next_key, 0, n+2);
-        memcpy(next_key, key, n);
-
-        for (size_t i = 0; i < 256; ++i) {
-            if (entry->next[i] == 0)
-                continue;
-
-            TrieNode* e  = m_trie.get(entry->next[i], false);
-            next_key[n]  = static_cast<unsigned char>(i);
-
-            num_written += recursive_flush(n+1, next_key, e, info, c, proc_fn);
-        }
-
-        return num_written;
-    }
-
-    void clear() {
-        m_trie.clear();
-        m_kernels.clear();
-
-        m_num_trie_entries   = 0;
-        m_num_kernel_entries = 0;
-        m_num_dropped        = 0;
-        m_num_skipped_keys   = 0;
-        m_max_keylen         = 0;
-
-        m_trie.get(0, true); // allocate the first block
-        m_kernels.get(0, true);
-    }
-
-    Node* make_key_node(Caliper* c, SnapshotView rec, const std::vector<Attribute> ref_key_attrs) {
+    Node* make_key_node(Caliper* c, SnapshotView rec, const std::vector<Attribute>& ref_key_attrs) {
         Node* key_node = &m_aggr_root_node;
 
         for (const Attribute& attr : ref_key_attrs) {
@@ -319,14 +146,14 @@ struct AggregationDB::AggregationDBImpl
 
             if (e.empty())
                 continue;
-            
+
             cali_id_t attr_id = attr.id();
             size_t count = 0;
 
             for (const Node* node = e.node(); node; node = node->parent())
                 if (node->attribute() == attr_id)
                     ++count;
-            
+
             const Node* *node_vec = static_cast<const Node**>(alloca(count * sizeof(const Node*)));
             memset(node_vec, 0, count * sizeof(const Node*));
             size_t n = count;
@@ -345,94 +172,165 @@ struct AggregationDB::AggregationDBImpl
         return key_node == &m_aggr_root_node ? nullptr : key_node;
     }
 
+    AggregateEntry* find_or_create_entry(SnapshotView key, std::size_t hash, std::size_t num_aggr_attrs, bool can_alloc) {
+        hash = hash % m_hashmap.size();
+        size_t count = 0;
+
+        for (std::size_t idx = m_hashmap[hash]; idx != 0; idx = m_entries[idx].next_entry_idx) {
+            AggregateEntry* e = &m_entries[idx];
+            if (key_equal(key, e->key.view()))
+                return e;
+            ++count;
+        }
+
+        // --- entry not found, check if we can create a new entry
+        //
+
+        if (!can_alloc) {
+            if (m_kernels.size() + num_aggr_attrs >= m_kernels.capacity())
+                return &m_entries[0];
+            if (m_entries.size() + 1 >= m_entries.capacity())
+                return &m_entries[0];
+        }
+
+        size_t kernels_idx = m_kernels.size();
+        m_kernels.resize(m_kernels.size() + num_aggr_attrs, AggregateKernel());
+
+        size_t entry_idx = m_entries.size();
+        m_entries.emplace_back(key, kernels_idx, num_aggr_attrs, m_hashmap[hash]);
+        m_hashmap[hash] = entry_idx;
+
+        m_max_hash_len = std::max(m_max_hash_len, count+1);
+
+        return &m_entries[entry_idx];
+    }
+
     void process_snapshot(Caliper* c, SnapshotView rec, const AttributeInfo& info) {
         if (rec.empty())
             return;
-        
+
         // --- extract key entries
-        
-        FixedSizeSnapshotRecord<MAX_KEYLEN> key_entries;
+
+        FixedSizeSnapshotRecord<MAX_KEYLEN> key;
+        std::size_t hash = 0;
 
         if (info.implicit_grouping) {
             for (const Entry& e : rec)
-                if (e.is_reference())
-                    key_entries.builder().append(e);
+                if (e.is_reference()) {
+                    key.builder().append(e);
+                    hash += e.node()->id();
+                }
         } else {
             if (info.group_nested) {
                 // exploit that nested attributes have their own entry
                 for (const Entry& e : rec)
                     if (e.is_reference() && c->get_attribute(e.node()->attribute()).is_nested()) {
-                        key_entries.builder().append(e);
+                        key.builder().append(e);
+                        hash += e.node()->id();
                         break;
                     }
             }
 
             Node* node = make_key_node(c, rec, info.ref_key_attrs);
-            if (node)
-                key_entries.builder().append(Entry(node));
+            if (node) {
+                key.builder().append(Entry(node));
+                hash += node->id();
+            }
         }
 
         if (info.imm_key_attrs.size() > 0) {
             for (const Attribute& attr : info.imm_key_attrs) {
                 Entry e = rec.get(attr);
-                if (!e.empty())
-                    key_entries.builder().append(e);
+                if (!e.empty()) {
+                    key.builder().append(e);
+                    hash += e.node()->id();
+                    hash += e.value().to_uint();
+                }
             }
         }
 
-        // --- encode key
-
-        unsigned char key[MAX_KEYLEN];
-        size_t len = pack_key(key, key_entries.view(), m_num_skipped_keys);
-
-        m_max_keylen = std::max(len, m_max_keylen);
-
-        // --- find entry
-
-        TrieNode* entry = find_entry(len, key, info.aggr_attrs.size(), !c->is_signal());
-
-        if (!entry) {
-            ++m_num_dropped;
-            return;
-        }
+        AggregateEntry* entry = find_or_create_entry(key.view(), hash, info.aggr_attrs.size(), !c->is_signal());
 
         // --- update values
 
         ++entry->count;
 
-        for (size_t a = 0; a < info.aggr_attrs.size(); ++a) {
+        for (size_t a = 0; a < std::min(entry->num_kernels, info.aggr_attrs.size()); ++a) {
             Entry e = rec.get(info.aggr_attrs[a]);
 
             if (e.empty())
                 continue;
-            
-            AggregateKernel* k = m_kernels.get(entry->k_id + a, !c->is_signal());
 
-            if (k)
-                k->add(e.value().to_double());
+            m_kernels[entry->kernels_idx + a].add(e.value().to_double());
         }
     }
 
-    size_t flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
-        TrieNode*     entry = m_trie.get(0, false);
-        unsigned char key   = 0;
+    void clear() {
+        m_hashmap.assign(m_hashmap.size(), 0);
+        m_entries.resize(1);
+        m_kernels.resize(0);
+        m_kernels.assign(m_entries[0].num_kernels, AggregateKernel());
 
-        return recursive_flush(0, &key, entry, info, c, proc_fn);
+        m_entries[0].count = 0;
     }
 
-    AggregationDBImpl()
-        : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_num_trie_entries(0),
-          m_num_kernel_entries(0),
-          m_num_dropped(0),
-          m_num_skipped_keys(0),
-          m_max_keylen(0)
-        {
-            Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
+    size_t flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
+        size_t num_written = 0;
 
-            // initialize first block
-            m_trie.get(0, true);
-            m_kernels.get(0, true);
+        for (const AggregateEntry& entry : m_entries) {
+            if (entry.count == 0)
+                continue;
+
+            SnapshotView kv = entry.key.view();
+
+            std::vector<Entry> rec;
+            rec.reserve(kv.size() + entry.num_kernels + 1);
+
+            std::copy(kv.begin(), kv.end(), std::back_inserter(rec));
+
+            for (std::size_t a = 0; a < entry.num_kernels; ++a) {
+                AggregateKernel* k = &m_kernels[entry.kernels_idx + a];
+
+                if (k->count == 0)
+                    continue;
+
+                rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
+                rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
+                rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
+                rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(k->avg)));
+    #ifdef CALIPER_ENABLE_HISTOGRAMS
+                for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
+                    rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii], Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+                }
+    #endif
+            }
+
+            rec.push_back(Entry(info.count_attr, Variant(cali_make_variant_from_uint(entry.count))));
+
+            // --- write snapshot record
+            proc_fn(*c, rec);
+            ++num_written;
+        }
+
+        return num_written;
+    }
+
+    AggregationDBImpl(Caliper* c, const AttributeInfo& info)
+        : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
+          m_max_hash_len(0)
+        {
+            m_kernels.reserve(16384);
+            m_entries.reserve(4096);
+            m_hashmap.assign(8192, static_cast<std::size_t>(0));
+
+            m_kernels.resize(info.aggr_attrs.size());
+
+            Attribute attr =
+                c->create_attribute("skipped.records", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+            Node* node =
+                c->make_tree_entry(attr, Variant("SKIPPED"), &m_aggr_root_node);
+
+            m_entries.emplace_back(SnapshotView(Entry(node)), 0, info.aggr_attrs.size(), 0);
         }
 };
 
@@ -440,8 +338,8 @@ struct AggregationDB::AggregationDBImpl
 // --- AggregationDB public interface
 //
 
-AggregationDB::AggregationDB()
-    : mP(new AggregationDBImpl)
+AggregationDB::AggregationDB(Caliper* c, const AttributeInfo& info)
+    : mP(new AggregationDBImpl(c, info))
 { }
 
 AggregationDB::~AggregationDB()
@@ -468,50 +366,33 @@ AggregationDB::flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc
 }
 
 size_t
-AggregationDB::num_trie_entries() const
-{
-    return mP->m_num_trie_entries;
-}
-
-size_t
-AggregationDB::num_kernel_entries() const
-{
-    return mP->m_num_kernel_entries;
-}
-
-size_t
 AggregationDB::num_dropped() const
 {
-    return mP->m_num_dropped;
+    return mP->m_entries[0].count;
 }
 
 size_t
-AggregationDB::num_skipped_keys() const
+AggregationDB::max_hash_len() const
 {
-    return mP->m_num_skipped_keys;
+    return mP->m_max_hash_len;
 }
 
 size_t
-AggregationDB::max_keylen() const
+AggregationDB::num_entries() const
 {
-    return mP->m_max_keylen;
+    return mP->m_entries.size();
 }
 
 size_t
-AggregationDB::num_trie_blocks() const
+AggregationDB::num_kernels() const
 {
-    return mP->m_trie.num_blocks();
-}
-
-size_t
-AggregationDB::num_kernel_blocks() const
-{
-    return mP->m_kernels.num_blocks();
+    return mP->m_kernels.size();
 }
 
 size_t
 AggregationDB::bytes_reserved() const
 {
-    return num_trie_blocks() * 1024 * sizeof(TrieNode) +
-        num_kernel_blocks() * 1024 * sizeof(AggregateKernel);
+    return mP->m_hashmap.capacity() * sizeof(size_t) +
+        mP->m_kernels.capacity() * sizeof(AggregateKernel) +
+        mP->m_entries.capacity() * sizeof(AggregateEntry);
 }
