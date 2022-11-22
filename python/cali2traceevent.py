@@ -278,8 +278,6 @@ Options:
 --counters          Specify attributes for "counter" records in the form
                       group=attribute1,attribute2,...
 --pretty            Pretty-print output
---sort              Sort the trace before processing.
-                      Enable this when encountering stack errors.
 --sync              Enable time-stamp synchronization
                       Requires timestamp sync records in the input traces
 --pid-attributes    List of process ID attributes
@@ -289,7 +287,6 @@ Options:
 def _parse_args(args):
     cfg = {
         "output": sys.stdout,
-        "sort_the_trace": False,
         "pretty_print": False,
         "sync_timestamps": False,
         "counters": {},
@@ -302,7 +299,8 @@ def _parse_args(args):
         if arg == "--":
             break
         if arg == "--sort":
-            cfg["sort_the_trace"] = True
+            # sort is the default now, this switch is deprecated
+            pass
         elif arg == "--sync":
             cfg["sync_timestamps"] = True
         elif arg == "--pretty":
@@ -343,10 +341,7 @@ def main():
 
     for file in args:
         with open(file) as input:
-            if cfg["sort_the_trace"]:
-                converter.read_and_sort(input)
-            else:
-                converter.read(input)
+            converter.read_and_sort(input)
 
     read_end = time.perf_counter()
 
