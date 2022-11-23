@@ -92,21 +92,12 @@ struct AggregateKernel {
 };
 
 struct AggregateEntry {
-    FixedSizeSnapshotRecord<MAX_KEYLEN> key;
     size_t count;
+    size_t key_idx;
+    size_t key_len;
     size_t kernels_idx;
     size_t num_kernels;
     size_t next_entry_idx;
-
-    AggregateEntry()
-        : count { 0 }, kernels_idx { 0 }, num_kernels { 0 }, next_entry_idx { 0 }
-    { }
-
-    AggregateEntry(SnapshotView kv, size_t k_idx, size_t n_k, size_t next_idx )
-        : count { 0 }, kernels_idx { k_idx}, num_kernels { n_k }, next_entry_idx { next_idx }
-    {
-        key.builder().append(kv);
-    }
 };
 
 bool key_equal(SnapshotView lhs, SnapshotView rhs)
@@ -131,6 +122,7 @@ struct AggregationDB::AggregationDBImpl
     size_t                       m_max_hash_len;
 
     std::vector<AggregateEntry>  m_entries;
+    std::vector<Entry>           m_keyents;
     std::vector<AggregateKernel> m_kernels;
     std::vector<size_t>          m_hashmap;
 
@@ -178,7 +170,7 @@ struct AggregationDB::AggregationDBImpl
 
         for (std::size_t idx = m_hashmap[hash]; idx != 0; idx = m_entries[idx].next_entry_idx) {
             AggregateEntry* e = &m_entries[idx];
-            if (key_equal(key, e->key.view()))
+            if (key_equal(key, SnapshotView(e->key_len, &m_keyents[e->key_idx])))
                 return e;
             ++count;
         }
@@ -189,6 +181,8 @@ struct AggregationDB::AggregationDBImpl
         if (!can_alloc) {
             if (m_kernels.size() + num_aggr_attrs >= m_kernels.capacity())
                 return &m_entries[0];
+            if (m_keyents.size() + key.size() >= m_keyents.capacity())
+                return &m_entries[0];
             if (m_entries.size() + 1 >= m_entries.capacity())
                 return &m_entries[0];
         }
@@ -196,8 +190,20 @@ struct AggregationDB::AggregationDBImpl
         size_t kernels_idx = m_kernels.size();
         m_kernels.resize(m_kernels.size() + num_aggr_attrs, AggregateKernel());
 
+        size_t key_idx = m_keyents.size();
+        std::copy(key.begin(), key.end(), std::back_inserter(m_keyents));
+
+        AggregateEntry e;
+
+        e.count          = 0;
+        e.key_idx        = key_idx;
+        e.key_len        = key.size();
+        e.kernels_idx    = kernels_idx;
+        e.num_kernels    = num_aggr_attrs;
+        e.next_entry_idx = m_hashmap[hash];
+
         size_t entry_idx = m_entries.size();
-        m_entries.emplace_back(key, kernels_idx, num_aggr_attrs, m_hashmap[hash]);
+        m_entries.push_back(e);
         m_hashmap[hash] = entry_idx;
 
         m_max_hash_len = std::max(m_max_hash_len, count+1);
@@ -269,6 +275,7 @@ struct AggregationDB::AggregationDBImpl
         m_hashmap.assign(m_hashmap.size(), 0);
         m_entries.resize(1);
         m_kernels.resize(0);
+        m_keyents.resize(0);
         m_kernels.assign(m_entries[0].num_kernels, AggregateKernel());
 
         m_entries[0].count = 0;
@@ -281,7 +288,7 @@ struct AggregationDB::AggregationDBImpl
             if (entry.count == 0)
                 continue;
 
-            SnapshotView kv = entry.key.view();
+            SnapshotView kv(entry.key_len, &m_keyents[entry.key_idx]);
 
             std::vector<Entry> rec;
             rec.reserve(kv.size() + entry.num_kernels + 1);
@@ -320,6 +327,7 @@ struct AggregationDB::AggregationDBImpl
           m_max_hash_len(0)
         {
             m_kernels.reserve(16384);
+            m_keyents.reserve(16384);
             m_entries.reserve(4096);
             m_hashmap.assign(8192, static_cast<std::size_t>(0));
 
@@ -330,7 +338,18 @@ struct AggregationDB::AggregationDBImpl
             Node* node =
                 c->make_tree_entry(attr, Variant("SKIPPED"), &m_aggr_root_node);
 
-            m_entries.emplace_back(SnapshotView(Entry(node)), 0, info.aggr_attrs.size(), 0);
+            m_keyents.push_back(Entry(node));
+
+            AggregateEntry e;
+
+            e.count          = 0;
+            e.key_idx        = 0;
+            e.key_len        = 1;
+            e.kernels_idx    = 0;
+            e.num_kernels    = 0;
+            e.next_entry_idx = 0;
+
+            m_entries.push_back(e);
         }
 };
 

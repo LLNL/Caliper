@@ -18,7 +18,6 @@
 
 #include <roctracer.h>
 #include <roctracer_hip.h>
-#include <roctracer_hcc.h>
 #include <roctracer_ext.h>
 
 #include <mutex>

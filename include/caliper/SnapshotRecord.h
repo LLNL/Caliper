@@ -16,7 +16,7 @@ namespace cali
 class CaliperMetadataAccessInterface;
 
 /// \brief Non-owning read-only view for snapshot record
-class SnapshotView 
+class SnapshotView
 {
     const Entry* m_data;
     size_t m_len;
@@ -51,7 +51,7 @@ public:
             if (!ret.empty())
                 return ret;
         }
-        
+
         return Entry();
     }
 };
@@ -122,6 +122,9 @@ public:
     FixedSizeSnapshotRecord()
         : m_builder { N, m_data }
     { }
+
+    FixedSizeSnapshotRecord(const FixedSizeSnapshotRecord<N>&) = delete;
+    FixedSizeSnapshotRecord<N> operator = (const FixedSizeSnapshotRecord<N>&) = delete;
 
     SnapshotBuilder& builder() { return m_builder; }
     SnapshotView view() const  { return m_builder.view(); }
