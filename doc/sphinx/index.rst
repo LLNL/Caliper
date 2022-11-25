@@ -61,6 +61,7 @@ This section lists how-to articles for various use cases.
    GPUProfiling
    OpenMP
    RegionFiltering
+   EventTracing
 
 Reference documentation
 -------------------------------
