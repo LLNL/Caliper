@@ -162,7 +162,6 @@ cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   
 namespace cali
 {
 
-extern ConfigManager::ConfigInfo callpath_sample_report_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
@@ -172,10 +171,10 @@ extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
+extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
 const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
-    &callpath_sample_report_controller_info,
     &cuda_activity_profile_controller_info,
     &cuda_activity_report_controller_info,
     &::event_trace_controller_info,
@@ -190,6 +189,7 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &rocm_activity_report_controller_info,
     &rocm_activity_profile_controller_info,
     &runtime_report_controller_info,
+    &sample_report_controller_info,
     &spot_controller_info,
     nullptr
 };

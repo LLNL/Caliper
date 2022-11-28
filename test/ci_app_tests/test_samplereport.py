@@ -9,7 +9,7 @@ import calipertest as cat
 class CaliperSampleReportTest(unittest.TestCase):
     """ Callpath sample report controller """
     def test_sample_report_nompi(self):
-        target_cmd = [ './ci_test_macros', '5000', 'callpath-sample-report,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '5000', 'sample-report,output=stdout,source.location' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'      : '0',
@@ -17,8 +17,9 @@ class CaliperSampleReportTest(unittest.TestCase):
 
         log_targets = [
             'Path',
+            'Source',
             'main',
-            '  usleep'
+            '  main loop'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
@@ -32,7 +33,7 @@ class CaliperSampleReportTest(unittest.TestCase):
                 self.fail('%s not found in log' % target)
 
     def test_runtime_report_nompi(self):
-        target_cmd = [ './ci_test_macros', '5000', 'callpath-sample-report,aggregate_across_ranks=false,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '5000', 'sample-report,aggregate_across_ranks=false,output=stdout' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'      : '0',
@@ -41,7 +42,7 @@ class CaliperSampleReportTest(unittest.TestCase):
         log_targets = [
             'Samples Time (sec)',
             'main',
-            '  usleep'
+            '  main loop'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
