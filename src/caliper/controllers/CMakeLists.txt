@@ -1,5 +1,4 @@
 set(CALIPER_CONTROLLERS_SOURCES
-  controllers/CallpathSampleReportController.cpp
   controllers/CudaActivityProfileController.cpp
   controllers/CudaActivityReportController.cpp
   controllers/HatchetRegionProfileController.cpp
@@ -9,6 +8,7 @@ set(CALIPER_CONTROLLERS_SOURCES
   controllers/ROCmActivityProfileController.cpp
   controllers/ROCmActivityReportController.cpp
   controllers/RuntimeReportController.cpp
+  controllers/SampleReportController.cpp
   controllers/SpotController.cpp
   controllers/controllers.cpp
   controllers/util.cpp)
