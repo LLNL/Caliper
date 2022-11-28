@@ -140,7 +140,7 @@ const char* controller_spec = R"json(
        "description": "Show kernel names"
       }
      ]
-    };
+    }
 )json";
 
 } // namespace [anonymous]
