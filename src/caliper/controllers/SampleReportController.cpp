@@ -126,7 +126,7 @@ const char* sample_report_spec = R"json(
     {
      "name"        : "sample-report",
      "description" : "Print a sampling profile for the program",
-     "categories"  : [ "metric", "output", "treeformatter" ],
+     "categories"  : [ "output", "treeformatter" ],
      "services"    : [ "sampler", "trace" ],
      "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
      "defaults"    : { "source.function": "true" },
