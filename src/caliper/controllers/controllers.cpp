@@ -288,6 +288,57 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "source.module",
+     "type"        : "bool",
+     "category"    : "sampling",
+     "description" : "Report source module (.so/.exe)",
+     "services"    : [ "symbollookup" ],
+     "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_MODULE": "true" },
+     "query":
+     [
+      { "level": "local", "group by": "module#cali.sampler.pc",
+        "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
+      },
+      { "level": "cross", "group by": "module#cali.sampler.pc",
+        "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
+      }
+     ]
+    },
+    {
+     "name"        : "source.function",
+     "type"        : "bool",
+     "category"    : "sampling",
+     "description" : "Report source function symbol names",
+     "services"    : [ "symbollookup" ],
+     "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_FUNCTION": "true" },
+     "query":
+     [
+      { "level": "local", "group by": "source.function#cali.sampler.pc",
+        "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
+      },
+      { "level": "cross", "group by": "source.function#cali.sampler.pc",
+        "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
+      }
+     ]
+    },
+    {
+     "name"        : "source.location",
+     "type"        : "bool",
+     "category"    : "sampling",
+     "description" : "Report source location (file+line)",
+     "services"    : [ "symbollookup" ],
+     "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC": "true" },
+     "query":
+     [
+      { "level": "local", "group by": "sourceloc#cali.sampler.pc",
+        "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
+      },
+      { "level": "cross", "group by": "sourceloc#cali.sampler.pc",
+        "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
+      }
+     ]
+    },
+    {
      "name"        : "cuda.memcpy",
      "description" : "Report MB copied between host and device with cudaMemcpy",
      "type"        : "bool",
