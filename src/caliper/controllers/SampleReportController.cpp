@@ -126,7 +126,7 @@ const char* sample_report_spec = R"json(
     {
      "name"        : "sample-report",
      "description" : "Print a sampling profile for the program",
-     "categories"  : [ "output", "treeformatter" ],
+     "categories"  : [ "output", "sampling", "treeformatter" ],
      "services"    : [ "sampler", "trace" ],
      "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
      "defaults"    : { "source.function": "true" },
@@ -142,54 +142,6 @@ const char* sample_report_spec = R"json(
         "type": "bool",
         "description": "Group by function call path instead of instrumented region",
         "services": [ "callpath", "symbollookup" ]
-      },
-      {
-        "name": "source.module",
-        "type": "bool",
-        "description": "Report source module (.so/.exe)",
-        "services": [ "symbollookup" ],
-        "config": { "CALI_SYMBOLLOOKUP_LOOKUP_MODULE": "true" },
-        "query":
-        [
-            { "level": "local", "group by": "module#cali.sampler.pc",
-              "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
-            },
-            { "level": "cross", "group by": "module#cali.sampler.pc",
-              "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
-            }
-        ]
-      },
-      {
-        "name": "source.function",
-        "type": "bool",
-        "description": "Report source function",
-        "services": [ "symbollookup" ],
-        "config": { "CALI_SYMBOLLOOKUP_LOOKUP_FUNCTION": "true" },
-        "query":
-        [
-            { "level": "local", "group by": "source.function#cali.sampler.pc",
-              "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
-            },
-            { "level": "cross", "group by": "source.function#cali.sampler.pc",
-              "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
-            }
-        ]
-      },
-      {
-        "name": "source.location",
-        "type": "bool",
-        "description": "Report source location (file+line)",
-        "services": [ "symbollookup" ],
-        "config": { "CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC": "true" },
-        "query":
-        [
-            { "level": "local", "group by": "sourceloc#cali.sampler.pc",
-              "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
-            },
-            { "level": "cross", "group by": "sourceloc#cali.sampler.pc",
-              "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
-            }
-        ]
       },
       {
        "name": "aggregate_across_ranks",
