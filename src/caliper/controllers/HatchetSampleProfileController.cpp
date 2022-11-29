@@ -31,7 +31,7 @@ public:
 
             config()["CALI_SAMPLER_FREQUENCY"] = freqstr;
 
-            std::string select  = "*,count()";
+            std::string select  = "prop:nested,count()";
             double freq = std::stod(freqstr);
 
             if (freq > 0) {
@@ -140,56 +140,46 @@ make_controller(const char* name, const config_map_t& initial_cfg, const cali::C
     return new HatchetSampleProfileController(name, initial_cfg, opts, format);
 }
 
-const char* controller_spec =
-    "{"
-    " \"name\"        : \"hatchet-sample-profile\","
-    " \"description\" : \"Record a sampling profile for processing with hatchet\","
-    " \"services\"    : [ \"sampler\", \"trace\" ],"
-    " \"categories\"  : [ \"adiak\", \"output\" ],"
-    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" },"
-    " \"defaults\"    : { \"sample.callpath\": \"true\", \"source.module\": \"true\" },"
-    " \"options\": "
-    " ["
-    "  { "
-    "    \"name\": \"output.format\","
-    "    \"type\": \"string\","
-    "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
-    "  },"
-    "  { "
-    "    \"name\": \"sample.frequency\","
-    "    \"type\": \"int\","
-    "    \"description\": \"Sampling frequency in Hz. Default: 200\""
-    "  },"
-    "  { "
-    "    \"name\": \"sample.callpath\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Perform call-stack unwinding\","
-    "    \"services\": [ \"callpath\", \"symbollookup\" ],"
-    "    \"query\": [ { \"level\": \"local\", \"group by\": source.function#callpath.address } ]"
-    "  },"
-    "  { "
-    "    \"name\": \"source.module\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Lookup source module (.so/.exe)\","
-    "    \"services\": [ \"symbollookup\" ],"
-    "    \"config\": { \"CALI_SYMBOLLOOKUP_LOOKUP_MODULE\": \"true\" },"
-    "    \"query\": [ { \"level\": \"local\", \"group by\": \"module#cali.sampler.pc\" } ]"
-    "  },"
-    "  { "
-    "    \"name\": \"source.location\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Lookup source location (file+line)\","
-    "    \"services\": [ \"symbollookup\" ],"
-    "    \"config\": { \"CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC\": \"true\" },"
-    "    \"query\": [ { \"level\": \"local\", \"group by\": \"sourceloc#cali.sampler.pc\" } ]"
-    "  },"
-    "  { "
-    "    \"name\": \"use.mpi\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Merge results into a single output stream in MPI programs\""
-    "  }"
-    " ]"
-    "}";
+const char* controller_spec = R"json(
+    {
+     "name"        : "hatchet-sample-profile",
+     "description" : "Record a sampling profile for processing with hatchet",
+     "services"    : [ "sampler", "trace" ],
+     "categories"  : [ "adiak", "sampling", "output" ],
+     "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
+     "defaults"    : { "callpath": "true", "source.module": "true" },
+     "options":
+     [
+      {
+        "name": "output.format",
+        "type": "string",
+        "description": "Output format ('hatchet', 'cali', 'json')"
+      },
+      {
+        "name": "sample.frequency",
+        "type": "int",
+        "description": "Sampling frequency in Hz. Default: 200"
+      },
+      {
+        "name": "callpath",
+        "type": "bool",
+        "description": "Perform call-stack unwinding",
+        "services": [ "callpath", "symbollookup" ],
+        "query":
+        [
+         { "level": "local", "group by": "source.function#callpath.address",
+           "select": [ { "expr": "source.function#callpath.address" } ]
+         }
+        ]
+      },
+      {
+        "name": "use.mpi",
+        "type": "bool",
+        "description": "Merge results into a single output stream in MPI programs"
+      }
+     ]
+    }
+)json";
 
 } // namespace [anonymous]
 
