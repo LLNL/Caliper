@@ -1,9 +1,9 @@
-Event Tracing and Timelines
+Event tracing and timelines
 ================================================================
 
 Event tracing allows detailed analysis of individual region instances and the
 generation of timeline views. Use the `event-trace` config to generate event
-traces. It will produce a ``.cali`` trace file for each process ::
+traces. It will produce a ``.cali`` trace file for each process. ::
 
     $ CALI_CONFIG=event-trace ./examples/apps/cxx-example
     $ ls

@@ -333,25 +333,30 @@ mpi-report
 
 sample-report
    Print time spent in functions using call-path sampling.
+   See :doc:`SampleProfiling`.
 
 cuda-activity-report
    Record and print CUDA activities (kernel executions, memcopies, etc.)
+   See :doc:`GPUProfiling`.
 
 cuda-activity-profile
    Record CUDA activities and a write profile file (json or .cali)
+   See :doc:`GPUProfiling`.
 
 openmp-report
    Record and print OpenMP performance metrics (loops, barriers, etc.).
-   Requires OMPT support.
+   Requires OMPT support. See :doc:`OpenMP`.
 
 event-trace
    Record a trace of region enter/exit events in .cali format.
+   See :doc:`EventTracing`.
 
 hatchet-region-profile
    Record a region time profile for processing with hatchet or cali-query.
 
 hatchet-sample-profile
    Record a sampling profile for processing with hatchet or cali-query.
+   See :doc:`SampleProfiling`.
 
 spot
    Record a time profile for the Spot web visualization framework.

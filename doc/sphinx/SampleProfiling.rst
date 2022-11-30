@@ -106,8 +106,20 @@ cali-query to compute a flat profile with the time and number of samples
 in each sampled function::
 
     $ CALI_CONFIG=hatchet-sample-profile,source.function,output.format=cali ./lulesh2.0
-    $ cali-query -q "select source.function#cali.sampler.pc as Function, sum(count) as Samples, sum(scount) as Time, percent_total(count) as Percent group by source.function#cali.sampler.pc format table order by sum#count desc" sample_profile.
-cali
+    $ cat << EOF > query.txt
+    > select
+    >   source.function#cali.sampler.pc as Function,
+    >   sum(count) as Samples,
+    >   sum(scount) as Time,
+    >   percent_total(count) as Percent
+    > group by
+    >   source.function#cali.sampler.pc
+    > format
+    >   table 
+    > order by
+    >   sum#count DESC  
+    > EOF
+    $ cali-query -Q query.txt sample_profile.cali
     Function                                                     Samples Time       Percent
     gomp_barrier_wait_end                                          62311 311.555000 26.918873
     CalcFBHourglassForceForElems(~~ int, int) [clone ._omp_fn.7]   30673 153.365000 13.250993
