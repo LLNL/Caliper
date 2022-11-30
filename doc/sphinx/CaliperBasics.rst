@@ -331,7 +331,7 @@ loop-report
 mpi-report
    Print time spent in MPI functions.
 
-callpath-sample-report
+sample-report
    Print time spent in functions using call-path sampling.
 
 cuda-activity-report

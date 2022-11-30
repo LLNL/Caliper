@@ -62,6 +62,7 @@ This section lists how-to articles for various use cases.
    OpenMP
    RegionFiltering
    EventTracing
+   SampleProfiling
 
 Reference documentation
 -------------------------------

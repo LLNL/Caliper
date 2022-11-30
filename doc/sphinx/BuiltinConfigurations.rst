@@ -98,14 +98,16 @@ hatchet-sample-profile
    adiak.import_categories
       Adiak import categories. Comma-separated list of integers.
    source.module
-      Lookup source module (.so/.exe)
+      Report source module (.so/.exe) for samples
    source.location
-      Lookup source location (file+line)
+      Report source location (file+line) for samples
+   source.function
+      Report source function name for samples
    output
       Output location ('stdout', 'stderr', or filename)
    output.format
       Output format ('hatchet', 'cali', 'json')
-   sample.callpath
+   callpath
       Perform call-stack unwinding
    sample.frequency
       Sampling frequency in Hz. Default: 200
