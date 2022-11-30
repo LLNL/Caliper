@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Caliper Basics &#8212; Caliper 2.8.0 documentation</title>
+    <title>Caliper Basics &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -18,7 +18,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="CUDA profiling" href="CUDA.html" />
+    <link rel="next" title="GPU profiling" href="GPUProfiling.html" />
     <link rel="prev" title="Caliper: A Performance Analysis Toolbox in a Library" href="index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -31,12 +31,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="CUDA.html" title="CUDA profiling"
+          <a href="GPUProfiling.html" title="GPU profiling"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>  
@@ -326,20 +326,25 @@ e.g. <code class="docutils literal notranslate"><span class="pre">mpi-caliquery<
 </dd>
 <dt>mpi-report</dt><dd><p>Print time spent in MPI functions.</p>
 </dd>
-<dt>callpath-sample-report</dt><dd><p>Print time spent in functions using call-path sampling.</p>
+<dt>sample-report</dt><dd><p>Print time spent in functions using call-path sampling.
+See <a class="reference internal" href="SampleProfiling.html"><span class="doc">Sample profiling</span></a>.</p>
 </dd>
-<dt>cuda-activity-report</dt><dd><p>Record and print CUDA activities (kernel executions, memcopies, etc.)</p>
+<dt>cuda-activity-report</dt><dd><p>Record and print CUDA activities (kernel executions, memcopies, etc.)
+See <a class="reference internal" href="GPUProfiling.html"><span class="doc">GPU profiling</span></a>.</p>
 </dd>
-<dt>cuda-activity-profile</dt><dd><p>Record CUDA activities and a write profile file (json or .cali)</p>
+<dt>cuda-activity-profile</dt><dd><p>Record CUDA activities and a write profile file (json or .cali)
+See <a class="reference internal" href="GPUProfiling.html"><span class="doc">GPU profiling</span></a>.</p>
 </dd>
 <dt>openmp-report</dt><dd><p>Record and print OpenMP performance metrics (loops, barriers, etc.).
-Requires OMPT support.</p>
+Requires OMPT support. See <a class="reference internal" href="OpenMP.html"><span class="doc">OpenMP profiling</span></a>.</p>
 </dd>
-<dt>event-trace</dt><dd><p>Record a trace of region enter/exit events in .cali format.</p>
+<dt>event-trace</dt><dd><p>Record a trace of region enter/exit events in .cali format.
+See <a class="reference internal" href="EventTracing.html"><span class="doc">Event tracing and timelines</span></a>.</p>
 </dd>
 <dt>hatchet-region-profile</dt><dd><p>Record a region time profile for processing with hatchet or cali-query.</p>
 </dd>
-<dt>hatchet-sample-profile</dt><dd><p>Record a sampling profile for processing with hatchet or cali-query.</p>
+<dt>hatchet-sample-profile</dt><dd><p>Record a sampling profile for processing with hatchet or cali-query.
+See <a class="reference internal" href="SampleProfiling.html"><span class="doc">Sample profiling</span></a>.</p>
 </dd>
 <dt>spot</dt><dd><p>Record a time profile for the Spot web visualization framework.</p>
 </dd>
@@ -724,8 +729,8 @@ analysis views.</p>
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="CUDA.html"
-                          title="next chapter">CUDA profiling</a></p>
+    <p class="topless"><a href="GPUProfiling.html"
+                          title="next chapter">GPU profiling</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -758,12 +763,12 @@ analysis views.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="CUDA.html" title="CUDA profiling"
+          <a href="GPUProfiling.html" title="GPU profiling"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>

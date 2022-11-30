@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Connection to third-party tools &#8212; Caliper 2.8.0 documentation</title>
+    <title>Connection to third-party tools &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="FortranSupport.html" title="Fortran support"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Connection to third-party tools</a></li> 
       </ul>
     </div>  
@@ -97,6 +97,39 @@ property. Alternatively, the region attributes to export can be
 specified explicitly in the <cite>CALI_VTUNE_TRIGGER_ATTRIBUTES</cite>
 configuration variable.</p>
 </section>
+<section id="craypat">
+<h2>CrayPAT<a class="headerlink" href="#craypat" title="Permalink to this heading">¶</a></h2>
+<p>The <cite>craypat</cite> service translates Caliper annotations into CrayPAT regions.
+This API is only available in recent (2022+) CrayPAT versions. It also
+only works with the “trace” call stack mode in CrayPAT.</p>
+<p>By default, the <cite>craypat</cite> service will attempt to initialize CrayPAT internally
+and record a CrayPAT region profile. Alternatively, you can use the <cite>craypat</cite>
+service in conjunction with <cite>pat_run</cite> to set additional recording options. In
+this case, make sure to set <code class="docutils literal notranslate"><span class="pre">PAT_RT_CALLSTACK_MODE=trace</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ PAT_RT_CALLSTACK_MODE=trace CALI_SERVICES_ENABLE=craypat pat_run -w -E PAPI_TOT_CYC ./examples/apps/cxx-example
+CrayPat/X:  Version 22.06.0 Revision 4b5ab6256  05/21/22 02:04:43
+Experiment data directory written:
+/&lt;path&gt;/cxx-example+91423-10t
+$ pat_report ./cxx-example+91423-10t
+[...]
+Table 1:  Profile by Function Group and Function
+
+    Time% |     Time | Imb. |  Imb. | Calls | Group
+          |          | Time | Time% |       |  Function
+
+   100.0% | 0.000716 |   -- |    -- |   7.0 | Total
+|------------------------------------------------------
+|  100.0% | 0.000716 |   -- |    -- |   7.0 | USER
+||-----------------------------------------------------
+||  89.2% | 0.000639 |   -- |    -- |   4.0 | [R]foo
+||   4.7% | 0.000034 |   -- |    -- |   1.0 | [R]main
+||   3.9% | 0.000028 |   -- |    -- |   1.0 | [R]mainloop
+||   2.1% | 0.000015 |   -- |    -- |   1.0 | [R]init
+|======================================================
+[...]
+</pre></div>
+</div>
+</section>
 </section>
 
 
@@ -115,6 +148,7 @@ configuration variable.</p>
 <li><a class="reference internal" href="#">Connection to third-party tools</a><ul>
 <li><a class="reference internal" href="#nvidia-nvprof-nsight">NVidia NVProf/NSight</a></li>
 <li><a class="reference internal" href="#intel-vtune">Intel VTune</a></li>
+<li><a class="reference internal" href="#craypat">CrayPAT</a></li>
 </ul>
 </li>
 </ul>
@@ -166,7 +200,7 @@ configuration variable.</p>
         <li class="right" >
           <a href="FortranSupport.html" title="Fortran support"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Connection to third-party tools</a></li> 
       </ul>
     </div>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Built-in profiling configurations &#8212; Caliper 2.8.0 documentation</title>
+    <title>Built-in profiling configurations &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Built-in profiling configurations</a></li> 
       </ul>
     </div>  
@@ -136,15 +136,17 @@ configs or options may be available in a particular Caliper installation.</p>
 <dl class="simple">
 <dt>adiak.import_categories</dt><dd><p>Adiak import categories. Comma-separated list of integers.</p>
 </dd>
-<dt>lookup.module</dt><dd><p>Lookup source module (.so/.exe)</p>
+<dt>source.module</dt><dd><p>Report source module (.so/.exe) for samples</p>
 </dd>
-<dt>lookup.sourceloc</dt><dd><p>Lookup source location (file+line)</p>
+<dt>source.location</dt><dd><p>Report source location (file+line) for samples</p>
+</dd>
+<dt>source.function</dt><dd><p>Report source function name for samples</p>
 </dd>
 <dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
 </dd>
 <dt>output.format</dt><dd><p>Output format (‘hatchet’, ‘cali’, ‘json’)</p>
 </dd>
-<dt>sample.callpath</dt><dd><p>Perform call-stack unwinding</p>
+<dt>callpath</dt><dd><p>Perform call-stack unwinding</p>
 </dd>
 <dt>sample.frequency</dt><dd><p>Sampling frequency in Hz. Default: 200</p>
 </dd>
@@ -152,35 +154,25 @@ configs or options may be available in a particular Caliper installation.</p>
 </dd>
 </dl>
 </dd>
-<dt>callpath-sample-report</dt><dd><p>Print a call-path sampling profile for the program</p>
+<dt>sample-report</dt><dd><p>Print a sampling profile for the program</p>
 <dl class="simple">
 <dt>aggregate_across_ranks</dt><dd><p>Aggregate results across MPI ranks</p>
 </dd>
-<dt>io.bytes</dt><dd><p>Report I/O bytes written and read</p>
-</dd>
-<dt>io.bytes.read</dt><dd><p>Report I/O bytes read</p>
-</dd>
-<dt>io.bytes.written</dt><dd><p>Report I/O bytes written</p>
-</dd>
-<dt>io.read.bandwidth</dt><dd><p>Report I/O read bandwidth</p>
-</dd>
-<dt>io.write.bandwidth</dt><dd><p>Report I/O write bandwidth</p>
+<dt>callpath</dt><dd><p>Group by function call path instead of instrumented region</p>
 </dd>
 <dt>max_column_width</dt><dd><p>Maximum column width in the tree display</p>
 </dd>
-<dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
-</dd>
 <dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
+</dd>
+<dt>print.metadata</dt><dd><p>Print program metadata (Caliper globals and Adiak data)</p>
 </dd>
 <dt>sample.frequency</dt><dd><p>Sampling frequency in Hz. Default: 200</p>
 </dd>
-<dt>topdown-counters.all</dt><dd><p>Raw counter values for Intel top-down analysis (all levels)</p>
+<dt>source.function</dt><dd><p>Report source function</p>
 </dd>
-<dt>topdown-counters.toplevel</dt><dd><p>Raw counter values for Intel top-down analysis (top level)</p>
+<dt>source.location</dt><dd><p>Report source location (file+line)</p>
 </dd>
-<dt>topdown.all</dt><dd><p>Top-down analysis for Intel CPUs (all levels)</p>
-</dd>
-<dt>topdown.toplevel</dt><dd><p>Top-down analysis for Intel CPUs (top level)</p>
+<dt>source.module</dt><dd><p>Report source module (.so/.exe)</p>
 </dd>
 </dl>
 </dd>
@@ -242,9 +234,17 @@ configs or options may be available in a particular Caliper installation.</p>
 </dd>
 <dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
 </dd>
+<dt>mpi.message.count</dt><dd><p>Number of MPI send/recv/collective operations</p>
+</dd>
+<dt>mpi.message.size</dt><dd><p>MPI message size</p>
+</dd>
 <dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
 </dd>
 <dt>profile.cuda</dt><dd><p>Profile CUDA API functions</p>
+</dd>
+<dt>profile.hip</dt><dd><p>Profile HIP API functions</p>
+</dd>
+<dt>profile.kokkos</dt><dd><p>Profile Kokkos functions</p>
 </dd>
 <dt>profile.mpi</dt><dd><p>Profile MPI functions</p>
 </dd>
@@ -359,7 +359,7 @@ configs or options may be available in a particular Caliper installation.</p>
         <li class="right" >
           <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Built-in profiling configurations</a></li> 
       </ul>
     </div>

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Building Caliper &#8212; Caliper 2.8.0 documentation</title>
+    <title>Building Caliper &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -19,7 +19,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Annotation API reference" href="AnnotationAPI.html" />
-    <link rel="prev" title="OpenMP profiling" href="OpenMP.html" /> 
+    <link rel="prev" title="Sample profiling" href="SampleProfiling.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -34,9 +34,9 @@
           <a href="AnnotationAPI.html" title="Annotation API reference"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="OpenMP.html" title="OpenMP profiling"
+          <a href="SampleProfiling.html" title="Sample profiling"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>  
@@ -103,6 +103,11 @@ Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.</p>
 <dt>WITH_OMPT</dt><dd><p>Build with support for the OpenMP tools interface.</p>
 </dd>
 <dt>WITH_PAPI</dt><dd><p>Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.</p>
+</dd>
+<dt>WITH_ROCTX</dt><dd><p>Build adapters to forward Caliper annotations to AMD’s roctx annotation API.</p>
+</dd>
+<dt>WITH_ROCTRACER</dt><dd><p>Enable support for ROCm/HIP performance analysis (runtime API profiling and
+GPU activity tracing).</p>
 </dd>
 <dt>WITH_SAMPLER</dt><dd><p>Enable time-based sampling on Linux.</p>
 </dd>
@@ -202,8 +207,8 @@ dependencies (target)</p></td>
   </div>
   <div>
     <h4>Previous topic</h4>
-    <p class="topless"><a href="OpenMP.html"
-                          title="previous chapter">OpenMP profiling</a></p>
+    <p class="topless"><a href="SampleProfiling.html"
+                          title="previous chapter">Sample profiling</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -244,9 +249,9 @@ dependencies (target)</p></td>
           <a href="AnnotationAPI.html" title="Annotation API reference"
              >next</a> |</li>
         <li class="right" >
-          <a href="OpenMP.html" title="OpenMP profiling"
+          <a href="SampleProfiling.html" title="Sample profiling"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>

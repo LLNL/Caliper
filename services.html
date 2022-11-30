@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Caliper services &#8212; Caliper 2.8.0 documentation</title>
+    <title>Caliper services &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>  
@@ -59,6 +59,22 @@ range of usage scenarios.</p>
 </pre></div>
 </div>
 <p>to create event-triggered context traces for an application.</p>
+<p>You can use <cite>cali-query –help=services</cite> to list all available services,
+and <cite>cali-query –help &lt;service name&gt;</cite> to list the options for a given
+service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cali-query --help event
+event service:
+ Trigger snapshots for Caliper region begin and end events
+  CALI_EVENT_TRIGGER (stringlist)
+   List of attributes that trigger measurements (optional)
+  CALI_EVENT_ENABLE_SNAPSHOT_INFO=True (bool)
+   If true, add begin/end attributes at each event. Increases overhead.
+  CALI_EVENT_INCLUDE_REGIONS (string)
+   Region filter to specify regions that will trigger snapshots
+  CALI_EVENT_EXCLUDE_REGIONS (string)
+   Region filter to specify regions that won&#39;t trigger snapshots
+</pre></div>
+</div>
 <p>The following sections describe the available service modules and
 their configuration.</p>
 <section id="aggregate">
@@ -491,7 +507,8 @@ activity is running on.</p></td>
 <tr class="row-even"><td><p>cupti.uvm.bytes</p></td>
 <td><p>Bytes transferred in a unified memory event.</p></td>
 </tr>
-<tr class="row-odd"><td colspan="2"><p>cupti.uvm.migration.cause | Cause of a unified memory page migration.</p></td>
+<tr class="row-odd"><td><p>cupti.uvm.migration.cause</p></td>
+<td><p>Cause of a unified memory page migration.</p></td>
 </tr>
 <tr class="row-even"><td><p>cupti.uvm.access.type</p></td>
 <td><p>Access type that caused a unified memory page
@@ -566,6 +583,28 @@ event.set#iteration<span class="o">=</span><span class="m">3</span>,cali.snapsho
 event.end#iteration<span class="o">=</span><span class="m">3</span>,cali.snapshot.event.end<span class="o">=</span><span class="m">63</span>,iteration<span class="o">=</span><span class="m">3</span>,loop<span class="o">=</span><span class="nb">true</span>
 </pre></div>
 </div>
+<section id="value-filtering">
+<h3>Value filtering<a class="headerlink" href="#value-filtering" title="Permalink to this heading">¶</a></h3>
+<p>With filtering, the event service only triggers snapshots for specific
+values or patterns (e.g., region names). You can provide include or
+exclude filters. There are three pattern types:</p>
+<dl class="simple">
+<dt>match</dt><dd><p>Match the exact value</p>
+</dd>
+<dt>startswith</dt><dd><p>Match the start of the string</p>
+</dd>
+<dt>regex</dt><dd><p>Match a regular expression</p>
+</dd>
+</dl>
+<p>You can specify multiple patterns and combine them as needed, e.g. to
+include only “important_region” as well as any region starting with
+<code class="docutils literal notranslate"><span class="pre">MPI_</span></code> or <code class="docutils literal notranslate"><span class="pre">mylib_</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_EVENT_INCLUDE_REGIONS</span><span class="o">=</span><span class="s2">&quot;match(important_region),startswith(MPI_,mylib_)&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="config-variables">
+<h3>Config variables<a class="headerlink" href="#config-variables" title="Permalink to this heading">¶</a></h3>
 <dl>
 <dt>CALI_EVENT_TRIGGER</dt><dd><p>List of attributes that trigger measurement snapshots.
 If empty, all user attributes trigger snapshots.</p>
@@ -575,7 +614,16 @@ If empty, all user attributes trigger snapshots.</p>
 Turning this off can decrease runtime overheads.</p>
 <p>Default: true</p>
 </dd>
+<dt>CALI_EVENT_INCLUDE_REGIONS</dt><dd><p>Specify a value filter to only trigger snapshots for the provided
+patterns. See above for the different pattern options.</p>
+<p>Default: empty (no filter)</p>
+</dd>
+<dt>CALI_EVENT_EXCLUDE_REGIONS</dt><dd><p>Like above, but defines a value filter to skip snapshots for
+the provided patterns.</p>
+<p>Default: empty (no filter)</p>
+</dd>
 </dl>
+</section>
 </section>
 <section id="debug">
 <h2>Debug<a class="headerlink" href="#debug" title="Permalink to this heading">¶</a></h2>
@@ -1101,6 +1149,63 @@ flushed snapshots:</p>
 configuration), and the <code class="docutils literal notranslate"><span class="pre">function</span></code> and <code class="docutils literal notranslate"><span class="pre">time.duration</span></code> attributes
 are printed, in ascending order of <code class="docutils literal notranslate"><span class="pre">time.duration</span></code>.</p>
 </section>
+<section id="roctracer">
+<h2>RocTracer<a class="headerlink" href="#roctracer" title="Permalink to this heading">¶</a></h2>
+<p>The roctracer service records AMD ROCm/HIP activities and runtime
+API calls.</p>
+<p>The roctracer activity records contain the following attributes:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>rocm.activity</p></td>
+<td><p>Activity type (e.g., KernelExecution,
+CopyHostToDevice, etc.)</p></td>
+</tr>
+<tr class="row-even"><td><p>rocm.starttime</p></td>
+<td><p>Activity start time (ns)</p></td>
+</tr>
+<tr class="row-odd"><td><p>rocm.endtime</p></td>
+<td><p>Activity end time (ns)</p></td>
+</tr>
+<tr class="row-even"><td><p>rocm.activity.duration</p></td>
+<td><p>Activity duration (ns)</p></td>
+</tr>
+<tr class="row-odd"><td><p>rocm.activity.bytes</p></td>
+<td><p>Bytes copied (for memory copies)</p></td>
+</tr>
+<tr class="row-even"><td><p>rocm.activity.queue</p></td>
+<td><p>Queue ID</p></td>
+</tr>
+<tr class="row-odd"><td><p>rocm.activity.device</p></td>
+<td><p>Device ID</p></td>
+</tr>
+<tr class="row-even"><td><p>rocm.kernel.name</p></td>
+<td><p>Kernel function name</p></td>
+</tr>
+<tr class="row-odd"><td><p>rocm.host.duration</p></td>
+<td><p>Duration of host activities (if
+CALI_ROCTRACER_SNAPSHOT_DURATION is on)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Variables:</p>
+<dl>
+<dt>CALI_ROCTRACER_TRACE_ACTIVITIES</dt><dd><p>Boolean. Enable activity tracing.</p>
+<p>Default: true</p>
+</dd>
+<dt>CALI_ROCTRACER_RECORD_KERNEL_NAMES</dt><dd><p>Boolean. Record kernel function names in activity records.
+Increases overheads.</p>
+<p>Default: false</p>
+</dd>
+<dt>CALI_ROCTRACER_SNAPSHOT_DURATION</dt><dd><p>Boolean. Record duration of CPU activities (e.g., instead of
+using the timestamp service).</p>
+<p>Default: false</p>
+</dd>
+<dt>CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS</dt><dd><p>Boolean. Record timestamps of CPU activities (e.g., instead of
+using the timestamp service).</p>
+<p>Default: false</p>
+</dd>
+</dl>
+</section>
 <section id="roctx">
 <h2>RocTX<a class="headerlink" href="#roctx" title="Permalink to this heading">¶</a></h2>
 <p>The RocTX service forwards Caliper annotations as ROCm RocTX
@@ -1229,9 +1334,9 @@ to print to the standard output or error streams, respectively.</p>
 </dd>
 </dl>
 </section>
-<section id="timestamp">
-<span id="timestamp-service"></span><h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this heading">¶</a></h2>
-<p>The timestamp service adds a time offset, timestamp, or duration to
+<section id="timer">
+<span id="timer-service"></span><h2>Timer<a class="headerlink" href="#timer" title="Permalink to this heading">¶</a></h2>
+<p>The timer service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
 <dl>
@@ -1287,6 +1392,44 @@ is full, another chunk of this size is added.</p>
 </dd>
 </dl>
 </section>
+<section id="umpire">
+<h2>Umpire<a class="headerlink" href="#umpire" title="Permalink to this heading">¶</a></h2>
+<p>The umpire service records statistics from the Umpire memory manager.
+It provides the following attributes:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>umpire.alloc.name</p></td>
+<td><p>Umpire allocator name</p></td>
+</tr>
+<tr class="row-even"><td><p>umpire.alloc.actual.size</p></td>
+<td><p>Actual size of the allocator</p></td>
+</tr>
+<tr class="row-odd"><td><p>umpire.alloc.current.size</p></td>
+<td><p>Current size of the allocator</p></td>
+</tr>
+<tr class="row-even"><td><p>umpire.alloc.highwatermark</p></td>
+<td><p>The memory high-watermark for the allocator</p></td>
+</tr>
+<tr class="row-odd"><td><p>umpire.alloc.count</p></td>
+<td><p>Number of allocations in the allocator</p></td>
+</tr>
+<tr class="row-even"><td><p>umpire.total.size</p></td>
+<td><p>Total memory allocated across all allocators</p></td>
+</tr>
+<tr class="row-odd"><td><p>umpire.total.count</p></td>
+<td><p>Number of allocations across all allocators</p></td>
+</tr>
+</tbody>
+</table>
+<p>Variables:</p>
+<dl>
+<dt>CALI_UMPIRE_PER_ALLOCATOR_STATISTICS</dt><dd><p>Boolean. Record per-allocator statistics. If false, the umpire service
+only records the <cite>umpire.total.size</cite> and <cite>umpire.total.count</cite> attributes,
+otherwise it will create separate records for each Umpire allocator.</p>
+<p>Default: true</p>
+</dd>
+</dl>
+</section>
 </section>
 
 
@@ -1318,7 +1461,11 @@ is full, another chunk of this size is added.</p>
 </li>
 <li><a class="reference internal" href="#cuptitrace">CUptiTrace</a></li>
 <li><a class="reference internal" href="#environment-information">Environment Information</a></li>
-<li><a class="reference internal" href="#event">Event</a></li>
+<li><a class="reference internal" href="#event">Event</a><ul>
+<li><a class="reference internal" href="#value-filtering">Value filtering</a></li>
+<li><a class="reference internal" href="#config-variables">Config variables</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#debug">Debug</a></li>
 <li><a class="reference internal" href="#io">IO</a></li>
 <li><a class="reference internal" href="#libpfm">Libpfm</a></li>
@@ -1332,13 +1479,15 @@ is full, another chunk of this size is added.</p>
 <li><a class="reference internal" href="#pthread">Pthread</a></li>
 <li><a class="reference internal" href="#recorder">Recorder</a></li>
 <li><a class="reference internal" href="#report">Report</a></li>
+<li><a class="reference internal" href="#roctracer">RocTracer</a></li>
 <li><a class="reference internal" href="#roctx">RocTX</a></li>
 <li><a class="reference internal" href="#sampler">Sampler</a></li>
 <li><a class="reference internal" href="#symbollookup">Symbollookup</a></li>
 <li><a class="reference internal" href="#sysalloc">Sysalloc</a></li>
 <li><a class="reference internal" href="#textlog">Textlog</a></li>
-<li><a class="reference internal" href="#timestamp">Timestamp</a></li>
+<li><a class="reference internal" href="#timer">Timer</a></li>
 <li><a class="reference internal" href="#trace">Trace</a></li>
+<li><a class="reference internal" href="#umpire">Umpire</a></li>
 </ul>
 </li>
 </ul>
@@ -1390,7 +1539,7 @@ is full, another chunk of this size is added.</p>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>

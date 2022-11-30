@@ -14,6 +14,22 @@ You can enable the services required for your measurement with the
 
 to create event-triggered context traces for an application.
 
+You can use `cali-query --help=services` to list all available services,
+and `cali-query --help <service name>` to list the options for a given
+service::
+
+   $ cali-query --help event
+   event service:
+    Trigger snapshots for Caliper region begin and end events
+     CALI_EVENT_TRIGGER (stringlist)
+      List of attributes that trigger measurements (optional)
+     CALI_EVENT_ENABLE_SNAPSHOT_INFO=True (bool)
+      If true, add begin/end attributes at each event. Increases overhead.
+     CALI_EVENT_INCLUDE_REGIONS (string)
+      Region filter to specify regions that will trigger snapshots
+     CALI_EVENT_EXCLUDE_REGIONS (string)
+      Region filter to specify regions that won't trigger snapshots
+
 The following sections describe the available service modules and
 their configuration.
 
@@ -434,48 +450,48 @@ CALI_CUPTITRACE_UVM_PAGEFAULTS
 
 CUptiTrace records contain the following attributes:
 
-+-------------------------+--------------------------------------------------+
-| cupti.activity.kind     | Kind of the CUDA activity. Possible values:      |
-|                         | "memcpy" or "kernel".                            |
-+-------------------------+--------------------------------------------------+
-| cupti.activity.start    | Start timestamp of the CUDA activity (CUpti      |
-|                         | timestamp).                                      |
-+-------------------------+--------------------------------------------------+
-| cupti.activity.end      | End timestamp of the CUDA activity (CUpti        |
-|                         | timestamp).                                      |
-+-------------------------+--------------------------------------------------+
-| cupti.activity.duration | Duration of the CUDA activity in nanoseconds.    |
-+-------------------------+--------------------------------------------------+
-| cupti.host.duration     | Duration of a host-side activity in nanoseconds. |
-+-------------------------+--------------------------------------------------+
-| cupti.kernel.name       | For kernels, the function name of the kernel.    |
-+-------------------------+--------------------------------------------------+
-| cupti.memcpy.kind       | For memory copies, the direction of the memory   |
-|                         | transfer (device-to-host [DtoH], host-to-device  |
-|                         | [HtoD], etc.)                                    |
-+-------------------------+--------------------------------------------------+
-| cupti.starttime         | CUpti timestamp at program start.                |
-+-------------------------+--------------------------------------------------+
-| cupti.timestamp         | CUpti timestamp attached to host-side Caliper    |
-|                         | snapshot records.                                |
-+-------------------------+--------------------------------------------------+
-| cupti.device.uuid       | A globally unique ID of the CUDA device the      |
-|                         | activity is running on.                          |
-+-------------------------+--------------------------------------------------+
-| cupti.device.uuid       | A globally unique ID of the CUDA device the      |
-|                         | activity is running on.                          |
-+-------------------------+--------------------------------------------------+
-| cupti.uvm.kind          | The kind of unified memory event.                |
-+-------------------------+--------------------------------------------------+
-| cupti.fault.addr        | Pagefault address for unified memory events.     |
-+-------------------------+--------------------------------------------------+
-| cupti.uvm.bytes         | Bytes transferred in a unified memory event.     |
-+-------------------------+--------------------------------------------------+
-| cupti.uvm.migration.cause | Cause of a unified memory page migration.      |
-+-------------------------+--------------------------------------------------+
-| cupti.uvm.access.type   | Access type that caused a unified memory page    |
-|                         | fault.                                           |
-+-------------------------+--------------------------------------------------+
++---------------------------+--------------------------------------------------+
+| cupti.activity.kind       | Kind of the CUDA activity. Possible values:      |
+|                           | "memcpy" or "kernel".                            |
++---------------------------+--------------------------------------------------+
+| cupti.activity.start      | Start timestamp of the CUDA activity (CUpti      |
+|                           | timestamp).                                      |
++---------------------------+--------------------------------------------------+
+| cupti.activity.end        | End timestamp of the CUDA activity (CUpti        |
+|                           | timestamp).                                      |
++---------------------------+--------------------------------------------------+
+| cupti.activity.duration   | Duration of the CUDA activity in nanoseconds.    |
++---------------------------+--------------------------------------------------+
+| cupti.host.duration       | Duration of a host-side activity in nanoseconds. |
++---------------------------+--------------------------------------------------+
+| cupti.kernel.name         | For kernels, the function name of the kernel.    |
++---------------------------+--------------------------------------------------+
+| cupti.memcpy.kind         | For memory copies, the direction of the memory   |
+|                           | transfer (device-to-host [DtoH], host-to-device  |
+|                           | [HtoD], etc.)                                    |
++---------------------------+--------------------------------------------------+
+| cupti.starttime           | CUpti timestamp at program start.                |
++---------------------------+--------------------------------------------------+
+| cupti.timestamp           | CUpti timestamp attached to host-side Caliper    |
+|                           | snapshot records.                                |
++---------------------------+--------------------------------------------------+
+| cupti.device.uuid         | A globally unique ID of the CUDA device the      |
+|                           | activity is running on.                          |
++---------------------------+--------------------------------------------------+
+| cupti.device.uuid         | A globally unique ID of the CUDA device the      |
+|                           | activity is running on.                          |
++---------------------------+--------------------------------------------------+
+| cupti.uvm.kind            | The kind of unified memory event.                |
++---------------------------+--------------------------------------------------+
+| cupti.fault.addr          | Pagefault address for unified memory events.     |
++---------------------------+--------------------------------------------------+
+| cupti.uvm.bytes           | Bytes transferred in a unified memory event.     |
++---------------------------+--------------------------------------------------+
+| cupti.uvm.migration.cause | Cause of a unified memory page migration.        |
++---------------------------+--------------------------------------------------+
+| cupti.uvm.access.type     | Access type that caused a unified memory page    |
+|                           | fault.                                           |
++---------------------------+--------------------------------------------------+
 
 
 Environment Information
@@ -552,6 +568,33 @@ only trigger snapshot for "iteration" attribute updates:
                 event.set#iteration=3,cali.snapshot.event.set=63,iteration=2,loop=true
                 event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
 
+Value filtering
+................................
+
+With filtering, the event service only triggers snapshots for specific
+values or patterns (e.g., region names). You can provide include or
+exclude filters. There are three pattern types:
+
+match
+   Match the exact value
+
+startswith
+   Match the start of the string
+
+regex
+   Match a regular expression
+
+You can specify multiple patterns and combine them as needed, e.g. to
+include only "important_region" as well as any region starting with
+``MPI_`` or ``mylib_``:
+
+.. code-block:: sh
+
+      $ CALI_EVENT_INCLUDE_REGIONS="match(important_region),startswith(MPI_,mylib_)"
+
+Config variables
+................................
+
 CALI_EVENT_TRIGGER
    List of attributes that trigger measurement snapshots.
    If empty, all user attributes trigger snapshots.
@@ -563,6 +606,18 @@ CALI_EVENT_ENABLE_SNAPSHOT_INFO
    Turning this off can decrease runtime overheads.
 
    Default: true
+
+CALI_EVENT_INCLUDE_REGIONS
+   Specify a value filter to only trigger snapshots for the provided
+   patterns. See above for the different pattern options.
+
+   Default: empty (no filter)
+
+CALI_EVENT_EXCLUDE_REGIONS
+   Like above, but defines a value filter to skip snapshots for
+   the provided patterns.
+
+   Default: empty (no filter)
 
 Debug
 --------------------------------
@@ -1139,6 +1194,62 @@ Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
 
+RocTracer
+--------------------------------
+
+The roctracer service records AMD ROCm/HIP activities and runtime
+API calls.
+
+The roctracer activity records contain the following attributes:
+
++--------------------------+------------------------------------------------+
+| rocm.activity            | Activity type (e.g., KernelExecution,          |
+|                          | CopyHostToDevice, etc.)                        |
++--------------------------+------------------------------------------------+
+| rocm.starttime           | Activity start time (ns)                       |
++--------------------------+------------------------------------------------+
+| rocm.endtime             | Activity end time (ns)                         |
++--------------------------+------------------------------------------------+
+| rocm.activity.duration   | Activity duration (ns)                         |
++--------------------------+------------------------------------------------+
+| rocm.activity.bytes      | Bytes copied (for memory copies)               |
++--------------------------+------------------------------------------------+
+| rocm.activity.queue      | Queue ID                                       |
++--------------------------+------------------------------------------------+
+| rocm.activity.device     | Device ID                                      |
++--------------------------+------------------------------------------------+
+| rocm.kernel.name         | Kernel function name                           |
++--------------------------+------------------------------------------------+
+| rocm.host.duration       | Duration of host activities (if                |
+|                          | CALI_ROCTRACER_SNAPSHOT_DURATION is on)        |
++--------------------------+------------------------------------------------+
+
+Variables:
+
+CALI_ROCTRACER_TRACE_ACTIVITIES
+   Boolean. Enable activity tracing.
+
+   Default: true
+
+CALI_ROCTRACER_RECORD_KERNEL_NAMES
+   Boolean. Record kernel function names in activity records.
+   Increases overheads.
+
+   Default: false
+
+CALI_ROCTRACER_SNAPSHOT_DURATION
+   Boolean. Record duration of CPU activities (e.g., instead of
+   using the timestamp service).
+
+   Default: false
+
+CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS
+   Boolean. Record timestamps of CPU activities (e.g., instead of
+   using the timestamp service).
+
+   Default: false
+
+
 RocTX
 --------------------------------
 
@@ -1289,12 +1400,12 @@ CALI_TEXTLOG_FILENAME
 
    Default: stdout
 
-.. _timestamp-service:
+.. _timer-service:
 
-Timestamp
+Timer
 --------------------------------
 
-The timestamp service adds a time offset, timestamp, or duration to
+The timer service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 
@@ -1366,3 +1477,34 @@ CALI_TRACE_BUFFER_POLICY
    `flush`.
 
    Default: `grow`.
+
+Umpire
+--------------------------------
+
+The umpire service records statistics from the Umpire memory manager.
+It provides the following attributes:
+
++----------------------------+------------------------------------------------+
+| umpire.alloc.name          | Umpire allocator name                          |
++----------------------------+------------------------------------------------+
+| umpire.alloc.actual.size   | Actual size of the allocator                   |
++----------------------------+------------------------------------------------+
+| umpire.alloc.current.size  | Current size of the allocator                  |
++----------------------------+------------------------------------------------+
+| umpire.alloc.highwatermark | The memory high-watermark for the allocator    |
++----------------------------+------------------------------------------------+
+| umpire.alloc.count         | Number of allocations in the allocator         |
++----------------------------+------------------------------------------------+
+| umpire.total.size          | Total memory allocated across all allocators   |
++----------------------------+------------------------------------------------+
+| umpire.total.count         | Number of allocations across all allocators    |
++----------------------------+------------------------------------------------+
+
+Variables:
+
+CALI_UMPIRE_PER_ALLOCATOR_STATISTICS
+   Boolean. Record per-allocator statistics. If false, the umpire service
+   only records the `umpire.total.size` and `umpire.total.count` attributes,
+   otherwise it will create separate records for each Umpire allocator.
+
+   Default: true

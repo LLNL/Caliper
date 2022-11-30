@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>CUDA profiling &#8212; Caliper 2.9.0-dev documentation</title>
+    <title>GPU profiling &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -36,8 +36,8 @@
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0-dev documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">CUDA profiling</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">GPU profiling</a></li> 
       </ul>
     </div>  
 
@@ -46,15 +46,18 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="cuda-profiling">
-<h1>CUDA profiling<a class="headerlink" href="#cuda-profiling" title="Permalink to this heading">¶</a></h1>
-<p>Caliper can profile CUDA API functions and CUDA device-side activities like
+  <section id="gpu-profiling">
+<h1>GPU profiling<a class="headerlink" href="#gpu-profiling" title="Permalink to this heading">¶</a></h1>
+<p>Caliper can profile CUDA and ROCm API functions and device-side activities like
 kernel executions and memory copies. This requires Caliper to be built with
-CUpti support (<cite>-DWITH_CUPTI=On</cite>).</p>
-<section id="profiling-cuda-host-side-api-functions">
-<h2>Profiling CUDA host-side API functions<a class="headerlink" href="#profiling-cuda-host-side-api-functions" title="Permalink to this heading">¶</a></h2>
-<p>The <cite>profile.cuda</cite> option is available for many ConfigManager configs like
-<cite>runtime-report</cite>, <cite>hatchet-region-profile</cite>, and <cite>spot</cite>. It intercepts host-side
+CUpti support (<cite>-DWITH_CUPTI=On</cite>, for CUDA devices) or roctracer support
+(<cite>-DWITH_ROCTRACER=On</cite>, for AMD devices).</p>
+<section id="profiling-host-side-api-functions">
+<h2>Profiling host-side API functions<a class="headerlink" href="#profiling-host-side-api-functions" title="Permalink to this heading">¶</a></h2>
+<p>Use the <cite>profile.cuda</cite> or <cite>profile.hip</cite> options to report the time spent in
+host-side CUDA and HIP API functions, respectively.
+They are available for many ConfigManager configs like
+<cite>runtime-report</cite>, <cite>hatchet-region-profile</cite>, and <cite>spot</cite>. They intercept host-side
 CUDA API functions like <code class="docutils literal notranslate"><span class="pre">cudaMemcpy</span></code> and <code class="docutils literal notranslate"><span class="pre">cudaDeviceSynchronize</span></code>.
 The example below shows <cite>runtime-report</cite> output with the <cite>profile.cuda</cite> option
 enabled. We can see the time spent in CUDA functions like <code class="docutils literal notranslate"><span class="pre">cudaMemcpy</span></code> and
@@ -77,10 +80,10 @@ timestep_loop                    0.000175      0.000791      0.000345  0.002076
 </pre></div>
 </div>
 </section>
-<section id="profiling-cuda-activities">
-<h2>Profiling CUDA activities<a class="headerlink" href="#profiling-cuda-activities" title="Permalink to this heading">¶</a></h2>
-<p>The <cite>cuda.gputime</cite> option for <cite>runtime-report</cite> and <cite>hatchet-region-profile</cite>
-measures and reports times spent in GPU activities:</p>
+<section id="profiling-device-side-activities">
+<h2>Profiling device-side activities<a class="headerlink" href="#profiling-device-side-activities" title="Permalink to this heading">¶</a></h2>
+<p>Use the <cite>cuda.gputime</cite> (for NVidia) or <cite>rocm.gputime</cite> (for AMD) options to measure
+and report times spent in GPU activities, such as kernels or memory copies:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CONFIG</span><span class="o">=</span><span class="n">runtime</span><span class="o">-</span><span class="n">report</span><span class="p">,</span><span class="n">cuda</span><span class="o">.</span><span class="n">gputime</span> <span class="n">lrun</span> <span class="o">-</span><span class="n">n</span> <span class="mi">4</span> <span class="o">./</span><span class="n">tea_leaf</span>
 <span class="n">Path</span>                       <span class="n">Min</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Max</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Avg</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Time</span> <span class="o">%</span>    <span class="n">Avg</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Min</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Max</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span>
 <span class="n">timestep_loop</span>                  <span class="mf">16.400791</span>     <span class="mf">16.402930</span>     <span class="mf">16.401392</span> <span class="mf">99.340451</span>         <span class="mf">12.014107</span>         <span class="mf">11.990568</span>         <span class="mf">12.031210</span>
@@ -107,14 +110,18 @@ such as kernel execution or memory copies. The GPU time values are inclusive,
 i.e. they represent the total amount of GPU time launched from a Caliper region
 and any region below. Thus, the GPU time values for “timestep_loop” in the
 example above represent the GPU activity time for the entire program.</p>
-<p>Note that the <cite>cuda.gputime</cite> option is more expensive than regular host-side
-region profiling because it uses the NVidia CUPTI API to trace GPU activities.
-It is primarily intended for short, dedicated performance profiling experiments.</p>
+<p>Note that the <cite>cuda.gputime</cite> and <cite>rocm.gputime</cite> options are more expensive than
+regular host-side region profiling because they use tracing APIs to record each
+GPU activity.
+They are primarily intended for short, dedicated performance profiling experiments.</p>
 <p>There are also dedicated configs for examining GPU activities:
-the <cite>cuda-activity-report</cite> and <cite>cuda-activity-profile</cite> configs record the time
-spent in CUDA activities (e.g. kernel executions or memory copies) on the CUDA
+the <cite>cuda-activity-report</cite>, <cite>cuda-activity-profile</cite>, <cite>rocm-activity-report</cite>, and
+<cite>rocm-activity-profile</cite> configs record the time
+spent in CUDA activities (e.g. kernel executions or memory copies) on the
 device. The GPU times are mapped to the Caliper regions that launched those
-GPU activities. Here is example output for <cite>cuda-activity-report</cite>:</p>
+GPU activities. The <cite>…-report</cite> options print a human-readable table, while the
+<cite>…-profile</cite> options write a machine-readable .json or .cali file.
+Here is example output for <cite>cuda-activity-report</cite>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=cuda-activity-report lrun -n 4 ./tea_leaf
 Path                        Avg Host Time Max Host Time Avg GPU Time Max GPU Time GPU %
 timestep_loop                   17.052183     17.053008    12.020218    12.037409   70.490786
@@ -229,10 +236,11 @@ and back. There are four new metrics:</p>
 </section>
 <section id="profiles-in-json-or-cali-format">
 <h2>Profiles in JSON or CALI format<a class="headerlink" href="#profiles-in-json-or-cali-format" title="Permalink to this heading">¶</a></h2>
-<p>The <cite>cuda-activity-profile</cite> config records data similar to
-<cite>cuda-activity-report</cite> but writes it in machine-readable JSON or Caliper’s
-“.cali” format for processing with <cite>cali-query</cite>. By default, it writes the
-<cite>json-split</cite> format that can be read by Hatchet:</p>
+<p>The <cite>cuda-activity-profile</cite> and <cite>rocm-activity-profile</cite> configs record GPU
+activities data similar to the corresponding <cite>…-report</cite> options, but write
+it in machine-readable JSON or Caliper’s “.cali” format for processing with
+<cite>cali-query</cite>. By default, it writes the <cite>json-split</cite> format that can be read
+by Hatchet:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=cuda-activity-profile lrun -n 4 ./tea_leaf
 $ ls *.json
 cuda_profile.json
@@ -264,9 +272,9 @@ values:</p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
-<li><a class="reference internal" href="#">CUDA profiling</a><ul>
-<li><a class="reference internal" href="#profiling-cuda-host-side-api-functions">Profiling CUDA host-side API functions</a></li>
-<li><a class="reference internal" href="#profiling-cuda-activities">Profiling CUDA activities</a></li>
+<li><a class="reference internal" href="#">GPU profiling</a><ul>
+<li><a class="reference internal" href="#profiling-host-side-api-functions">Profiling host-side API functions</a></li>
+<li><a class="reference internal" href="#profiling-device-side-activities">Profiling device-side activities</a></li>
 <li><a class="reference internal" href="#show-gpu-kernels">Show GPU kernels</a></li>
 <li><a class="reference internal" href="#profiling-memory-copies">Profiling memory copies</a></li>
 <li><a class="reference internal" href="#profiles-in-json-or-cali-format">Profiles in JSON or CALI format</a></li>
@@ -288,7 +296,7 @@ values:</p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/CUDA.rst.txt"
+      <li><a href="_sources/GPUProfiling.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -321,8 +329,8 @@ values:</p>
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0-dev documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">CUDA profiling</a></li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">GPU profiling</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

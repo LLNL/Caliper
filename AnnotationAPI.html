@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>Annotation API reference &#8212; Caliper 2.8.0 documentation</title>
+    <title>Annotation API reference &#8212; Caliper 2.9.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
@@ -36,7 +36,7 @@
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>  
@@ -274,6 +274,13 @@ associated attributes.</p>
 <span id="_CPPv3N20cali_attr_properties19CALI_ATTR_UNALIGNEDE"></span><span id="_CPPv2N20cali_attr_properties19CALI_ATTR_UNALIGNEDE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa3fce362775ecb83416bd399a72a0d336"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_UNALIGNED</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties19CALI_ATTR_UNALIGNEDE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>This attribute is not aligned with stacked begin/end regions. </p>
 <p>Entries with this property may still be merged into a single context tree branch, but one that is separate from the properly nested region branch. Stack nesting checks are skipped. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE">
+<span id="_CPPv3N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span id="_CPPv2N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa478c211b1beb8b4a6e0bd67305451da1"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_AGGREGATABLE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This attribute is aggregatable (i.e., a metric). </p>
+<p>Attributes with this flag will automatically be aggregated by the <em>aggregate</em> service. This flag replaces the previous <em>class.aggregatable</em> meta-attribute. </p>
 </dd></dl>
 
 </dd></dl>
@@ -1198,7 +1205,7 @@ following example shows both:</p>
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>

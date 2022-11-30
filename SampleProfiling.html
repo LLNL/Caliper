@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Sample profiling &#8212; Caliper 2.9.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building Caliper" href="build.html" />
+    <link rel="prev" title="Event tracing and timelines" href="EventTracing.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Building Caliper"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="EventTracing.html" title="Event tracing and timelines"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Sample profiling</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sample-profiling">
+<h1>Sample profiling<a class="headerlink" href="#sample-profiling" title="Permalink to this heading">¶</a></h1>
+<p>Sampling is an easy way to provide additional detail over Caliper’s source-code
+region annotations by showing where within a region the program spends its time.
+Sampling is currently available for Linux. It requires the
+<cite>-DWITH_SAMPLING=On</cite>, <cite>-DWITH_LIBDW=On</cite>, and (optional)
+<cite>-DWITH_LIBUNWIND=On</cite> options when building Caliper.</p>
+<p>The <cite>sample-report</cite> configuration prints a sampling report with the time
+spent in the sampled source-code functions within each Caliper region. For the
+<cite>cxx-example</cite> program, we usually find that almost all of its time is spent
+in the <code class="docutils literal notranslate"><span class="pre">__nanosleep</span></code> system function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=sample-report ./examples/apps/cxx-example
+Path       Samples Time (sec) Function
+main
+  mainloop
+    foo         71   0.355000 __nanosleep
+</pre></div>
+</div>
+<p>There are several options for <cite>sample-report</cite>:</p>
+<dl class="simple">
+<dt>source.function</dt><dd><p>Print the function symbol name where samples hit (on by default)</p>
+</dd>
+<dt>source.location</dt><dd><p>Print the source file name and line number where samples hit</p>
+</dd>
+<dt>source.module</dt><dd><p>Print the source module (.so/.exe) where samples hit</p>
+</dd>
+<dt>callpath</dt><dd><p>Print the function call path instead of the Caliper region
+hierarchy.</p>
+</dd>
+<dt>sample.frequency</dt><dd><p>The sample frequency. The default is 200Hz (one sample every 5
+milliseconds). Increasing the sampling frequency provide more detail
+at the cost of higher overheads and processing times.</p>
+</dd>
+</dl>
+<p>As an example, <cite>source.location</cite> shows us source file and line numbers
+of sampled locations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=sample-report,source.function=false,source.location ./examples/apps/cxx-example
+Path       Samples Time (sec) Source
+main
+  mainloop
+   |-            1   0.005000 ../src/caliper/Caliper.cpp:992
+   |-            1   0.005000 ../include/caliper/comm~~ataAccessInterface.h:22
+    foo         66   0.330000 ../sysdeps/unix/syscall-template.S:81
+</pre></div>
+</div>
+<p>For MPI programs, <cite>sample-report</cite> prints statistics aggregated across MPI
+ranks, just like <cite>runtime-report</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=sample-report srun -n 8 lulesh2.0
+Path         Min time/rank Max time/rank Avg time/rank Total time Time %    Function
+main
+ |-               0.005000      0.005000      0.005000   0.035000  0.059691 Domain::AllocateElemPersistent
+ |-               0.005000      0.005000      0.005000   0.035000  0.059691 Domain::SetupThreadSupportStru
+ |-               0.005000      0.005000      0.005000   0.005000  0.008527 sysmalloc
+ |-               0.005000      0.005000      0.005000   0.005000  0.008527 Domain::BuildMesh(int, int, in
+lulesh.cycle
+    TimeIncrement
+     |-           0.075000      0.740000      0.355000   2.840000  4.843523 gomp_barrier_wait_end
+     |-           0.005000      0.060000      0.027857   0.195000  0.332566 psm2_mq_ipeek2
+     |-           0.005000      0.005000      0.005000   0.015000  0.025582 psm_no_lock
+     |-           0.005000      0.060000      0.023571   0.165000  0.281402 psm_progress_wait
+     |-           0.015000      0.030000      0.022143   0.155000  0.264347 mv2_shm_bcast
+     |-           0.005000      0.025000      0.013750   0.055000  0.093801 amsh_poll
+     |-           0.005000      0.010000      0.007500   0.030000  0.051164 psmi_poll_internal
+...
+</pre></div>
+</div>
+<p>The <cite>hatchet-sample-profile</cite> config recipe writes machine-readable profiles for
+processing with Hatchet or cali-query. The profile contains sampling data for each
+MPI rank. By default, it writes a JSON file for processing with Hatchet, but you
+can use <cite>output.format=cali</cite> to write a .cali file for processing with cali-query,
+the Caliper Python reader library, or Hatchet’s .cali importer.
+<cite>hatchet-sample-profile</cite> supports the same options as <cite>sample-report</cite> above.</p>
+<p>With <cite>output.format=cali</cite> option, the .cali file contains records with the
+following attributes:</p>
+<dl class="simple">
+<dt>count</dt><dd><p>Sample count metric (number of times a sample hit)</p>
+</dd>
+<dt>scount</dt><dd><p>Scaled count metric: sample count times sample frequency. Represents
+time in seconds.</p>
+</dd>
+<dt>source.function#cali.sampler.pc</dt><dd><p>Sampled function symbol name, if enabled with the source.function
+option</p>
+</dd>
+<dt>source.module#cali.sampler.pc</dt><dd><p>Sampled module name, if enabled with the source.module option</p>
+</dd>
+<dt>sourceloc#cali.sampler.pc</dt><dd><p>Sampled source file name + line number, if enabled with the
+source.location option</p>
+</dd>
+<dt>source.function#callpath.address</dt><dd><p>The function call path, if enabled with the callpath option</p>
+</dd>
+</dl>
+<p>In this example, we collect a sampling profile in .cali format and use
+cali-query to compute a flat profile with the time and number of samples
+in each sampled function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=hatchet-sample-profile,source.function,output.format=cali ./lulesh2.0
+$ cat &lt;&lt; EOF &gt; query.txt
+&gt; select
+&gt;   source.function#cali.sampler.pc as Function,
+&gt;   sum(count) as Samples,
+&gt;   sum(scount) as Time,
+&gt;   percent_total(count) as Percent
+&gt; group by
+&gt;   source.function#cali.sampler.pc
+&gt; format
+&gt;   table
+&gt; order by
+&gt;   sum#count DESC
+&gt; EOF
+$ cali-query -Q query.txt sample_profile.cali
+Function                                                     Samples Time       Percent
+gomp_barrier_wait_end                                          62311 311.555000 26.918873
+CalcFBHourglassForceForElems(~~ int, int) [clone ._omp_fn.7]   30673 153.365000 13.250993
+CalcHourglassControlForElems(~~*, double) [clone ._omp_fn.6]   29055 145.275000 12.552003
+gomp_team_barrier_wait_end                                     21708 108.540000  9.378038
+IntegrateStressForElems(Domai~~ int, int) [clone ._omp_fn.4]   18856  94.280000  8.145950
+CalcKinematicsForElems(Domain~~uble, int) [clone ._omp_fn.0]   11793  58.965000  5.094675
+CalcMonotonicQGradientsForElems(Domain&amp;) [clone ._omp_fn.14]    6489  32.445000  2.803302
+brk                                                             5848  29.240000  2.526385
+psm2_mq_ipeek2                                                  4067  20.335000  1.756978
+...
+</pre></div>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="EventTracing.html"
+                          title="previous chapter">Event tracing and timelines</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="build.html"
+                          title="next chapter">Building Caliper</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/SampleProfiling.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Building Caliper"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="EventTracing.html" title="Event tracing and timelines"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Sample profiling</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    </div>
+  </body>
+</html>

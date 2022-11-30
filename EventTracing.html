@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Event tracing and timelines &#8212; Caliper 2.9.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sample profiling" href="SampleProfiling.html" />
+    <link rel="prev" title="Region filtering" href="RegionFiltering.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SampleProfiling.html" title="Sample profiling"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="RegionFiltering.html" title="Region filtering"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Event tracing and timelines</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="event-tracing-and-timelines">
+<h1>Event tracing and timelines<a class="headerlink" href="#event-tracing-and-timelines" title="Permalink to this heading">¶</a></h1>
+<p>Event tracing allows detailed analysis of individual region instances and the
+generation of timeline views. Use the <cite>event-trace</cite> config to generate event
+traces. It will produce a <code class="docutils literal notranslate"><span class="pre">.cali</span></code> trace file for each process.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=event-trace ./examples/apps/cxx-example
+$ ls
+221123-174219_31239_YVnF2l7pSQes.cali
+</pre></div>
+</div>
+<p>There are a variety of options for event-trace. Use
+<code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help</span> <span class="pre">event-trace</span></code> to show all available options. A few useful
+ones are:</p>
+<dl class="simple">
+<dt>trace.mpi</dt><dd><p>Trace MPI functions. Requires MPI support in Caliper.</p>
+</dd>
+<dt>trace.openmp</dt><dd><p>Trace OpenMP constructs such as parallel regions, loops, and barriers.
+Requires OMPT support in Caliper.</p>
+</dd>
+<dt>trace.cuda</dt><dd><p>Trace host-side CUDA API calls like cudaMemcpy. Requires CUpti support
+in Caliper.</p>
+</dd>
+<dt>cuda.activities</dt><dd><p>Trace CUDA device-side activities such as kernel executions. Requires
+CUpti support in Caliper.</p>
+</dd>
+<dt>rocm.activities</dt><dd><p>Trace HIP activities (kernel executions etc.) and host-side HIP API
+calls (like hipMemcpy). Requires ROCm support in Caliper.</p>
+</dd>
+</dl>
+<section id="timeline-visualization-experimental">
+<h2>Timeline visualization (experimental)<a class="headerlink" href="#timeline-visualization-experimental" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">python</span></code> subdirectory in the Caliper repository contains the
+<cite>cali2traceevent.py</cite> script, which converts the .cali trace files written
+by Caliper’s event-trace config into Google’s TraceEvent JSON format that
+can be loaded by Google Chrome’s built-in trace visualizer or in
+<a class="reference external" href="https://ui.perfetto.dev">Perfetto</a>.
+Note that the TraceEvent JSON format does not scale particularly well, so it
+is not advisable to use it for large traces (say, more than O(1M) events).</p>
+<p>To use the script, add the <code class="docutils literal notranslate"><span class="pre">caliper-reader</span></code> Python module to <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>.
+You also find it in the <code class="docutils literal notranslate"><span class="pre">python</span></code> subdirectory in the Caliper repository.
+Pass your .cali files and the output json file name as arguments to the
+script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ export PYTHONPATH=&lt;caliper-source-dir&gt;/python/caliper-reader
+$ export PATH=$PATH:&lt;caliper-source-dir&gt;/python
+$ cali2traceevent.py *.cali trace.json
+Done. 0.00s (0.00s processing, 0.00s write).
+11 records written, 0 skipped.
+</pre></div>
+</div>
+<p>You can then load the generated JSON trace file in the Google Chrome by going
+to <code class="docutils literal notranslate"><span class="pre">chrome://tracing</span></code>:</p>
+<figure class="align-default" id="id1">
+<img alt="_images/screenshot-chrometracing.png" src="_images/screenshot-chrometracing.png" />
+<figcaption>
+<p><span class="caption-text">An example Caliper trace timeline visualization in Google Chrome.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Event tracing and timelines</a><ul>
+<li><a class="reference internal" href="#timeline-visualization-experimental">Timeline visualization (experimental)</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="RegionFiltering.html"
+                          title="previous chapter">Region filtering</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="SampleProfiling.html"
+                          title="next chapter">Sample profiling</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/EventTracing.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="SampleProfiling.html" title="Sample profiling"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="RegionFiltering.html" title="Region filtering"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Event tracing and timelines</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    </div>
+  </body>
+</html>
