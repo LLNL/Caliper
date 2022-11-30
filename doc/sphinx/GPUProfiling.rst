@@ -1,15 +1,18 @@
-CUDA profiling
+GPU profiling
 =======================================
 
-Caliper can profile CUDA API functions and CUDA device-side activities like
+Caliper can profile CUDA and ROCm API functions and device-side activities like
 kernel executions and memory copies. This requires Caliper to be built with
-CUpti support (`-DWITH_CUPTI=On`).
+CUpti support (`-DWITH_CUPTI=On`, for CUDA devices) or roctracer support
+(`-DWITH_ROCTRACER=On`, for AMD devices).
 
-Profiling CUDA host-side API functions
+Profiling host-side API functions
 ---------------------------------------
 
-The `profile.cuda` option is available for many ConfigManager configs like
-`runtime-report`, `hatchet-region-profile`, and `spot`. It intercepts host-side
+Use the `profile.cuda` or `profile.hip` options to report the time spent in
+host-side CUDA and HIP API functions, respectively.
+They are available for many ConfigManager configs like
+`runtime-report`, `hatchet-region-profile`, and `spot`. They intercept host-side
 CUDA API functions like ``cudaMemcpy`` and ``cudaDeviceSynchronize``.
 The example below shows `runtime-report` output with the `profile.cuda` option
 enabled. We can see the time spent in CUDA functions like ``cudaMemcpy`` and
@@ -31,11 +34,11 @@ enabled. We can see the time spent in CUDA functions like ``cudaMemcpy`` and
           cudaLaunchKernel           0.000097      0.000126      0.000106  0.000640
     ...
 
-Profiling CUDA activities
+Profiling device-side activities
 ---------------------------------------
 
-The `cuda.gputime` option for `runtime-report` and `hatchet-region-profile`
-measures and reports times spent in GPU activities::
+Use the `cuda.gputime` (for NVidia) or `rocm.gputime` (for AMD) options to measure
+and report times spent in GPU activities, such as kernels or memory copies::
 
     CALI_CONFIG=runtime-report,cuda.gputime lrun -n 4 ./tea_leaf
     Path                       Min time/rank Max time/rank Avg time/rank Time %    Avg GPU Time/rank Min GPU Time/rank Max GPU Time/rank
@@ -63,15 +66,19 @@ i.e. they represent the total amount of GPU time launched from a Caliper region
 and any region below. Thus, the GPU time values for "timestep_loop" in the
 example above represent the GPU activity time for the entire program.
 
-Note that the `cuda.gputime` option is more expensive than regular host-side
-region profiling because it uses the NVidia CUPTI API to trace GPU activities.
-It is primarily intended for short, dedicated performance profiling experiments.
+Note that the `cuda.gputime` and `rocm.gputime` options are more expensive than 
+regular host-side region profiling because they use tracing APIs to record each 
+GPU activity.
+They are primarily intended for short, dedicated performance profiling experiments.
 
 There are also dedicated configs for examining GPU activities:
-the `cuda-activity-report` and `cuda-activity-profile` configs record the time
-spent in CUDA activities (e.g. kernel executions or memory copies) on the CUDA
+the `cuda-activity-report`, `cuda-activity-profile`, `rocm-activity-report`, and
+`rocm-activity-profile` configs record the time
+spent in CUDA activities (e.g. kernel executions or memory copies) on the 
 device. The GPU times are mapped to the Caliper regions that launched those
-GPU activities. Here is example output for `cuda-activity-report`::
+GPU activities. The `...-report` options print a human-readable table, while the
+`...-profile` options write a machine-readable .json or .cali file.
+Here is example output for `cuda-activity-report`::
 
     $ CALI_CONFIG=cuda-activity-report lrun -n 4 ./tea_leaf
     Path                        Avg Host Time Max Host Time Avg GPU Time Max GPU Time GPU %
@@ -196,10 +203,11 @@ Copy GPU->CPU (max)
 Profiles in JSON or CALI format
 ---------------------------------------
 
-The `cuda-activity-profile` config records data similar to
-`cuda-activity-report` but writes it in machine-readable JSON or Caliper's
-".cali" format for processing with `cali-query`. By default, it writes the
-`json-split` format that can be read by Hatchet::
+The `cuda-activity-profile` and `rocm-activity-profile` configs record GPU 
+activities data similar to the corresponding `...-report` options, but write 
+it in machine-readable JSON or Caliper's ".cali" format for processing with
+`cali-query`. By default, it writes the `json-split` format that can be read 
+by Hatchet::
 
     $ CALI_CONFIG=cuda-activity-profile lrun -n 4 ./tea_leaf
     $ ls *.json

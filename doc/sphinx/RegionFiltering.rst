@@ -1,4 +1,4 @@
-Region Filtering
+Region filtering
 =======================================
 
 For event-based measurement configurations like runtime-report or

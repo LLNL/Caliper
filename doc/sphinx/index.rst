@@ -58,9 +58,11 @@ This section lists how-to articles for various use cases.
 .. toctree::
    :maxdepth: 1
 
-   CUDA
+   GPUProfiling
    OpenMP
    RegionFiltering
+   EventTracing
+   SampleProfiling
 
 Reference documentation
 -------------------------------

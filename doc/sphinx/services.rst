@@ -14,6 +14,22 @@ You can enable the services required for your measurement with the
 
 to create event-triggered context traces for an application.
 
+You can use `cali-query --help=services` to list all available services,
+and `cali-query --help <service name>` to list the options for a given
+service::
+
+   $ cali-query --help event
+   event service:
+    Trigger snapshots for Caliper region begin and end events
+     CALI_EVENT_TRIGGER (stringlist)
+      List of attributes that trigger measurements (optional)
+     CALI_EVENT_ENABLE_SNAPSHOT_INFO=True (bool)
+      If true, add begin/end attributes at each event. Increases overhead.
+     CALI_EVENT_INCLUDE_REGIONS (string)
+      Region filter to specify regions that will trigger snapshots
+     CALI_EVENT_EXCLUDE_REGIONS (string)
+      Region filter to specify regions that won't trigger snapshots
+
 The following sections describe the available service modules and
 their configuration.
 
@@ -1384,12 +1400,12 @@ CALI_TEXTLOG_FILENAME
 
    Default: stdout
 
-.. _timestamp-service:
+.. _timer-service:
 
-Timestamp
+Timer
 --------------------------------
 
-The timestamp service adds a time offset, timestamp, or duration to
+The timer service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 

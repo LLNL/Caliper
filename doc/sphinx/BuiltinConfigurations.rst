@@ -97,52 +97,44 @@ hatchet-sample-profile
 
    adiak.import_categories
       Adiak import categories. Comma-separated list of integers.
-   lookup.module
-      Lookup source module (.so/.exe)
-   lookup.sourceloc
-      Lookup source location (file+line)
+   source.module
+      Report source module (.so/.exe) for samples
+   source.location
+      Report source location (file+line) for samples
+   source.function
+      Report source function name for samples
    output
       Output location ('stdout', 'stderr', or filename)
    output.format
       Output format ('hatchet', 'cali', 'json')
-   sample.callpath
+   callpath
       Perform call-stack unwinding
    sample.frequency
       Sampling frequency in Hz. Default: 200
    use.mpi
       Merge results into a single output stream in MPI programs
 
-callpath-sample-report
-   Print a call-path sampling profile for the program
+sample-report
+   Print a sampling profile for the program
 
    aggregate_across_ranks
       Aggregate results across MPI ranks
-   io.bytes
-      Report I/O bytes written and read
-   io.bytes.read
-      Report I/O bytes read
-   io.bytes.written
-      Report I/O bytes written
-   io.read.bandwidth
-      Report I/O read bandwidth
-   io.write.bandwidth
-      Report I/O write bandwidth
+   callpath
+      Group by function call path instead of instrumented region
    max_column_width
       Maximum column width in the tree display
-   mem.highwatermark
-      Record memory high-water mark for regions
    output
       Output location ('stdout', 'stderr', or filename)
+   print.metadata
+      Print program metadata (Caliper globals and Adiak data)
    sample.frequency
       Sampling frequency in Hz. Default: 200
-   topdown-counters.all
-      Raw counter values for Intel top-down analysis (all levels)
-   topdown-counters.toplevel
-      Raw counter values for Intel top-down analysis (top level)
-   topdown.all
-      Top-down analysis for Intel CPUs (all levels)
-   topdown.toplevel
-      Top-down analysis for Intel CPUs (top level)
+   source.function
+      Report source function
+   source.location
+      Report source location (file+line)
+   source.module
+      Report source module (.so/.exe)
 
 loop-report
    Print summary and time-series information for loops. Options:
