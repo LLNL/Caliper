@@ -47,11 +47,6 @@ endif()
 
 add_library(caliper-mpi OBJECT ${CALIPER_MPI_SOURCES})
 
-# Spot controller needs adiak
-if (${CALIPER_HAVE_ADIAK})
-  target_include_directories(caliper-mpi PRIVATE ${adiak_INCLUDE_DIRS})
-endif()
-
 # Add mpi objects and dependencies to global list for combined caliper lib
 list(APPEND CALIPER_ALL_OBJS
   $<TARGET_OBJECTS:caliper-mpi>
