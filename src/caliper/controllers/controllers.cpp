@@ -752,7 +752,7 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "mrb.time=first(pcp.time.duration,sum#pcp.time.duration)" ],
-         "select"  : [ { "expr": "ratio(mem.bytes.read,mrb.time,1e-6)", "as": "MemBW (r)", "unit": "MB/s" } ]
+         "select"  : [ { "expr": "ratio(mem.bytes.read,mrb.time,1e-6)", "as": "MB/s (r)", "unit": "MB/s" } ]
        },
        { "level"   : "cross", "select":
         [
