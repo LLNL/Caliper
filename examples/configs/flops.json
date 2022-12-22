@@ -1,0 +1,76 @@
+{ "options":
+[
+{
+    "name" : "flops.libpfm",
+    "category": "metric",
+    "description": "MFlops/s on Intel CPUs with libpfm",
+    "services": [ "libpfm" ],
+    "config": 
+    {
+        "CALI_LIBPFM_EVENTS": "FP_ARITH:SCALAR,FP_ARITH:PACKED",
+        "CALI_LIBPFM_ENABLE_SAMPLING": "false"
+    },
+    "query":
+    [
+        { "level"  : "local", 
+          "let"    : 
+          [ 
+            "flops.scalar=first(libpfm.counter.FP_ARITH:SCALAR,sum#libpfm.counter.FP_ARITH:SCALAR)",
+            "flops.packed=first(libpfm.counter.FP_ARITH:PACKED,sum#libpfm.counter.FP_ARITH:PACKED)"
+          ],
+          "select" : 
+          [
+            { "expr": "scale(flops.scalar,1e-6)", "as": "Mflops (scalar)" },
+            { "expr": "scale(flops.packed,1e-6)", "as": "Mops (vector)" },
+            { "expr": "ratio(flops.scalar,sum#time.duration,1e-6)", "as": "Mflops/s (scalar)" }
+          ]
+        },
+        { "level"  : "cross",
+          "select" :
+          [
+            { "expr": "sum(scale#flops.scalar)", "as": "Mflops (scalar)" },
+            { "expr": "sum(scale#flops.packed)", "as": "Mops (vector)" },
+            { "expr": "avg(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (avg)" },
+            { "expr": "max(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (max)" },
+            { "expr": "sum(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (sum)" }
+          ]
+        }
+    ]
+},
+{
+  "name" : "flops",
+  "category": "metric",
+  "description": "MFlops/s with PAPI",
+  "services": [ "papi" ],
+  "config": 
+  {
+      "CALI_PAPI_COUNTERS": "PAPI_DP_OPS,PAPI_SP_OPS"
+  },
+  "query":
+  [
+      { "level"  : "local", 
+        "let"    : 
+        [
+          "flops.sp=first(sum#papi.PAPI_SP_OPS,papi.PAPI_SP_OPS)",
+          "flops.dp=first(sum#papi.PAPI_DP_OPS,papi.PAPI_DP_OPS)",
+          "flops=sum(flops.dp,flops.sp)"
+        ],
+        "select" : 
+        [
+          { "expr": "scale(flops,1e-6)", "as": "Mflops" },
+          { "expr": "ratio(flops,sum#time.duration,1e-6)", "as": "Mflops/s" }
+        ]
+      },
+      { "level"  : "cross",
+        "select" :
+        [
+          { "expr": "sum(scale#flops)", "as": "Mflops" },
+          { "expr": "avg(ratio#flops/sum#time.duration)", "as": "Mflops/s (avg)" },
+          { "expr": "max(ratio#flops/sum#time.duration)", "as": "Mflops/s (max)" },
+          { "expr": "sum(ratio#flops/sum#time.duration)", "as": "Mflops/s (sum)" }
+        ]
+      }
+  ]
+}
+]
+}
