@@ -247,11 +247,58 @@ public:
 
 };
 
+class SumKernel : public Kernel
+{
+    std::string m_res_attr_name;
+    Attribute   m_res_attr;
+
+    std::vector<std::string> m_tgt_attr_names;
+    std::vector<Attribute>   m_tgt_attrs;
+
+public:
+
+    SumKernel(const std::string& def, const std::vector<std::string>& args)
+        : m_res_attr_name(def),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr_names(args)
+        {
+            m_tgt_attrs.assign(args.size(), Attribute::invalid);
+        }
+
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        Variant v_sum;
+
+        for (size_t i = 0; i < m_tgt_attrs.size(); ++i) {
+            Variant v_tgt = get_value(db, m_tgt_attr_names[i], m_tgt_attrs[i], rec);
+
+            if (v_tgt.empty())
+                continue;
+            
+            v_sum += v_tgt;
+        }
+
+        if (!v_sum.empty()) {
+            if (m_res_attr == Attribute::invalid)
+                m_res_attr = db.create_attribute(m_res_attr_name, v_sum.type(),
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_ASVALUE);
+
+            rec.push_back(Entry(m_res_attr, v_sum));
+        }
+    }
+
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+        return new SumKernel(def, args);
+    }
+
+};
+
 enum KernelID {
     ScaledRatio,
     Scale,
     Truncate,
     First,
+    Sum
 };
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -267,6 +314,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Scale,         "scale",         2, 2, scale_args   },
     { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
     { KernelID::First,         "first",         1, 8, first_args   },
+    { KernelID::Sum,           "sum",           1, 8, first_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -277,10 +325,11 @@ const KernelCreateFn kernel_create_fn[] = {
     ScaledRatioKernel::create,
     ScaleKernel::create,
     TruncateKernel::create,
-    FirstKernel::create
+    FirstKernel::create,
+    SumKernel::create
 };
 
-constexpr int MAX_KERNEL_ID = 3;
+constexpr int MAX_KERNEL_ID = 4;
 
 }
 

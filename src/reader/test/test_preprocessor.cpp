@@ -384,3 +384,52 @@ TEST(PreprocessorTest, Conditions) {
 
     EXPECT_EQ(a_it->second.value().to_int(), 42);
 }
+
+TEST(PreprocessorTest, SumKernel)
+{
+    CaliperMetadataDB db;
+    IdMap idmap;
+
+    Attribute ctx_a =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a =
+        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b =
+        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    EntryList rec;
+
+    rec.push_back(Entry(db.merge_node(100, ctx_a.id(), CALI_INV_ID, Variant("test.preprocessor.first"), idmap)));
+    rec.push_back(Entry(val_a, Variant(42)));
+    rec.push_back(Entry(val_b, Variant(24)));
+
+    QuerySpec spec;
+
+    spec.preprocess_ops.push_back(::make_spec("val.a.out",  ::make_op("sum", "dummy.0", "val.a", "dummy.1")));
+    spec.preprocess_ops.push_back(::make_spec("val.s.out",  ::make_op("sum", "val.b",   "val.a", "dummy.0")));
+
+    //
+    // --- run
+    //
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute vao_attr = db.get_attribute("val.a.out");
+    Attribute vso_attr = db.get_attribute("val.s.out");
+
+    EXPECT_NE(vao_attr, Attribute::invalid);
+    EXPECT_NE(vso_attr, Attribute::invalid);
+    EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
+    EXPECT_EQ(vso_attr.type(), CALI_TYPE_INT);
+
+    auto res  = ::make_dict_from_entrylist(out);
+    auto a_it = res.find(vao_attr.id());
+    auto s_it = res.find(vso_attr.id());
+
+    ASSERT_NE(a_it, res.end()) << "val.a.out attribute not found\n";
+    ASSERT_NE(s_it, res.end()) << "val.s.out attribute not found\n";
+
+    EXPECT_EQ(a_it->second.value().to_int(), 42);
+    EXPECT_EQ(s_it->second.value().to_int(), 66);
+}
