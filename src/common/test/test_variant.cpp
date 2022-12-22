@@ -289,3 +289,25 @@ TEST(Variant_Test, PackUnpack) {
     EXPECT_EQ(v_9_i64_out.to_int64(), val_9_i64);
     EXPECT_EQ(v_9_i64_in, v_9_i64_out);
 }
+
+TEST(Variant_Test, PlusEq)
+{
+    cali::Variant v_i(cali_make_variant_from_int64(42));
+    cali::Variant v_d(cali_make_variant_from_double(42.42));
+    cali::Variant v_u(cali_make_variant_from_uint(42));
+
+    cali::Variant v_e;
+
+    v_e += v_i;
+    EXPECT_EQ(v_e.type(), CALI_TYPE_INT);
+    EXPECT_EQ(v_e.to_int64(), 42);
+
+    v_e += v_u;
+    EXPECT_EQ(v_e.type(), CALI_TYPE_INT);
+    EXPECT_EQ(v_e.to_int64(), 84);
+
+    v_e = v_d;
+    v_e += v_i;
+    EXPECT_EQ(v_e.type(), CALI_TYPE_DOUBLE);
+    EXPECT_EQ(v_e.to_double(), 84.42);
+}

@@ -42,7 +42,7 @@ Variant::to_string() const
     {
         size_t size = this->size();
         const void* ptr = data();
-            
+
         std::ostringstream os;
 
         std::copy(static_cast<const unsigned char*>(ptr), static_cast<const unsigned char*>(ptr) + size,
@@ -64,9 +64,9 @@ Variant::to_string() const
 
         if (len && str[len-1] == 0)
             --len;
-        
+
         ret.assign(str, len);
-    }    
+    }
         break;
     case CALI_TYPE_ADDR:
     {
@@ -100,7 +100,7 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
 {
     Variant ret;
     bool    ok = false;
-    
+
     switch (type) {
     case CALI_TYPE_INV:
     case CALI_TYPE_USR:
@@ -146,7 +146,7 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
     case CALI_TYPE_BOOL:
         {
             bool b = StringConverter(str).to_bool(&ok);
-                
+
             if (ok)
                 ret = Variant(b);
         }
@@ -174,3 +174,42 @@ std::ostream& cali::operator << (std::ostream& os, const Variant& v)
     return os;
 }
 
+Variant& Variant::operator += (const Variant& val)
+{
+    cali_attr_type type = this->type();
+
+    if (type == val.type()) {
+        switch (type) {
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double += val.m_v.value.v_double;
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int += val.m_v.value.v_int;
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint += val.m_v.value.v_uint;
+            break;
+        default:
+            break;
+        }
+    } else {
+        switch (type) {
+        case CALI_TYPE_INV:
+            *this = val;
+            break;
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double += val.to_double();
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int += val.to_int64();
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint += val.to_uint();
+            break;
+        default:
+            break;
+        }
+    }
+
+    return *this;
+}

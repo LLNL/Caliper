@@ -27,19 +27,19 @@ namespace cali
 /// strings and "blobs" are stored as unmanaged pointers. Users need
 /// to make sure these pointers are valid while any variant
 /// encapsulating them is being used.
-    
-class Variant 
+
+class Variant
 {
     cali_variant_t m_v;
-    
+
 public:
-    
+
     CONSTEXPR_UNLESS_PGI Variant()
         : m_v { CALI_TYPE_INV, { static_cast<uint64_t>(0) } } { }
-    
+
     Variant(const cali_variant_t& v)
         : m_v(v) { }
-    
+
     Variant(bool val)
         : m_v(cali_make_variant_from_bool(val))   { }
     Variant(int val)
@@ -61,7 +61,7 @@ public:
         m_v = cali_make_variant(type, data, size);
     }
 
-    bool empty() const  { 
+    bool empty() const  {
         return (m_v.type_and_size & CALI_VARIANT_TYPE_MASK) == CALI_TYPE_INV;
     };
     operator bool() const {
@@ -69,13 +69,13 @@ public:
     }
 
     cali_variant_t c_variant() const { return m_v; }
-    
+
     cali_attr_type type() const    { return cali_variant_get_type(m_v);  }
     const void*    data() const    { return cali_variant_get_data(&m_v); }
     size_t         size() const    { return cali_variant_get_size(m_v);  }
 
     void*          get_ptr() const { return cali_variant_get_ptr(m_v);   }
-    
+
     cali_id_t      to_id(bool* okptr = nullptr) const;
     int            to_int(bool* okptr = nullptr) const {
         return cali_variant_to_int(m_v, okptr);
@@ -95,19 +95,21 @@ public:
     cali_attr_type to_attr_type(bool* okptr = nullptr) const {
         return cali_variant_to_type(m_v, okptr);
     }
-    
+
     std::string    to_string() const;
+
+    Variant& operator += (const Variant& val);
 
     size_t         pack(unsigned char* buf) const {
         return cali_variant_pack(m_v, buf);
     }
-    
+
     static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok = nullptr) {
         return Variant(cali_variant_unpack(buf, inc, ok));
     }
 
     static Variant from_string(cali_attr_type type, const char* str, bool* ok = nullptr);
-    
+
     // vector<unsigned char> data() const;
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);
@@ -118,7 +120,7 @@ public:
 inline bool operator == (const Variant& lhs, const Variant& rhs) {
     return cali_variant_eq(lhs.m_v, rhs.m_v);
 }
-    
+
 inline bool operator <  (const Variant& lhs, const Variant& rhs) {
     return (cali_variant_compare(lhs.m_v, rhs.m_v) < 0);
 }

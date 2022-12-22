@@ -335,24 +335,7 @@ public:
 
         for (const Entry& e : rec) {
             if (e.attribute() == tgt_id || e.attribute() == sum_id) {
-                switch (target_attr.type()) {
-                case CALI_TYPE_DOUBLE:
-                    m_sum = Variant(m_sum.to_double() + e.value().to_double());
-                    break;
-                case CALI_TYPE_INT:
-                    {
-                        int64_t s = m_sum.to_int64()  + e.value().to_int64();
-                        m_sum = Variant(cali_make_variant_from_int64(s));
-                    }
-                    break;
-                case CALI_TYPE_UINT:
-                    m_sum = Variant(m_sum.to_uint()   + e.value().to_uint()  );
-                    break;
-                default:
-                    ;
-                    // Some error?!
-                }
-
+                m_sum += e.value();
                 ++m_count;
                 break;
             }
