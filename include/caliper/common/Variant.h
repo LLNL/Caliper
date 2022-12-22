@@ -49,10 +49,10 @@ public:
 
     template<typename U, typename std::enable_if< std::is_unsigned<U>::value, int >::type = 0>
     Variant(U val)
-        : m_v(cali_make_variant_from_uint(val)) { }
+        : m_v(cali_make_variant_from_uint(val))   { }
 
     Variant(const char* val)
-            : m_v(cali_make_variant_from_string(val))   { }
+        : m_v(cali_make_variant_from_string(val)) { }
     Variant(cali_attr_type val)
         : m_v(cali_make_variant_from_type(val))   { }
 

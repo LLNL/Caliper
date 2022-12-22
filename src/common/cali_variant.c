@@ -1,6 +1,6 @@
 /* Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
  * See top-level LICENSE file for details.
- */ 
+ */
 
 /** \file  cali_variant.c
  *  \brief cali_variant_t definition
@@ -14,7 +14,7 @@
 #include <string.h>
 
 #define _EXTRACT_TYPE(type_and_size) ((type_and_size) & CALI_VARIANT_TYPE_MASK)
-#define _EXTRACT_SIZE(type_and_size) ((type_and_size) >> 8)
+#define _EXTRACT_SIZE(type_and_size) ((type_and_size) >> 32)
 
 extern inline bool
 cali_variant_is_empty(cali_variant_t v);
@@ -100,8 +100,22 @@ cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
         break;
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
-        v.type_and_size  = (size << 8) | (type & CALI_VARIANT_TYPE_MASK);
+    {
+        uint64_t hash = 0;
+
+        if (size > 0) {
+            const unsigned char* p = (const unsigned char*) ptr;
+            hash |= p[0];
+            hash <<= 8;
+            hash |= p[size/2];
+            hash <<= 8;
+            hash |= p[size-1];
+            hash <<= 8;
+        }
+
+        v.type_and_size = (size << 32) | hash | (type & CALI_VARIANT_TYPE_MASK);
         v.value.unmanaged_const_ptr = ptr;
+    }
         break;
     case CALI_TYPE_INT:
         v.value.v_int    = *((const int64_t*) ptr);
@@ -514,10 +528,9 @@ cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
 }
 
 bool
-cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs)
+_cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs)
 {
-    if (lhs.type_and_size != rhs.type_and_size)
-        return false;
+    /* We can assume that type_and_size are equal */
 
     switch ( _EXTRACT_TYPE(lhs.type_and_size) ) {
     case CALI_TYPE_USR:
@@ -536,6 +549,9 @@ cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs)
 
     return false;
 }
+
+extern inline bool
+cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs);
 
 size_t
 cali_variant_pack(cali_variant_t v, unsigned char* buf)
