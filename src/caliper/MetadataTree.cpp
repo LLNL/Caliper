@@ -209,25 +209,16 @@ MetadataTree::create_child(const Attribute& attr, const Variant& value, Node* pa
     if (!have_free_nodeblock(1))
         return nullptr;
 
-    Variant data = value;
-    auto type = attr.type();
+    void* ptr = nullptr;
 
-    // Copy the data for unmanaged values
-    if (type == CALI_TYPE_STRING || type == CALI_TYPE_USR) {
-        char* ptr = static_cast<char*>(m_mempool.allocate(value.size()));
-
-        if (!ptr)
-            return nullptr;
-
-        memcpy(ptr, value.data(), value.size());
-        data = Variant(type, ptr, value.size());
-    }
+    if (value.has_unmanaged_data())
+        ptr = m_mempool.allocate(value.size());
 
     size_t index = m_nodeblock->index++;
     GlobalData* g = mG.load();
 
     Node* node = new(m_nodeblock->chunk + index)
-        Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr.id(), data);
+        Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr.id(), value.copy(ptr));
 
     if (parent)
         parent->append(node);

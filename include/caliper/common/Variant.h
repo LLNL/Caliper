@@ -68,6 +68,11 @@ public:
         return !empty();
     }
 
+    bool has_unmanaged_data() const {
+        cali_attr_type t = type();
+        return (t == CALI_TYPE_STRING || t == CALI_TYPE_USR);
+    }
+
     cali_variant_t c_variant() const { return m_v; }
 
     cali_attr_type type() const    { return cali_variant_get_type(m_v);  }
@@ -97,6 +102,16 @@ public:
     }
 
     std::string    to_string() const;
+
+    Variant        copy(void* ptr) const {
+        Variant to(*this);
+
+        if (has_unmanaged_data())
+            to.m_v.value.unmanaged_ptr =
+                memcpy(ptr, m_v.value.unmanaged_const_ptr, size());
+
+        return to;
+    }
 
     Variant& operator += (const Variant& val);
 
