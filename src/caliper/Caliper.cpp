@@ -34,6 +34,8 @@
 #define SNAP_MAX 120
 
 using namespace cali;
+using namespace cali::internal;
+
 using namespace std;
 
 using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
@@ -691,8 +693,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         assert(node);
 
         // Add metadata nodes.
-        if (n_meta > 0)
-            node = sT->tree.get_path(n_meta, meta_attr, meta_val, node);
+        for (int n = 0; n < n_meta; ++n)
+            node = sT->tree.get_child(meta_attr[n], meta_val[n], node);
 
         // Look for attribute properties in presets
         auto propit = sG->attribute_prop_presets.find(name);
@@ -716,10 +718,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
                 break;
             }
 
-        Attribute attr[2] { prop_attr, name_attr };
-        Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };
-
-        node = sT->tree.get_path(2, &attr[0], &data[0], node);
+        node = sT->tree.get_child(prop_attr, Variant(prop), node);
+        node = sT->tree.get_child(name_attr, Variant(CALI_TYPE_STRING, name.data(), name.size()), node);
 
         if (node) {
             // Check again if attribute already exists; might have been created by
@@ -1019,10 +1019,14 @@ Caliper::begin(const Attribute& attr, const Variant& data)
             if (channel && channel->is_active())
                 channel->mP->events.pre_begin_evt(this, channel.get(), attr, data);
 
+    Entry entry;
+
     if (prop & CALI_ATTR_ASVALUE)
-        blackboard->set(key, Entry(attr, data), include_in_snapshot);
+        entry = Entry(attr, data);
     else
-        blackboard->set(key, Entry(sT->tree.get_path(1, &attr, &data, blackboard->get(key).node())), include_in_snapshot);
+        entry = Entry(sT->tree.get_child(attr, data, blackboard->get(key).node()));
+
+    blackboard->set(key, entry, include_in_snapshot);
 
     // invoke callbacks
     if (run_events)
@@ -1178,7 +1182,7 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
     if (prop & CALI_ATTR_ASVALUE)
         blackboard->set(key, Entry(attr, data), include_in_snapshot);
     else {
-        Node* node = sT->tree.get_path(1, &attr, &data, blackboard->get(key).node());
+        Node* node = sT->tree.get_child(attr, data, blackboard->get(key).node());
         blackboard->set(key, Entry(node), include_in_snapshot);
     }
 
@@ -1357,7 +1361,7 @@ Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, Snap
         if (attr[i].store_as_value())
             rec.append(Entry(attr[i], value[i]));
         else
-            node = sT->tree.get_path(1, &attr[i], &value[i], node);
+            node = sT->tree.get_child(attr[i], value[i], node);
 
     if (node && node != parent)
         rec.append(Entry(node));
@@ -1381,7 +1385,7 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return sT->tree.get_path(1, &attr, &data, parent);
+    return sT->tree.get_child(attr, data, parent);
 }
 
 Node*
