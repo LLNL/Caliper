@@ -132,7 +132,23 @@ cali_make_variant_from_double(double value)
 inline cali_variant_t
 cali_make_variant_from_string(const char* value)
 {
-    return cali_make_variant(CALI_TYPE_STRING, value, strlen(value));
+    size_t size = strlen(value);
+    uint64_t hash = 0;
+
+    const unsigned char* p = (const unsigned char*) value;
+    hash |= p[0];
+    hash <<= 8;
+    hash |= p[size/2];
+    hash <<= 8;
+    hash |= p[size-1];
+    hash <<= 8;
+
+    cali_variant_t v;
+
+    v.type_and_size = (size << 32) | hash | (CALI_TYPE_STRING & CALI_VARIANT_TYPE_MASK);
+    v.value.unmanaged_const_ptr = value;
+
+    return v;
 }
 
 inline cali_variant_t
