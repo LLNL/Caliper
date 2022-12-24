@@ -663,80 +663,68 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Attribute name_attr =
-        Attribute::make_attribute(sT->tree.node( 8));
-    Attribute prop_attr =
-        Attribute::make_attribute(sT->tree.node(10));
+    // Check if an attribute with this name already exists
+    {
+        std::lock_guard<std::mutex>
+            ga(sG->attribute_lock);
 
-    assert(name_attr != Attribute::invalid);
-    assert(prop_attr != Attribute::invalid);
+        auto it = sG->attribute_nodes.find(name);
+        if (it != sG->attribute_nodes.end())
+            return Attribute::make_attribute(it->second);
+    }
 
     Node* node        = nullptr;
     bool  created_now = false;
 
-    // Check if an attribute with this name already exists
+    // Get type node
+    node = sT->tree.type_node(type);
 
-    sG->attribute_lock.lock();
+    // Add metadata nodes.
+    for (int n = 0; n < n_meta; ++n)
+        node = sT->tree.get_child(meta_attr[n], meta_val[n], node);
 
-    auto it = sG->attribute_nodes.find(name);
-    if (it != sG->attribute_nodes.end())
-        node = it->second;
+    // Look for attribute properties in presets
+    auto propit = sG->attribute_prop_presets.find(name);
+    if (propit != sG->attribute_prop_presets.end())
+        prop = propit->second;
 
-    sG->attribute_lock.unlock();
+    // Set scope to PROCESS for all global attributes and mark them as unaligned
+    if (prop & CALI_ATTR_GLOBAL) {
+        prop &= ~CALI_ATTR_SCOPE_MASK;
+        prop |= CALI_ATTR_SCOPE_PROCESS;
+        prop |= CALI_ATTR_UNALIGNED;
+    }
+    // Set scope to default scope if none is set
+    if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
+        prop |= sG->attribute_default_scope;
 
-    // Create attribute nodes
-
-    if (!node) {
-        // Get type node
-        assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = sT->tree.type_node(type);
-        assert(node);
-
-        // Add metadata nodes.
-        for (int n = 0; n < n_meta; ++n)
-            node = sT->tree.get_child(meta_attr[n], meta_val[n], node);
-
-        // Look for attribute properties in presets
-        auto propit = sG->attribute_prop_presets.find(name);
-        if (propit != sG->attribute_prop_presets.end())
-            prop = propit->second;
-
-        // Set scope to PROCESS for all global attributes and mark them as unaligned
-        if (prop & CALI_ATTR_GLOBAL) {
-            prop &= ~CALI_ATTR_SCOPE_MASK;
-            prop |= CALI_ATTR_SCOPE_PROCESS;
-            prop |= CALI_ATTR_UNALIGNED;
+    // Set CALI_ATTR_AGGREGATABLE property if class.aggregatable metadata is set
+    for (const Node* tmp = node; tmp; tmp = tmp->parent())
+        if (tmp->attribute() == cali_class_aggregatable_attr_id && tmp->data() == Variant(true)) {
+            prop |= CALI_ATTR_AGGREGATABLE;
+            break;
         }
-        // Set scope to default scope if none is set
-        if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
-            prop |= sG->attribute_default_scope;
 
-        // Set CALI_ATTR_AGGREGATABLE property if class.aggregatable metadata is set
-        for (const Node* tmp = node; tmp; tmp = tmp->parent())
-            if (tmp->attribute() == cali_class_aggregatable_attr_id && tmp->data() == Variant(true)) {
-                prop |= CALI_ATTR_AGGREGATABLE;
-                break;
-            }
+    Attribute name_attr = Attribute::make_attribute(sT->tree.node( 8));
+    Attribute prop_attr = Attribute::make_attribute(sT->tree.node(10));
 
-        node = sT->tree.get_child(prop_attr, Variant(prop), node);
-        node = sT->tree.get_child(name_attr, Variant(CALI_TYPE_STRING, name.data(), name.size()), node);
+    node = sT->tree.get_child(prop_attr, Variant(prop), node);
+    node = sT->tree.get_child(name_attr, Variant(CALI_TYPE_STRING, name.data(), name.size()), node);
 
-        if (node) {
-            // Check again if attribute already exists; might have been created by
-            // another thread in the meantime.
-            // We've created some redundant nodes then, but that's fine
-            sG->attribute_lock.lock();
+    {
+        // Check again if attribute already exists; might have been created by
+        // another thread in the meantime.
+        // We've created some redundant nodes then, but that's fine
+        std::lock_guard<std::mutex>
+            ga(sG->attribute_lock);
 
-            auto it = sG->attribute_nodes.lower_bound(name);
+        auto it = sG->attribute_nodes.lower_bound(name);
 
-            if (it == sG->attribute_nodes.end() || it->first != name) {
-                sG->attribute_nodes.insert(it, std::make_pair(name, node));
-                created_now = true;
-            } else
-                node = it->second;
-
-            sG->attribute_lock.unlock();
-        }
+        if (it == sG->attribute_nodes.end() || it->first != name) {
+            sG->attribute_nodes.insert(it, std::make_pair(name, node));
+            created_now = true;
+        } else
+            node = it->second;
     }
 
     // Create attribute object
