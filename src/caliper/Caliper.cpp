@@ -393,7 +393,6 @@ struct Caliper::GlobalData
 
     // --- data
 
-    bool                               automerge;
     bool                               allow_region_overlap;
 
     mutable std::mutex                 attribute_lock;
@@ -422,11 +421,11 @@ struct Caliper::GlobalData
         // put the attribute [name,type,prop] attributes in the map
 
         Attribute name_attr =
-            Attribute::make_attribute(sT->tree.node( 8));
+            Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
         Attribute type_attr =
-            Attribute::make_attribute(sT->tree.node( 9));
+            Attribute::make_attribute(sT->tree.node(Attribute::TYPE_ATTR_ID));
         Attribute prop_attr =
-            Attribute::make_attribute(sT->tree.node(10));
+            Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
         attribute_nodes.insert(make_pair(name_attr.name(),
                                          sT->tree.node(name_attr.id())));
@@ -487,7 +486,6 @@ struct Caliper::GlobalData
         else
             log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
 
-        automerge = config.get("automerge").to_bool();
         allow_region_overlap = config.get("allow_region_overlap").to_bool();
     }
 
@@ -523,11 +521,9 @@ struct Caliper::GlobalData
     // attributes. Immediate (as_value) and nomerge attributes get
     // their own slots.
     inline cali_id_t
-    get_blackboard_key(const Attribute& attr) const {
-        int prop = attr.properties();
-
-        if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE) || !automerge)
-            return attr.id();
+    get_blackboard_key(cali_id_t attr_id, int prop) const {
+        if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
+            return attr_id;
         if (prop & CALI_ATTR_UNALIGNED)
             return unaligned_key_attr.id();
 
@@ -634,12 +630,6 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  process:   Process scope\n"
       "  thread:    Thread scope"
     },
-    { "automerge", CALI_TYPE_BOOL, "true",
-      "Automatically merge attributes into a common context tree",
-      "Automatically merge attributes into a common context tree.\n"
-      "Decreases the size of context records, but may increase\n"
-      "the amount of metadata and reduce performance."
-    },
     { "allow_region_overlap", CALI_TYPE_BOOL, "false",
       "Allow overlapping regions for all attributes",
       "Allow overlapping begin/end regions for all attributes."
@@ -705,8 +695,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
             break;
         }
 
-    Attribute name_attr = Attribute::make_attribute(sT->tree.node( 8));
-    Attribute prop_attr = Attribute::make_attribute(sT->tree.node(10));
+    Attribute name_attr = Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
+    Attribute prop_attr = Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
     node = sT->tree.get_child(prop_attr, Variant(prop), node);
     node = sT->tree.get_child(name_attr, Variant(CALI_TYPE_STRING, name.data(), name.size()), node);
@@ -986,7 +976,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = nullptr;
 
@@ -1041,7 +1031,7 @@ Caliper::end(const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = nullptr;
 
@@ -1116,7 +1106,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
 
     assert(blackboard != nullptr);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1158,7 +1148,7 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1194,7 +1184,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
@@ -1246,7 +1236,7 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
@@ -1292,7 +1282,7 @@ Caliper::get(const Attribute& attr)
 
     assert(blackboard != nullptr);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1306,7 +1296,7 @@ Caliper::get(Channel* channel, const Attribute& attr)
     if (attr == Attribute::invalid)
         return Entry();
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), attr.properties());
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1410,7 +1400,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
         blackboard = &sG->process_blackboard;
     }
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
