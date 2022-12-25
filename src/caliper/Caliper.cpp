@@ -391,15 +391,15 @@ struct Caliper::GlobalData
 
     static const ConfigSet::Entry      s_configdata[];
 
+    constexpr static cali_id_t REGION_KEY    { 1 };
+    constexpr static cali_id_t UNALIGNED_KEY { 2 };
+
     // --- data
 
     bool                               allow_region_overlap;
 
     mutable std::mutex                 attribute_lock;
-    map<string, Node*>                 attribute_nodes;
-
-    Attribute                          region_key_attr;
-    Attribute                          unaligned_key_attr;
+    map<string, Attribute>             attribute_map;
 
     map<string, int>                   attribute_prop_presets;
     int                                attribute_default_scope;
@@ -414,9 +414,7 @@ struct Caliper::GlobalData
     // --- constructor
 
     GlobalData(ThreadData* sT)
-        : region_key_attr    { Attribute::invalid },
-          unaligned_key_attr { Attribute::invalid },
-          attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
+          : attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {
         // put the attribute [name,type,prop] attributes in the map
 
@@ -427,12 +425,9 @@ struct Caliper::GlobalData
         Attribute prop_attr =
             Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
-        attribute_nodes.insert(make_pair(name_attr.name(),
-                                         sT->tree.node(name_attr.id())));
-        attribute_nodes.insert(make_pair(type_attr.name(),
-                                         sT->tree.node(type_attr.id())));
-        attribute_nodes.insert(make_pair(prop_attr.name(),
-                                         sT->tree.node(prop_attr.id())));
+        attribute_map.insert(make_pair(name_attr.name(), name_attr));
+        attribute_map.insert(make_pair(prop_attr.name(), prop_attr));
+        attribute_map.insert(make_pair(type_attr.name(), type_attr));
     }
 
     ~GlobalData() {
@@ -499,11 +494,6 @@ struct Caliper::GlobalData
 
         Caliper c(this, tObj.t_ptr, false);
 
-        region_key_attr =
-            c.create_attribute("cali.region.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
-        unaligned_key_attr =
-            c.create_attribute("cali.unaligned.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
-
         init_attribute_classes(&c);
         init_api_attributes(&c);
 
@@ -525,9 +515,9 @@ struct Caliper::GlobalData
         if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
             return attr_id;
         if (prop & CALI_ATTR_UNALIGNED)
-            return unaligned_key_attr.id();
+            return UNALIGNED_KEY;
 
-        return region_key_attr.id();
+        return REGION_KEY;
     }
 
     ThreadData* add_thread_data(ThreadData* t) {
@@ -658,13 +648,12 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         std::lock_guard<std::mutex>
             ga(sG->attribute_lock);
 
-        auto it = sG->attribute_nodes.find(name);
-        if (it != sG->attribute_nodes.end())
-            return Attribute::make_attribute(it->second);
+        auto it = sG->attribute_map.find(name);
+        if (it != sG->attribute_map.end())
+            return it->second;
     }
 
-    Node* node        = nullptr;
-    bool  created_now = false;
+    Node* node = nullptr;
 
     // Get type node
     node = sT->tree.type_node(type);
@@ -705,26 +694,25 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         // Check again if attribute already exists; might have been created by
         // another thread in the meantime.
         // We've created some redundant nodes then, but that's fine
+
         std::lock_guard<std::mutex>
             ga(sG->attribute_lock);
 
-        auto it = sG->attribute_nodes.lower_bound(name);
+        auto it = sG->attribute_map.lower_bound(name);
 
-        if (it == sG->attribute_nodes.end() || it->first != name) {
-            sG->attribute_nodes.insert(it, std::make_pair(name, node));
-            created_now = true;
-        } else
-            node = it->second;
+        if (it == sG->attribute_map.end() || it->first != name)
+            sG->attribute_map.insert(it, std::make_pair(name, Attribute::make_attribute(node)));
+        else
+            return it->second;
     }
 
     // Create attribute object
 
     Attribute attr = Attribute::make_attribute(node);
 
-    if (created_now)
-        for (auto& chn : sG->channels)
-            if (chn)
-                chn->mP->events.create_attr_evt(this, chn.get(), attr);
+    for (auto& chn : sG->channels)
+        if (chn)
+            chn->mP->events.create_attr_evt(this, chn.get(), attr);
 
     return attr;
 }
@@ -737,27 +725,20 @@ Caliper::attribute_exists(const std::string& name) const
     std::lock_guard<std::mutex>
         ga(sG->attribute_lock);
 
-    return (sG->attribute_nodes.find(name) != sG->attribute_nodes.end());
+    return (sG->attribute_map.find(name) != sG->attribute_map.end());
 }
 
 Attribute
 Caliper::get_attribute(const std::string& name) const
 {
     std::lock_guard<::siglock>
-        g(sT->lock);
+        gs(sT->lock);
+    std::lock_guard<std::mutex>
+        ga(sG->attribute_lock);
 
-    Node* node = nullptr;
+    auto it = sG->attribute_map.find(name);
 
-    sG->attribute_lock.lock();
-
-    auto it = sG->attribute_nodes.find(name);
-
-    if (it != sG->attribute_nodes.end())
-        node = it->second;
-
-    sG->attribute_lock.unlock();
-
-    return Attribute::make_attribute(node);
+    return it != sG->attribute_map.end() ? it->second : Attribute::invalid;
 }
 
 Attribute
@@ -777,10 +758,10 @@ Caliper::get_all_attributes() const
         g_a(sG->attribute_lock);
 
     std::vector<Attribute> ret;
-    ret.reserve(sG->attribute_nodes.size());
+    ret.reserve(sG->attribute_map.size());
 
-    for (auto it : sG->attribute_nodes)
-        ret.push_back(Attribute::make_attribute(it.second));
+    for (auto it : sG->attribute_map)
+        ret.push_back(it.second);
 
     return ret;
 }
@@ -1052,7 +1033,7 @@ Caliper::end(const Attribute& attr)
     if (merged_entry.attribute() != attr.id()) {
         if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
-        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+        if (key != sG->UNALIGNED_KEY && !sG->allow_region_overlap)
             return sT->log_stack_error(merged_entry.node(), attr);
     }
 
@@ -1197,7 +1178,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     if (merged_entry.attribute() != attr.id()) {
         if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
-        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+        if (key != sG->UNALIGNED_KEY && !sG->allow_region_overlap)
             return sT->log_stack_error(entry.node(), attr);
     }
 
@@ -1405,7 +1386,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return blackboard->exchange(key, Entry(attr, data), !attr.is_hidden()).value();
+    return blackboard->exchange(key, Entry(attr, data), !(prop & CALI_ATTR_HIDDEN)).value();
 }
 
 //
