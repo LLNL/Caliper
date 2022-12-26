@@ -49,7 +49,7 @@ public:
     /// \brief Check if the node's attribute and value are equal to
     ///   \a attr and \a v
     bool equals(cali_id_t attr, const Variant& v) const {
-        return m_attribute == attr ? m_data == v : false;
+        return m_data == v && m_attribute == attr;
     }
 
     /// \brief Return the node's attribute ID

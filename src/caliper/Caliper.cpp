@@ -34,6 +34,8 @@
 #define SNAP_MAX 120
 
 using namespace cali;
+using namespace cali::internal;
+
 using namespace std;
 
 using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
@@ -389,16 +391,15 @@ struct Caliper::GlobalData
 
     static const ConfigSet::Entry      s_configdata[];
 
+    constexpr static cali_id_t REGION_KEY    { 1 };
+    constexpr static cali_id_t UNALIGNED_KEY { 2 };
+
     // --- data
 
-    bool                               automerge;
     bool                               allow_region_overlap;
 
     mutable std::mutex                 attribute_lock;
-    map<string, Node*>                 attribute_nodes;
-
-    Attribute                          region_key_attr;
-    Attribute                          unaligned_key_attr;
+    map<string, Attribute>             attribute_map;
 
     map<string, int>                   attribute_prop_presets;
     int                                attribute_default_scope;
@@ -413,25 +414,20 @@ struct Caliper::GlobalData
     // --- constructor
 
     GlobalData(ThreadData* sT)
-        : region_key_attr    { Attribute::invalid },
-          unaligned_key_attr { Attribute::invalid },
-          attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
+          : attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {
         // put the attribute [name,type,prop] attributes in the map
 
         Attribute name_attr =
-            Attribute::make_attribute(sT->tree.node( 8));
+            Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
         Attribute type_attr =
-            Attribute::make_attribute(sT->tree.node( 9));
+            Attribute::make_attribute(sT->tree.node(Attribute::TYPE_ATTR_ID));
         Attribute prop_attr =
-            Attribute::make_attribute(sT->tree.node(10));
+            Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
-        attribute_nodes.insert(make_pair(name_attr.name(),
-                                         sT->tree.node(name_attr.id())));
-        attribute_nodes.insert(make_pair(type_attr.name(),
-                                         sT->tree.node(type_attr.id())));
-        attribute_nodes.insert(make_pair(prop_attr.name(),
-                                         sT->tree.node(prop_attr.id())));
+        attribute_map.insert(make_pair(name_attr.name(), name_attr));
+        attribute_map.insert(make_pair(prop_attr.name(), prop_attr));
+        attribute_map.insert(make_pair(type_attr.name(), type_attr));
     }
 
     ~GlobalData() {
@@ -485,7 +481,6 @@ struct Caliper::GlobalData
         else
             log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
 
-        automerge = config.get("automerge").to_bool();
         allow_region_overlap = config.get("allow_region_overlap").to_bool();
     }
 
@@ -498,11 +493,6 @@ struct Caliper::GlobalData
             print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
 
         Caliper c(this, tObj.t_ptr, false);
-
-        region_key_attr =
-            c.create_attribute("cali.region.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
-        unaligned_key_attr =
-            c.create_attribute("cali.unaligned.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
 
         init_attribute_classes(&c);
         init_api_attributes(&c);
@@ -521,15 +511,13 @@ struct Caliper::GlobalData
     // attributes. Immediate (as_value) and nomerge attributes get
     // their own slots.
     inline cali_id_t
-    get_blackboard_key(const Attribute& attr) const {
-        int prop = attr.properties();
-
-        if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE) || !automerge)
-            return attr.id();
+    get_blackboard_key(cali_id_t attr_id, int prop) const {
+        if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
+            return attr_id;
         if (prop & CALI_ATTR_UNALIGNED)
-            return unaligned_key_attr.id();
+            return UNALIGNED_KEY;
 
-        return region_key_attr.id();
+        return REGION_KEY;
     }
 
     ThreadData* add_thread_data(ThreadData* t) {
@@ -632,12 +620,6 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  process:   Process scope\n"
       "  thread:    Thread scope"
     },
-    { "automerge", CALI_TYPE_BOOL, "true",
-      "Automatically merge attributes into a common context tree",
-      "Automatically merge attributes into a common context tree.\n"
-      "Decreases the size of context records, but may increase\n"
-      "the amount of metadata and reduce performance."
-    },
     { "allow_region_overlap", CALI_TYPE_BOOL, "false",
       "Allow overlapping regions for all attributes",
       "Allow overlapping begin/end regions for all attributes."
@@ -661,92 +643,76 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Attribute name_attr =
-        Attribute::make_attribute(sT->tree.node( 8));
-    Attribute prop_attr =
-        Attribute::make_attribute(sT->tree.node(10));
-
-    assert(name_attr != Attribute::invalid);
-    assert(prop_attr != Attribute::invalid);
-
-    Node* node        = nullptr;
-    bool  created_now = false;
-
     // Check if an attribute with this name already exists
+    {
+        std::lock_guard<std::mutex>
+            ga(sG->attribute_lock);
 
-    sG->attribute_lock.lock();
+        auto it = sG->attribute_map.find(name);
+        if (it != sG->attribute_map.end())
+            return it->second;
+    }
 
-    auto it = sG->attribute_nodes.find(name);
-    if (it != sG->attribute_nodes.end())
-        node = it->second;
+    Node* node = nullptr;
 
-    sG->attribute_lock.unlock();
+    // Get type node
+    node = sT->tree.type_node(type);
 
-    // Create attribute nodes
+    // Add metadata nodes.
+    for (int n = 0; n < n_meta; ++n)
+        node = sT->tree.get_child(meta_attr[n], meta_val[n], node);
 
-    if (!node) {
-        // Get type node
-        assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = sT->tree.type_node(type);
-        assert(node);
+    // Look for attribute properties in presets
+    auto propit = sG->attribute_prop_presets.find(name);
+    if (propit != sG->attribute_prop_presets.end())
+        prop = propit->second;
 
-        // Add metadata nodes.
-        if (n_meta > 0)
-            node = sT->tree.get_path(n_meta, meta_attr, meta_val, node);
+    // Set scope to PROCESS for all global attributes and mark them as unaligned
+    if (prop & CALI_ATTR_GLOBAL) {
+        prop &= ~CALI_ATTR_SCOPE_MASK;
+        prop |= CALI_ATTR_SCOPE_PROCESS;
+        prop |= CALI_ATTR_UNALIGNED;
+    }
+    // Set scope to default scope if none is set
+    if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
+        prop |= sG->attribute_default_scope;
 
-        // Look for attribute properties in presets
-        auto propit = sG->attribute_prop_presets.find(name);
-        if (propit != sG->attribute_prop_presets.end())
-            prop = propit->second;
-
-        // Set scope to PROCESS for all global attributes and mark them as unaligned
-        if (prop & CALI_ATTR_GLOBAL) {
-            prop &= ~CALI_ATTR_SCOPE_MASK;
-            prop |= CALI_ATTR_SCOPE_PROCESS;
-            prop |= CALI_ATTR_UNALIGNED;
+    // Set CALI_ATTR_AGGREGATABLE property if class.aggregatable metadata is set
+    for (const Node* tmp = node; tmp; tmp = tmp->parent())
+        if (tmp->attribute() == cali_class_aggregatable_attr_id && tmp->data() == Variant(true)) {
+            prop |= CALI_ATTR_AGGREGATABLE;
+            break;
         }
-        // Set scope to default scope if none is set
-        if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
-            prop |= sG->attribute_default_scope;
 
-        // Set CALI_ATTR_AGGREGATABLE property if class.aggregatable metadata is set
-        for (const Node* tmp = node; tmp; tmp = tmp->parent())
-            if (tmp->attribute() == cali_class_aggregatable_attr_id && tmp->data() == Variant(true)) {
-                prop |= CALI_ATTR_AGGREGATABLE;
-                break;
-            }
+    Attribute name_attr = Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
+    Attribute prop_attr = Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
-        Attribute attr[2] { prop_attr, name_attr };
-        Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };
+    node = sT->tree.get_child(prop_attr, Variant(prop), node);
+    node = sT->tree.get_child(name_attr, Variant(CALI_TYPE_STRING, name.data(), name.size()), node);
 
-        node = sT->tree.get_path(2, &attr[0], &data[0], node);
+    {
+        // Check again if attribute already exists; might have been created by
+        // another thread in the meantime.
+        // We've created some redundant nodes then, but that's fine
 
-        if (node) {
-            // Check again if attribute already exists; might have been created by
-            // another thread in the meantime.
-            // We've created some redundant nodes then, but that's fine
-            sG->attribute_lock.lock();
+        std::lock_guard<std::mutex>
+            ga(sG->attribute_lock);
 
-            auto it = sG->attribute_nodes.lower_bound(name);
+        auto it = sG->attribute_map.lower_bound(name);
 
-            if (it == sG->attribute_nodes.end() || it->first != name) {
-                sG->attribute_nodes.insert(it, std::make_pair(name, node));
-                created_now = true;
-            } else
-                node = it->second;
-
-            sG->attribute_lock.unlock();
-        }
+        if (it == sG->attribute_map.end() || it->first != name)
+            sG->attribute_map.insert(it, std::make_pair(name, Attribute::make_attribute(node)));
+        else
+            return it->second;
     }
 
     // Create attribute object
 
     Attribute attr = Attribute::make_attribute(node);
 
-    if (created_now)
-        for (auto& chn : sG->channels)
-            if (chn)
-                chn->mP->events.create_attr_evt(this, chn.get(), attr);
+    for (auto& chn : sG->channels)
+        if (chn)
+            chn->mP->events.create_attr_evt(this, chn.get(), attr);
 
     return attr;
 }
@@ -759,27 +725,20 @@ Caliper::attribute_exists(const std::string& name) const
     std::lock_guard<std::mutex>
         ga(sG->attribute_lock);
 
-    return (sG->attribute_nodes.find(name) != sG->attribute_nodes.end());
+    return (sG->attribute_map.find(name) != sG->attribute_map.end());
 }
 
 Attribute
 Caliper::get_attribute(const std::string& name) const
 {
     std::lock_guard<::siglock>
-        g(sT->lock);
+        gs(sT->lock);
+    std::lock_guard<std::mutex>
+        ga(sG->attribute_lock);
 
-    Node* node = nullptr;
+    auto it = sG->attribute_map.find(name);
 
-    sG->attribute_lock.lock();
-
-    auto it = sG->attribute_nodes.find(name);
-
-    if (it != sG->attribute_nodes.end())
-        node = it->second;
-
-    sG->attribute_lock.unlock();
-
-    return Attribute::make_attribute(node);
+    return it != sG->attribute_map.end() ? it->second : Attribute::invalid;
 }
 
 Attribute
@@ -799,10 +758,10 @@ Caliper::get_all_attributes() const
         g_a(sG->attribute_lock);
 
     std::vector<Attribute> ret;
-    ret.reserve(sG->attribute_nodes.size());
+    ret.reserve(sG->attribute_map.size());
 
-    for (auto it : sG->attribute_nodes)
-        ret.push_back(Attribute::make_attribute(it.second));
+    for (auto it : sG->attribute_map)
+        ret.push_back(it.second);
 
     return ret;
 }
@@ -998,7 +957,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = nullptr;
 
@@ -1019,10 +978,14 @@ Caliper::begin(const Attribute& attr, const Variant& data)
             if (channel && channel->is_active())
                 channel->mP->events.pre_begin_evt(this, channel.get(), attr, data);
 
+    Entry entry;
+
     if (prop & CALI_ATTR_ASVALUE)
-        blackboard->set(key, Entry(attr, data), include_in_snapshot);
+        entry = Entry(attr, data);
     else
-        blackboard->set(key, Entry(sT->tree.get_path(1, &attr, &data, blackboard->get(key).node())), include_in_snapshot);
+        entry = Entry(sT->tree.get_child(attr, data, blackboard->get(key).node()));
+
+    blackboard->set(key, entry, include_in_snapshot);
 
     // invoke callbacks
     if (run_events)
@@ -1049,7 +1012,7 @@ Caliper::end(const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = nullptr;
 
@@ -1070,7 +1033,7 @@ Caliper::end(const Attribute& attr)
     if (merged_entry.attribute() != attr.id()) {
         if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
-        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+        if (key != sG->UNALIGNED_KEY && !sG->allow_region_overlap)
             return sT->log_stack_error(merged_entry.node(), attr);
     }
 
@@ -1124,7 +1087,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
 
     assert(blackboard != nullptr);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1166,7 +1129,7 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1178,7 +1141,7 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
     if (prop & CALI_ATTR_ASVALUE)
         blackboard->set(key, Entry(attr, data), include_in_snapshot);
     else {
-        Node* node = sT->tree.get_path(1, &attr, &data, blackboard->get(key).node());
+        Node* node = sT->tree.get_child(attr, data, blackboard->get(key).node());
         blackboard->set(key, Entry(node), include_in_snapshot);
     }
 
@@ -1202,7 +1165,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
@@ -1215,7 +1178,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     if (merged_entry.attribute() != attr.id()) {
         if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
-        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+        if (key != sG->UNALIGNED_KEY && !sG->allow_region_overlap)
             return sT->log_stack_error(entry.node(), attr);
     }
 
@@ -1254,7 +1217,7 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
     bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     Blackboard* blackboard = &channel->mP->channel_blackboard;
 
@@ -1300,7 +1263,7 @@ Caliper::get(const Attribute& attr)
 
     assert(blackboard != nullptr);
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1314,7 +1277,7 @@ Caliper::get(Channel* channel, const Attribute& attr)
     if (attr == Attribute::invalid)
         return Entry();
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), attr.properties());
 
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1357,7 +1320,7 @@ Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, Snap
         if (attr[i].store_as_value())
             rec.append(Entry(attr[i], value[i]));
         else
-            node = sT->tree.get_path(1, &attr[i], &value[i], node);
+            node = sT->tree.get_child(attr[i], value[i], node);
 
     if (node && node != parent)
         rec.append(Entry(node));
@@ -1381,7 +1344,7 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return sT->tree.get_path(1, &attr, &data, parent);
+    return sT->tree.get_child(attr, data, parent);
 }
 
 Node*
@@ -1418,12 +1381,12 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
         blackboard = &sG->process_blackboard;
     }
 
-    cali_id_t key = sG->get_blackboard_key(attr);
+    cali_id_t key = sG->get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return blackboard->exchange(key, Entry(attr, data), !attr.is_hidden()).value();
+    return blackboard->exchange(key, Entry(attr, data), !(prop & CALI_ATTR_HIDDEN)).value();
 }
 
 //

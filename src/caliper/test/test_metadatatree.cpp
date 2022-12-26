@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 using namespace cali;
+using namespace cali::internal;
 
 TEST(MetadataTreeTest, BigTree) {
     // just create a lot of nodes
@@ -27,11 +28,9 @@ TEST(MetadataTreeTest, BigTree) {
 
     for (int i = 0; i < 400000; ++i) {
         std::string sval = chars.substr(i % (chars.length()/2));
-        
-        Attribute attr_p[2] = { str_attr, int_attr };
-        Variant   vals_p[2] = { Variant(CALI_TYPE_STRING, sval.c_str(), sval.length()), Variant(2*i + 1) };
                                         
-        node = tree.get_path(2, attr_p, vals_p, node);
+        node = tree.get_child(str_attr, Variant(CALI_TYPE_STRING, sval.data(), sval.size()), node);
+        node = tree.get_child(int_attr, Variant(2*i+1), node);
 
         ASSERT_NE(node, nullptr);
     }
@@ -71,10 +70,8 @@ TEST(MetadataTreeTest, ReplaceAll) {
     for (int i = 0; i < 20000; ++i) {
         std::string sval = chars.substr(i % (chars.length()/2));
         
-        Attribute attr_p[2] = { str_attr, int_attr };
-        Variant   vals_p[2] = { Variant(CALI_TYPE_STRING, sval.c_str(), sval.length()), Variant(2*i + 1) };
-                                        
-        node = tree.get_path(2, attr_p, vals_p, node);
+        node = tree.get_child(str_attr, Variant(CALI_TYPE_STRING, sval.data(), sval.size()), node);
+        node = tree.get_child(int_attr, Variant(2*i+1), node);
 
         ASSERT_NE(node, nullptr);
     }

@@ -23,8 +23,9 @@ extern "C" {
  *  Variable-length types (strings and blobs) are stored as unmanaged pointers.
  */
 typedef struct {
-    /** Least significant bytes encode the type.
-     *  Remaining bytes encode the size of variable-length types (strings and blobs (usr)).
+    /** Least significant byte encode the type.
+     *  Top 4 bytes encode the size of variable-length types (strings and blobs).
+     *  Remainder encodes a small hash for variable-length types for faster comparisons.
      */
     uint64_t type_and_size;
 
@@ -42,6 +43,7 @@ typedef struct {
 } cali_variant_t;
 
 #define CALI_VARIANT_TYPE_MASK 0xFF
+#define CALI_VARIANT_HASH_MASK 0xFFFFFF00
 
 inline cali_variant_t
 cali_make_empty_variant()
@@ -130,7 +132,23 @@ cali_make_variant_from_double(double value)
 inline cali_variant_t
 cali_make_variant_from_string(const char* value)
 {
-    return cali_make_variant(CALI_TYPE_STRING, value, strlen(value));
+    size_t size = strlen(value);
+    uint64_t hash = 0;
+
+    const unsigned char* p = (const unsigned char*) value;
+    hash |= p[0];
+    hash <<= 8;
+    hash |= p[size/2];
+    hash <<= 8;
+    hash |= p[size-1];
+    hash <<= 8;
+
+    cali_variant_t v;
+
+    v.type_and_size = (size << 32) | hash | (CALI_TYPE_STRING & CALI_VARIANT_TYPE_MASK);
+    v.value.unmanaged_const_ptr = value;
+
+    return v;
 }
 
 inline cali_variant_t
@@ -186,8 +204,19 @@ cali_variant_to_bool(cali_variant_t v, bool* okptr);
 int
 cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs);
 
+/** \brief Check if lhs and rhs' values are equal using a deep comparison.
+ * Caller must make sure that lhs' and rhs' type and size are equal.
+ */
 bool
-cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs);
+_cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs);
+
+/** \brief Check if lhs is equal to rhs
+ */
+inline bool
+cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs)
+{
+    return lhs.type_and_size == rhs.type_and_size ? _cali_variant_value_eq(lhs, rhs) : false;
+}
 
 /** \brief Pack variant into byte buffer
  */

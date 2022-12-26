@@ -49,10 +49,10 @@ public:
 
     template<typename U, typename std::enable_if< std::is_unsigned<U>::value, int >::type = 0>
     Variant(U val)
-        : m_v(cali_make_variant_from_uint(val)) { }
+        : m_v(cali_make_variant_from_uint(val))   { }
 
     Variant(const char* val)
-            : m_v(cali_make_variant_from_string(val))   { }
+        : m_v(cali_make_variant_from_string(val)) { }
     Variant(cali_attr_type val)
         : m_v(cali_make_variant_from_type(val))   { }
 
@@ -66,6 +66,11 @@ public:
     };
     operator bool() const {
         return !empty();
+    }
+
+    bool has_unmanaged_data() const {
+        cali_attr_type t = type();
+        return (t == CALI_TYPE_STRING || t == CALI_TYPE_USR);
     }
 
     cali_variant_t c_variant() const { return m_v; }
@@ -97,6 +102,16 @@ public:
     }
 
     std::string    to_string() const;
+
+    Variant        copy(void* ptr) const {
+        Variant to(*this);
+
+        if (has_unmanaged_data())
+            to.m_v.value.unmanaged_ptr =
+                memcpy(ptr, m_v.value.unmanaged_const_ptr, size());
+
+        return to;
+    }
 
     Variant& operator += (const Variant& val);
 

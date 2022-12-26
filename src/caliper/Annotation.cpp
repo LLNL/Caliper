@@ -284,7 +284,7 @@ Annotation& Annotation::begin(double data)
 
 Annotation& Annotation::begin(const char* data)
 {
-    return begin(Variant(CALI_TYPE_STRING, data, strlen(data)));
+    return begin(Variant(data));
 }
 
 Annotation& Annotation::begin(cali_attr_type type, void* data, uint64_t size)
