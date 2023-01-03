@@ -361,7 +361,7 @@ class SpotController : public cali::internal::CustomOutputController
 
         std::string cross_query = m_opts.build_query("cross", {
                 { "select",   cross_select  },
-                { "group by", "prop:nested" }
+                { "group by", "path" }
             });
 
         QuerySpec  output_spec(parse_spec(cross_query.c_str()));
@@ -375,7 +375,7 @@ class SpotController : public cali::internal::CustomOutputController
         {
             std::string query = m_opts.build_query("local", {
                     { "select",   "inclusive_sum(sum#time.duration)" },
-                    { "group by", "prop:nested" },
+                    { "group by", "path" },
                 }, false /* no aliases */);
 
             local_aggregate(query.c_str(), c, channel(), m_db, output_agg);

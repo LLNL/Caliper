@@ -62,7 +62,7 @@ public:
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("local", {
                             { "select",   "*,sum(sum#time.duration) as time unit sec" },
-                            { "group by", "prop:nested,mpi.rank" },
+                            { "group by", "path,mpi.rank" },
                             { "format",   format }
                         });
             } else {
@@ -71,7 +71,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",   "*,sum(sum#time.duration) as time unit sec" },
-                            { "group by", "prop:nested" },
+                            { "group by", "path" },
                             { "format",   format }
                         });
             }

@@ -61,12 +61,12 @@ public:
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
                             { "select",   local_select  },
-                            { "group by", "prop:nested" }
+                            { "group by", "path" }
                         });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("cross", {
                             { "select",   cross_select  },
-                            { "group by", "prop:nested" },
+                            { "group by", "path" },
                             { "format",   format        }
                         });
             } else {
@@ -75,7 +75,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",   serial_select },
-                            { "group by", "prop:nested" },
+                            { "group by", "path" },
                             { "format",   format        }
                         });
             }

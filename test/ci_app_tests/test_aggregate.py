@@ -97,7 +97,7 @@ class CaliperAggregationTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'aggregate:event:recorder',
-            'CALI_AGGREGATE_KEY'     : 'prop:nested',
+            'CALI_AGGREGATE_KEY'     : 'path',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }

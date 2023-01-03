@@ -31,7 +31,7 @@ public:
 
             config()["CALI_SAMPLER_FREQUENCY"] = freqstr;
 
-            std::string select  = "prop:nested,count()";
+            std::string select  = "path,count()";
             double freq = std::stod(freqstr);
 
             if (freq > 0) {
@@ -79,7 +79,7 @@ public:
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("local", {
                             { "select",   select },
-                            { "group by", "prop:nested,mpi.rank" },
+                            { "group by", "path,mpi.rank" },
                             { "format",   format }
                         });
             } else {
@@ -88,7 +88,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",   select },
-                            { "group by", "prop:nested" },
+                            { "group by", "path" },
                             { "format",   format }
                         });
             }
