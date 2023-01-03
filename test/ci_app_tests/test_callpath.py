@@ -24,7 +24,7 @@ class CaliperCallpathTest(unittest.TestCase):
         self.assertTrue(len(snapshots) == 3)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'callpath.address', 'callpath.regname', 'test_alloc.allocated.0', 'function' }))
+            snapshots, { 'callpath.address', 'callpath.regname', 'test_alloc.allocated.0', 'region' }))
 
         sreg = cat.get_snapshot_with_keys(snapshots, { 'callpath.regname', 'test_alloc.allocated.0' })
 

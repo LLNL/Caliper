@@ -35,7 +35,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,aggregate,report',
-            'CALI_REPORT_CONFIG'     : 'select function,count(),inclusive_sum(count) group by function format expand',
+            'CALI_REPORT_CONFIG'     : 'select region,count(),inclusive_sum(count) group by region format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -43,9 +43,9 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function': 'main', 'count': '17', 'inclusive#count': '77' }))
+            snapshots, { 'region': 'main', 'count': '16', 'inclusive#count': '77' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function': 'main/foo', 'count': '60', 'inclusive#count': '60' }))
+            snapshots, { 'region': 'main/foo', 'count': '48', 'inclusive#count': '60' }))
 
     def test_report_nested_key(self):
         target_cmd = [ './ci_test_macros' ]
@@ -60,18 +60,16 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'main loop',
-                         'annotation' : 'pre-loop',
-                         'statement'  : 'foo.init',
+            snapshots, { 'loop'   : 'main loop',
+                         'region' : 'main/foo/pre-loop/foo.init',
                          'iteration#main loop' : '2',
-                         'count'      : '1'
+                         'count'  : '1'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'main loop/fooloop',
+            snapshots, { 'region' : 'main/foo',
+                         'loop'   : 'main loop/fooloop',
                          'iteration#main loop' : '3',
-                         'count'      : '9'
+                         'count'  : '9'
             }))
 
     def test_report_class_iteration(self):
@@ -87,8 +85,8 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'main loop/fooloop',
+            snapshots, { 'region' : 'main/foo',
+                         'loop'   : 'main loop/fooloop',
                          'iteration#main loop' : '3',
                          'iteration#fooloop'  : '1',
                          'count'      : '1'
@@ -107,16 +105,14 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'main loop',
-                         'annotation' : 'pre-loop',
-                         'statement'  : 'foo.init',
+            snapshots, { 'loop'   : 'main loop',
+                         'region' : 'main/foo/pre-loop/foo.init',
                          'iteration#main loop' : '2',
                          'my count alias'      : '1'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'main loop/fooloop',
+            snapshots, { 'region' : 'main/foo',
+                         'loop'   : 'main loop/fooloop',
                          'iteration#main loop' : '3',
                          'my count alias'      : '9'
             }))
@@ -177,7 +173,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select function as my\\ function\\ alias,count() group by function format expand',
+            'CALI_REPORT_CONFIG'     : 'select region as my\\ function\\ alias,count() group by region format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -207,18 +203,6 @@ class CaliperReportTest(unittest.TestCase):
         self.assertIn('attribute.alias', obj['attributes']['count'])
 
         self.assertEqual('CountAlias', obj['attributes']['count']['attribute.alias'])
-
-    def test_report(self):
-        target_cmd = [ './ci_test_report' ]
-        # create some distraction: read-from-env should be disabled
-        env = { 'CALI_SERVICES_ENABLE' : 'debug' }
-
-        report_out,_ = cat.run_test(target_cmd, env)
-
-        lines = report_out.decode().splitlines()
-
-        self.assertEqual(lines[0].rstrip(), 'function annotation count')
-        self.assertEqual(lines[1].rstrip(), 'main     my phase       2')
 
 if __name__ == "__main__":
     unittest.main()

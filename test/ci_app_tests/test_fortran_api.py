@@ -19,11 +19,11 @@ class CaliperFortranAPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'annotation', 'time.inclusive.duration' }))
+            snapshots, { 'region', 'time.inclusive.duration' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'main/work' }))
+            snapshots, { 'region': 'main/work' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'main/foo' }))
+            snapshots, { 'region': 'main/foo' }))
 
     def test_f_ann_custom_spec(self):
         target_cmd = [ './ci_test_f_ann', 'custom-trace-spec,output=stdout' ]
@@ -37,9 +37,9 @@ class CaliperFortranAPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'main/work' }))
+            snapshots, { 'region': 'main/work' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'main/foo' }))
+            snapshots, { 'region': 'main/foo' }))
 
     def test_f_ann_globals(self):
         target_cmd = [ './ci_test_f_ann', 'event-trace,output=stdout' ]

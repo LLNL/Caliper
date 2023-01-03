@@ -95,13 +95,13 @@ class CaliperTestMonitor(unittest.TestCase):
 
         self.assertTrue(len(snapshots) == 4)
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'loop'     : 'main loop/fooloop',
-                         'function' : 'main/foo'
+            snapshots, { 'loop'       : 'main loop/fooloop',
+                         'region' : 'main/foo'
             }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation' : 'pre-loop' }))
+            snapshots, { 'region' : 'main/pre-loop' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation' : 'before_loop' }))
+            snapshots, { 'region' : 'main/before_loop' }))
 
 if __name__ == "__main__":
     unittest.main()

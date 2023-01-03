@@ -20,22 +20,22 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function,mpi.rank format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function,mpi.rank format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'       : 'main',
+            snapshots, { 'region'       : 'main',
                          'mpi.function'   : 'MPI_Barrier',
                          'count'          : '2',
                          'mpi.rank'       : '0'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce',  'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Reduce',  'count' : '1' }))
 
     def test_cali_before_mpi(self):
         target_cmd = [ './ci_test_cali_before_mpi' ]
@@ -47,22 +47,22 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function,mpi.rank format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function,mpi.rank format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'       : 'main',
+            snapshots, { 'region'       : 'main',
                          'mpi.function'   : 'MPI_Barrier',
                          'count'          : '2',
                          'mpi.rank'       : '0'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce',  'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Reduce',  'count' : '1' }))
 
     def test_mpi_whitelist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
@@ -74,18 +74,18 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Barrier' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
 
     def test_mpi_blacklist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
@@ -97,18 +97,18 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_BLACKLIST'      : 'MPI_Barrier,MPI_Reduce',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Barrier' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
 
     def test_mpi_whitelist_and_blacklist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
@@ -121,18 +121,18 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast,MPI_Reduce',
             'CALI_MPI_BLACKLIST'      : 'MPI_Reduce',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Barrier' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
+            snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
 
     def test_mpi_msg_trace(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
@@ -151,20 +151,20 @@ class CaliperMPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
+            snapshots, { 'region'            : 'main',
                          'mpi.function'      : 'MPI_Barrier',
                          'mpi.coll.type'     : '1',
                          'mpi.comm.is_world' : 'true'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
+            snapshots, { 'region'            : 'main',
                          'mpi.function'      : 'MPI_Bcast',
                          'mpi.coll.type'     : '3',
                          'mpi.coll.root'     : '0',
                          'mpi.comm.is_world' : 'true'
             }))
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'function', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
+            snapshots, { 'region', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
             }))
 
     def test_mpireport_controller(self):
@@ -203,14 +203,14 @@ class CaliperMPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
-                         'mpi.function'      : 'MPI_Bcast',
-                         'spot.channel'      : 'regionprofile'
+            snapshots, { 'region'        : 'main',
+                         'mpi.function'  : 'MPI_Bcast',
+                         'spot.channel'  : 'regionprofile'
             }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
-                         'mpi.function'      : 'MPI_Barrier',
-                         'spot.channel'      : 'regionprofile'
+            snapshots, { 'region'        : 'main',
+                         'mpi.function'  : 'MPI_Barrier',
+                         'spot.channel'  : 'regionprofile'
             }))
 
     def test_collective_output_channel(self):
@@ -272,8 +272,8 @@ class CaliperMPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
-                         'spot.channel'      : 'regionprofile'
+            snapshots, { 'region'        : 'main',
+                         'spot.channel'  : 'regionprofile'
             }))
 
     def test_mpi_channel_manager(self):
@@ -312,8 +312,8 @@ class CaliperMPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function'          : 'main',
-                         'mpi.function'      : 'MPI_Barrier'
+            snapshots, { 'region'        : 'main',
+                         'mpi.function'  : 'MPI_Barrier'
             }))
 
 if __name__ == "__main__":

@@ -29,7 +29,7 @@
 namespace cali
 {
 
-extern Attribute annotation_attr;
+extern Attribute region_attr;
 
 }
 
@@ -362,7 +362,7 @@ void
 cali_begin_region(const char* name)
 {
     Caliper c;
-    c.begin(cali::annotation_attr, Variant(name));
+    c.begin(cali::region_attr, Variant(name));
 }
 
 void
@@ -370,14 +370,14 @@ cali_end_region(const char* name)
 {
     Caliper c;
     Variant v_n(name);
-    Variant v_s = c.get(cali::annotation_attr).value();
+    Variant v_s = c.get(cali::region_attr).value();
 
     if (!(v_n == v_s))
         Log(0).stream() << "region nesting error: trying to end \"" << v_n
                         << "\" but current region is \""            << v_s << "\""
                         << std::endl;
 
-    c.end(cali::annotation_attr);
+    c.end(cali::region_attr);
 }
 
 void
@@ -459,28 +459,6 @@ cali_set_string(cali_id_t attr_id, const char* val)
     Attribute attr = c.get_attribute(attr_id);
 
     c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
-}
-
-void
-cali_safe_end_string(cali_id_t attr_id, const char* val)
-{
-    Caliper   c;
-    Attribute attr = c.get_attribute(attr_id);
-    Variant   v    = c.get(attr).value();
-
-    if (v.type() != CALI_TYPE_STRING)
-        Log(1).stream() << ": Trying to end "
-                        << attr.name() << " which is not a string" << std::endl;
-
-    if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size()))
-        // FIXME: Replace log output with smart error tracker
-        Log(1).stream() << "begin/end marker mismatch: Trying to end "
-                        << attr.name() << "=" << val
-                        << " but current value for "
-                        << attr.name() << " is \"" << v.to_string() << "\""
-                        << std::endl;
-
-    c.end(attr);
 }
 
 //

@@ -13,7 +13,7 @@ class CaliperTextlogTest(unittest.TestCase):
         caliper_config = {
             'CALI_SERVICES_ENABLE'      : 'event,textlog',
             'CALI_TEXTLOG_TRIGGER'      : 'iteration#main\ loop',
-            'CALI_TEXTLOG_FORMATSTRING' : '%function% iteration: %[2]iteration#main loop%',
+            'CALI_TEXTLOG_FORMATSTRING' : '%region% iteration: %[2]iteration#main loop%',
             'CALI_LOG_VERBOSITY'        : '0',
         }
 
@@ -41,7 +41,7 @@ class CaliperTextlogTest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'      : 'loop_monitor,textlog',
             'CALI_LOOP_MONITOR_ITERATION_INTERVAL' : '1',
             'CALI_TEXTLOG_TRIGGER'      : 'loop.start_iteration',
-            'CALI_TEXTLOG_FORMATSTRING' : '%function% iteration: %[2]loop.start_iteration%',
+            'CALI_TEXTLOG_FORMATSTRING' : '%region% iteration: %[2]loop.start_iteration%',
             'CALI_LOG_VERBOSITY'        : '0',
         }
 

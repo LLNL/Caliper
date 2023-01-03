@@ -385,19 +385,6 @@ void
 cali_end  (cali_id_t   attr);
 
 /**
- * \brief Remove innermost value for attribute \a attr from the blackboard.
- *
- * Creates a mismatch warning if the current value does not match \a val.
- * This function is primarily used by the high-level annotation API.
- *
- * \param attr Attribute ID
- * \param val  Expected value
- */
-
-void
-cali_safe_end_string(cali_id_t attr, const char* val);
-
-/**
  * \brief Set value for attribute \a attr to \a val on the blackboard.
  */
 void

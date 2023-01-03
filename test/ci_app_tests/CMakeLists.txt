@@ -11,7 +11,6 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_macros
   ci_test_multichannel
   ci_test_nesting
-  ci_test_report
   ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
   ci_test_alloc

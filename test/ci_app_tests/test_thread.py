@@ -23,19 +23,19 @@ class CaliperThreadTest(unittest.TestCase):
         self.assertTrue(len(snapshots) >= 16)
 
         self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, {'local', 'global', 'function'}))
+            snapshots, {'local', 'global', 'region'}))
         self.assertFalse(calitest.has_snapshot_with_keys(
             snapshots, {'local', 'my_thread_id' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {'my_thread_id' : '16', 
-                        'function'     : 'thread_proc', 
+                        'region'       : 'thread_proc', 
                         'global'       : '999' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {'my_thread_id' : '49', 
-                        'function'     : 'thread_proc', 
+                        'region'       : 'thread_proc', 
                         'global'       : '999' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
-            snapshots, { 'function'    : 'main',
+            snapshots, { 'region'      : 'main',
                          'local'       : '99' }))
 
 if __name__ == "__main__":

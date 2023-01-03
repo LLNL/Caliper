@@ -152,7 +152,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
             # 'CALI_EVENT_ENABLE_SNAPSHOT_INFO' : 'false',
             'CALI_REPORT_FILENAME'   : 'stdout',
-            'CALI_REPORT_CONFIG'     : 'select function,event.end#loop,count() group by function,event.end#loop format cali',
+            'CALI_REPORT_CONFIG'     : 'select region,event.end#loop,count() group by region,event.end#loop format cali',
             'CALI_TRACE_BUFFER_SIZE' : '1',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -161,7 +161,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main/foo', 'event.end#loop': 'fooloop', 'count' : '400' }))
+            snapshots, { 'region' : 'main/foo', 'event.end#loop': 'fooloop', 'count' : '400' }))
 
     def test_globals(self):
         target_cmd = [ './ci_test_basic' ]
@@ -229,22 +229,17 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function'     : 'main',
+                'region'   : 'main',
                 'loop'         : 'main loop',
                 'iteration#main loop' : '3',
                 'region.count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {
-                'function'   : 'main/foo',
-                'annotation' : 'pre-loop',
-                'statement'  : 'foo.init' }))
+            snapshots, { 'region' : 'main/foo/pre-loop/foo.init' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'region' : 'main/before_loop' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function'   : 'main',
-                'annotation' : 'before_loop' }))
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {
-                'function'   : 'main/foo',
+                'region' : 'main/foo',
                 'loop'       : 'main loop/fooloop',
                 'iteration#fooloop' : '3' }))
 
@@ -256,7 +251,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0',
-            'CALI_CALIPER_ATTRIBUTE_PROPERTIES' : 'annotation=process_scope'
+            'CALI_CALIPER_ATTRIBUTE_PROPERTIES' : 'region=process_scope'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -264,13 +259,13 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'cali.attribute.name' : 'function',
+                'cali.attribute.name' : 'loop',
                 'cali.attribute.prop' : '276',
                 'cali.attribute.type' : 'string' }))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'cali.attribute.name' : 'annotation',
+                'cali.attribute.name' : 'region',
                 'cali.attribute.prop' : '12',
                 'cali.attribute.type' : 'string' }))
 
@@ -303,12 +298,12 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function' : 'main',
-                'loop'     : 'main loop'
+                'region' : 'main',
+                'loop'   : 'main loop'
             }))
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, {
-                'annotation': 'pre-loop'
+                'region': 'pre-loop'
             }))
 
     def test_exclusive_region_filter(self):
@@ -324,12 +319,11 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function' : 'main/foo',
-                'loop'     : 'main loop/fooloop' }))
+                'region' : 'main/foo',
+                'loop'   : 'main loop/fooloop' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function'   : 'main',
-                'annotation' : 'before_loop' }))
+                'region' : 'main/before_loop' }))
 
 if __name__ == "__main__":
     unittest.main()
