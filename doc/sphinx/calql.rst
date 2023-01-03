@@ -28,10 +28,12 @@ This table contains a quick reference of all CalQL statements:
     <a>=scale(<b>,<S>)         # computes <a> = <b>*S
     <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
     <a>=first(<a0>,<a1>, ...)  # <a> is the first of <a0>, <a1>, ... found in the input record
+    <a>=sum(<a0>,<a1>,...)     # computes sum of <a0>, <a1>, ... in the input record
     ... IF <condition>         # apply only if input record meets condition
 
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
     *                          # select all attributes
+    path                       # select the nested region hierarchy
     <attribute>                # select <attribute>
     count()                    # number of input records in grouping
     sum(<attribute>)           # compute sum of <attribute> for grouping
@@ -45,12 +47,16 @@ This table contains a quick reference of all CalQL statements:
     inclusive_scale(<a>,<S>)   # computes inclusive scaled sum of <a> in a nested hierarchy
     inclusive_percent_total(<a>) # computes inclusive percent-of-total of <a> in a nested hierarchy
     any(<attribute>)           # pick one value for <attribute> out of all records in grouping
+    scale_count(<S>)           # count number of input records for grouping and multiplied by <S>
+    inclusive_ratio(<a>,<b>,<S>) # computes inclusive_sum(<a>)/inclusive_sum(<b>)*<S>
+    inclusive_min(<a>)         # compute inclusive min of <a>
+    inclusive_max(<a>)         # compute inclusive max of <a>
     ... AS <name>              # use <name> as column header in tree or table formatter
     ... UNIT <unit>            # use <unit> as unit name
 
   GROUP BY <list>              # Define aggregation grouping (what to aggregate over, e.g. "function,mpi.rank")
     <attribute>                # include <attribute> in grouping
-    prop:nested                # include default annotation attributes ('function', 'annotation', ...) in grouping
+    path                       # include the nested region hierarchy in grouping
 
   WHERE <list>                 # define filter (i.e., select records/rows)
     <attribute>                # records where <attribute> exists
@@ -86,7 +92,7 @@ subsequent aggregations::
   LET
     sec=scale(time.duration,1e-6)
   SELECT
-    prop:nested,sum(sec)
+    path,sum(sec)
 
 We can use the truncate() operator on an iteration counter to
 aggregate blocks of 10 iterations in a time-series profile::
@@ -106,7 +112,7 @@ names found in an input record. It can also be used to rename attributes::
   SELECT
     sum(time) AS Time
   GROUP BY
-    prop:nested
+    path
 
 LET terms have the general form
 
@@ -131,7 +137,7 @@ efficiency from the total and "work" time:
     sum(work)                 AS Work,
     ratio(work,time.duration) AS Efficiency
   GROUP BY
-    prop:nested
+    path
 
 SELECT
 --------------------------------
@@ -175,7 +181,7 @@ A more complex example::
     scale(time.duration,1e-6) AS Time,
     inclusive_percent_total(time.duration) AS "Time %"
   GROUP BY
-    prop:nested
+    path
   FORMAT
     tree
 
