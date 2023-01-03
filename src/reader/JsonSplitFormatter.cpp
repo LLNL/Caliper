@@ -141,6 +141,7 @@ public:
 struct JsonSplitFormatter::JsonSplitFormatterImpl
 {
     bool                     m_select_all;
+    bool                     m_select_path;
     std::vector<std::string> m_attr_names;
 
     std::map<std::string, std::string> m_aliases;
@@ -170,20 +171,22 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     { }
 
     void configure(const QuerySpec& spec) {
-        m_select_all = false;
+        m_select_all  = false;
+        m_select_path = spec.select.use_path;
         m_attr_names.clear();
 
-        switch (spec.attribute_selection.selection) {
+        switch (spec.select.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
             // Explicitly use aggregation key and ops if there is a GROUPBY
-            if (spec.aggregation_key.selection == QuerySpec::AttributeSelection::List) {
+            if (spec.groupby.selection == QuerySpec::AttributeSelection::List) {
                 m_attr_names.insert(m_attr_names.end(),
-                                    spec.aggregation_key.list.begin(),
-                                    spec.aggregation_key.list.end());
+                                    spec.groupby.list.begin(), spec.groupby.list.end());
 
-                for (auto op : spec.aggregation_ops.list)
+                for (auto op : spec.aggregate.list)
                     m_attr_names.push_back(Aggregator::get_aggregation_attribute_name(op));
+
+                m_select_path = spec.groupby.use_path;
             } else {
                 m_select_all = true;
             }
@@ -192,8 +195,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             break;
         case QuerySpec::AttributeSelection::List:
             m_attr_names.insert(m_attr_names.end(),
-                                spec.attribute_selection.list.begin(),
-                                spec.attribute_selection.list.end());
+                                spec.select.list.begin(),
+                                spec.select.list.end());
             break;
         }
 
@@ -213,15 +216,11 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                         return (a.is_hidden() || a.is_global());
                     });
         } else {
-            bool select_nested =
-                std::find(m_attr_names.begin(), m_attr_names.end(),
-                          "prop:nested") != m_attr_names.end();
-
             // only include selected attributes
             attrs_rem =
-                std::remove_if(attrs.begin(), attrs.end(), [this,select_nested](const Attribute& a) {
+                std::remove_if(attrs.begin(), attrs.end(), [this](const Attribute& a) {
                         bool select =
-                            (select_nested && a.is_nested()) ||
+                            (m_select_path && a.is_nested()) ||
                                 std::find(m_attr_names.begin(), m_attr_names.end(),
                                           a.name()) != m_attr_names.end();
                         return !select;

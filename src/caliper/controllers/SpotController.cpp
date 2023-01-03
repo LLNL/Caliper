@@ -297,7 +297,7 @@ class SpotController : public cali::internal::CustomOutputController
                 //   loop, so just clear them before setting them.
                 m_spot_timeseries_metrics.clear();
 
-                for (const auto &op : spec.aggregation_ops.list) {
+                for (const auto &op : spec.aggregate.list) {
                     if (!m_spot_timeseries_metrics.empty())
                         m_spot_timeseries_metrics.append(",");
 
@@ -388,7 +388,7 @@ class SpotController : public cali::internal::CustomOutputController
             // --- Save the spot metrics
             m_spot_metrics.clear();
 
-            for (const auto &op : output_spec.aggregation_ops.list) {
+            for (const auto &op : output_spec.aggregate.list) {
                 if (!m_spot_metrics.empty())
                     m_spot_metrics.append(",");
 

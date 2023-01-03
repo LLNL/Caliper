@@ -89,10 +89,10 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("count"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("count"));
 
     Aggregator a(spec);
 
@@ -190,16 +190,16 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("count"));
-    spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("count"));
+    spec.aggregate.list.push_back(::make_op("sum", "val"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
+    ASSERT_EQ(static_cast<int>(spec.aggregate.list.size()), 2);
 
-    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
-    ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregate.list[0].op.name, "count"); // see if kernel lookup went OK
+    ASSERT_STREQ(spec.aggregate.list[1].op.name, "sum");
 
     Aggregator a(spec);
 
@@ -302,17 +302,17 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::List;
-    spec.aggregation_key.list.push_back("ctx.2");
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::List;
+    spec.groupby.list.push_back("ctx.2");
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("count"));
-    spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("count"));
+    spec.aggregate.list.push_back(::make_op("sum", "val"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
+    ASSERT_EQ(static_cast<int>(spec.aggregate.list.size()), 2);
 
-    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
-    ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregate.list[0].op.name, "count"); // see if kernel lookup went OK
+    ASSERT_STREQ(spec.aggregate.list[1].op.name, "sum");
 
     Aggregator a(spec);
 
@@ -411,20 +411,20 @@ TEST(AggregatorTest, InclusiveSumOp) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("count"));
-    spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("inclusive_sum", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("inclusive_scale", "val", "2.0"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("count"));
+    spec.aggregate.list.push_back(::make_op("sum", "val"));
+    spec.aggregate.list.push_back(::make_op("inclusive_sum", "val"));
+    spec.aggregate.list.push_back(::make_op("inclusive_scale", "val", "2.0"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 4);
+    ASSERT_EQ(static_cast<int>(spec.aggregate.list.size()), 4);
 
-    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
-    ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
-    ASSERT_STREQ(spec.aggregation_ops.list[2].op.name, "inclusive_sum");
-    ASSERT_STREQ(spec.aggregation_ops.list[3].op.name, "inclusive_scale");
+    ASSERT_STREQ(spec.aggregate.list[0].op.name, "count"); // see if kernel lookup went OK
+    ASSERT_STREQ(spec.aggregate.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregate.list[2].op.name, "inclusive_sum");
+    ASSERT_STREQ(spec.aggregate.list[3].op.name, "inclusive_scale");
 
     Aggregator a(spec);
 
@@ -530,13 +530,13 @@ TEST(AggregatorTest, InclusiveRatio) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("inclusive_ratio", "num", "den"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("inclusive_ratio", "num", "den"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 1);
-    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "inclusive_ratio");
+    ASSERT_EQ(static_cast<int>(spec.aggregate.list.size()), 1);
+    ASSERT_STREQ(spec.aggregate.list[0].op.name, "inclusive_ratio");
 
     Aggregator a(spec);
 
@@ -628,16 +628,16 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::None;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("count"));
-    spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("count"));
+    spec.aggregate.list.push_back(::make_op("sum", "val"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
+    ASSERT_EQ(static_cast<int>(spec.aggregate.list.size()), 2);
 
-    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
-    ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregate.list[0].op.name, "count"); // see if kernel lookup went OK
+    ASSERT_STREQ(spec.aggregate.list[1].op.name, "sum");
 
     Aggregator a(spec);
 
@@ -717,12 +717,12 @@ TEST(AggregatorTest, StatisticsKernels) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("min", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("max", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("avg", "val"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("min", "val"));
+    spec.aggregate.list.push_back(::make_op("max", "val"));
+    spec.aggregate.list.push_back(::make_op("avg", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -777,10 +777,10 @@ TEST(AggregatorTest, ScaledRatioKernel) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::None;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("ratio", "x", "y", "10"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("ratio", "x", "y", "10"));
 
     Aggregator a(spec);
 
@@ -816,10 +816,10 @@ TEST(AggregatorTest, ScaledSumKernel) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::None;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("scale", "x", "0.5"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("scale", "x", "0.5"));
 
     Aggregator a(spec);
 
@@ -856,10 +856,10 @@ TEST(AggregatorTest, ScaledCountKernel) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::None;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("scale_count", "2.5"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("scale_count", "2.5"));
 
     Aggregator a(spec);
 
@@ -895,10 +895,10 @@ TEST(AggregatorTest, AnyKernel) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::None;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("any", "x"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("any", "x"));
 
     Aggregator a(spec);
 
@@ -958,11 +958,11 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     QuerySpec spec;
 
-    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    spec.groupby.selection = QuerySpec::SelectionList<std::string>::Default;
 
-    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("inclusive_percent_total", "val"));
+    spec.aggregate.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregate.list.push_back(::make_op("percent_total", "val"));
+    spec.aggregate.list.push_back(::make_op("inclusive_percent_total", "val"));
 
     // perform recursive aggregation from two aggregators
 

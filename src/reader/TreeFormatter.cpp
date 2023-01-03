@@ -106,7 +106,7 @@ struct TreeFormatter::TreeFormatterImpl
         }
 
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
-        m_attribute_columns = spec.attribute_selection;
+        m_attribute_columns = spec.select;
         m_aliases = spec.aliases;
     }
 

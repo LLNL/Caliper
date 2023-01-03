@@ -106,12 +106,12 @@ namespace cali
 bool
 QueryArgsParser::parse_args(const Args& args)
 {
-    m_spec.filter.selection              = QuerySpec::FilterSelection::Default;
-    m_spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
-    m_spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
-    m_spec.aggregation_key.selection     = QuerySpec::AttributeSelection::None;
-    m_spec.sort.selection                = QuerySpec::SortSelection::Default;
-    m_spec.format.opt                    = QuerySpec::FormatSpec::Default;
+    m_spec.filter.selection    = QuerySpec::FilterSelection::Default;
+    m_spec.select.selection    = QuerySpec::AttributeSelection::Default;
+    m_spec.aggregate.selection = QuerySpec::AggregationSelection::None;
+    m_spec.groupby.selection   = QuerySpec::AttributeSelection::None;
+    m_spec.sort.selection      = QuerySpec::SortSelection::Default;
+    m_spec.format.opt          = QuerySpec::FormatSpec::Default;
 
     m_error = false;
     m_error_msg.clear();
@@ -146,7 +146,7 @@ QueryArgsParser::parse_args(const Args& args)
             return false;
         } else
             m_spec = p.spec();
-    } 
+    }
 
     // setup filter
 
@@ -158,20 +158,20 @@ QueryArgsParser::parse_args(const Args& args)
     // setup attribute selection
 
     if (args.is_set("attributes")) {
-        m_spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-        util::split(args.get("attributes"), ',', std::back_inserter(m_spec.attribute_selection.list));
+        m_spec.select.selection = QuerySpec::AttributeSelection::List;
+        util::split(args.get("attributes"), ',', std::back_inserter(m_spec.select.list));
     }
 
     // setup aggregation
 
     if (args.is_set("aggregate")) {
         // aggregation ops
-        m_spec.aggregation_ops.selection = QuerySpec::AggregationSelection::Default;
+        m_spec.aggregate.selection = QuerySpec::AggregationSelection::Default;
 
         std::string opstr = args.get("aggregate");
 
         if (!opstr.empty()) {
-            m_spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
+            m_spec.aggregate.selection = QuerySpec::AggregationSelection::List;
 
             std::istringstream is(opstr);
             char c;
@@ -182,23 +182,38 @@ QueryArgsParser::parse_args(const Args& args)
                 auto fpair = parse_functioncall(is, defs);
 
                 if (fpair.first >= 0)
-                    m_spec.aggregation_ops.list.emplace_back(defs[fpair.first], fpair.second);
+                    m_spec.aggregate.list.emplace_back(defs[fpair.first], fpair.second);
 
                 c = util::read_char(is);
             } while (is.good() && c == ',');
         }
 
         // aggregation key
-        m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::Default;
+        m_spec.groupby.selection = QuerySpec::AttributeSelection::Default;
 
         if (args.is_set("aggregate-key")) {
             std::string keystr = args.get("aggregate-key");
 
             if (keystr == "none") {
-                m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::None;
+                m_spec.groupby.selection = QuerySpec::AttributeSelection::None;
             } else {
-                m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::List;
-                util::split(keystr, ',', std::back_inserter(m_spec.aggregation_key.list));
+                m_spec.groupby.selection = QuerySpec::AttributeSelection::List;
+                util::split(keystr, ',', std::back_inserter(m_spec.groupby.list));
+            }
+
+            m_spec.groupby.use_path = false;
+
+            auto it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(),
+                                "path");
+            if (it != m_spec.groupby.list.end()) {
+                m_spec.groupby.use_path = true;
+                m_spec.groupby.list.erase(it);
+            }
+            it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(),
+                           "prop:nested");
+            if (it != m_spec.groupby.list.end()) {
+                m_spec.groupby.use_path = true;
+                m_spec.groupby.list.erase(it);
             }
         }
     }

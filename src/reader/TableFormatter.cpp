@@ -132,13 +132,13 @@ struct TableFormatter::TableImpl
 
         // Fill header columns
 
-        switch (spec.attribute_selection.selection) {
+        switch (spec.select.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
             m_auto_column = true;
             break;
         case QuerySpec::AttributeSelection::List:
-            for (const std::string& s : spec.attribute_selection.list) {
+            for (const std::string& s : spec.select.list) {
                 std::string alias = s;
 
                 auto it = m_aliases.find(s);

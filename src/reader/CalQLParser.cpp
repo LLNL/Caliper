@@ -58,6 +58,26 @@ bool is_in_strlist(const std::string& s, const char** list)
     return false;
 }
 
+bool extract_path_keyword(std::vector<std::string>& list)
+{
+    bool ret = false;
+
+    auto it = std::find(list.begin(), list.end(), "path");
+    if (it != list.end()) {
+        ret = true;
+        list.erase(it);
+    }
+
+    // check for legacy "prop:nested" key too
+    it = std::find(list.begin(), list.end(), "prop:nested");
+    if (it != list.end()) {
+        ret = true;
+        list.erase(it);
+    }
+
+    return ret;
+}
+
 } // namespace [anonymous]
 
 
@@ -191,8 +211,8 @@ struct CalQLParser::CalQLParserImpl
                 if (defs[i].min_args > argsize || defs[i].max_args < argsize) {
                     set_error(std::string("Invalid number of arguments for ") + defs[i].name, is);
                 } else {
-                    spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
-                    spec.aggregation_ops.list.emplace_back(defs[i], args);
+                    spec.aggregate.selection = QuerySpec::AggregationSelection::List;
+                    spec.aggregate.list.emplace_back(defs[i], args);
                 }
             } else {
                 set_error(std::string("Unknown aggregation function ") + w, is);
@@ -242,8 +262,8 @@ struct CalQLParser::CalQLParserImpl
             std::string w = util::read_word(is, ",;=<>()\n");
 
             if (!w.empty()) {
-                spec.aggregation_key.selection = QuerySpec::AttributeSelection::List;
-                spec.aggregation_key.list.push_back(w);
+                spec.groupby.selection = QuerySpec::AttributeSelection::List;
+                spec.groupby.list.push_back(w);
             }
 
             c = util::read_char(is);
@@ -251,6 +271,8 @@ struct CalQLParser::CalQLParserImpl
 
         if (c)
             is.unget();
+
+        spec.groupby.use_path = extract_path_keyword(spec.groupby.list);
     }
 
     void
@@ -264,6 +286,7 @@ struct CalQLParser::CalQLParserImpl
         char c = '\0';
 
         std::string next_keyword;
+        std::vector<std::string> selection_list;
 
         do {
             std::string selection_attr_name;
@@ -271,7 +294,7 @@ struct CalQLParser::CalQLParserImpl
             c = util::read_char(is);
 
             if (c == '*') {
-                spec.attribute_selection.selection = QuerySpec::AttributeSelection::All;
+                spec.select.selection = QuerySpec::AttributeSelection::All;
             } else {
                 is.unget();
 
@@ -292,17 +315,17 @@ struct CalQLParser::CalQLParserImpl
                         if (defs[i].min_args > argsize || defs[i].max_args < argsize) {
                             set_error(std::string("Invalid number of arguments for ") + defs[i].name, is);
                         } else {
-                            spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
+                            spec.aggregate.selection = QuerySpec::AggregationSelection::List;
 
                             QuerySpec::AggregationOp op(defs[i], args);
 
-                            spec.aggregation_ops.list.push_back(op);
+                            spec.aggregate.list.push_back(op);
                             selection_attr_name = Aggregator::get_aggregation_attribute_name(op);
 
                             // explicitly add aggregation attribute name to the list
-                            if (spec.attribute_selection.selection != QuerySpec::AttributeSelection::All) {
-                                spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-                                spec.attribute_selection.list.push_back(selection_attr_name);
+                            if (spec.select.selection != QuerySpec::AttributeSelection::All) {
+                                spec.select.selection = QuerySpec::AttributeSelection::List;
+                                spec.select.list.push_back(selection_attr_name);
                             }
                         }
                     } else {
@@ -314,8 +337,8 @@ struct CalQLParser::CalQLParserImpl
                     if (w.empty())
                         set_error("Expected argument for SELECT", is);
                     else {
-                        spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-                        spec.attribute_selection.list.push_back(w);
+                        spec.select.selection = QuerySpec::AttributeSelection::List;
+                        spec.select.list.push_back(w);
 
                         selection_attr_name = w;
                     }
@@ -361,6 +384,8 @@ struct CalQLParser::CalQLParserImpl
 
             c = util::read_char(is);
         } while (!error && is.good() && c == ',');
+
+        spec.select.use_path = extract_path_keyword(spec.select.list);
 
         if (c)
             is.unget();
@@ -659,12 +684,12 @@ struct CalQLParser::CalQLParserImpl
     CalQLParserImpl()
         : error(false), error_pos(std::istream::pos_type(-1))
     {
-        spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
-        spec.aggregation_key.selection     = QuerySpec::AttributeSelection::Default;
-        spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
-        spec.filter.selection              = QuerySpec::FilterSelection::None;
-        spec.sort.selection                = QuerySpec::SortSelection::None;
-        spec.format.opt                    = QuerySpec::FormatSpec::Default;
+        spec.aggregate.selection = QuerySpec::AggregationSelection::None;
+        spec.groupby.selection   = QuerySpec::AttributeSelection::Default;
+        spec.select.selection    = QuerySpec::AttributeSelection::Default;
+        spec.filter.selection    = QuerySpec::FilterSelection::None;
+        spec.sort.selection      = QuerySpec::SortSelection::None;
+        spec.format.opt          = QuerySpec::FormatSpec::Default;
     }
 };
 

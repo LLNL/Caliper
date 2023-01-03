@@ -33,6 +33,9 @@ struct QuerySpec
 
         /// \brief User-defined list
         std::vector<T> list;
+
+        /// \brief Use path (main nested region hierarchy) attributes
+        bool           use_path;
     };
 
     /// \brief Describe function signatures in query specs
@@ -124,12 +127,12 @@ struct QuerySpec
     typedef SelectionList<SortSpec>      SortSelection;
 
     /// \brief List of aggregations to be performed.
-    AggregationSelection         aggregation_ops;
+    AggregationSelection         aggregate;
     /// \brief List of attribute names that form the aggregation key (i.e., GROUP BY spec).
-    AttributeSelection           aggregation_key;
+    AttributeSelection           groupby;
 
     /// \brief List of attributes to print in output
-    AttributeSelection           attribute_selection;
+    AttributeSelection           select;
 
     /// \brief List of filter clauses (filters will be combined with AND)
     FilterSelection              filter;
