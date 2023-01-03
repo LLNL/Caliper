@@ -49,7 +49,7 @@ public:
 
             bool use_callpath = opts.is_enabled("callpath");
 
-            const char* groupby = "prop:nested";
+            const char* groupby = "path";
             const char* fmt_in = "";
 
             if (use_callpath) {

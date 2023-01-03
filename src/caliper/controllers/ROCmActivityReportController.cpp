@@ -44,7 +44,7 @@ public:
                 ",max(iscale#sum#rocm.activity.duration) as \"Max GPU Time\""
                 ",ratio(iscale#sum#rocm.activity.duration,inclusive#sum#time.duration,100.0) as \"GPU %\"";
 
-            std::string groupby = "prop:nested";
+            std::string groupby = "path";
 
             if (opts.is_enabled("show_kernels")) {
                 groupby += ",rocm.kernel.name";

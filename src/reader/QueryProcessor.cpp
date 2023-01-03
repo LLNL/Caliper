@@ -45,7 +45,7 @@ struct QueryProcessor::QueryProcessorImpl
           filter(spec),
           formatter(spec, stream)
     {
-        do_aggregate = (spec.aggregation_ops.selection != QuerySpec::AggregationSelection::None);
+        do_aggregate = (spec.aggregate.selection != QuerySpec::AggregationSelection::None);
     }
 };
 

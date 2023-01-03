@@ -316,7 +316,7 @@ int main(int argc, const char* argv[])
     Aggregator        aggregate(spec);
 
     if (!args.is_set("list-globals")) {
-        if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
+        if (spec.aggregate.selection == QuerySpec::AggregationSelection::None)
             snap_proc = format;
         else
             snap_proc = aggregate;
@@ -411,16 +411,16 @@ int main(int argc, const char* argv[])
     CALI_MARK_BEGIN("Writing");
 
     if (args.is_set("list-globals")) {
-        if (spec.attribute_selection.selection != QuerySpec::AttributeSelection::List) {
+        if (spec.select.selection != QuerySpec::AttributeSelection::List) {
             //   Global attributes will not be printed by default.
             // If the user didn't provide a selection, add all global attributes
             // to the selection list explictly.
 
-            spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
+            spec.select.selection = QuerySpec::AttributeSelection::List;
 
             for (const Attribute& attr : metadb.get_all_attributes())
                 if (attr.is_global())
-                    spec.attribute_selection.list.push_back(attr.name());
+                    spec.select.list.push_back(attr.name());
         }
 
         FormatProcessor global_format(spec, stream);

@@ -22,9 +22,8 @@ namespace cali
 {
 
 extern Attribute class_iteration_attr;
-extern Attribute function_attr;
 extern Attribute loop_attr;
-extern Attribute annotation_attr;
+extern Attribute region_attr;
 
 }
 
@@ -32,24 +31,24 @@ extern Attribute annotation_attr;
 
 Function::Function(const char* name)
 {
-    Caliper().begin(function_attr, Variant(name));
+    Caliper().begin(region_attr, Variant(name));
 }
 
 Function::~Function()
 {
-    Caliper().end(function_attr);
+    Caliper().end(region_attr);
 }
 
 // --- Pre-defined scope annotation class
 
 ScopeAnnotation::ScopeAnnotation(const char* name)
 {
-    Caliper().begin(annotation_attr, Variant(name));
+    Caliper().begin(region_attr, Variant(name));
 }
 
 ScopeAnnotation::~ScopeAnnotation()
 {
-    Caliper().end(annotation_attr);
+    Caliper().end(region_attr);
 }
 
 // --- Pre-defined loop annotation class

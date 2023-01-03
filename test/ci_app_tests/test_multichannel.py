@@ -71,15 +71,15 @@ class CaliperMultiChannelTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'foo',
+            snapshots, { 'region': 'foo',
                          'a': '2',
                          'b': '4' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'foo',
+            snapshots, { 'region': 'foo',
                          'b': '4',
                          'c': '8' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
-            snapshots, { 'annotation': 'foo',
+            snapshots, { 'region': 'foo',
                          'a': '2',
                          'b': '4',
                          'c': '8' }))

@@ -90,7 +90,7 @@ struct JsonFormatter::JsonFormatterImpl
                 m_layout = Object;
         }
 
-        switch (spec.attribute_selection.selection) {
+        switch (spec.select.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
             // do nothing; default is all
@@ -100,8 +100,7 @@ struct JsonFormatter::JsonFormatterImpl
             break;
         case QuerySpec::AttributeSelection::List:
             m_selected =
-                std::set<std::string>(spec.attribute_selection.list.begin(),
-                                      spec.attribute_selection.list.end());
+                std::set<std::string>(spec.select.list.begin(), spec.select.list.end());
             break;
         }
 

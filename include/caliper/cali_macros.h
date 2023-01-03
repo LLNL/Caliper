@@ -70,9 +70,7 @@
 
 #endif // __cplusplus
 
-extern cali_id_t cali_function_attr_id;
 extern cali_id_t cali_loop_attr_id;
-extern cali_id_t cali_statement_attr_id;
 extern cali_id_t cali_annotation_attr_id;
 
 /// \brief Mark begin of a function.
@@ -83,9 +81,7 @@ extern cali_id_t cali_annotation_attr_id;
 /// \ref CALI_CXX_MARK_FUNCTION instead.
 /// \sa CALI_MARK_FUNCTION_END, CALI_CXX_MARK_FUNCTION
 #define CALI_MARK_FUNCTION_BEGIN \
-    if (cali_function_attr_id == CALI_INV_ID) \
-        cali_init(); \
-    cali_begin_string(cali_function_attr_id, __func__)
+    cali_begin_region(__func__)
 
 /// \brief Mark end of a function.
 ///
@@ -93,7 +89,7 @@ extern cali_id_t cali_annotation_attr_id;
 /// \ref CALI_MARK_FUNCTION_BEGIN.
 /// \sa CALI_MARK_FUNCTION_BEGIN
 #define CALI_MARK_FUNCTION_END \
-    cali_safe_end_string(cali_function_attr_id, __func__)
+    cali_end_region(__func__)
 
 /// \brief Mark a loop
 ///
@@ -110,7 +106,7 @@ extern cali_id_t cali_annotation_attr_id;
         cali_init(); \
     cali_begin_string(cali_loop_attr_id, (name));       \
     cali_id_t __cali_iter_##loop_id = \
-        cali_make_loop_iteration_attribute(name);
+        cali_make_loop_iteration_attribute(name)
 
 /// \brief Mark a loop
 ///
@@ -175,11 +171,9 @@ extern cali_id_t cali_annotation_attr_id;
 ///   \c break, or \c return).
 ///
 #define CALI_WRAP_STATEMENT(name, statement)     \
-    if (cali_statement_attr_id == CALI_INV_ID) \
-        cali_init(); \
-    cali_begin_string(cali_statement_attr_id, (name));  \
+    cali_begin_region((name));  \
     statement; \
-    cali_end(cali_statement_attr_id);
+    cali_end_region((name))
 
 /// \brief Mark begin of a user-defined code region.
 ///

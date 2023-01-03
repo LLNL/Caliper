@@ -1357,28 +1357,18 @@ struct Aggregator::AggregatorImpl
         m_key_strings.clear();
 
         m_select_all    = false;
-        m_select_nested = false;
+        m_select_nested = spec.groupby.use_path;
 
-        switch (spec.aggregation_key.selection) {
+        switch (spec.groupby.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
             m_select_all  = true;
             break;
         case QuerySpec::AttributeSelection::List:
-            m_key_strings = spec.aggregation_key.list;
+            m_key_strings = spec.groupby.list;
             break;
         default:
             ;
-        }
-
-        {
-            auto it = std::find(m_key_strings.begin(), m_key_strings.end(),
-                                "prop:nested");
-
-            if (it != m_key_strings.end()) {
-                m_select_nested = true;
-                m_key_strings.erase(it);
-            }
         }
 
         //
@@ -1387,14 +1377,14 @@ struct Aggregator::AggregatorImpl
 
         m_kernel_configs.clear();
 
-        switch (spec.aggregation_ops.selection) {
+        switch (spec.aggregate.selection) {
         case QuerySpec::AggregationSelection::Default:
         case QuerySpec::AggregationSelection::All:
             m_kernel_configs.push_back(CountKernel::Config::create(vector<string>()));
             // TODO: pick class.aggregatable attributes
             break;
         case QuerySpec::AggregationSelection::List:
-            for (const QuerySpec::AggregationOp& k : spec.aggregation_ops.list) {
+            for (const QuerySpec::AggregationOp& k : spec.aggregate.list) {
                 if (k.op.id >= 0 && k.op.id <= MAX_KERNEL_ID) {
                     m_kernel_configs.push_back((*::kernel_list[k.op.id].create)(k.args));
                 } else {

@@ -24,7 +24,7 @@ class CaliperIoServiceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'io.bytes.read': '16',
                          'io.region':     'read',
-                         'function':      'main' }))
+                         'region':    'main' }))
 
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'io.bytes.read',
@@ -50,7 +50,7 @@ class CaliperIoServiceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function': 'main' }))
+            snapshots, { 'region': 'main' }))
         self.assertFalse(cat.has_snapshot_with_keys(
             snapshots, { 'io.region' }))
 

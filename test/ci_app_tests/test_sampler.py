@@ -21,7 +21,7 @@ class CaliperSamplerTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 0)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'loop', 'function' }))
+            snapshots, { 'loop', 'region' }))
 
 if __name__ == "__main__":
     unittest.main()

@@ -326,7 +326,7 @@ class Aggregate
 
         info.implicit_grouping = false;
 
-        // Check for "*" and "prop:nested" special arguments to determine
+        // Check for "*" and "path" special arguments to determine
         // nested or implicit grouping
 
         {
@@ -339,8 +339,13 @@ class Aggregate
         }
 
         {
-            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "prop:nested");
+            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "path");
+            if (it != key_attribute_names.end()) {
+                info.group_nested = true;
+                key_attribute_names.erase(it);
+            }
 
+            it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "prop:nested");
             if (it != key_attribute_names.end()) {
                 info.group_nested = true;
                 key_attribute_names.erase(it);

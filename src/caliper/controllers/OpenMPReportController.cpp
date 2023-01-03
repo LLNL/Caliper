@@ -63,7 +63,7 @@ public:
             }
 
             if (opts.is_enabled("show_regions")) {
-                groupby.append(groupby.empty() ? "prop:nested" : ",prop:nested");
+                groupby.append(groupby.empty() ? "path" : ",path");
                 format = "tree";
             }
 

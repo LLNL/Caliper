@@ -13,7 +13,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         target_cmd = [ './ci_test_macros' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
-                       '-q', 'SELECT count(),* group by prop:nested where function format json(object)' ]
+                       '-q', 'SELECT count(),* group by path where region format json(object)' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -38,7 +38,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         target_cmd = [ './ci_test_macros' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
-                       '-q', 'SELECT count(),* group by prop:nested where function format json(object,pretty)' ]
+                       '-q', 'SELECT count(),* group by path where region format json(object,pretty)' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
