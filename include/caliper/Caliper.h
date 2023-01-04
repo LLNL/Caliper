@@ -238,7 +238,7 @@ public:
     ///
     /// \param attr Attribute key
     /// \param data Value to set
-    cali_err  begin(const Attribute& attr, const Variant& data);
+    void  begin(const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with given attribute from
     ///   the process or thread blackboard.
@@ -249,7 +249,7 @@ public:
     /// This function is signal safe.
     ///
     /// \param attr Attribute key.
-    cali_err  end(const Attribute& attr);
+    void  end(const Attribute& attr);
 
     /// \brief Set attribute:value pair on the process or thread blackboard.
     ///
@@ -263,7 +263,7 @@ public:
     ///
     /// \param attr Attribute key
     /// \param data Value to set
-    cali_err  set(const Attribute& attr, const Variant& data);
+    void  set(const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (across channels)
@@ -410,7 +410,7 @@ public:
     /// \param data Value to set
     ///
     /// \sa begin(const Attribute&, const Variant&)
-    cali_err  begin(Channel* channel, const Attribute& attr, const Variant& data);
+    void  begin(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with given attribute from
     ///   the channel blackboard.
@@ -423,7 +423,7 @@ public:
     /// \param attr Attribute key.
     ///
     /// \sa end(const Attribute&)
-    cali_err  end(Channel* channel, const Attribute& attr);
+    void  end(Channel* channel, const Attribute& attr);
 
     /// \brief Set attribute:value pair on the channel blackboard.
     ///
@@ -438,7 +438,7 @@ public:
     /// \param attr Attribute key
     /// \param data Value to set
     /// \sa set(const Attribute&, const Variant&)
-    cali_err  set(Channel* channel, const Attribute& attr, const Variant& data);
+    void  set(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (single channel)

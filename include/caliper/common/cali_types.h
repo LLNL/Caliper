@@ -141,21 +141,6 @@ cali_prop2string(int prop, char* buf, size_t len);
 int
 cali_string2prop(const char*);
 
-typedef enum {
-  CALI_OP_SUM = 1,
-  CALI_OP_MIN = 2,
-  CALI_OP_MAX = 3
-} cali_op;
-
-typedef enum {
-  CALI_SUCCESS = 0,
-  CALI_EBUSY,
-  CALI_ELOCKED,
-  CALI_EINV,
-  CALI_ETYPE,
-  CALI_ESTACK
-} cali_err;
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
