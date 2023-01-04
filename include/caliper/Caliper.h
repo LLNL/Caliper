@@ -240,7 +240,7 @@ public:
     /// \param data Value to set
     void  begin(const Attribute& attr, const Variant& data);
 
-    /// \brief Pop/remove top-most entry with given attribute from
+    /// \brief Pop/remove top-most entry with \a attr from
     ///   the process or thread blackboard.
     ///
     /// This function invokes the pre_end/post_end callbacks, unless the
@@ -249,7 +249,7 @@ public:
     /// This function is signal safe.
     ///
     /// \param attr Attribute key.
-    void  end(const Attribute& attr);
+    void  end(const Attribute& attr, const Variant& data = Variant());
 
     /// \brief Set attribute:value pair on the process or thread blackboard.
     ///

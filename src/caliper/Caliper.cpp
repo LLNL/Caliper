@@ -339,40 +339,6 @@ struct Caliper::ThreadData
         thread_blackboard.print_statistics( os << "  Thread blackboard: " )
             << std::endl;
     }
-
-    void
-    log_stack_error(const Node* stack, const Attribute& attr)
-    {
-        stack_error = true;
-        std::string stackstr;
-        std::string helpstr;
-
-        if (stack) {
-            stackstr =
-                "\n  but current region is\n    \"";
-
-            const Node* attr_node = tree.node(stack->attribute());
-
-            if (attr_node)
-                stackstr.append(attr_node->data().to_string());
-
-            stackstr.append("=");
-            stackstr.append(stack->data().to_string());
-            stackstr.append("\".");
-
-            helpstr =
-                "\n  Run program with CALI_SERVICES_ENABLE=validator to examine nesting errors, or"
-                "\n  run with CALI_CALIPER_ALLOW_REGION_OVERLAP=true to continue at your own risk.";
-        } else
-            stackstr =
-                "\n  but region stack is empty!";
-
-        Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name_c_str() << "\""
-                        << stackstr
-                        << "\n  Ceasing region tracking!"
-                        << helpstr
-                        << std::endl;
-    }
 };
 
 
@@ -670,6 +636,82 @@ handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& bl
         Node* node = blackboard.get(key).node();
         blackboard.set(key, tree.replace_first_in_path(node, attr, value), !(prop & CALI_ATTR_HIDDEN));
     }
+}
+
+void
+log_stack_error(const Node* stack, const Attribute& attr)
+{
+    std::string stackstr;
+    std::string helpstr;
+
+    if (stack) {
+        stackstr =
+            "\n  but current region is\n    \"";
+/*
+        const Node* attr_node = tree.node(stack->attribute());
+
+        if (attr_node)
+            stackstr.append(attr_node->data().to_string());
+        stackstr.append("=");
+*/
+        stackstr.append(stack->data().to_string());
+        stackstr.append("\".");
+
+        helpstr =
+            "\n  Run program with CALI_SERVICES_ENABLE=validator to examine nesting errors, or"
+            "\n  run with CALI_CALIPER_ALLOW_REGION_OVERLAP=true to continue region tracking.";
+    } else
+        stackstr =
+            "\n  but region stack is empty!";
+
+    Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name() << "\""
+        << stackstr
+        << "\n  Ceasing region tracking!"
+        << helpstr
+        << std::endl;
+}
+
+void
+log_stack_value_error(const Entry& current, Attribute attr, const Variant& expect)
+{
+    std::string error;
+    if (current.empty())
+        error = "stack is empty";
+    else {
+        error = "current value is ";
+        error.append(current.value().to_string());
+    }
+
+    Log(0).stream() << "Stack value mismatch: Trying to end "
+        << attr.name() << "=" << expect.to_string()
+        << " but " << error
+        << std::endl;
+}
+
+struct BlackboardEntry
+{
+    Entry merged_entry;
+    Entry entry;
+};
+
+inline BlackboardEntry
+load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard, bool allow_overlap)
+{
+    Entry merged_entry = blackboard.get(key);
+    Entry entry = merged_entry.get(attr);
+
+    if (merged_entry.attribute() != attr.id()) {
+        if (entry.empty()) {
+            log_stack_error(nullptr, attr);
+            return { Entry(), Entry() };
+        }
+        if (key != UNALIGNED_KEY && !allow_overlap) {
+            log_stack_error(merged_entry.node(), attr);
+            return { Entry(), Entry() };
+        }
+    }
+
+    return { merged_entry, entry };
 }
 
 } // namespace [anonymous]
@@ -1023,7 +1065,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 }
 
 void
-Caliper::end(const Attribute& attr)
+Caliper::end(const Attribute& attr, const Variant& data)
 {
     if (attr == Attribute::invalid)
         return;
@@ -1035,52 +1077,53 @@ Caliper::end(const Attribute& attr)
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
+    cali_id_t key = get_blackboard_key(attr.id(), prop);
+    Blackboard* blackboard = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        blackboard = &sT->thread_blackboard;
+    else if (scope == CALI_ATTR_SCOPE_PROCESS)
+        blackboard = &sG->process_blackboard;
+    else
+        return;
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    cali_id_t key = get_blackboard_key(attr.id(), prop);
-    Entry merged_entry;
+    auto current = load_current_entry(attr, key, *blackboard, sG->allow_region_overlap);
 
-    if (scope == CALI_ATTR_SCOPE_THREAD)
-        merged_entry = sT->thread_blackboard.get(key);
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
-        merged_entry = sG->process_blackboard.get(key);
+    if (current.entry.empty()) {
+        sT->stack_error = true;
+        return;
+    }
 
-    Entry entry = merged_entry.get(attr);
-
-    if (merged_entry.attribute() != attr.id()) {
-        if (entry.empty()) {
-            sT->log_stack_error(nullptr, attr);
-            return;
-        }
-        if (key != UNALIGNED_KEY && !sG->allow_region_overlap) {
-            sT->log_stack_error(merged_entry.node(), attr);
-            return;
-        }
+    if (!data.empty() && data != current.entry.value()) {
+        log_stack_value_error(current.entry, attr, data);
+        sT->stack_error = true;
+        return;
     }
 
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
-                channel->mP->events.pre_end_evt(this, channel.get(), attr, entry.value());
+                channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
-    if (scope == CALI_ATTR_SCOPE_THREAD)
-        handle_end(attr, prop, merged_entry, key, sT->thread_blackboard, sT->tree);
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
-        handle_end(attr, prop, merged_entry, key, sG->process_blackboard, sT->tree);
+    handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
 
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, entry.value());
+                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
 }
 
 void
 Caliper::set(const Attribute& attr, const Variant& data)
 {
     if (attr == Attribute::invalid)
+        return;
+    if (sT->stack_error)
         return;
 
     int prop  = attr.properties();
@@ -1146,29 +1189,23 @@ Caliper::end(Channel* channel, const Attribute& attr)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Entry merged_entry = channel->mP->channel_blackboard.get(key);
-    Entry entry = merged_entry.get(attr);
+    BlackboardEntry current =
+        load_current_entry(attr, key, channel->mP->channel_blackboard, sG->allow_region_overlap);
 
-    if (merged_entry.attribute() != attr.id()) {
-        if (entry.empty()) {
-            sT->log_stack_error(nullptr, attr);
-            return;
-        }
-        if (key != UNALIGNED_KEY && !sG->allow_region_overlap) {
-            sT->log_stack_error(entry.node(), attr);
-            return;
-        }
+    if (current.entry.empty()) {
+        sT->stack_error = true;
+        return;
     }
 
     // invoke callbacks
     if (run_events && channel->is_active())
-        channel->mP->events.pre_end_evt(this, channel, attr, entry.value());
+        channel->mP->events.pre_end_evt(this, channel, attr, current.entry.value());
 
-    handle_end(attr, prop, merged_entry, key, channel->mP->channel_blackboard, sT->tree);
+    handle_end(attr, prop, current.merged_entry, key, channel->mP->channel_blackboard, sT->tree);
 
     // invoke callbacks
     if (run_events && channel->is_active())
-        channel->mP->events.post_end_evt(this, channel, attr, entry.value());
+        channel->mP->events.post_end_evt(this, channel, attr, current.entry.value());
 }
 
 void
@@ -1211,9 +1248,9 @@ Caliper::get(const Attribute& attr)
         blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
         blackboard = &sG->process_blackboard;
+    } else {
+        return Entry();
     }
-
-    assert(blackboard != nullptr);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
@@ -1310,7 +1347,6 @@ Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], 
 
     return sT->tree.get_path(attr, n, data, parent);
 }
-
 
 Node*
 Caliper::node(cali_id_t id) const
