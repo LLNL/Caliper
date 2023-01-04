@@ -370,14 +370,8 @@ cali_end_region(const char* name)
 {
     Caliper c;
     Variant v_n(name);
-    Variant v_s = c.get(cali::region_attr).value();
 
-    if (!(v_n == v_s))
-        Log(0).stream() << "region nesting error: trying to end \"" << v_n
-                        << "\" but current region is \""            << v_s << "\""
-                        << std::endl;
-
-    c.end(cali::region_attr);
+    c.end(cali::region_attr, v_n);
 }
 
 void
