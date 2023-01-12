@@ -1,5 +1,7 @@
 #include "../RegionFilter.h"
 
+#include "caliper/common/Variant.h" 
+
 #include <gtest/gtest.h>
 
 using namespace cali;
@@ -14,14 +16,14 @@ TEST(RegionFilterTest, IncludeExclude) {
 
     RegionFilter f(p.first);
 
-    EXPECT_TRUE  (f.pass( " exact match"   ));
-    EXPECT_FALSE (f.pass( "some random string" ));
-    EXPECT_TRUE  (f.pass( "matchme"        ));
-    EXPECT_TRUE  (f.pass( "starts with the magic word" ));
-    EXPECT_FALSE (f.pass( "start exclude"  ));
-    EXPECT_TRUE  (f.pass( "mpi_include_me" ));
-    EXPECT_FALSE (f.pass( "mpi_exclude_me" ));
-    EXPECT_FALSE (f.pass( "sta"            ));
+    EXPECT_TRUE  (f.pass( Variant(" exact match"   )));
+    EXPECT_FALSE (f.pass( Variant("some random string" )));
+    EXPECT_TRUE  (f.pass( Variant("matchme"        )));
+    EXPECT_TRUE  (f.pass( Variant("starts with the magic word" )));
+    EXPECT_FALSE (f.pass( Variant("start exclude"  )));
+    EXPECT_TRUE  (f.pass( Variant("mpi_include_me" )));
+    EXPECT_FALSE (f.pass( Variant("mpi_exclude_me" )));
+    EXPECT_FALSE (f.pass( Variant("sta"            )));
 }
 
 TEST(RegionFilterTest, IncludeOnly) {
@@ -34,12 +36,12 @@ TEST(RegionFilterTest, IncludeOnly) {
 
     RegionFilter f(p.first);
 
-    EXPECT_TRUE  (f.pass( " exact match"   ));
-    EXPECT_FALSE (f.pass( "some random string" ));
-    EXPECT_TRUE  (f.pass( "matchme"        ));
-    EXPECT_TRUE  (f.pass( "starts with the magic word" ));
-    EXPECT_TRUE  (f.pass( "mpi_include_me" ));
-    EXPECT_FALSE (f.pass( "sta"            ));
+    EXPECT_TRUE  (f.pass( Variant(" exact match"   )));
+    EXPECT_FALSE (f.pass( Variant("some random string" )));
+    EXPECT_TRUE  (f.pass( Variant("matchme"        )));
+    EXPECT_TRUE  (f.pass( Variant("starts with the magic word" )));
+    EXPECT_TRUE  (f.pass( Variant("mpi_include_me" )));
+    EXPECT_FALSE (f.pass( Variant("sta"            )));
 }
 
 TEST(RegionFilterTest, ExcludeOnly) {
@@ -52,11 +54,11 @@ TEST(RegionFilterTest, ExcludeOnly) {
 
     RegionFilter f(p.first);
 
-    EXPECT_TRUE  (f.pass( "some random string" ));
-    EXPECT_FALSE (f.pass( " exclude"       ));
-    EXPECT_TRUE  (f.pass( "mpi_include_me" ));
-    EXPECT_FALSE (f.pass( "mpi_exclude_me" ));
-    EXPECT_TRUE  (f.pass( "mpi"            ));
+    EXPECT_TRUE  (f.pass( Variant("some random string" )));
+    EXPECT_FALSE (f.pass( Variant(" exclude"       )));
+    EXPECT_TRUE  (f.pass( Variant("mpi_include_me" )));
+    EXPECT_FALSE (f.pass( Variant("mpi_exclude_me" )));
+    EXPECT_TRUE  (f.pass( Variant("mpi"            )));
 }
 
 TEST(RegionFilterTest, IncludeRegex) {
@@ -66,9 +68,9 @@ TEST(RegionFilterTest, IncludeRegex) {
 
     RegionFilter f(p.first);
 
-    EXPECT_TRUE  (f.pass( "i should match" ));
-    EXPECT_FALSE (f.pass( "i should match not" ));
-    EXPECT_FALSE (f.pass( "me neither" ));
+    EXPECT_TRUE  (f.pass( Variant("i should match" )));
+    EXPECT_FALSE (f.pass( Variant("i should match not" )));
+    EXPECT_FALSE (f.pass( Variant("me neither" )));
 }
 
 TEST(RegionFilterTest, ParseError) {

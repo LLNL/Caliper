@@ -3,6 +3,8 @@
 
 #include "RegionFilter.h"
 
+#include "caliper/common/Variant.h"
+
 #include "../common/util/parse_util.h"
 
 #include <iostream>
@@ -120,18 +122,22 @@ RegionFilter::parse_filter_config(std::istream& is)
 }
 
 bool
-RegionFilter::match(const std::string& str, const Filter& filter)
+RegionFilter::match(const Variant& val, const Filter& filter)
 {
+    //   We assume val is a string. Variant strings aren't
+    // 0-terminated, hence the more complicated comparisons
+    const char* strp = static_cast<const char*>(val.data());
+
     for (const auto &w : filter.startswith)
-        if (str.compare(0, w.size(), w) == 0)
+        if (val.size() >= w.size() && w.compare(0, w.size(), strp, w.size()) == 0)
             return true;
 
     for (const auto &w : filter.match)
-        if (str == w)
+        if (val.size() == w.size() && w.compare(0, w.size(), strp, w.size()) == 0)
             return true;
 
     for (const auto &r : filter.regex)
-        if (std::regex_match(str, r) == true)
+        if (std::regex_match(std::string(strp, val.size()), r) == true)
             return true;
 
     return false;

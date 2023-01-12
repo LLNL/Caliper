@@ -129,7 +129,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
 
         if (enable_snapshot_info) {
@@ -163,7 +163,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
 
         if (enable_snapshot_info) {
@@ -197,7 +197,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
 
         if (enable_snapshot_info) {
