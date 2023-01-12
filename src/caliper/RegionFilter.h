@@ -14,6 +14,8 @@
 namespace cali
 {
 
+class Variant;
+
 /// \brief Implements region (string) filtering
 class RegionFilter
 {
@@ -28,7 +30,7 @@ class RegionFilter
 
     static std::pair<std::shared_ptr<Filter>, std::string> parse_filter_config(std::istream& is);
 
-    static bool match(const std::string& str, const Filter&);
+    static bool match(const Variant& val, const Filter&);
 
     RegionFilter(std::shared_ptr<Filter> iflt, std::shared_ptr<Filter> eflt)
         : m_include_filters { iflt },
@@ -37,12 +39,12 @@ class RegionFilter
 
 public:
 
-    bool pass(const char* str) const {
+    bool pass(const Variant& val) const {
         if (m_exclude_filters)
-            if (match(str, *m_exclude_filters))
+            if (match(val, *m_exclude_filters))
                 return false;
         if (m_include_filters)
-            return match(str, *m_include_filters);
+            return match(val, *m_include_filters);
 
         return true;
     }
