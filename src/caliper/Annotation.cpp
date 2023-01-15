@@ -126,6 +126,7 @@ struct Annotation::Impl {
     std::vector<Variant>     m_metadata_values;
     int                      m_opt;
     std::atomic<int>         m_refcount;
+
     Impl(const std::string& name, MetadataListType metadata, int opt)
         : m_attr(nullptr),
           m_name(name),
@@ -151,9 +152,10 @@ struct Annotation::Impl {
     ~Impl() {
         delete m_attr.load();
     }
+
     void begin(const Variant& data) {
         Caliper   c;
-        Attribute attr = get_attribute(c, data.type(), m_metadata_keys, m_metadata_values);
+        Attribute attr = get_attribute(c, data.type());
 
         if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
             c.begin(attr, data);
@@ -161,7 +163,7 @@ struct Annotation::Impl {
 
     void set(const Variant& data) {
         Caliper   c;
-        Attribute attr = get_attribute(c, data.type(), m_metadata_keys, m_metadata_values);
+        Attribute attr = get_attribute(c, data.type());
 
         if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
             c.set(attr, data);
@@ -173,13 +175,13 @@ struct Annotation::Impl {
         c.end(get_attribute(c));
     }
 
-    Attribute get_attribute(Caliper& c, cali_attr_type type = CALI_TYPE_INV, const std::vector<cali::Attribute>& attrs = {}, const std::vector<cali::Variant>& values = {}) {
+    Attribute get_attribute(Caliper& c, cali_attr_type type = CALI_TYPE_INV) {
         Attribute* attr_p = m_attr.load();
 
         if (!attr_p) {
             Attribute* new_attr = type == CALI_TYPE_INV ?
                 new Attribute(c.get_attribute(m_name)) :
-                new Attribute(c.create_attribute(m_name, type, m_opt,attrs.size(),attrs.data(),values.data()));
+                new Attribute(c.create_attribute(m_name, type, m_opt, m_metadata_keys.size(), m_metadata_keys.data(), m_metadata_values.data()));
 
             // Don't store invalid attribute in shared pointer
             if (*new_attr == Attribute::invalid)
@@ -281,16 +283,6 @@ Annotation& Annotation::begin(double data)
     return begin(Variant(data));
 }
 
-Annotation& Annotation::begin(const char* data)
-{
-    return begin(Variant(data));
-}
-
-Annotation& Annotation::begin(cali_attr_type type, void* data, uint64_t size)
-{
-    return begin(Variant(type, data, size));
-}
-
 Annotation& Annotation::begin(const Variant& data)
 {
     pI->begin(data);
@@ -319,7 +311,7 @@ Annotation& Annotation::set(double data)
 
 Annotation& Annotation::set(const char* data)
 {
-    return set(Variant(CALI_TYPE_STRING, data, strlen(data)));
+    return set(Variant(data));
 }
 
 Annotation& Annotation::set(cali_attr_type type, void* data, uint64_t size)

@@ -44,8 +44,6 @@ public:
 
     Node& operator = (const Node&) = delete;
 
-    ~Node();
-
     /// \brief Check if the node's attribute and value are equal to
     ///   \a attr and \a v
     bool equals(cali_id_t attr, const Variant& v) const {

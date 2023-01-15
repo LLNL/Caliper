@@ -1298,7 +1298,7 @@ Caliper::memory_region_end(Channel* channel, const void* ptr)
 // --- Generic entry API
 
 void
-Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotBuilder& rec, Node* parent)
+Caliper::make_record(size_t n, const Attribute attr[], const Variant value[], SnapshotBuilder& rec, Node* parent)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
