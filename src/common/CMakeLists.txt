@@ -4,7 +4,6 @@ set(CALIPER_COMMON_SOURCES
   CompressedSnapshotRecord.cpp
   Entry.cpp
   Log.cpp
-  Node.cpp
   NodeBuffer.cpp
   OutputStream.cpp
   RuntimeConfig.cpp

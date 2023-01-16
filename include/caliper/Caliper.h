@@ -520,9 +520,6 @@ public:
     /// \name Context tree manipulation and metadata access
     /// \{
 
-    /// \brief Return the total number of attributes
-    size_t    num_attributes() const;
-
     /// \brief Return \a true if the attribute with name \a name exists
     bool      attribute_exists(const std::string& name) const;
 

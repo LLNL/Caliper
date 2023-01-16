@@ -24,15 +24,13 @@ namespace cali
 /// \brief Pre-defined function annotation class
 class Function
 {
-private:
-
-    // Do not copy Function objects: will double-end things
-    Function(const Function&);
-    Function& operator = (const Function&);
-
 public:
 
     Function(const char* name);
+
+    Function(const Function&) = delete;
+    Function& operator = (const Function&) = delete;
+
     ~Function();
 };
 
@@ -150,12 +148,12 @@ public:
     class Guard {
         Impl* pI;
 
-        Guard(const Guard&);
-        Guard& operator = (const Guard&);
-
     public:
 
         Guard(Annotation& a);
+
+        Guard(const Guard&) = delete;
+        Guard& operator = (const Guard&) = delete;
 
         ~Guard();
     };
@@ -179,8 +177,13 @@ public:
     /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(double data);
     /// \copydoc cali::Annotation::begin(int)
-    Annotation& begin(const char* data);
-    Annotation& begin(cali_attr_type type, void* data, uint64_t size);
+    Annotation& begin(const char* data) {
+        return begin(Variant(data));
+    }
+    /// \copydoc cali::Annotation::begin(int)
+    Annotation& begin(cali_attr_type type, void* data, uint64_t size) {
+        return begin(Variant(type, data, size));
+    }
     /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(const Variant& data);
 
