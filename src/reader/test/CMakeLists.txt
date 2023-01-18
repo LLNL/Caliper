@@ -17,5 +17,6 @@ add_executable(test_caliper-reader
   ${CALIPER_READER_TEST_SOURCES})
 
 target_link_libraries(test_caliper-reader gtest_main)
+target_compile_features(test_caliper-reader PUBLIC cxx_std_11)
 
 add_test(NAME test-caliper-reader COMMAND test_caliper-reader)

@@ -1,13 +1,3 @@
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD_REQUIRED ON) 
-
-if (WIN32)
-  set(CMAKE_CXX_STANDARD 17)
-else()
-  set(CMAKE_CXX_STANDARD 11)
-endif()
-set(CMAKE_C_STANDARD   99)
-
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 
 include(CheckCXXCompilerFlag)
@@ -52,6 +42,8 @@ add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
 set_target_properties(caliper-serial PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper-serial PROPERTIES VERSION ${CALIPER_VERSION})
 
+target_compile_features(caliper-serial PUBLIC cxx_std_11 c_std_99)
+
 target_include_directories(
   caliper-serial
   INTERFACE
@@ -74,6 +66,8 @@ add_library(caliper ${CALIPER_ALL_OBJS})
 
 set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
+
+target_compile_features(caliper PUBLIC cxx_std_11 c_std_99)
 
 target_include_directories(
   caliper

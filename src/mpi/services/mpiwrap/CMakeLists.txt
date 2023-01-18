@@ -17,5 +17,6 @@ set(CALIPER_MPIWRAP_SOURCES
   Wrapper.cpp)
 
 add_library(caliper-mpiwrap OBJECT ${CALIPER_MPIWRAP_SOURCES})
+target_compile_features(caliper-mpiwrap PUBLIC cxx_std_11)
 
 add_mpi_service_objlib(caliper-mpiwrap)

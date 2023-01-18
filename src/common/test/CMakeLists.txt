@@ -12,6 +12,7 @@ add_executable(test_caliper-common
   ${CALIPER_COMMON_TEST_SOURCES})
 
 target_link_libraries(test_caliper-common gtest_main)
+target_compile_features(test_caliper-common PUBLIC cxx_std_11)
 
 add_custom_target(caliper-common_test.config ALL
   COMMAND ${CMAKE_COMMAND} -E create_symlink

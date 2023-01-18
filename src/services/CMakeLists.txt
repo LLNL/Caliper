@@ -29,6 +29,7 @@ endmacro()
 
 macro(add_service_objlib)
   target_compile_options("${ARGN}" PRIVATE ${Wall_flag})
+  target_compile_features("${ARGN}" PUBLIC cxx_std_11 c_std_99)
   list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
@@ -143,6 +144,7 @@ add_custom_target(
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 
 target_compile_options(caliper-services PRIVATE ${Wall_flag})
+target_compile_features(caliper-services PUBLIC cxx_std_11)
 
 add_dependencies(caliper-services gen-services)
 

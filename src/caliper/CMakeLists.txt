@@ -21,6 +21,7 @@ add_subdirectory(controllers)
 add_library(caliper-runtime OBJECT ${CALIPER_RUNTIME_SOURCES})
 
 target_compile_options(caliper-runtime PRIVATE ${Wall_flag})
+target_compile_features(caliper-runtime PUBLIC cxx_std_11)
 
 list(APPEND CALIPER_SERIAL_OBJS
   caliper/machine_serial.cpp

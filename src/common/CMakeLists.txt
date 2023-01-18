@@ -20,6 +20,7 @@ add_library(caliper-common OBJECT
   ${CALIPER_COMMON_SOURCES})
 
 target_compile_options(caliper-common PRIVATE ${Wall_flag})
+target_compile_features(caliper-common PUBLIC cxx_std_11 c_std_99)
 
 if (BUILD_TESTING)
   add_subdirectory(test)
