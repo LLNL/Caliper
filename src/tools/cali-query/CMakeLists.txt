@@ -11,6 +11,7 @@ set(CALIPER_QUERY_SOURCES
   cali-query.cpp)
 
 add_library(query-common OBJECT ${CALIPER_QUERY_COMMON_SOURCES})
+target_compile_features(query-common PUBLIC cxx_std_11)
 
 add_executable(cali-query
   $<TARGET_OBJECTS:query-common>

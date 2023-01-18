@@ -14,3 +14,4 @@ if (WITH_FORTRAN)
 endif()
 
 add_library(caliper-interface OBJECT ${CALIPER_INTERFACE_SOURCES})
+target_compile_features(caliper-interface PUBLIC cxx_std_11)

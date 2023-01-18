@@ -46,6 +46,7 @@ if (CALIPER_HAVE_MPIT)
 endif()
 
 add_library(caliper-mpi OBJECT ${CALIPER_MPI_SOURCES})
+target_compile_features(caliper-mpi PUBLIC cxx_std_11)
 
 # Add mpi objects and dependencies to global list for combined caliper lib
 list(APPEND CALIPER_ALL_OBJS

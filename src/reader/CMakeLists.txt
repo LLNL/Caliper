@@ -26,6 +26,7 @@ add_library(caliper-reader OBJECT
   ${CALIPER_READER_SOURCES})
 
 target_compile_options(caliper-reader PRIVATE ${Wall_flag})
+target_compile_features(caliper-reader PUBLIC cxx_std_11)
 
 if (BUILD_TESTING)
   add_subdirectory(test)
