@@ -43,8 +43,8 @@ namespace util
 /// restrictions on the operations that can be
 /// performed. Specifically, tree nodes can only be added, but not
 /// moved or removed.
-   
-template<typename T> 
+
+template<typename T>
 class LockfreeIntrusiveTree {
 public:
 
@@ -60,7 +60,7 @@ public:
 
 private:
 
-    // --- private data 
+    // --- private data
 
     T* m_me;
     LockfreeIntrusiveTree<T>::Node T::*m_node;
@@ -74,7 +74,7 @@ private:
 
 public:
 
-    LockfreeIntrusiveTree(T* me, LockfreeIntrusiveTree<T>::Node T::*nodeptr) 
+    LockfreeIntrusiveTree(T* me, LockfreeIntrusiveTree<T>::Node T::*nodeptr)
         : m_me(me), m_node(nodeptr)
     { }
 
@@ -84,70 +84,13 @@ public:
 
     void append(T* sub) {
         LockfreeIntrusiveTree<T>::Node& n = node(m_me);
-        
+
         node(sub).parent = m_me;
 
-        // do "conservative" loop update instead of 
-        //   while(!n.head.compare_exchange_weak(node(sub).next, sub,
-        //                                       std::memory_order_release,
-        //                                       std::memory_order_relaxed))
-        //       ;
-        // because that is not safe on some pre-2014 compilers according to
-        // http://en.cppreference.com/w/cpp/atomic/atomic/compare_exchange
-        
-        T* old_head = n.head.load(std::memory_order_relaxed);
-        
-        do {
-            node(sub).next = old_head;
-        } while (!n.head.compare_exchange_weak(old_head, sub,
-                                               std::memory_order_release,
-                                               std::memory_order_relaxed));
-    }
-
-    // 
-    // --- Iterators ---------------------------------------------------------
-    //
-
-    class depthfirst_iterator : public std::iterator<std::input_iterator_tag, T> {
-        T* m_t;
-        LockfreeIntrusiveTree<T>::Node T::*m_n;
-
-    public:
-
-        depthfirst_iterator(T* t, LockfreeIntrusiveTree<T>::Node T::*n)
-            : m_t(t), m_n(n) { }
-
-        depthfirst_iterator& operator++() {
-            if (node(m_t, m_n).head)
-                m_t = node(m_t, m_n).head;
-            else if (node(m_t, m_n).next)
-                m_t = node(m_t, m_n).next;
-            else {
-                // find first parent node with a sibling
-                while (node(m_t, m_n).parent && !node(m_t, m_n).next)
-                    m_t = node(m_t, m_n).parent;
-
-                m_t = node(m_t, m_n).next;    
-            }
-
-            return *this;
-        }
-
-        depthfirst_iterator operator++(int) { 
-            depthfirst_iterator tmp(*this); ++(*this); return tmp; 
-        }
-
-        bool operator == (const depthfirst_iterator& rhs) { return m_t == rhs.m_t; }
-        bool operator != (const depthfirst_iterator& rhs) { return m_t != rhs.m_t; }
-        T&   operator * () { return *m_t; } 
-    };
-
-    LockfreeIntrusiveTree<T>::depthfirst_iterator begin() {
-        return depthfirst_iterator(m_me, m_node);
-    }
-
-    LockfreeIntrusiveTree<T>::depthfirst_iterator end() {
-        return LockfreeIntrusiveTree<T>::depthfirst_iterator(0, m_node);
+        while(!n.head.compare_exchange_weak(node(sub).next, sub,
+                                            std::memory_order_release,
+                                            std::memory_order_relaxed))
+            ;
     }
 };
 
