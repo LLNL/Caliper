@@ -1352,9 +1352,6 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 Node*
 Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  parent)
 {
-    if (attr.store_as_value())
-        return nullptr;
-
     std::lock_guard<::siglock>
         g(sT->lock);
 
@@ -1364,9 +1361,6 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
 Node*
 Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
 {
-    if (attr.store_as_value())
-        return nullptr;
-
     std::lock_guard<::siglock>
         g(sT->lock);
 
