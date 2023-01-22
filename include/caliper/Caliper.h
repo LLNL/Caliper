@@ -249,7 +249,18 @@ public:
     /// This function is signal safe.
     ///
     /// \param attr Attribute key.
-    void  end(const Attribute& attr, const Variant& data = Variant());
+    void  end(const Attribute& attr);
+
+    /// \brief Pop/remove top-most \a attr entry from blackboard
+    ///   and check if current value is equal to \a data
+    ///
+    /// This function invokes the pre_end/post_end callbacks, unless the
+    /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
+    ///
+    /// This function is signal safe.
+    ///
+    /// \param attr Attribute key.
+    void  end_with_value_check(const Attribute& attr, const Variant& data);
 
     /// \brief Set attribute:value pair on the process or thread blackboard.
     ///
