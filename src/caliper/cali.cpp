@@ -371,7 +371,7 @@ cali_end_region(const char* name)
     Caliper c;
     Variant v_n(name);
 
-    c.end(cali::region_attr, v_n);
+    c.end_with_value_check(cali::region_attr, v_n);
 }
 
 void

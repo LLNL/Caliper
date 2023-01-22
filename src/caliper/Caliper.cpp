@@ -1033,8 +1033,6 @@ Caliper::clear(Channel* chn)
 void
 Caliper::begin(const Attribute& attr, const Variant& data)
 {
-    if (attr == Attribute::invalid)
-        return;
     if (sT->stack_error)
         return;
 
@@ -1065,10 +1063,8 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 }
 
 void
-Caliper::end(const Attribute& attr, const Variant& data)
+Caliper::end(const Attribute& attr)
 {
-    if (attr == Attribute::invalid)
-        return;
     if (sT->stack_error)
         return;
 
@@ -1097,7 +1093,53 @@ Caliper::end(const Attribute& attr, const Variant& data)
         return;
     }
 
-    if (!data.empty() && data != current.entry.value()) {
+    // invoke callbacks
+    if (run_events)
+        for (auto& channel : sG->channels)
+            if (channel && channel->is_active())
+                channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
+
+    handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
+
+    // invoke callbacks
+    if (run_events)
+        for (auto& channel : sG->channels)
+            if (channel && channel->is_active())
+                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
+}
+
+void
+Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
+{
+    if (sT->stack_error)
+        return;
+
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+
+    cali_id_t key = get_blackboard_key(attr.id(), prop);
+    Blackboard* blackboard = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        blackboard = &sT->thread_blackboard;
+    else if (scope == CALI_ATTR_SCOPE_PROCESS)
+        blackboard = &sG->process_blackboard;
+    else
+        return;
+
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    auto current = load_current_entry(attr, key, *blackboard, sG->allow_region_overlap);
+
+    if (current.entry.empty()) {
+        sT->stack_error = true;
+        return;
+    }
+
+    if (data != current.entry.value()) {
         log_stack_value_error(current.entry, attr, data);
         sT->stack_error = true;
         return;
@@ -1121,8 +1163,6 @@ Caliper::end(const Attribute& attr, const Variant& data)
 void
 Caliper::set(const Attribute& attr, const Variant& data)
 {
-    if (attr == Attribute::invalid)
-        return;
     if (sT->stack_error)
         return;
 
@@ -1155,9 +1195,6 @@ Caliper::set(const Attribute& attr, const Variant& data)
 void
 Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 {
-    if (attr == Attribute::invalid)
-        return;
-
     int prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
@@ -1178,9 +1215,6 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 void
 Caliper::end(Channel* channel, const Attribute& attr)
 {
-    if (attr == Attribute::invalid)
-        return;
-
     int prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
@@ -1211,9 +1245,6 @@ Caliper::end(Channel* channel, const Attribute& attr)
 void
 Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
 {
-    if (attr == Attribute::invalid)
-        return;
-
     int prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
@@ -1236,9 +1267,6 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
 Entry
 Caliper::get(const Attribute& attr)
 {
-    if (attr == Attribute::invalid)
-        return Entry();
-
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
@@ -1263,9 +1291,6 @@ Caliper::get(const Attribute& attr)
 Entry
 Caliper::get(Channel* channel, const Attribute& attr)
 {
-    if (attr == Attribute::invalid)
-        return Entry();
-
     cali_id_t key = get_blackboard_key(attr.id(), attr.properties());
 
     std::lock_guard<::siglock>
@@ -1327,9 +1352,6 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 Node*
 Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  parent)
 {
-    if (attr.store_as_value())
-        return nullptr;
-
     std::lock_guard<::siglock>
         g(sT->lock);
 
@@ -1339,9 +1361,6 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
 Node*
 Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
 {
-    if (attr.store_as_value())
-        return nullptr;
-
     std::lock_guard<::siglock>
         g(sT->lock);
 
