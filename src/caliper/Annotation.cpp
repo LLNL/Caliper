@@ -120,44 +120,49 @@ Loop::end()
 // --- Annotation implementation object
 
 struct Annotation::Impl {
-    std::atomic<Attribute*>  m_attr;
-    std::string              m_name;
-    std::vector<Attribute>   m_metadata_keys;
-    std::vector<Variant>     m_metadata_values;
-    int                      m_opt;
-    std::atomic<int>         m_refcount;
+    std::atomic<Attribute> m_attr;
+
+    std::string            m_name;
+    std::vector<Attribute> m_metadata_keys;
+    std::vector<Variant>   m_metadata_values;
+    int                    m_opt;
+
+    std::atomic<int>       m_refcount;
 
     Impl(const std::string& name, MetadataListType metadata, int opt)
-        : m_attr(nullptr),
+        : m_attr(Attribute::invalid),
           m_name(name),
           m_opt(opt),
           m_refcount(1)
         {
             Caliper c;
-            if(!c.attribute_exists(m_name)){
-                for(auto kv : metadata){
+            Attribute attr = c.get_attribute(name);
+
+            if (attr == Attribute::invalid) {
+                for(auto kv : metadata) {
                     m_metadata_keys.push_back(c.create_attribute(kv.first,kv.second.type(),0));
                     m_metadata_values.push_back(kv.second);
                 }
+            } else {
+                m_attr.store(attr);
             }
         }
 
     Impl(const std::string& name, int opt)
-        : m_attr(nullptr),
+        : m_attr(Attribute::invalid),
           m_name(name),
           m_opt(opt),
           m_refcount(1)
-        {}
+        { }
 
-    ~Impl() {
-        delete m_attr.load();
-    }
+    ~Impl()
+        { }
 
     void begin(const Variant& data) {
         Caliper   c;
         Attribute attr = get_attribute(c, data.type());
 
-        if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
+        if (attr.type() == data.type() && attr.type() != CALI_TYPE_INV)
             c.begin(attr, data);
     }
 
@@ -171,35 +176,26 @@ struct Annotation::Impl {
 
     void end() {
         Caliper c;
+        Attribute attr = m_attr.load();
 
-        c.end(get_attribute(c));
+        if (attr)
+            c.end(attr);
     }
 
-    Attribute get_attribute(Caliper& c, cali_attr_type type = CALI_TYPE_INV) {
-        Attribute* attr_p = m_attr.load();
+    Attribute get_attribute(Caliper& c, cali_attr_type type) {
+        Attribute attr = m_attr.load();
 
-        if (!attr_p) {
-            Attribute* new_attr = type == CALI_TYPE_INV ?
-                new Attribute(c.get_attribute(m_name)) :
-                new Attribute(c.create_attribute(m_name, type, m_opt, m_metadata_keys.size(), m_metadata_keys.data(), m_metadata_values.data()));
+        if (!attr) {
+            attr =
+                c.create_attribute(m_name, type, m_opt,
+                                   m_metadata_keys.size(),
+                                   m_metadata_keys.data(),
+                                   m_metadata_values.data());
 
-            // Don't store invalid attribute in shared pointer
-            if (*new_attr == Attribute::invalid)
-                return Attribute::invalid;
-
-            // Save new_attr iff m_attr == attr_p. If that is no longer the case,
-            // some other thread has a set m_attr in the meantime, so just
-            // delete our new object.
-            if (!m_attr.compare_exchange_strong(attr_p, new_attr))
-                delete new_attr;
-
-            attr_p = m_attr.load();
-
-            if (!attr_p || *attr_p == Attribute::invalid)
-                Log(0).stream() << "Could not create attribute " << m_name << endl;
+            m_attr.store(attr);
         }
 
-        return (attr_p ? *attr_p : Attribute::invalid);
+        return attr;
     }
 
     Impl* attach() {
@@ -267,12 +263,12 @@ Annotation& Annotation::begin()
 
 Annotation& Annotation::begin(int data)
 {
-    Attribute* attr = pI->m_attr.load();
+    Attribute attr = pI->m_attr.load();
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
-    if (attr && attr->type() == CALI_TYPE_DOUBLE)
+    if (attr && attr.type() == CALI_TYPE_DOUBLE)
         return begin(Variant(static_cast<double>(data)));
-    if (attr && attr->type() == CALI_TYPE_UINT)
+    if (attr && attr.type() == CALI_TYPE_UINT)
         return begin(Variant(static_cast<uint64_t>(data)));
 
     return begin(Variant(data));
@@ -293,12 +289,12 @@ Annotation& Annotation::begin(const Variant& data)
 
 Annotation& Annotation::set(int data)
 {
-    Attribute* attr = pI->m_attr.load();
+    Attribute attr = pI->m_attr.load();
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
-    if (attr && attr->type() == CALI_TYPE_DOUBLE)
+    if (attr && attr.type() == CALI_TYPE_DOUBLE)
         return set(Variant(static_cast<double>(data)));
-    if (attr && attr->type() == CALI_TYPE_UINT)
+    if (attr && attr.type() == CALI_TYPE_UINT)
         return set(Variant(static_cast<uint64_t>(data)));
 
     return set(Variant(data));

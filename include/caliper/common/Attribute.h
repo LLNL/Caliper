@@ -41,6 +41,8 @@ public:
         : m_node(nullptr)
         { }
 
+    operator bool() const { return m_node != nullptr; }
+
     cali_id_t      id() const { return m_node ? m_node->id() : CALI_INV_ID; }
 
     std::string    name() const;
