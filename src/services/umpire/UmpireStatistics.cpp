@@ -176,7 +176,7 @@ public:
     }
 };
 
-const char UmpireService::s_spec = R"json(
+const char* UmpireService::s_spec = R"json(
 {   "name": "umpire",
     "description": "Record Umpire memory manager statistics",
     "config": [
