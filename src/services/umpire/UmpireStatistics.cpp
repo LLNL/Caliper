@@ -29,6 +29,7 @@ class UmpireService
     Attribute m_alloc_count_attr;
     Attribute m_total_size_attr;
     Attribute m_total_count_attr;
+    Attribute m_total_hwm_attr;
 
     Node      m_root_node;
 
@@ -62,7 +63,7 @@ class UmpireService
         channel->events().process_snapshot(c, channel, SnapshotView(), rec.view());
     }
 
-    void snapshot(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& snapshot_rec) {
+    void snapshot(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec) {
         //   Bit of a hack: We create one record for each allocator for
         // allocator-specific info. This way we can use generic allocator.name
         // and allocator.size attributes. To avoid issues with repeated
@@ -78,6 +79,7 @@ class UmpireService
 
         uint64_t total_size  = 0;
         uint64_t total_count = 0;
+        uint64_t total_hwm   = 0;
 
         auto& rm = umpire::ResourceManager::getInstance();
 
@@ -86,13 +88,15 @@ class UmpireService
 
             total_size  += alloc.getCurrentSize();
             total_count += alloc.getAllocationCount();
+            total_hwm   += alloc.getHighWatermark();
 
             if (m_per_allocator_stats)
                 process_allocator(c, channel, s, alloc, context.view());
         }
 
-        snapshot_rec.append(m_total_size_attr,  Variant(total_size));
-        snapshot_rec.append(m_total_count_attr, Variant(total_count));
+        rec.append(m_total_size_attr,  Variant(total_size));
+        rec.append(m_total_count_attr, Variant(total_count));
+        rec.append(m_total_hwm_attr,   Variant(total_hwm));
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
@@ -136,6 +140,12 @@ class UmpireService
                                 CALI_ATTR_AGGREGATABLE);
         m_total_count_attr =
             c->create_attribute("umpire.total.count",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
+        m_total_hwm_attr =
+            c->create_attribute("umpire.total.hwm",
                                 CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE     |
                                 CALI_ATTR_SKIP_EVENTS |

@@ -82,6 +82,12 @@ const char* event_trace_spec = R"json(
         "type"        : "bool",
         "services"    : [ "roctracer" ],
         "config"      : { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
+      },
+      { "name"        : "umpire.totals",
+        "description" : "Umpire allocation statistics",
+        "type"        : "bool",
+        "services"    : [ "umpire" ],
+        "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "false" }
       }
      ]
     }
@@ -665,11 +671,14 @@ const char* builtin_option_specs = R"json(
          "let"     :
            [ "umpt.size.bytes=first(max#umpire.total.size,umpire.total.size)",
              "umpt.count=first(max#umpire.total.count,umpire.total.count)",
-             "umpt.size=scale(umpt.size.bytes,1e-6)"
+             "umpt.hwm.bytes=first(max#umpire.total.hwm,umpire.total.hwm)",
+             "umpt.size=scale(umpt.size.bytes,1e-6)",
+             "umpt.hwm=scale(umpt.hwm.bytes,1e-6)"
            ],
          "select"  :
            [ { "expr": "inclusive_max(umpt.size)", "as": "Ump MB (Total)", "unit": "MB" },
-             { "expr": "inclusive_max(umpt.count)", "as": "Ump allocs (Total)" }
+             { "expr": "inclusive_max(umpt.count)", "as": "Ump allocs (Total)" },
+             { "expr": "inclusive_max(umpt.hwm)", "as": "Ump HWM (Total)" }
            ]
        },
        { "level"   : "cross",
@@ -677,7 +686,8 @@ const char* builtin_option_specs = R"json(
            [ { "expr": "avg(imax#umpt.size)", "as": "Ump MB (avg)", "unit": "MB" },
              { "expr": "max(imax#umpt.size)", "as": "Ump MB (max)", "unit": "MB" },
              { "expr": "avg(imax#umpt.count)", "as": "Ump allocs (avg)" },
-             { "expr": "max(imax#umpt.count)", "as": "Ump allocs (max)" }
+             { "expr": "max(imax#umpt.count)", "as": "Ump allocs (max)" },
+             { "expr": "max(imax#umpt.hwm)", "as": "Ump HWM (max)" }
            ]
        }
      ]
