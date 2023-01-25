@@ -84,10 +84,16 @@ const char* event_trace_spec = R"json(
         "config"      : { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
       },
       { "name"        : "umpire.totals",
-        "description" : "Umpire allocation statistics",
+        "description" : "Umpire total allocation statistics",
         "type"        : "bool",
         "services"    : [ "umpire" ],
         "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "false" }
+      },
+      { "name"        : "umpire.allocators",
+        "description" : "Umpire per-allocator allocation statistics",
+        "type"        : "bool",
+        "services"    : [ "umpire" ],
+        "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "true" }
       }
      ]
     }
