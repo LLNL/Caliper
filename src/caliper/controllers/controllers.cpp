@@ -94,6 +94,11 @@ const char* event_trace_spec = R"json(
         "type"        : "bool",
         "services"    : [ "umpire" ],
         "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "true" }
+      },
+      { "name"        : "umpire.filter",
+        "description" : "Names of Umpire allocators to track",
+        "type"        : "string",
+        "config"      : { "CALI_UMPIRE_ALLOCATOR_FILTER": "{}" }
       }
      ]
     }
@@ -736,6 +741,13 @@ const char* builtin_option_specs = R"json(
          "group by": [ "umpire.alloc.name" ]
        }
      ]
+    },
+    {
+     "name"        : "umpire.filter",
+     "description" : "Names of Umpire allocators to track",
+     "type"        : "string",
+     "category"    : "metric",
+     "config"      : { "CALI_UMPIRE_ALLOCATOR_FILTER": "{}" }
     },
     {
      "name"        : "mem.highwatermark",

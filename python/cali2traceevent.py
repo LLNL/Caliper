@@ -186,6 +186,8 @@ class CaliTraceEventConverter:
             self._process_cupti_activity_rec(rec, trec)
         elif "rocm.activity" in rec:
             self._process_roctracer_activity_rec(rec, trec)
+        elif "umpire.alloc.name" in rec:
+            self._process_umpire_rec(rec, trec)
         elif "source.function#cali.sampler.pc" in rec:
             self._process_sample_rec(rec, trec)
             return
@@ -265,6 +267,15 @@ class CaliTraceEventConverter:
                 ts = _get_timestamp(rec)
                 trec = dict(ph="C", name=grp, pid=loc[0], tid=loc[1], ts=ts, args=args)
                 self.records.append(trec)
+
+    def _process_umpire_rec(self, rec, trec):
+        name = "Alloc " + rec["umpire.alloc.name"]
+        size = float(rec["umpire.alloc.current.size"])
+        hwm  = float(rec["umpire.alloc.highwatermark"])
+        tst  = _get_timestamp(rec)
+        args = { "size": size }
+
+        trec.update(ph="C", name=name, ts=tst, args=args)
 
     def _get_stackframe(self, rec, trec):
         key = "source.function#callpath.address"
