@@ -44,6 +44,8 @@
 cali::Annotation         test_annotation("test.attr", CALI_ATTR_SCOPE_THREAD);
 std::vector<std::string> annotation_strings;
 
+extern const char* cali_perftest_build_metadata[][2];
+
 struct Config
 {
     int tree_width;
@@ -121,6 +123,10 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
 
     for (auto &p : extra_kv)
         adiak::value(p.first, p.second);
+
+    for (size_t p = 0; cali_perftest_build_metadata[p][0]; ++p)
+        adiak::value(cali_perftest_build_metadata[p][0], cali_perftest_build_metadata[p][1]);
+
 #else
     cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
     cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);

@@ -5,8 +5,19 @@ set(CALIPER_TEST_APPS
 
 find_package(OpenMP)
 
+execute_process(
+  COMMAND
+    date "+%F %T"
+  OUTPUT_VARIABLE
+    CALI_BUILD_TIME
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+configure_file(build_metadata.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/build_metadata.cpp)
+
 foreach(app ${CALIPER_TEST_APPS})
-  add_executable(${app} ${app}.cpp)
+  add_executable(${app}
+    ${app}.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/build_metadata.cpp)
   target_link_libraries(${app} caliper-serial)
 endforeach()
 
