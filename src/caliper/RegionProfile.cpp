@@ -29,7 +29,6 @@ RegionProfile::RegionProfile()
             { "CALI_CHANNEL_FLUSH_ON_EXIT",    "false" },
             { "CALI_CHANNEL_CONFIG_CHECK",     "false" },
             { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-            { "CALI_TIMER_SNAPSHOT_DURATION",  "true"  },
             { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
             { "CALI_TIMER_UNIT",               "sec"   }
         })

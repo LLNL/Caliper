@@ -15,11 +15,9 @@ const char* event_trace_spec = R"json(
      "services"    : [ "event", "recorder", "timer", "trace" ],
      "categories"  : [ "output", "event" ],
      "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"   : "false",
-         "CALI_TIMER_SNAPSHOT_DURATION" : "true",
-         "CALI_TIMER_UNIT"              : "sec"
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"    : "false",
+         "CALI_TIMER_UNIT"               : "sec"
        },
-     "defaults"    : { "event.timestamps": "true" },
      "options":
      [
       { "name"        : "trace.io",
@@ -49,9 +47,13 @@ const char* event_trace_spec = R"json(
         "services"    : [ "ompt" ]
       },
       { "name"        : "event.timestamps",
-        "description" : "Record event timestamps",
+        "description" : "Record event timestamps [deprecated; always-on]",
+        "type"        : "bool"
+      },
+      { "name"        : "time.inclusive",
+        "description" : "Record inclusive region times",
         "type"        : "bool",
-        "config"      : { "CALI_TIMER_OFFSET": "true" }
+        "config"      : { "CALI_TIMER_INCLUSIVE_DURATION": "true" }
       },
       { "name"        : "sampling",
         "description" : "Enable call-path sampling",
