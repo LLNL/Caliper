@@ -29,7 +29,6 @@ class Blackboard {
 
     struct blackboard_entry_t {
         cali_id_t key   { CALI_INV_ID };
-        bool      is_occupied { false };
         Entry     value { };
     };
 
@@ -55,7 +54,7 @@ class Blackboard {
     inline size_t find_existing_entry(cali_id_t key) const {
         size_t I = key % Nmax;
 
-        while (hashtable[I].is_occupied && hashtable[I].key != key)
+        while (hashtable[I].key != key && hashtable[I].key != CALI_INV_ID)
             I = (I+1) % Nmax;
 
         return I;
@@ -64,7 +63,7 @@ class Blackboard {
     inline size_t find_free_slot(cali_id_t key) const {
         size_t I = key % Nmax;
 
-        while (hashtable[I].is_occupied)
+        while (hashtable[I].key != CALI_INV_ID)
             I = (I+1) % Nmax;
 
         return I;
@@ -91,7 +90,7 @@ public:
 
         size_t I = find_existing_entry(key);
 
-        if (!hashtable[I].is_occupied || hashtable[I].key != key)
+        if (hashtable[I].key != key)
             return Entry();
 
         return hashtable[I].value;

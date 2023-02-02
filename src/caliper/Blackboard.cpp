@@ -45,7 +45,6 @@ Blackboard::add(cali_id_t key, const Entry& value, bool include_in_snapshots)
     }
 
     hashtable[I].key   = key;
-    hashtable[I].is_occupied = true;
     hashtable[I].value = value;
 
     if (include_in_snapshots) {
@@ -81,14 +80,14 @@ Blackboard::del(cali_id_t key)
 
     size_t I = find_existing_entry(key);
 
-    if (!hashtable[I].is_occupied || hashtable[I].key != key)
+    if (hashtable[I].key != key)
         return;
 
     {
         size_t j = I;
         while (true) {
             j = (j+1) % Nmax;
-            if (!hashtable[j].is_occupied)
+            if (hashtable[j].key == CALI_INV_ID)
                 break;
             size_t k = hashtable[j].key % Nmax;
             if ((j > I && (k <= I || k > j)) || (j < I && (k <= I && k > j))) {
@@ -99,7 +98,6 @@ Blackboard::del(cali_id_t key)
     }
 
     hashtable[I].key   = CALI_INV_ID;
-    hashtable[I].is_occupied = false;
     hashtable[I].value = Entry();
 
     --num_entries;
