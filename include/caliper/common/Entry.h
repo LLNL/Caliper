@@ -42,7 +42,7 @@ public:
         { }
 
     Entry(Node* node)
-        : m_node(node)
+        : m_node(node), m_value(node->data())
         { }
 
     Entry(const Attribute& attr, const Variant& val)
@@ -72,10 +72,7 @@ public:
 
     /// \brief Return top-level data value of this entry
     Variant   value() const {
-        if (!m_node)
-            return Variant();
-
-        return Attribute::is_attribute(m_node) ? m_value : m_node->data();
+        return m_value;
     }
 
     /// \brief Extract data value for attribute \a attr_id from this entry
