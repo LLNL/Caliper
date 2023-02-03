@@ -45,7 +45,9 @@ class TimerService
         { }
     };
 
-    chrono::time_point<chrono::high_resolution_clock> tstart;
+    using clock = std::chrono::steady_clock;
+
+    chrono::time_point<clock> tstart;
 
     Attribute timeoffs_attr  { Attribute::invalid } ;
     Attribute timerinfo_attr { Attribute::invalid } ;
@@ -86,7 +88,7 @@ class TimerService
     }
 
     void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& rec) {
-        auto now = chrono::high_resolution_clock::now();
+        auto now = clock::now();
         uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
         rec.append(offset_attr, Variant(usec));
@@ -154,7 +156,7 @@ class TimerService
     }
 
     TimerService(Caliper* c, Channel* chn)
-        : tstart(chrono::high_resolution_clock::now())
+        : tstart(clock::now())
         {
             ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
             record_inclusive_duration = config.get("inclusive_duration").to_bool();
