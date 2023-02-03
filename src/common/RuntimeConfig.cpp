@@ -26,10 +26,12 @@ namespace
     const char*  builtin_profiles =
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
+        "CALI_TIMER_INCLUSIVE_DURATION=true\n"
         "# [event-trace]\n"
         "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
         "# [flat-function-profile]\n"
         "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
+        "CALI_TIMER_INCLUSIVE_DURATION=true\n"
         "CALI_AGGREGATE_KEY=event.end#function\n"
         "CALI_REPORT_CONFIG=\"select event.end#function,sum#time.inclusive.duration where event.end#function format table order by time.inclusive.duration desc\"\n"
         "# [runtime-report]\n"
@@ -44,8 +46,6 @@ namespace
         "CALI_SERVICES_ENABLE=aggregate,event,mpi,mpireport,timestamp\n"
         "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
         "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
-        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
-        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
         "CALI_TIMER_UNIT=sec\n"
         "CALI_MPIREPORT_CONFIG=\"select min(sum#time.duration) as \\\"Min time/rank\\\",max(sum#time.duration) as \\\"Max time/rank\\\", avg(sum#time.duration) as \\\"Avg time/rank\\\", percent_total(sum#time.duration) as \\\"Time % (total)\\\" group by prop:nested format tree\"\n"
         "CALI_MPIREPORT_FILENAME=stderr\n"
@@ -55,9 +55,6 @@ namespace
         "CALI_SERVICES_ENABLE=event,mpi,recorder,timestamp,trace\n"
         "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
         "CALI_MPI_MSG_TRACING=true\n"
-        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
-        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
-        "CALI_TIMER_OFFSET=true\n"
         "CALI_RECORDER_FILENAME=%mpi.rank%.cali\n";
 
     string config_var_name(const string& name, const string& key) {

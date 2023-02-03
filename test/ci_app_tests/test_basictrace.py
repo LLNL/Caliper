@@ -38,7 +38,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0',
-            'CALI_CONFIG'            : 'event-trace,output=stdout'
+            'CALI_CONFIG'            : 'event-trace,time.inclusive,output=stdout'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -102,7 +102,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_TIMER_SNAPSHOT_DURATION' : 'true',
+            'CALI_TIMER_INCLUSIVE_DURATION' : 'true',
             'CALI_TIMER_UNIT'        : 'sec',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0',
@@ -126,7 +126,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_TIMER_SNAPSHOT_DURATION' : 'true',
+            'CALI_TIMER_INCLUSIVE_DURATION' : 'true',
             'CALI_TIMER_UNIT'        : 'usec',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0',

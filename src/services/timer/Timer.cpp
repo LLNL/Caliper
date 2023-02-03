@@ -45,11 +45,11 @@ class TimerService
         { }
     };
 
-    chrono::time_point<chrono::high_resolution_clock> tstart;
+    using clock = std::chrono::steady_clock;
 
-    Attribute timestamp_attr { Attribute::invalid } ;
+    chrono::time_point<clock> tstart;
+
     Attribute timeoffs_attr  { Attribute::invalid } ;
-
     Attribute timerinfo_attr { Attribute::invalid } ;
 
     Attribute snapshot_duration_attr;
@@ -60,9 +60,6 @@ class TimerService
     std::vector<TimerInfo*>  info_obj_list;
     std::mutex               info_obj_mutex;
 
-    bool      record_timestamp;
-    bool      record_offset;
-    bool      record_snapshot_duration;
     bool      record_inclusive_duration;
 
     double    scale_factor   { 1.0 };
@@ -91,30 +88,17 @@ class TimerService
     }
 
     void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& rec) {
-        auto now = chrono::high_resolution_clock::now();
+        auto now = clock::now();
         uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
-        if (record_offset)
-            rec.append(offset_attr, Variant(usec));
+        rec.append(offset_attr, Variant(usec));
 
-        if (record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
-            auto timestamp =
-                chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch()).count();
-            rec.append(timestamp_attr, cali_make_variant_from_uint(timestamp));
-        }
-
-        if ((!record_snapshot_duration && !record_inclusive_duration) || !(scope & CALI_SCOPE_THREAD))
-            return;
-
-        // Get timer info object for this thread and channel
         TimerInfo* ti = acquire_timerinfo(c);
 
         if (!ti)
             return;
 
-        if (record_snapshot_duration)
-            rec.append(snapshot_duration_attr, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
-
+        rec.append(snapshot_duration_attr, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
         ti->prev_snapshot_timestamp = usec;
 
         if (record_inclusive_duration && !info.empty() && !c->is_signal()) {
@@ -172,18 +156,10 @@ class TimerService
     }
 
     TimerService(Caliper* c, Channel* chn)
-        : tstart(chrono::high_resolution_clock::now())
+        : tstart(clock::now())
         {
             ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
-
-            record_snapshot_duration =
-                config.get("snapshot_duration").to_bool();
-            record_offset    =
-                config.get("offset").to_bool();
-            record_timestamp =
-                config.get("timestamp").to_bool();
-            record_inclusive_duration
-                = config.get("inclusive_duration").to_bool();
+            record_inclusive_duration = config.get("inclusive_duration").to_bool();
 
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
@@ -202,12 +178,6 @@ class TimerService
                 Log(0).stream() << chn->name() << ": timestamp: Unknown unit " << unitstr
                                 << std::endl;
 
-            timestamp_attr =
-                c->create_attribute("time.timestamp", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_PROCESS |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &unit_attr, &sec_val);
             offset_attr =
                 c->create_attribute("time.offset",    CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
@@ -278,25 +248,10 @@ const char* TimerService::s_spec = R"json(
 {   "name": "timer",
     "description": "Record timestamps and time durations",
     "config": [
-        {   "name": "snapshot_duration",
-            "description": "Include duration of snapshot epoch with each snapshot record",
-            "type": "bool",
-            "value": "true"
-        },
-        {   "name": "offset",
-            "description": "Include timestamp (time since program start) in snapshots",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "timestamp",
-            "description": "Include absolute timestamp in POSIX time",
-            "type": "bool",
-            "value": "false"
-        },
         {   "name": "inclusive_duration",
             "description": "Record inclusive duration of begin/end regions",
             "type": "bool",
-            "value": "true"
+            "value": "false"
         },
         {   "name": "unit",
             "description": "Unit for time durations (sec, usec)",
