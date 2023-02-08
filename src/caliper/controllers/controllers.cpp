@@ -728,7 +728,7 @@ const char* builtin_option_specs = R"json(
              { "expr": "inclusive_max(ump.hwm)", "as": "Alloc HWM", "unit": "MB" },
              { "expr": "inclusive_max(ump.count)", "as": "Num allocs" }
            ],
-         "group by": [ "umpire.alloc.name" ]
+         "group by": "umpire.alloc.name"
        },
        { "level"   : "cross",
          "select"  :
@@ -740,7 +740,7 @@ const char* builtin_option_specs = R"json(
              { "expr": "avg(imax#ump.count)", "as": "Num allocs (avg)" },
              { "expr": "max(imax#ump.count)", "as": "Num allocs (max)" }
            ],
-         "group by": [ "umpire.alloc.name" ]
+         "group by": "umpire.alloc.name"
        }
      ]
     },
