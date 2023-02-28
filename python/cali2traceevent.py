@@ -25,6 +25,7 @@ def _get_timestamp(rec):
 
     timestamp_attributes = {
         "cupti.timestamp"      : 1e-3,
+        "gputrace.timestamp"   : 1e-3,
         "rocm.host.timestamp"  : 1e-3,
         "time.offset"          : 1.0,
         "cupti.activity.start" : 1e-3,
@@ -191,6 +192,11 @@ class CaliTraceEventConverter:
         elif "source.function#cali.sampler.pc" in rec:
             self._process_sample_rec(rec, trec)
             return
+        elif "gputrace.begin" in rec:
+            self._process_gputrace_begin(rec, pid)
+            return
+        elif "gputrace.end" in rec:
+            self._process_gputrace_end(rec, pid, trec)
         elif "ts.sync" in rec:
             self._process_timesync_rec(rec, pid)
             return
@@ -208,6 +214,28 @@ class CaliTraceEventConverter:
 
         if "name" in trec:
             self.records.append(trec)
+
+    def _process_gputrace_begin(self, rec, pid):
+        block = rec.get("gputrace.block")
+        skey  = ((pid,int(block)), "gputrace")
+        tst   = float(rec["gputrace.timestamp"])*1e-3
+
+        if skey in self.rstack:
+            self.rstack[skey].append(tst)
+        else:
+            self.rstack[skey] = [ tst ]
+
+    def _process_gputrace_end(self, rec, pid, trec):
+        block = rec.get("gputrace.block")
+        skey  = ((pid,int(block)), "gputrace")
+        btst  = self.rstack[skey].pop()
+        tst   = float(rec["gputrace.timestamp"])*1e-3
+
+        name  = rec.get("gputrace.region")
+        if isinstance(name, list):
+            name = name[-1]
+
+        trec.update(ph="X", name=name, cat="gpu", ts=btst, dur=(tst-btst), tid="block."+str(block))
 
     def _process_timesync_rec(self, rec, pid):
         self.tsync[pid] = _get_timestamp(rec)
