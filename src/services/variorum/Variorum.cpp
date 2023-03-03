@@ -34,9 +34,12 @@ namespace
 std::tuple<bool, uint64_t> measure(const std::string& name)
 {
     double power_watts;
-    json_t *power_obj = json_object();
+    json_t *power_obj = NULL;
+    char *s = NULL;
 
-    int ret = variorum_get_node_power_json(power_obj);
+    s = (char *) malloc(800 * sizeof(char));
+
+    int ret = variorum_get_node_power_json(&s);
     if (ret != 0)
     {
         std::cout << "Variorum JSON API failed" << std::endl;
@@ -47,9 +50,17 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
     // TODO: Add error if name is an invalid JSON field
     // TODO: Assume 1 rank/node for aggregation
 
+    // Extract and print values from JSON object
+    power_obj = json_loads(s, JSON_DECODE_ANY, NULL);
     power_watts = json_real_value(json_object_get(power_obj, name.c_str()));
 
     uint64_t val = (uint64_t)power_watts;
+
+    // Deallocate the string
+    free(s);
+
+    // Deallocate JSON object
+    json_decref(power_obj);
 
     return std::make_tuple(true, val);
 }
