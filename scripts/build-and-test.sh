@@ -6,7 +6,7 @@ project_dir="$(pwd)"
 hostname="$(hostname)"
 truehostname=${hostname//[0-9]/}
 
-prefix="btests/${hostname}-${timestamp}"
+prefix=${project_dir}"/btests/${hostname}-${timestamp}"
 echo "Creating directory ${prefix}"
 echo "project_dir: ${project_dir}"
 
@@ -47,6 +47,7 @@ if [[ "${option}" != "--deps-only" && "${option}" != "--test-only" ]]
 then
     date
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Prefix: ${prefix}"
     echo "~~~~~ Host-config: ${hostconfig_path}"
     echo "~~~~~ Build Dir:   ${build_dir}"
     echo "~~~~~ Project Dir: ${project_dir}"
@@ -74,6 +75,7 @@ then
         module unload rocm
     fi
     $cmake_exe \
+      -DBUILD_TESTING=True \
       -C ${hostconfig_path} \
       -DCMAKE_INSTALL_PREFIX=${install_dir} \
       ${project_dir}
@@ -91,3 +93,56 @@ then
     date
 fi
 
+echo "I am here!"
+
+
+# Test
+if [[ "${option}" != "--build-only" ]]
+then
+    date
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Testing Caliper"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+
+    updated_build_dir=$project_dir$build_dir
+    echo "Moving to ${updated_build_dir}"
+
+    #if [[ ! -d ${updated_build_dir} ]]
+    #then
+    #    echo "ERROR: Build directory not found : ${updated_build_dir}" && exit 1
+    #fi
+
+    
+
+    cd ${updated_build_dir}
+
+    # If HIP enabled
+    if [[ "${option}" != "--build-only" ]]
+    then # don't run the tests that are known to fail
+        date
+        ctest --output-on-failure -T test 2>&1 | tee tests_output.txt
+        date
+    else #run all tests like normal
+        date
+        ctest --output-on-failure -T test 2>&1 | tee tests_output.txt
+        date
+    fi
+
+    no_test_str="No tests were found!!!"
+    if [[ "$(tail -n 1 tests_output.txt)" == "${no_test_str}" ]]
+    then
+        echo "ERROR: No tests were found" && exit 1
+    fi
+
+    if grep -q "Errors while running CTest" ./tests_output.txt
+    then
+        echo "ERROR: failure(s) while running CTest" && exit 1
+    fi
+
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Caliper Tests Complete"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    date
+fi
+
+echo "AFTER THE TEST STATEMENT!"
