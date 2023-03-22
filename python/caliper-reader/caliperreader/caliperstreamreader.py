@@ -123,6 +123,7 @@ class CaliperStreamReader:
             attr = node.attribute()
 
             if attr.is_hidden():
+                node = node.parent
                 continue
 
             key = attr.name()
