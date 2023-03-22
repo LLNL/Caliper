@@ -102,11 +102,7 @@ class CaliperStreamReader:
 
         if 'ref' in record:
             for node_id in record['ref']:
-                for k, v in self._expand_node(int(node_id)).items():
-                    if len(v) > 1:
-                        result[k] = v
-                    else:
-                        result[k] = v[0]
+                result.update(self._expand_node(int(node_id)).items())
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
@@ -118,23 +114,36 @@ class CaliperStreamReader:
 
 
     def _expand_node(self, node_id):
-        def add(result, key, data):
-            if key not in result:
-                result[key] = []
-            result[key].insert(0, data)
-
         result = {}
+        path = []
+
         node = self.db.nodes[node_id]
 
         while node is not None:
             attr = node.attribute()
 
-            if not attr.is_hidden():
-                add(result, attr.name(), node.data)
-                if attr.is_nested():
-                    add(result, 'path', node.data)
+            if attr.is_hidden():
+                continue
+
+            key = attr.name()
+            val = result.get(key)
+
+            if val is None:
+                val = node.data
+            elif isinstance(val, list):
+                val.insert(0, node.data)
+            else:
+                val = [ node.data, val ]
+
+            result[key] = val
+
+            if attr.is_nested():
+                path.insert(0, node.data)
 
             node = node.parent
+
+        if len(path) > 0:
+            result['path'] = path
 
         return result
 
