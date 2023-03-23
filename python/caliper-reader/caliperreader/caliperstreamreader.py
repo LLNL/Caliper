@@ -149,40 +149,59 @@ class CaliperStreamReader:
         return result
 
 
-def _split_escape_string(input, keep_escape = True, splitchar = ',', escapechar = '\\'):
-    """ Splits a string but allows escape characters """
+def _split_input_string(input):
+    """ Splits comma-separated Caliper record line into constituent elements
 
-    results = []
+        A Caliper record has the form
+          "__rec=ctx,ref=42=4242,attr=1=2=3,data=11=22=33"
+        This function splits this into
+          [
+            [ "__rec", "ctx" ],
+            [ "ref", "42", "4242" ],
+            [ "attr", "1", "2", "3" ],
+            [ "data", "11", "22", "33" ]
+          ]
+    """
+
+    result  = []
+    entry   = []
     string  = ""
     escaped = False
 
     for c in input:
-        if not escaped and c == escapechar:
-            escaped = True
-            if keep_escape:
+        if not escaped:
+            if c == '\\':
+                escaped = True
+            elif c == ',':
+                entry.append(string)
+                result.append(entry)
+                string = ""
+                entry  = []
+            elif c == '=':
+                entry.append(string)
+                string = ""
+            else:
                 string += c
-        elif not escaped and c == splitchar:
-            results.append(string)
-            string = ""
         else:
             string += c
             escaped = False
 
-    results.append(string)
+    if len(string) > 0:
+        entry.append(string)
+    if len(entry) > 0:
+        result.append(entry)
 
-    return results
+    return result
 
 
 def _read_cali_record(line):
     record  = {}
-    entries = _split_escape_string(line.strip())
+    entries = _split_input_string(line.strip())
 
-    for e in entries:
-        kv = _split_escape_string(e, False, '=')
-
-        if len(kv) < 1:
+    for entry in entries:
+        if len(entry) < 1:
             raise ReaderError('Invalid record: {}'.format(line))
 
-        record[kv[0]] = kv[1:]
+        record[entry[0]] = entry[1:]
 
     return record
