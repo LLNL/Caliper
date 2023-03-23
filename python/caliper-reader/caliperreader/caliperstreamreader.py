@@ -102,7 +102,7 @@ class CaliperStreamReader:
 
         if 'ref' in record:
             for node_id in record['ref']:
-                result.update(self._expand_node(int(node_id)).items())
+                result.update(self._expand_node(int(node_id)))
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
