@@ -18,6 +18,7 @@ class Node:
 
         self.metadb       = metadb
 
+        self.attribute_ob = None
 
     def append(self, child):
         """ Append a child node to this node.
@@ -48,7 +49,10 @@ class Node:
     def attribute(self):
         """ Return the Caliper attribute object for this node.
         """
-        return Attribute(self.metadb.nodes[self.attribute_id])
+        if self.attribute_ob is None:
+            self.attribute_ob = Attribute(self.metadb.nodes[self.attribute_id])
+
+        return self.attribute_ob
 
 
 class Attribute:
@@ -74,10 +78,10 @@ class Attribute:
     SCOPE_MASK        =  60
 
     def __init__(self, node):
-        prop = node.get(self.prop_attribute_id)
+        prop = node.parent.get(self.prop_attribute_id)
 
         self.node = node
-        self.prop = int(prop) if prop is not None else 0
+        self.prop = 0 if prop is None else int(prop)
 
     def name(self):
         """ Return the name of the Caliper attribute. """
@@ -225,6 +229,11 @@ class MetadataDB:
             'cali.attribute.prop': Attribute(self.nodes[10])
         }
 
+        self.attributes_by_id = {
+             8: Attribute(self.nodes[ 8]),
+             9: Attribute(self.nodes[ 9]),
+            10: Attribute(self.nodes[10])
+        }
 
     def import_node(self, node_id, attribute_id, data, parent_id = Node.CALI_INV_ID):
         node = Node(self, node_id, attribute_id, data)
@@ -234,4 +243,6 @@ class MetadataDB:
             self.nodes[parent_id].append(node)
 
         if attribute_id == Attribute.attr_attribute_id:
-            self.attributes[data] = Attribute(node)
+            attr = Attribute(node)
+            self.attributes[data] = attr
+            self.attributes_by_id[node_id] = attr

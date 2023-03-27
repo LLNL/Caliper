@@ -106,7 +106,7 @@ class CaliperStreamReader:
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
-                attr = Attribute(self.db.nodes[int(attr_id)])
+                attr = self.db.attributes_by_id[int(attr_id)]
                 if not attr.is_hidden():
                     result[attr.name()] = val
 
@@ -149,32 +149,32 @@ class CaliperStreamReader:
         return result
 
 
-def _split_input_string(input):
+def _read_cali_record(input):
     """ Splits comma-separated Caliper record line into constituent elements
 
-        A Caliper record has the form
+        A .cali line has the form
           "__rec=ctx,ref=42=4242,attr=1=2=3,data=11=22=33"
-        This function splits this into
-          [
-            [ "__rec", "ctx" ],
-            [ "ref", "42", "4242" ],
-            [ "attr", "1", "2", "3" ],
-            [ "data", "11", "22", "33" ]
-          ]
+        This function splits this into a key-list dict like so:
+          {
+            "__rec" : [ "ctx" ],
+            "ref"   : [ "42", "4242" ],
+            "attr"  : [ "1", "2", "3" ],
+            "data"  : [ "11", "22", "33" ]
+          }
     """
 
-    result  = []
+    result  = {}
     entry   = []
     string  = ""
     escaped = False
 
-    for c in input:
+    for c in input.strip():
         if not escaped:
             if c == '\\':
                 escaped = True
             elif c == ',':
                 entry.append(string)
-                result.append(entry)
+                result[entry[0]] = entry[1:]
                 string = ""
                 entry  = []
             elif c == '=':
@@ -189,19 +189,6 @@ def _split_input_string(input):
     if len(string) > 0:
         entry.append(string)
     if len(entry) > 0:
-        result.append(entry)
+        result[entry[0]] = entry[1:]
 
     return result
-
-
-def _read_cali_record(line):
-    record  = {}
-    entries = _split_input_string(line.strip())
-
-    for entry in entries:
-        if len(entry) < 1:
-            raise ReaderError('Invalid record: {}'.format(line))
-
-        record[entry[0]] = entry[1:]
-
-    return record
