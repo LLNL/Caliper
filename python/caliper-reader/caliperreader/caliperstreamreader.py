@@ -102,7 +102,7 @@ class CaliperStreamReader:
 
         if 'ref' in record:
             for node_id in record['ref']:
-                result.update(self._expand_node(int(node_id)))
+                result.update(self.db.nodes[int(node_id)].expand())
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
@@ -113,82 +113,49 @@ class CaliperStreamReader:
         return result
 
 
-    def _expand_node(self, node_id):
-        result = {}
-        path = []
-
-        node = self.db.nodes[node_id]
-
-        while node is not None:
-            attr = node.attribute()
-
-            if attr.is_hidden():
-                node = node.parent
-                continue
-
-            key = attr.name()
-            val = result.get(key)
-
-            if val is None:
-                val = node.data
-            elif isinstance(val, list):
-                val.insert(0, node.data)
-            else:
-                val = [ node.data, val ]
-
-            result[key] = val
-
-            if attr.is_nested():
-                path.insert(0, node.data)
-
-            node = node.parent
-
-        if len(path) > 0:
-            result['path'] = path
-
-        return result
-
-
-def _read_cali_record(input):
+def _read_cali_record(line):
     """ Splits comma-separated Caliper record line into constituent elements
 
         A .cali line has the form
+
           "__rec=ctx,ref=42=4242,attr=1=2=3,data=11=22=33"
+
         This function splits this into a key-list dict like so:
+
           {
             "__rec" : [ "ctx" ],
             "ref"   : [ "42", "4242" ],
             "attr"  : [ "1", "2", "3" ],
             "data"  : [ "11", "22", "33" ]
           }
+
+        We need to deal with possibly escaped characters in strings so we
+        can't just use str.split().
     """
 
     result  = {}
     entry   = []
     string  = ""
-    escaped = False
 
-    for c in input.strip():
-        if not escaped:
-            if c == '\\':
-                escaped = True
-            elif c == ',':
-                entry.append(string)
-                result[entry[0]] = entry[1:]
-                string = ""
-                entry  = []
-            elif c == '=':
-                entry.append(string)
-                string = ""
-            else:
-                string += c
+    iterator = iter(line.strip())
+
+    for c in iterator:
+        if c == '\\':
+            c = next(iterator)
+            string += c
+        elif c == ',':
+            entry.append(string)
+            result[entry[0]] = entry[1:]
+            string = ""
+            entry  = []
+        elif c == '=':
+            entry.append(string)
+            string = ""
         else:
             string += c
-            escaped = False
 
     if len(string) > 0:
         entry.append(string)
-    if len(entry) > 0:
         result[entry[0]] = entry[1:]
 
     return result

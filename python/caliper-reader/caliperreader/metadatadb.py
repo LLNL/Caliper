@@ -19,6 +19,7 @@ class Node:
         self.metadb       = metadb
 
         self.attribute_ob = None
+        self.record       = None
 
     def append(self, child):
         """ Append a child node to this node.
@@ -54,6 +55,40 @@ class Node:
 
         return self.attribute_ob
 
+    def expand(self):
+        """ Return the expanded dict for this node.
+        """
+
+        if self.record is None:
+            self.record = self._expand()
+
+        return self.record
+
+    def _expand(self):
+        record = {}
+
+        if self.parent is not None:
+            record.update(self.parent.expand())
+
+        attr = self.attribute()
+
+        if not attr.is_hidden():
+            key = attr.name()
+            val = record.get(key)
+
+            if val is None:
+                val = self.data
+            elif isinstance(val, list):
+                val.insert(0, self.data)
+            else:
+                val = [ self.data, val ]
+
+            record[key] = val
+
+            if attr.is_nested():
+                record['path'] = record.get('path', []) + [ self.data ]
+
+        return record
 
 class Attribute:
     """ A Caliper attribute key.
@@ -222,7 +257,7 @@ class MetadataDB:
         self.nodes[7].append(self.nodes[ 9])
         self.nodes[1].append(self.nodes[10])
 
-        # Initialize the attributes dict
+        # Initialize the attribute dicts
         self.attributes = {
             'cali.attribute.name': Attribute(self.nodes[ 8]),
             'cali.attribute.type': Attribute(self.nodes[ 9]),

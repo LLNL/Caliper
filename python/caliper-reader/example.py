@@ -27,7 +27,7 @@ records, globals = read_caliper_contents('example-profile.cali')
 
 print("Globals:")
 print("  globals['cali.caliper.version']: {0}".format(globals['cali.caliper.version']))
-print("  globals['problem_size' {0}".format(globals['problem_size']))
+print("  globals['problem_size']: {0}".format(globals['problem_size']))
 
 print('\nMetrics:')
 for rec in records:
