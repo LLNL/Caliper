@@ -77,13 +77,11 @@ class Node:
             val = record.get(key)
 
             if val is None:
-                val = self.data
+                record[key] = self.data
             elif isinstance(val, list):
-                val.insert(0, self.data)
+                record[key] = val + [ self.data ]
             else:
-                val = [ self.data, val ]
-
-            record[key] = val
+                record[key] = [ val, self.data ]
 
             if attr.is_nested():
                 record['path'] = record.get('path', []) + [ self.data ]

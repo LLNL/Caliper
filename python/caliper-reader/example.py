@@ -31,7 +31,7 @@ print("  globals['problem_size']: {0}".format(globals['problem_size']))
 
 print('\nMetrics:')
 for rec in records:
-    print_record(rec)
+    print_record(rec, 'function')
 
 
 #
