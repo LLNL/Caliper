@@ -5,6 +5,7 @@ timestamp="$(date +"%T" | sed 's/://g')"
 project_dir="$(pwd)"
 hostname="$(hostname)"
 spec=${SPEC:-""}
+option=${1:-""}
 truehostname=${hostname//[0-9]/}
 
 if [[ -z ${spec} ]]
@@ -20,24 +21,32 @@ echo "project_dir: ${project_dir}"
 mkdir -p ${prefix}
 
 # generate cmake cache file with uberenv and radiuss spack package
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "~~~~~ Building Dependencies"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 ./scripts/uberenv/uberenv.py --prefix ${prefix} --spec=${spec}
 
 # find generated cmake cache
-hostconfigs=( $( ls "${project_dir}/"*.cmake ) )
-if [[ ${#hostconfigs[@]} == 1 ]]
+if [[ -z ${hostconfig} ]]
 then
-    hostconfig_path=${hostconfigs[0]}
-    echo "Found host config file: ${hostconfig_path}"
-elif [[ ${#hostconfigs[@]} == 0 ]]
-then
-    echo "No result for: ${project_dir}/*.cmake"
-    echo "Spack generated host-config not found."
-    exit 1
+    hostconfigs=( $( ls "${project_dir}/"*.cmake ) )
+    if [[ ${#hostconfigs[@]} == 1 ]]
+    then
+        hostconfig_path=${hostconfigs[0]}
+        echo "Found host config file: ${hostconfig_path}"
+    elif [[ ${#hostconfigs[@]} == 0 ]]
+    then
+        echo "No result for: ${project_dir}/*.cmake"
+        echo "Spack generated host-config not found."
+        exit 1
+    else
+        echo "More than one result for: ${project_dir}/*.cmake"
+        echo "${hostconfigs[@]}"
+        echo "Please specify one with HOST_CONFIG variable"
+        exit 1
+    fi
 else
-    echo "More than one result for: ${project_dir}/*.cmake"
-    echo "${hostconfigs[@]}"
-    echo "Please specify one with HOST_CONFIG variable"
-    exit 1
+    hostconfig_path = "${project_dir}/${hostconfig}"
 fi
 
 hostconfig=$(basename ${hostconfig_path})
@@ -112,14 +121,6 @@ then
 
     updated_build_dir=$project_dir$build_dir
     echo "Moving to ${updated_build_dir}"
-
-    #if [[ ! -d ${updated_build_dir} ]]
-    #then
-    #    echo "ERROR: Build directory not found : ${updated_build_dir}" && exit 1
-    #fi
-
-    
-
     cd ${updated_build_dir}
 
     # If HIP enabled
