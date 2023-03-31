@@ -4,7 +4,14 @@ hostname="$(hostname)"
 timestamp="$(date +"%T" | sed 's/://g')"
 project_dir="$(pwd)"
 hostname="$(hostname)"
+spec=${SPEC:-""}
 truehostname=${hostname//[0-9]/}
+
+if [[ -z ${spec} ]]
+    then
+        echo "SPEC is undefined, aborting..."
+        exit 1
+    fi
 
 prefix=${project_dir}"/btests/${hostname}-${timestamp}"
 echo "Creating directory ${prefix}"
@@ -13,7 +20,7 @@ echo "project_dir: ${project_dir}"
 mkdir -p ${prefix}
 
 # generate cmake cache file with uberenv and radiuss spack package
-python3 scripts/uberenv/uberenv.py --prefix ${prefix} --spec "%gcc"
+./scripts/uberenv/uberenv.py --prefix ${prefix} --spec=${spec}
 
 # find generated cmake cache
 hostconfigs=( $( ls "${project_dir}/"*.cmake ) )
@@ -75,7 +82,6 @@ then
         module unload rocm
     fi
     $cmake_exe \
-      -DBUILD_TESTING=True \
       -C ${hostconfig_path} \
       -DCMAKE_INSTALL_PREFIX=${install_dir} \
       ${project_dir}
