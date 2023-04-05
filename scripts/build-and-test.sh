@@ -8,6 +8,9 @@ spec=${SPEC:-""}
 option=${1:-""}
 truehostname=${hostname//[0-9]/}
 
+export SPACK_DISABLE_LOCAL_CONFIG=""
+export SPACK_USER_CACHE_PATH="${spack_user_cache}"
+
 if [[ -z ${spec} ]]
     then
         echo "SPEC is undefined, aborting..."
@@ -119,9 +122,8 @@ then
     echo "~~~~~ Testing Caliper"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
-    updated_build_dir=$project_dir$build_dir
-    echo "Moving to ${updated_build_dir}"
-    cd ${updated_build_dir}
+    echo "Moving to ${build_dir}"
+    cd ${build_dir}
 
     # If HIP enabled
     if [[ "${option}" != "--build-only" ]]
