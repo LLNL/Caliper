@@ -8,20 +8,22 @@ spec=${SPEC:-""}
 option=${1:-""}
 truehostname=${hostname//[0-9]/}
 
+prefix=${project_dir}"/btests/${hostname}-${timestamp}"
+echo "Creating directory ${prefix}"
+echo "project_dir: ${project_dir}"
+
+mkdir -p ${prefix}
+
+spack_user_cache="${prefix}/spack-user-cache"
 export SPACK_DISABLE_LOCAL_CONFIG=""
 export SPACK_USER_CACHE_PATH="${spack_user_cache}"
+mkdir -p ${spack_user_cache}
 
 if [[ -z ${spec} ]]
     then
         echo "SPEC is undefined, aborting..."
         exit 1
     fi
-
-prefix=${project_dir}"/btests/${hostname}-${timestamp}"
-echo "Creating directory ${prefix}"
-echo "project_dir: ${project_dir}"
-
-mkdir -p ${prefix}
 
 # generate cmake cache file with uberenv and radiuss spack package
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -111,9 +113,6 @@ then
     date
 fi
 
-echo "I am here!"
-
-
 # Test
 if [[ "${option}" != "--build-only" ]]
 then
@@ -153,5 +152,3 @@ then
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     date
 fi
-
-echo "AFTER THE TEST STATEMENT!"
