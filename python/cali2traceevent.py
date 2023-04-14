@@ -144,12 +144,18 @@ class CaliTraceEventConverter:
                 return
             trace.append((ts,rec))
 
+        ts = self.start_timing("  Reading ......")
         self.reader.read(filename_or_stream, insert_into_trace)
+        self.end_timing(ts)
 
+        ts = self.start_timing("  Sorting ......")
         trace.sort(key=lambda e : e[0])
+        self.end_timing(ts)
 
+        ts = self.start_timing("  Processing ...")
         for rec in trace:
             self._process_record(rec[1])
+        self.end_timing(ts)
 
     def write(self, output):
         result = dict(traceEvents=self.records, otherData=self.reader.globals)
@@ -174,6 +180,19 @@ class CaliTraceEventConverter:
             rec["ts"] += adjust.get(rec["pid"], 0.0)
         for rec in self.samples:
             rec["ts"] += adjust.get(rec["pid"], 0.0)
+
+    def start_timing(self, name):
+        if self.cfg["verbose"]:
+            print(name, file=sys.stderr, end='', flush=True)
+
+        return time.perf_counter()
+
+    def end_timing(self, begin):
+        end = time.perf_counter()
+        tot = end - begin
+
+        if self.cfg["verbose"]:
+            print(f" done ({tot:.2f}s).", file=sys.stderr)
 
     def _process_record(self, rec):
         pid  = int(_get_first_from_list(rec, self.pid_attributes))
@@ -321,6 +340,7 @@ Options:
                       Requires timestamp sync records in the input traces
 --pid-attributes    List of process ID attributes
 --tid-attributes    List of thread ID attributes
+--verbose           Print detailed progress output
 """
 
 def _parse_args(args):
@@ -331,6 +351,7 @@ def _parse_args(args):
         "counters": {},
         "tid_attributes": [],
         "pid_attributes": [],
+        "verbose": False
     }
 
     while args[0].startswith("-"):
@@ -356,6 +377,8 @@ def _parse_args(args):
             cfg["tid_attributes"] = args.pop(0).split(",")
         elif arg.startswith("--tid-attributes="):
             cfg["tid_attributes"] = arg[len("--tid-attributes="):].split(",")
+        elif arg == "--verbose" or arg == "-v":
+            cfg["verbose"] = True
         elif arg == "--help" or arg == "-h":
             sys.exit(helpstr)
         else:
@@ -376,32 +399,32 @@ def main():
     output = cfg["output"]
     converter = CaliTraceEventConverter(cfg)
 
-    read_begin = time.perf_counter()
+    begin = time.perf_counter()
 
     for file in args:
+        if cfg["verbose"]:
+            print("Processing " + file)
+
         with open(file) as input:
             converter.read_and_sort(input)
 
-    read_end = time.perf_counter()
-
     if cfg["sync_timestamps"]:
+        ts = converter.start_timing("Syncing ...")
         converter.sync_timestamps()
+        converter.end_timing(ts)
 
+    ts = converter.start_timing("Writing ...")
     converter.write(output)
-
-    write_end = time.perf_counter()
+    converter.end_timing(ts)
 
     if output is not sys.stdout:
         output.close()
 
+    end = time.perf_counter()
+    tot = end - begin
     wrt = converter.written
-    skp = converter.skipped
 
-    rtm = read_end - read_begin
-    wtm = write_end - read_end
-
-    print(f"Done. {rtm+wtm:.2f}s ({rtm:.2f}s processing, {wtm:.2f}s write).", file=sys.stderr)
-    print(f"{wrt} records written, {skp} skipped.", file=sys.stderr)
+    print(f"Done. {wrt} records written. Total {tot:.2f}s.", file=sys.stderr)
 
 
 if __name__ == "__main__":
