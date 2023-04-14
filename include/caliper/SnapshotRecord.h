@@ -54,6 +54,16 @@ public:
 
         return Entry();
     }
+
+    Entry get_immediate_entry(const Attribute& attr) const {
+        cali_id_t attr_id = attr.id();
+        for (const Entry& e : *this) {
+            if (e.node() && e.node()->id() == attr_id)
+                return e;
+        }
+
+        return Entry();
+    }
 };
 
 /// \brief Non-owning writable view for snapshot record

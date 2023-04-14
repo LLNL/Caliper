@@ -26,7 +26,6 @@ struct AggregateKernel {
     double   min;
     double   max;
     double   sum;
-    double   avg;
     int      count;
 
 #ifdef CALIPER_ENABLE_HISTOGRAMS
@@ -45,17 +44,16 @@ struct AggregateKernel {
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
           max(std::numeric_limits<double>::min()),
-          sum(0), avg(0), count(0)
+          sum(0), count(0)
 #ifdef CALIPER_ENABLE_HISTOGRAMS
           , histogram_max(0)
 #endif
         { }
 
-    void add(double val) {
+    void update(double val) {
         min  = std::min(min, val);
         max  = std::max(max, val);
         sum += val;
-        avg  = ((count*avg) + val) / (count + 1.0);
         ++count;
 
 #ifdef CALIPER_ENABLE_HISTOGRAMS
@@ -244,14 +242,12 @@ struct AggregationDB::AggregationDBImpl
             }
         }
 
-        if (info.imm_key_attrs.size() > 0) {
-            for (const Attribute& attr : info.imm_key_attrs) {
-                Entry e = rec.get(attr);
-                if (!e.empty()) {
-                    key.builder().append(e);
-                    hash += e.node()->id();
-                    hash += e.value().to_uint();
-                }
+        for (const Attribute& attr : info.imm_key_attrs) {
+            Entry e = rec.get_immediate_entry(attr);
+            if (!e.empty()) {
+                key.builder().append(e);
+                hash += e.node()->id();
+                hash += e.value().to_uint();
             }
         }
 
@@ -262,12 +258,12 @@ struct AggregationDB::AggregationDBImpl
         ++entry->count;
 
         for (size_t a = 0; a < std::min(entry->num_kernels, info.aggr_attrs.size()); ++a) {
-            Entry e = rec.get(info.aggr_attrs[a]);
+            Entry e = rec.get_immediate_entry(info.aggr_attrs[a]);
 
             if (e.empty())
                 continue;
 
-            m_kernels[entry->kernels_idx + a].add(e.value().to_double());
+            m_kernels[entry->kernels_idx + a].update(e.value().to_double());
         }
     }
 
@@ -276,7 +272,6 @@ struct AggregationDB::AggregationDBImpl
         m_entries.resize(1);
         m_kernels.resize(0);
         m_keyents.resize(0);
-        m_kernels.assign(m_entries[0].num_kernels, AggregateKernel());
 
         m_entries[0].count = 0;
     }
@@ -301,10 +296,12 @@ struct AggregationDB::AggregationDBImpl
                 if (k->count == 0)
                     continue;
 
+                double avg = k->sum / k->count;
+
                 rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
                 rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
                 rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
-                rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(k->avg)));
+                rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(avg)));
     #ifdef CALIPER_ENABLE_HISTOGRAMS
                 for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
                     rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii], Variant(cali_make_variant_from_uint(k->histogram[ii]))));
@@ -322,7 +319,7 @@ struct AggregationDB::AggregationDBImpl
         return num_written;
     }
 
-    AggregationDBImpl(Caliper* c, const AttributeInfo& info)
+    AggregationDBImpl(Caliper* c)
         : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
           m_max_hash_len(0)
         {
@@ -330,8 +327,6 @@ struct AggregationDB::AggregationDBImpl
             m_keyents.reserve(16384);
             m_entries.reserve(4096);
             m_hashmap.assign(8192, static_cast<std::size_t>(0));
-
-            m_kernels.resize(info.aggr_attrs.size());
 
             Attribute attr =
                 c->create_attribute("skipped.records", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
@@ -357,8 +352,8 @@ struct AggregationDB::AggregationDBImpl
 // --- AggregationDB public interface
 //
 
-AggregationDB::AggregationDB(Caliper* c, const AttributeInfo& info)
-    : mP(new AggregationDBImpl(c, info))
+AggregationDB::AggregationDB(Caliper* c)
+    : mP(new AggregationDBImpl(c))
 { }
 
 AggregationDB::~AggregationDB()
