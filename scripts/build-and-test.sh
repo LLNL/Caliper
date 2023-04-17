@@ -8,7 +8,16 @@ spec=${SPEC:-""}
 option=${1:-""}
 truehostname=${hostname//[0-9]/}
 
-prefix=${project_dir}"/btests/${hostname}-${timestamp}"
+prefix=""
+
+if [[ "${option}" == "--project-build" ]]
+then
+    prefix=${project_dir}"/CI-builds/${hostname}-${timestamp}"
+elif [[ -d /dev/shm ]]
+then
+    prefix="/dev/shm/${hostname}-${timestamp}"
+fi
+
 echo "Creating directory ${prefix}"
 echo "project_dir: ${project_dir}"
 
