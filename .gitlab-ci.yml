@@ -1,53 +1,74 @@
-.build-quartz:
-  stage: build
-  tags: 
-    - quartz
-    - shell
-  script:
-    - echo "==== ${build_config} ===="
-    - mkdir build-${build_config} && cd build-${build_config}
-    - cmake -C ../cmake/hostconfig/gitlab-${build_config}.cmake ..
-    - make
-    - ctest --output-on-failure
+###############################################################################
+# Copyright (c) 2022, Lawrence Livermore National Security, LLC and RADIUSS
+# project contributors. See the COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (MIT)
+###############################################################################
 
-build-quartz-gcc:
-  variables:
-    build_config: "quartz-gcc"
-  extends: .build-quartz
-  artifacts:
-    paths:
-      - build-quartz-gcc/
+# DESCRIPTION:
+###############################################################################
+# General GitLab pipelines configurations for supercomputers and Linux clusters
+# at Lawrence Livermore National Laboratory (LLNL).
+# This entire pipeline is LLNL-specific
+#
+# Important note: This file is a template provided by
+# llnl/radiuss-shared-ci. It should not require any change from the project to
+# get started but could feature project-specific stages.
+#
+# Instead, each project should provide:
+# - .gitlab/custom-jobs-and-variables.yml
+# - .gitlab/subscribed-pipelines.yml
+# - .gitlab/${MACHINE}-build-and-test-extra.yml
+###############################################################################
 
-build-quartz-intel:
-  variables:
-    build_config: "quartz-intel"
-  extends: .build-quartz
+# We define the following GitLab pipeline variables:
+variables:
+# Required information about GitHub repository
+  GITHUB_PROJECT_NAME: "Caliper"
+  GITHUB_PROJECT_ORG: "LLNL"
+# Use an LLNL service user to run CI. This prevents from running pipelines as
+# an actual user.
+  LLNL_SERVICE_USER: ""
+# Use the service user workspace. Solves permission issues, stores everything
+# at the same location whoever triggers a pipeline.
+#  CUSTOM_CI_BUILDS_DIR: ""
+# Tells Gitlab to recursively update the submodules when cloning the project.
+  GIT_SUBMODULE_STRATEGY: recursive
+# We build the projects in the CI clone directory.
+# TODO: add a clean-up mechanism
+  BUILD_ROOT: ${CI_PROJECT_DIR}
+# Set the build-and-test command.
+  BUILD_AND_TEST_CMD: "./scripts/build-and-test.sh"
+# Override the list of branch that will skip the "draft PR test".
+# Add protected branches here. Defaults to "develop main master".
+#  ALWAYS_RUN_LIST: ""
 
-build-quartz-pgi:
-  variables:
-    build_config: "quartz-pgi"
-  extends: .build-quartz
+# We organize the build-and-test stage in sub-pipelines. Each sub-pipeline
+# corresponds to a test batch on a given machine.
 
-perftest-quartz:
-  stage: test
-  tags:
-    - quartz
-    - shell
-  script:
-    - cd build-quartz-gcc
-    - ../scripts/run-annotation-perftest.sh
-  dependencies:
-    - build-quartz-gcc
+# High level stages
+stages:
+  - machine-checks
+  - build-and-test
 
-build-butte-xlc:
-  stage: build
-  tags:
-    - butte
-    - shell
-  script:
-    - echo "==== Build butte/xlc ===="
-    - module load cmake
-    - mkdir build-butte-xlc && cd build-butte-xlc
-    - cmake -C ../cmake/hostconfig/gitlab-butte-xlc.cmake ..
-    - make
-    - ctest --output-on-failure
+# Template for jobs triggering a build-and-test sub-pipelines:
+.build-and-test:
+  stage: build-and-test
+  trigger:
+    include:
+      - local: '.gitlab/custom-jobs-and-variables.yml'
+      - project: 'radiuss/radiuss-shared-ci'
+        ref: v2022.12.0
+        file: '${CI_MACHINE}-build-and-test.yml'
+      - local: '.gitlab/${CI_MACHINE}-build-and-test-extra.yml'
+    strategy: depend
+    forward:
+      pipeline_variables: true
+
+include:
+  # [Optional] checks preliminary to running the actual CI test
+  - project: 'radiuss/radiuss-shared-ci'
+    ref: v2022.12.0
+    file: 'preliminary-ignore-draft-pr.yml'
+  # pipelines subscribed by the project
+  - local: .gitlab/subscribed-pipelines.yml
