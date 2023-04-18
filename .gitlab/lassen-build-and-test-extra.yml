@@ -1,0 +1,5 @@
+master:
+	variables:
+		SPEC: "@master"
+	extends: .build_and_test_on_lassen
+	allow_failure: true
