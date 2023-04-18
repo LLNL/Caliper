@@ -1,5 +1,6 @@
-master:
-	variables:
-		SPEC: "@master"
-	extends: .build_and_test_on_lassen
-	allow_failure: true
+
+ibm_clang_9_0_0:
+  variables:
+    SPEC: " @master "
+  extends: .build_and_test_on_lassen
+  allow_failure: true
