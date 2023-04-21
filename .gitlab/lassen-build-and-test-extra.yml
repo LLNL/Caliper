@@ -15,7 +15,7 @@
 # Overriding shared spec: Allow failures
 ibm_clang_9_0_0:
   variables:
-    SPEC: " @master"
+    SPEC: " ${PROJECT_LASSEN_VARIANTS} @master ${PROJECT_LASSEN_DEPS}"
   extends: .build_and_test_on_lassen
   allow_failure: true
 
