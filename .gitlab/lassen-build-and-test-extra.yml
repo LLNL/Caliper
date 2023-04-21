@@ -1,21 +1,16 @@
 ##############################################################################
-# Copyright (c) 2016-23, Lawrence Livermore National Security, LLC
-# and RAJA project contributors. See the RAJA/LICENSE file for details.
+# Copyright (c) 2022, Lawrence Livermore National Security, LLC and RADIUSS
+# project contributors. See the COPYRIGHT file for details.
 #
-# SPDX-License-Identifier: (BSD-3-Clause)
+# SPDX-License-Identifier: (MIT)
 ##############################################################################
 
-########################
-# Overridden shared jobs
-########################
-# We duplicate the shared jobs description and add necessary changes for RAJA.
-# We keep ${PROJECT_<MACHINE>_VARIANTS} and ${PROJECT_<MACHINE>_DEPS} So that
-# the comparison with the original job is easier.
+# With GitLab CI, included files cannot be empty.
+variables:
+  INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-# Overriding shared spec: Allow failures
-ibm_clang_9_0_0:
+## Template for extra jobs defined by the project.
+master:
   variables:
-    SPEC: " ${PROJECT_LASSEN_VARIANTS} @master ${PROJECT_LASSEN_DEPS}"
+    SPEC: "@master"
   extends: .build_and_test_on_lassen
-  allow_failure: true
-
