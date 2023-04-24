@@ -61,7 +61,7 @@ stages:
       #  ref: v2022.12.0
       #  file: '${CI_MACHINE}-build-and-test.yml'
       - local: '.gitlab/lassen-build-and-test.yml'
-      - local: '.gitlab/${CI_MACHINE}-build-and-test-extra.yml'
+      #- local: '.gitlab/${CI_MACHINE}-build-and-test-extra.yml'
     strategy: depend
     forward:
       pipeline_variables: true
