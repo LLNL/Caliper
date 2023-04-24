@@ -111,7 +111,7 @@ class PcpService {
 
         for (const std::string& name : names) {
             pmID pmid = PM_ID_NULL;
-            char* namep = const_cast<char*>(name.c_str());
+            const char* namep = name.data();
             int status = pmLookupName(1, &namep, &pmid);
 
             if (status != 1) {
