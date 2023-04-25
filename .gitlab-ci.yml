@@ -58,7 +58,7 @@ stages:
     include:
       - local: '.gitlab/custom-jobs-and-variables.yml'
       - project: 'radiuss/radiuss-shared-ci'
-        ref: v2023.03.0.rc
+        ref: v2023.03.0rc
         file: '${CI_MACHINE}-build-and-test.yml'
       #- local: '.gitlab/lassen-build-and-test.yml'
       #- local: '.gitlab/${CI_MACHINE}-build-and-test-extra.yml'
