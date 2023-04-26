@@ -66,6 +66,8 @@ class PapiService
 
     Attribute m_thread_attr;
 
+    bool      m_enable_multiplex;
+
     unsigned  m_num_eventsets;
     unsigned  m_num_event_mismatch;
     unsigned  m_num_failed_acquire;
@@ -172,7 +174,7 @@ class PapiService
 
             int num = static_cast<int>(p.second->codes.size());
 
-            if (cpi && num > 4 /* magic number for Intel counter support :-( */) {
+            if (cpi && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
                 if (Log::verbosity() >= 2)
                     Log(2).stream() << "papi: Initializing multiplex support for component "
                                     << p.first << " (" << cpi->name << ")"
@@ -382,7 +384,8 @@ class PapiService
     }
 
     PapiService(Caliper* c, Channel* channel)
-        : m_num_eventsets(0),
+        : m_enable_multiplex(false),
+          m_num_eventsets(0),
           m_num_event_mismatch(0),
           m_num_failed_acquire(0),
           m_num_failed_read(0),
@@ -444,8 +447,8 @@ public:
     static const char* s_spec;
 
     static void register_papi(Caliper* c, Channel* channel) {
-        auto eventlist =
-            services::init_config_from_spec(channel->config(), s_spec).get("counters").to_stringlist(",");
+        auto cfg = services::init_config_from_spec(channel->config(), s_spec);
+        auto eventlist = cfg.get("counters").to_stringlist(",");
 
         if (eventlist.empty()) {
             Log(1).stream() << channel->name()
@@ -463,6 +466,8 @@ public:
 
         ++s_num_instances;
         PapiService* instance = new PapiService(c, channel);
+
+        instance->m_enable_multiplex = cfg.get("enable_multiplexing").to_bool();
 
         if (!(instance->setup_event_info(c, eventlist) && instance->setup_thread_eventsets(c))) {
             Log(0).stream() << channel->name()
@@ -510,6 +515,12 @@ const char* PapiService::s_spec = R"json(
         {   "name": "counters",
             "description": "List of PAPI events to record",
             "type": "string"
+        },
+        {
+            "name": "enable_multiplexing",
+            "description": "Always enable multiplexing",
+            "type": "bool",
+            "value": "False"
         }
     ]
 }
