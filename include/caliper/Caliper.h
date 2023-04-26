@@ -87,12 +87,8 @@ public:
         update_cbvec           post_begin_evt;
         /// \brief Invoked when value is set, \e before it has been put on the blackboard.
         update_cbvec           pre_set_evt;
-        /// \brief Invoked when value is set, \e after it has been put on the blackboard.
-        update_cbvec           post_set_evt;
         /// \brief Invoked on region end, \e before it has been removed from the blackboard.
         update_cbvec           pre_end_evt;
-        /// \brief Invoked on region end, \e after it has been removed from the blackboard.
-        update_cbvec           post_end_evt;
 
         /// \brief Invoked when a new thread context is being created.
         caliper_cbvec          create_thread_evt;

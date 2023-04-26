@@ -1100,12 +1100,6 @@ Caliper::end(const Attribute& attr)
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
 }
 
 void
@@ -1152,12 +1146,6 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
 }
 
 void
@@ -1184,12 +1172,6 @@ Caliper::set(const Attribute& attr, const Variant& data)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
     else if (scope == CALI_ATTR_SCOPE_PROCESS)
         handle_set(attr, data, prop, sG->process_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_set_evt(this, channel.get(), attr, data);
 }
 
 void
@@ -1236,10 +1218,6 @@ Caliper::end(Channel* channel, const Attribute& attr)
         channel->mP->events.pre_end_evt(this, channel, attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, channel->mP->channel_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.post_end_evt(this, channel, attr, current.entry.value());
 }
 
 void
@@ -1256,10 +1234,6 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
         channel->mP->events.pre_set_evt(this, channel, attr, data);
 
     handle_set(attr, data, prop, channel->mP->channel_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.post_set_evt(this, channel, attr, data);
 }
 
 // --- Query
