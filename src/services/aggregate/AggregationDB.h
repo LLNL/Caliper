@@ -55,7 +55,7 @@ class AggregationDB
 
 public:
 
-    AggregationDB(cali::Caliper* c, const AttributeInfo& info);
+    AggregationDB(cali::Caliper* c);
 
     ~AggregationDB();
 

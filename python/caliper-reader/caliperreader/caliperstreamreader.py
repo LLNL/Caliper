@@ -102,77 +102,60 @@ class CaliperStreamReader:
 
         if 'ref' in record:
             for node_id in record['ref']:
-                for k, v in self._expand_node(int(node_id)).items():
-                    if len(v) > 1:
-                        result[k] = v
-                    else:
-                        result[k] = v[0]
+                result.update(self.db.nodes[int(node_id)].expand())
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
-                attr = Attribute(self.db.nodes[int(attr_id)])
+                attr = self.db.attributes_by_id[int(attr_id)]
                 if not attr.is_hidden():
                     result[attr.name()] = val
 
         return result
 
 
-    def _expand_node(self, node_id):
-        def add(result, key, data):
-            if key not in result:
-                result[key] = []
-            result[key].insert(0, data)
+def _read_cali_record(line):
+    """ Splits comma-separated Caliper record line into constituent elements
 
-        result = {}
-        node = self.db.nodes[node_id]
+        A .cali line has the form
 
-        while node is not None:
-            attr = node.attribute()
+          "__rec=ctx,ref=42=4242,attr=1=2=3,data=11=22=33"
 
-            if not attr.is_hidden():
-                add(result, attr.name(), node.data)
-                if attr.is_nested():
-                    add(result, 'path', node.data)
+        This function splits this into a key-list dict like so:
 
-            node = node.parent
+          {
+            "__rec" : [ "ctx" ],
+            "ref"   : [ "42", "4242" ],
+            "attr"  : [ "1", "2", "3" ],
+            "data"  : [ "11", "22", "33" ]
+          }
 
-        return result
+        We need to deal with possibly escaped characters in strings so we
+        can't just use str.split().
+    """
 
-
-def _split_escape_string(input, keep_escape = True, splitchar = ',', escapechar = '\\'):
-    """ Splits a string but allows escape characters """
-
-    results = []
+    result  = {}
+    entry   = []
     string  = ""
-    escaped = False
 
-    for c in input:
-        if not escaped and c == escapechar:
-            escaped = True
-            if keep_escape:
-                string += c
-        elif not escaped and c == splitchar:
-            results.append(string)
+    iterator = iter(line.strip())
+
+    for c in iterator:
+        if c == '\\':
+            c = next(iterator)
+            string += c
+        elif c == ',':
+            entry.append(string)
+            result[entry[0]] = entry[1:]
+            string = ""
+            entry  = []
+        elif c == '=':
+            entry.append(string)
             string = ""
         else:
             string += c
-            escaped = False
 
-    results.append(string)
+    if len(string) > 0:
+        entry.append(string)
+        result[entry[0]] = entry[1:]
 
-    return results
-
-
-def _read_cali_record(line):
-    record  = {}
-    entries = _split_escape_string(line.strip())
-
-    for e in entries:
-        kv = _split_escape_string(e, False, '=')
-
-        if len(kv) < 1:
-            raise ReaderError('Invalid record: {}'.format(line))
-
-        record[kv[0]] = kv[1:]
-
-    return record
+    return result

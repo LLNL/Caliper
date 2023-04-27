@@ -56,7 +56,7 @@ namespace {
         cali::Annotation kernel_type_annot;
 
         KokkosTime(Caliper *c, Channel *chn)
-            : kernel_name_annot("function"),
+            : kernel_name_annot("region"),
               kernel_type_annot("kernel_type", CALI_ATTR_SKIP_EVENTS) {
         }
 

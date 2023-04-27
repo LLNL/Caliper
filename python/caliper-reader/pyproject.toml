@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "caliper-reader"
+version = "0.4.0"
+description = "A Python library for reading Caliper .cali files"
+authors = [
+  { name="David Boehme", email="boehme3@llnl.gov" },
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Development Status :: 5 - Production/Stable",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+
+[project.urls]
+"Homepage" = "https://github.com/LLNL/Caliper"
