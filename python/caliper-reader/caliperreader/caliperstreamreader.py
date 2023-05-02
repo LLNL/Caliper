@@ -94,7 +94,7 @@ class CaliperStreamReader:
         if 'parent' in record:
             parent = int(record['parent'][0])
 
-        self.db.import_node(int(record['id'][0]), int(record['attr'][0]), record['data'][0], parent)
+        self.db.import_node(int(record['id'][0]), int(record['attr'][0]), record.get('data', [""])[0], parent)
 
 
     def _expand_record(self, record):
