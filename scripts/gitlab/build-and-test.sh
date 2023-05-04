@@ -38,7 +38,7 @@ if [[ -z ${spec} ]]
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "~~~~~ Building Dependencies"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-./scripts/uberenv/uberenv.py --prefix ${prefix} --spec=${spec}
+./scripts/uberenv/uberenv.py --prefix ${prefix} --spec="${spec}"
 
 # find generated cmake cache
 if [[ -z ${hostconfig} ]]
