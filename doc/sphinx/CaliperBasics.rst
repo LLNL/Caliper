@@ -241,7 +241,7 @@ must be called before ``MPI_Finalize``:
 
         // Check for configuration errors
         if (mgr.error())
-            std::cerr "Caliper error: " << mgr.error_msg() << std::endl;
+            std::cerr << "Caliper error: " << mgr.error_msg() << std::endl;
 
         // Start configured performance measurements, if any
         mgr.start();
