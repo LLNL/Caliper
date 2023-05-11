@@ -64,6 +64,9 @@ class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
 
     std::vector<Record> m_records;
 
+    std::map<Attribute, Variant> m_v_min;
+    std::map<Attribute, Variant> m_v_max;
+
     void add_record(const Record& rec) {
         m_records.push_back(rec);
     }
@@ -95,6 +98,14 @@ public:
     const decltype(m_records)& records() const {
         return m_records;
     }
+
+    /// \brief Recursively find the minimum value for \a key under this node
+    Variant   min_val(const Attribute& key);
+    /// \brief Recursively find the maximum value for \a key under this node
+    Variant   max_val(const Attribute& key);
+
+    /// \brief sort records by \a key
+    void      sort(const Attribute& key, bool ascending);
 
     friend class SnapshotTree;
 }; // SnapshotTreeNode
@@ -163,7 +174,7 @@ public:
                  IsPathPredicateFn is_path);
 
     /// \brief Return the snapshot tree's root node.
-    const SnapshotTreeNode*
+    SnapshotTreeNode*
     root() const;
 };
 
