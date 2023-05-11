@@ -307,6 +307,23 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "node.order",
+     "description" : "Report order in which regions first appeared",
+     "type"        : "bool",
+     "category"    : "metric",
+     "query"  :
+     [
+       { "level"   : "local",
+         "select"  : [ { "expr": "min(aggregate.slot)", "as": "Node order" } ]
+       },
+       { "level"   : "cross", "select":
+         [ 
+          { "expr": "min(min#aggregate.slot)", "as": "Node order" }
+         ]
+       }
+     ]
+    },
+    {
      "name"        : "source.module",
      "type"        : "bool",
      "category"    : "sampling",

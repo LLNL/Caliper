@@ -286,7 +286,7 @@ struct AggregationDB::AggregationDBImpl
             SnapshotView kv(entry.key_len, &m_keyents[entry.key_idx]);
 
             std::vector<Entry> rec;
-            rec.reserve(kv.size() + entry.num_kernels + 1);
+            rec.reserve(kv.size() + entry.num_kernels + 2);
 
             std::copy(kv.begin(), kv.end(), std::back_inserter(rec));
 
@@ -309,7 +309,8 @@ struct AggregationDB::AggregationDBImpl
     #endif
             }
 
-            rec.push_back(Entry(info.count_attr, Variant(cali_make_variant_from_uint(entry.count))));
+            rec.push_back(Entry(info.count_attr, cali_make_variant_from_uint(entry.count)));
+            rec.push_back(Entry(info.slot_attr, cali_make_variant_from_uint(num_written)));
 
             // --- write snapshot record
             proc_fn(*c, rec);
