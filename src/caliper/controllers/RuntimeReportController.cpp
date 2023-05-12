@@ -60,23 +60,23 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
-                            { "select",   local_select  },
-                            { "group by", "path" }
+                            { "select",    local_select  },
+                            { "group by",  "path" }
                         });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("cross", {
-                            { "select",   cross_select  },
-                            { "group by", "path" },
-                            { "format",   format        }
+                            { "select",    cross_select  },
+                            { "group by",  "path" },
+                            { "format",    format        }
                         });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
-                            { "select",   serial_select },
-                            { "group by", "path" },
-                            { "format",   format        }
+                            { "select",    serial_select },
+                            { "group by",  "path" },
+                            { "format",    format }
                         });
             }
 
@@ -114,31 +114,50 @@ make_runtime_report_controller(const char* name, const config_map_t& initial_cfg
     return new RuntimeReportController(use_mpi(opts), name, initial_cfg, opts);
 }
 
-const char* runtime_report_spec =
-    "{"
-    " \"name\"        : \"runtime-report\","
-    " \"description\" : \"Print a time profile for annotated regions\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\", \"treeformatter\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"event\", \"timer\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
-    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
-    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
-    "   },"
-    " \"options\": "
-    " ["
-    "  {"
-    "   \"name\": \"calc.inclusive\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Report inclusive instead of exclusive times\""
-    "  },"
-    "  {"
-    "   \"name\": \"aggregate_across_ranks\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Aggregate results across MPI ranks\""
-    "  }"
-    " ]"
-    "}";
+const char* runtime_report_spec = R"json(
+    {
+     "name"        : "runtime-report",
+     "description" : "Print a time profile for annotated regions",
+     "categories"  : [ "metric", "output", "region", "treeformatter", "event" ],
+     "services"    : [ "aggregate", "event", "timer" ],
+     "config"      :
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
+         "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
+         "CALI_TIMER_UNIT"                 : "sec"
+       },
+     "defaults"    : { "order_as_visited": "true" },
+     "options":
+     [
+      {
+       "name": "calc.inclusive",
+       "type": "bool",
+       "description": "Report inclusive instead of exclusive times"
+      },
+      {
+       "name": "aggregate_across_ranks",
+       "type": "bool",
+       "description": "Aggregate results across MPI ranks"
+      },
+      {
+       "name": "order_by_time",
+       "type": "bool",
+       "description": "Order tree branches by highest exclusive runtime",
+       "query":
+       [
+        {
+         "level": "local",
+         "order by": [ "sum#sum#time.duration\ desc" ]
+        },
+        {
+         "level": "cross",
+         "aggregate": "sum(sum#sum#time.duration)",
+         "order by" : [ "sum#sum#sum#time.duration\ desc" ]
+        }
+       ]
+      }
+     ]
+    };
+)json";
 
 } // namespace [anonymous]
 

@@ -14,6 +14,79 @@
 
 using namespace cali;
 
+Variant
+SnapshotTreeNode::min_val(const Attribute& key)
+{
+    {
+        auto it = m_v_min.find(key);
+        if (it != m_v_min.end())
+            return it->second;
+    }
+
+    Variant val;
+
+    for (const auto& rec : m_records) {
+        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute,Variant>& p){
+                return p.first == key;
+            });
+
+        if (it != rec.end())
+            val = val ? std::min(val, (*it).second) : (*it).second;
+    }
+
+    for (SnapshotTreeNode* node = first_child(); node; node = node->next_sibling())
+        val = val ? std::min(val, node->min_val(key)) : node->min_val(key);
+
+    m_v_min[key] = val;
+    return val;
+}
+
+Variant
+SnapshotTreeNode::max_val(const Attribute& key)
+{
+    {
+        auto it = m_v_max.find(key);
+        if (it != m_v_max.end())
+            return it->second;
+    }
+
+    Variant val;
+
+    for (const auto& rec : m_records) {
+        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute,Variant>& p){
+                return p.first == key;
+            });
+
+        if (it != rec.end())
+            val = val ? std::max(val, (*it).second) : (*it).second;
+    }
+
+    for (SnapshotTreeNode* node = first_child(); node; node = node->next_sibling())
+        val = val ? std::max(val, node->max_val(key)) : node->max_val(key);
+
+    m_v_max[key] = val;
+    return val;
+}
+
+void
+SnapshotTreeNode::sort(const Attribute& key, bool ascending)
+{
+    std::stable_sort(m_records.begin(), m_records.end(), [key,ascending](const Record& lhs, const Record& rhs){
+            auto find_key = [key](const std::pair<Attribute,Variant>& p){
+                    return p.first == key;
+                };
+
+            auto l_it = std::find_if(lhs.begin(), lhs.end(), find_key);
+            auto r_it = std::find_if(rhs.begin(), rhs.end(), find_key);
+
+            if (r_it == rhs.end())
+                return true;
+            if (l_it == lhs.end())
+                return false;
+
+            return ascending ? l_it->second < r_it->second : l_it->second > r_it->second;
+        });
+}
 
 struct SnapshotTree::SnapshotTreeImpl
 {
@@ -135,7 +208,7 @@ SnapshotTree::add_snapshot(const CaliperMetadataAccessInterface& db,
     return mP->add_snapshot(db, list, is_path);
 }
 
-const SnapshotTreeNode*
+SnapshotTreeNode*
 SnapshotTree::root() const
 {
     return mP->m_root;

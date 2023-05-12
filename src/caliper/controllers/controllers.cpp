@@ -307,6 +307,23 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "node.order",
+     "description" : "Report order in which regions first appeared",
+     "type"        : "bool",
+     "category"    : "metric",
+     "query"  :
+     [
+       { "level"   : "local",
+         "select"  : [ { "expr": "min(aggregate.slot)", "as": "Node order" } ]
+       },
+       { "level"   : "cross", "select":
+         [
+          { "expr": "min(min#aggregate.slot)", "as": "Node order" }
+         ]
+       }
+     ]
+    },
+    {
      "name"        : "source.module",
      "type"        : "bool",
      "category"    : "sampling",
@@ -802,7 +819,7 @@ const char* builtin_option_specs = R"json(
      "query"  :
      [
        { "level"   : "local",
-         "let"     : [ "mwb.time=first(pcp.time.duration,sum#pcp.time.duration) " ],
+         "let"     : [ "mwb.time=first(pcp.time.duration,sum#pcp.time.duration)" ],
          "select"  : [ { "expr": "ratio(mem.bytes.written,mwb.time,1e-6)", "as": "MB/s (w)", "unit": "MB/s" } ]
        },
        { "level"   : "cross", "select":
@@ -1022,6 +1039,24 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "description" : "Print program metadata (Caliper globals and Adiak data)",
      "category"    : "treeformatter"
+    },
+    {
+     "name"        : "order_as_visited",
+     "type"        : "bool",
+     "description" : "Print tree nodes in the original visit order",
+     "category"    : "treeformatter",
+     "query"       :
+     [
+      { "level":     "local",
+        "let":       [ "o_a_v.slot=first(aggregate.slot)" ],
+        "aggregate": [ "min(o_a_v.slot)" ],
+        "order by":  [ "min#o_a_v.slot"  ]
+      },
+      { "level":     "cross",
+        "aggregate": [ "min(min#o_a_v.slot)" ],
+        "order by":  [ "min#min#o_a_v.slot"  ]
+      }
+     ]
     }
     ]
 )json";
