@@ -621,6 +621,12 @@ struct ConfigManager::Options::OptionsImpl
                 ret.append(" aggregate ").append(it->second);
         }
 
+        {
+            auto it = in.find("order by");
+            if (it != in.end())
+                ret.append(" order by ").append(it->second);
+        }
+
         return ret;
     }
 

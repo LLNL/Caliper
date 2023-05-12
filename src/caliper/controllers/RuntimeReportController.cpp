@@ -60,23 +60,30 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
-                            { "select",   local_select  },
-                            { "group by", "path" }
+                            { "let",       "o.slot=first(aggregate.slot)" },
+                            { "select",    local_select  },
+                            { "group by",  "path" },
+                            { "aggregate", "min(o.slot)" }
                         });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("cross", {
-                            { "select",   cross_select  },
-                            { "group by", "path" },
-                            { "format",   format        }
+                            { "select",    cross_select  },
+                            { "group by",  "path" },
+                            { "format",    format        },
+                            { "aggregate", "min(min#o.slot)" },
+                            { "order by",  "min#min#o.slot" }
                         });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
-                            { "select",   serial_select },
-                            { "group by", "path" },
-                            { "format",   format        }
+                            { "let",       "o.slot=first(aggregate.slot)" },
+                            { "select",    serial_select },
+                            { "group by",  "path" },
+                            { "format",    format        },
+                            { "aggregate", "min(o.slot)" },
+                            { "order by",  "min#o.slot"  }
                         });
             }
 
