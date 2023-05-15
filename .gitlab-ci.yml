@@ -62,6 +62,7 @@ stages:
         ref: v2023.03.0rc
         file: '${CI_MACHINE}-build-and-test.yml'
       #- local: '.gitlab/${CI_MACHINE}-build-and-test-extra.yml'
+      - local: '.gitlab/tioga-build-and-test-extra.yml'
     strategy: depend
     forward:
       pipeline_variables: true
