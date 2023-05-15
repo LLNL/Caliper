@@ -552,6 +552,7 @@ const char* spot_controller_spec =
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
     "     \"CALI_TIMER_UNIT\"                 : \"sec\""
     "   },"
+    " \"defaults\"    : { \"node.order\": \"true\" },"
     " \"options\": "
     " ["
     "  {"
