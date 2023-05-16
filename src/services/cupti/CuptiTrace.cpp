@@ -855,7 +855,7 @@ class CuptiTraceService
 
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotView, SnapshotBuilder& snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, const SnapshotView, SnapshotBuilder& snapshot) {
         uint64_t timestamp = 0;
         cuptiGetTimestamp(&timestamp);
 
@@ -867,7 +867,7 @@ class CuptiTraceService
                                   Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint()))));
     }
 
-    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
+    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
         if (c->is_signal())
             return;
         if (flush_trigger_attr == Attribute::invalid || trigger_info.get(flush_trigger_attr).empty())
@@ -914,8 +914,8 @@ class CuptiTraceService
             c->set(timestamp_attr, cali_make_variant_from_uint(starttime));
 
             chn->events().snapshot.connect(
-                [](Caliper* c, Channel* chn, int scopes, SnapshotView info, SnapshotBuilder& rec){
-                    s_instance->snapshot_cb(c, chn, scopes, info, rec);
+                [](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec){
+                    s_instance->snapshot_cb(c, chn, info, rec);
                 });
         }
 
@@ -933,8 +933,8 @@ class CuptiTraceService
                     });
 
             chn->events().snapshot.connect(
-                [](Caliper* c, Channel* channel, int scopes, SnapshotView info, SnapshotBuilder& rec){
-                    s_instance->snapshot_flush_activities_cb(c, channel, scopes, info, rec);
+                [](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec){
+                    s_instance->snapshot_flush_activities_cb(c, channel, info, rec);
                 });
 
             Log(1).stream() << chn->name() << ": cuptitrace: Using flush-on-snapshot mode."

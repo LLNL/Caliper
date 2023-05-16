@@ -305,7 +305,7 @@ class AllocService
         rec.append(region_hwm_attr, Variant(hwm));
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
         // Record currently active amount of allocated memory
         if (g_record_active_mem)
             snapshot.append(active_mem_attr, Variant(cali_make_variant_from_uint(g_active_mem)));
@@ -448,8 +448,8 @@ public:
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot){
-                    instance->snapshot_cb(c, chn, scope, info, snapshot);
+                [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot){
+                    instance->snapshot_cb(c, chn, info, snapshot);
                 });
 
         chn->events().post_init_evt.connect(

@@ -114,7 +114,7 @@ public:
                 ++instance->num_set;
             });
         chn->events().snapshot.connect(
-            [instance](Caliper*,Channel*,int,SnapshotView,SnapshotBuilder& rec){
+            [instance](Caliper*,Channel*,SnapshotView,SnapshotBuilder& rec){
                 ++instance->num_snapshots;
             });
         chn->events().process_snapshot.connect(

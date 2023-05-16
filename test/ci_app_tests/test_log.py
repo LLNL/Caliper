@@ -17,7 +17,6 @@ class CaliperLogTest(unittest.TestCase):
 
         log_targets = [
             'CALI_LOG_VERBOSITY=3',
-            '== CALIPER: default: snapshot scopes: process thread',
             '== CALIPER: Releasing channel default',
             '== CALIPER: Releasing Caliper thread data',
             'Process blackboard',
@@ -65,12 +64,10 @@ class CaliperLogTest(unittest.TestCase):
         env = {
             'CALI_LOG_VERBOSITY' : '0',
             'CALI_LOG_LOGFILE'   : 'stdout',
-            'CALI_CHANNEL_SNAPSHOT_SCOPES' : 'foo',
             'CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE' : 'bar'
         }
 
         log_targets = [
-            'Invalid value "foo" for CALI_CHANNEL_SNAPSHOT_SCOPES',
             'Invalid value "bar" for CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE'
         ]
 

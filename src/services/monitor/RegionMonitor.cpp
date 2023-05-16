@@ -53,7 +53,7 @@ class RegionMonitor
         if (it != m_tracking_regions.end()) {
             if (it->second.inclusive_time > 2.0 * it->second.child_time) {
                 SnapshotBuilder tmp;
-                c->pull_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, SnapshotView(), tmp);
+                c->pull_snapshot(channel, SnapshotView(), tmp);
                 m_measuring = true;
                 m_skip = 1;
             }

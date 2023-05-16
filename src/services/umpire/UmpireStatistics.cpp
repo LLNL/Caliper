@@ -93,7 +93,7 @@ class UmpireService
                     context.builder().append(ts_entry);
             }
 
-            c->pull_context(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, context.builder());
+            c->pull_context(channel, context.builder());
         }
 
         uint64_t total_size  = 0;
@@ -217,7 +217,7 @@ public:
                 instance->m_timestamp_attr = c->get_attribute("time.offset");
             });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, int, SnapshotView info, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec){
                 instance->snapshot(c, channel, info, rec);
             });
         channel->events().finish_evt.connect(

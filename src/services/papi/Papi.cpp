@@ -492,7 +492,7 @@ public:
                 instance->finish_thread_eventsets(c);
             });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel*, int, SnapshotView, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec){
                 instance->snapshot(c, rec);
             });
         channel->events().finish_evt.connect(

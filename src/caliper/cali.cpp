@@ -173,7 +173,7 @@ cali_channel_push_snapshot(cali_id_t chn_id, int /*scope*/, int n,
 }
 
 size_t
-cali_channel_pull_snapshot(cali_id_t chn_id, int scopes, size_t len, unsigned char* buf)
+cali_channel_pull_snapshot(cali_id_t chn_id, int /* scopes */, size_t len, unsigned char* buf)
 {
     Caliper c = Caliper::sigsafe_instance();
 
@@ -184,7 +184,7 @@ cali_channel_pull_snapshot(cali_id_t chn_id, int scopes, size_t len, unsigned ch
     Channel* chn = c.get_channel(chn_id);
 
     if (chn)
-        c.pull_snapshot(chn, scopes, SnapshotView(), snapshot.builder());
+        c.pull_snapshot(chn, SnapshotView(), snapshot.builder());
     else
         Log(0).stream() << "cali_channel_pull_snapshot(): invalid channel id " << chn_id << std::endl;
 
