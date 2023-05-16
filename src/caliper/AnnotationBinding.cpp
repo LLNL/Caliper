@@ -147,7 +147,7 @@ AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
             Log(0).stream() << chn->name() << ": event: filter parse error: "
                             << p.second
                             << std::endl;
-        } else {
+        } else if (p.first.has_filters()) {
             m_filter = std::make_unique<RegionFilter>(std::move(p.first));
         }
     }

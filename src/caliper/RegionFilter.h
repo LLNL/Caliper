@@ -49,6 +49,10 @@ public:
         return true;
     }
 
+    bool has_filters() const {
+        return m_exclude_filters || m_include_filters;
+    }
+
     RegionFilter()
         { }
 
