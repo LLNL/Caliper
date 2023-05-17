@@ -148,7 +148,7 @@ AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
                             << p.second
                             << std::endl;
         } else if (p.first.has_filters()) {
-            m_filter = std::make_unique<RegionFilter>(std::move(p.first));
+            m_filter = std::unique_ptr<RegionFilter>(new RegionFilter(std::move(p.first)));
         }
     }
 
