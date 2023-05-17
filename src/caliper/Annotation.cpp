@@ -120,7 +120,7 @@ Loop::end()
 // --- Annotation implementation object
 
 struct Annotation::Impl {
-    std::atomic<Attribute> m_attr;
+    std::atomic<cali::Node*> m_attr_node;
 
     std::string            m_name;
     std::vector<Attribute> m_metadata_keys;
@@ -130,7 +130,7 @@ struct Annotation::Impl {
     std::atomic<int>       m_refcount;
 
     Impl(const std::string& name, MetadataListType metadata, int opt)
-        : m_attr(Attribute::invalid),
+        : m_attr_node(nullptr),
           m_name(name),
           m_opt(opt),
           m_refcount(1)
@@ -138,18 +138,18 @@ struct Annotation::Impl {
             Caliper c;
             Attribute attr = c.get_attribute(name);
 
-            if (attr == Attribute::invalid) {
+            if (!attr) {
                 for(auto kv : metadata) {
                     m_metadata_keys.push_back(c.create_attribute(kv.first,kv.second.type(),0));
                     m_metadata_values.push_back(kv.second);
                 }
             } else {
-                m_attr.store(attr);
+                m_attr_node.store(attr.node());
             }
         }
 
     Impl(const std::string& name, int opt)
-        : m_attr(Attribute::invalid),
+        : m_attr_node(nullptr),
           m_name(name),
           m_opt(opt),
           m_refcount(1)
@@ -176,26 +176,27 @@ struct Annotation::Impl {
 
     void end() {
         Caliper c;
-        Attribute attr = m_attr.load();
+        Attribute attr = Attribute::make_attribute(m_attr_node.load());
 
         if (attr)
             c.end(attr);
     }
 
     Attribute get_attribute(Caliper& c, cali_attr_type type) {
-        Attribute attr = m_attr.load();
+        cali::Node* attr_node = m_attr_node.load();
 
-        if (!attr) {
-            attr =
+        if (!attr_node) {
+            Attribute attr =
                 c.create_attribute(m_name, type, m_opt,
                                    m_metadata_keys.size(),
                                    m_metadata_keys.data(),
                                    m_metadata_values.data());
 
-            m_attr.store(attr);
+            attr_node = attr.node();
+            m_attr_node.store(attr_node);
         }
 
-        return attr;
+        return Attribute::make_attribute(attr_node);
     }
 
     Impl* attach() {
@@ -263,7 +264,7 @@ Annotation& Annotation::begin()
 
 Annotation& Annotation::begin(int data)
 {
-    Attribute attr = pI->m_attr.load();
+    Attribute attr = Attribute::make_attribute(pI->m_attr_node.load());
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
     if (attr && attr.type() == CALI_TYPE_DOUBLE)
@@ -289,7 +290,7 @@ Annotation& Annotation::begin(const Variant& data)
 
 Annotation& Annotation::set(int data)
 {
-    Attribute attr = pI->m_attr.load();
+    Attribute attr = Attribute::make_attribute(pI->m_attr_node.load());
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
     if (attr && attr.type() == CALI_TYPE_DOUBLE)
