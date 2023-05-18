@@ -46,26 +46,6 @@ void set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& valu
     Log(1).stream() << chn->name() << ": Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
 }
 
-const char* scopestrings[] = { "", "process", "thread", "", "task" };
-
-string scope2string(int scope)
-{
-    const cali_context_scope_t scopes[] = { 
-        CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS 
-    };
-
-    string out;
-
-    for (cali_context_scope_t s : scopes)
-        if (scope & s) {
-            if (out.size())
-                out.append(":");
-            out.append(scopestrings[s]);
-        }
-
-    return out;
-}
-
 void create_thread_cb(Caliper* c, Channel* chn)
 {
     lock_guard<mutex> lock(dbg_mutex);
@@ -78,11 +58,10 @@ void release_thread_cb(Caliper* c, Channel* chn)
     Log(1).stream() << chn->name() << ": Event: release_thread" << endl;
 }
 
-void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView, SnapshotBuilder&)
+void snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotBuilder&)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: snapshot (scope=" << scope2string(scope) << ", "
-                    << ")" << endl;
+    Log(1).stream() << chn->name() << ": Event: snapshot" << endl;
 }
 
 std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView rec)

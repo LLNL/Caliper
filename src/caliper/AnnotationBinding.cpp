@@ -6,10 +6,10 @@
 
 #include "caliper/AnnotationBinding.h"
 
+#include "RegionFilter.h"
+
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
-
-#include "caliper/common/filters/RegexFilter.h"
 
 using namespace cali;
 
@@ -18,9 +18,13 @@ using namespace cali;
 //
 
 const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
-    { "regex_filter", CALI_TYPE_STRING, "",
-      "Regular expression for matching annotations",
-      "Regular expression for matching annotations"
+    { "include_regions", CALI_TYPE_STRING, "",
+      "Region filter specifying regions to include",
+      "Region filter specifying regions to include",
+    },
+    { "exclude_regions", CALI_TYPE_STRING, "",
+      "Region filter specifying regions to exclude",
+      "Region filter specifying regions to exclude",
     },
     { "trigger_attributes", CALI_TYPE_STRING, "",
       "List of attributes that trigger the annotation binding",
@@ -61,9 +65,7 @@ AnnotationBinding::is_subscription_attribute(const Attribute& attr)
 }
 
 AnnotationBinding::~AnnotationBinding()
-{
-    delete m_filter;
-}
+{ }
 
 void
 AnnotationBinding::mark_attribute(Caliper *c, Channel* chn, const Attribute& attr)
@@ -108,7 +110,7 @@ AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, con
 {
     if (!::has_marker(attr, m_marker_attr))
         return;
-    if (m_filter && !m_filter->filter(attr, value))
+    if (m_filter && !m_filter->pass(value))
         return;
 
     this->on_begin(c, chn, attr, value);
@@ -119,7 +121,7 @@ AnnotationBinding::end_cb(Caliper* c, Channel* chn, const Attribute& attr, const
 {
     if (!::has_marker(attr, m_marker_attr))
         return;
-    if (m_filter && !m_filter->filter(attr, value))
+    if (m_filter && !m_filter->pass(value))
         return;
 
     this->on_end(c, chn, attr, value);
@@ -133,8 +135,22 @@ AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
 
     m_config = chn->config().init(cfgname.c_str(), s_configdata);
 
-    if (m_config.get("regex").to_string().size() > 0)
-        m_filter = new RegexFilter(tag, m_config);
+    {
+        std::string i_filter =
+            m_config.get("include_regions").to_string();
+        std::string e_filter =
+            m_config.get("exclude_regions").to_string();
+
+        auto p = RegionFilter::from_config(i_filter, e_filter);
+
+        if (!p.second.empty()) {
+            Log(0).stream() << chn->name() << ": event: filter parse error: "
+                            << p.second
+                            << std::endl;
+        } else if (p.first.has_filters()) {
+            m_filter = std::unique_ptr<RegionFilter>(new RegionFilter(std::move(p.first)));
+        }
+    }
 
     m_trigger_attr_names =
         m_config.get("trigger_attributes").to_stringlist(",:");
@@ -160,3 +176,6 @@ AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
         if (!attr.skip_events() && !is_subscription_attribute(attr))
             check_attribute(c, chn, attr);
 }
+
+AnnotationBinding::AnnotationBinding()
+{ }

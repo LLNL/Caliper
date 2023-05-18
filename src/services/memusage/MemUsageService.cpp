@@ -19,17 +19,15 @@ namespace
 Attribute malloc_total_bytes_attr;
 Attribute malloc_bytes_attr;
 
-void snapshot_cb(Caliper* c, Channel* chn, int scopes, SnapshotView, SnapshotBuilder& rec)
+void snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotBuilder& rec)
 {
-    if (scopes & CALI_SCOPE_PROCESS) {
-        struct mallinfo mi = mallinfo();
+    struct mallinfo mi = mallinfo();
 
-        int      total = mi.arena + mi.hblkhd;
-        Variant v_prev =
-            c->exchange(malloc_total_bytes_attr, Variant(total));
+    int      total = mi.arena + mi.hblkhd;
+    Variant v_prev =
+        c->exchange(malloc_total_bytes_attr, Variant(total));
 
-        rec.append(malloc_bytes_attr, Variant(total - v_prev.to_int()));
-    }
+    rec.append(malloc_bytes_attr, Variant(total - v_prev.to_int()));
 }
 
 void post_init_cb(Caliper* c, Channel* chn)

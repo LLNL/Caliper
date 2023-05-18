@@ -145,7 +145,7 @@ cali_attribute_properties(cali_id_t attr_id);
  * probably use a dedicated channel to do so.
  *
  * \param scope Indicates which scopes (process, thread, or task) the
- *   snapshot should span
+ *   snapshot should span (deprecated, unused)
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
  * \param trigger_info_val_list  Values of event info entries
@@ -164,7 +164,7 @@ cali_push_snapshot(int scope, int n,
  *
  * \param chn_id Channel to take snapshot on
  * \param scope Indicates which scopes (process, thread, or task) the
- *   snapshot should span
+ *   snapshot should span (deprecated, unused)
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
  * \param trigger_info_val_list  Values of event info entries
@@ -191,7 +191,7 @@ cali_channel_push_snapshot(cali_id_t chn_id,
  *
  * \param chn_id Channel to take the snapshot on
  * \param scope  Indicates which scopes (process, thread, or task) the
- *   snapshot should span
+ *   snapshot should span (deprecated)
  * \param len    Length of the provided snapshot buffer.
  * \param buf    User-provided snapshot storage buffer.
  * \return Actual size of the snapshot representation.
