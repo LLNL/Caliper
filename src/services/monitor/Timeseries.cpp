@@ -100,7 +100,7 @@ public:
         TimeseriesService* instance = new TimeseriesService(c, channel);
 
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, int, SnapshotView info, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec){
                 instance->snapshot_cb(c, channel, info, rec);
             });
         channel->events().post_init_evt.connect(
