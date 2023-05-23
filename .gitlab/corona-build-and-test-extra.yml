@@ -9,7 +9,7 @@
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-# The correct way is now to use rocmcc compiler directly
+# The correct way is now to use rocmcc compiler directly as done in shared spec
 ### Template for extra jobs defined by the project.
 #clang14.0.6-rocm5.4.1:
 #  variables:
