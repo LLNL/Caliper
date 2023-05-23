@@ -9,11 +9,12 @@
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-## Template for extra jobs defined by the project.
-clang14.0.6-rocm5.4.1:
-  variables:
-    SPEC: "%clang@14.0.6 +rocm amdgpu_target=gfx906 ^hip@5.4.1 "
-  extends: .build_and_test_on_corona
+# The correct way is now to use rocmcc compiler directly as done in shared spec
+### Template for extra jobs defined by the project.
+#clang14.0.6-rocm5.4.1:
+#  variables:
+#    SPEC: "%clang@14.0.6 +rocm amdgpu_target=gfx906 ^hip@5.4.1 "
+#  extends: .build_and_test_on_corona
 
 master:
   variables:
