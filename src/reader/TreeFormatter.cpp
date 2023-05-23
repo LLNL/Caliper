@@ -33,12 +33,16 @@ using namespace cali;
 struct TreeFormatter::TreeFormatterImpl
 {
     SnapshotTree             m_tree;
-
-    QuerySpec::AttributeSelection m_attribute_columns;
+    QuerySpec                m_spec;
 
     struct ColumnInfo {
         std::string display_name;
         int width;
+    };
+
+    struct SortInfo {
+        Attribute attribute;
+        QuerySpec::SortSpec::Order order;
     };
 
     std::map<Attribute, ColumnInfo> m_column_info;
@@ -53,6 +57,8 @@ struct TreeFormatter::TreeFormatterImpl
 
     std::vector<std::string> m_path_key_names;
     std::vector<Attribute>   m_path_keys;
+
+    std::vector<SortInfo>    m_sort_info;
 
     std::mutex               m_path_key_lock;
 
@@ -95,19 +101,21 @@ struct TreeFormatter::TreeFormatterImpl
         }
 
         {
-            auto it = std::find(m_path_key_names.begin(), m_path_key_names.end(),
-                                "prop:nested");
+            for (const auto path_str : { "path", "prop:nested" }) {
+                auto it = std::find(m_path_key_names.begin(), m_path_key_names.end(),
+                                    path_str);
 
-            if (it != m_path_key_names.end()) {
-                m_use_nested = true;
-                m_path_key_names.erase(it);
-            } else if (!m_path_key_names.empty())
+                if (it != m_path_key_names.end()) {
+                    m_use_nested = true;
+                    m_path_key_names.erase(it);
+                }
+            }
+
+            if (!m_path_key_names.empty())
                 m_use_nested = false;
         }
 
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
-        m_attribute_columns = spec.select;
-        m_aliases = spec.aliases;
     }
 
     std::vector<Attribute> get_path_keys(const CaliperMetadataAccessInterface& db) {
@@ -164,8 +172,8 @@ struct TreeFormatter::TreeFormatterImpl
                 if (it == m_column_info.end()) {
                     std::string name = entry.first.name();
 
-                    auto ait = m_aliases.find(name);
-                    if (ait != m_aliases.end())
+                    auto ait = m_spec.aliases.find(name);
+                    if (ait != m_spec.aliases.end())
                         name = ait->second;
                     else {
                         Variant v = entry.first.get(db.get_attribute("attribute.alias"));
@@ -183,7 +191,46 @@ struct TreeFormatter::TreeFormatterImpl
         }
     }
 
-    void recursive_print_nodes(const SnapshotTreeNode* node,
+    void
+    init_sort_info(const CaliperMetadataAccessInterface& db) {
+        m_sort_info.clear();
+
+        for (const auto &s : m_spec.sort.list) {
+            Attribute attr = db.get_attribute(s.attribute);
+            if (attr)
+                m_sort_info.push_back({ attr, s.order });
+        }
+    }
+
+    std::vector<SnapshotTreeNode*>
+    get_sorted_child_nodes(SnapshotTreeNode* parent) {
+        std::vector<SnapshotTreeNode*> nodes;
+
+        if (!parent)
+            return nodes;
+
+        for (SnapshotTreeNode* node = parent->first_child(); node; node = node->next_sibling())
+            nodes.push_back(node);
+
+        for (const auto &si : m_sort_info) {
+            for (SnapshotTreeNode* node : nodes)
+                node->sort(si.attribute, si.order == QuerySpec::SortSpec::Order::Ascending);
+
+            if (si.order == QuerySpec::SortSpec::Order::Ascending) {
+                std::stable_sort(nodes.begin(), nodes.end(), [si](SnapshotTreeNode* lhs, SnapshotTreeNode* rhs){
+                        return lhs->min_val(si.attribute) < rhs->min_val(si.attribute);
+                    });
+            } else if (si.order == QuerySpec::SortSpec::Order::Descending) {
+                std::stable_sort(nodes.begin(), nodes.end(), [si](SnapshotTreeNode* lhs, SnapshotTreeNode* rhs){
+                        return lhs->max_val(si.attribute) > rhs->max_val(si.attribute);
+                    });
+            }
+        }
+
+        return nodes;
+    }
+
+    void recursive_print_nodes(SnapshotTreeNode* node,
                                int level,
                                const std::vector<Attribute>& attributes,
                                std::ostream& os)
@@ -258,8 +305,8 @@ struct TreeFormatter::TreeFormatterImpl
         // recursively descend
         //
 
-        for (node = node->first_child(); node; node = node->next_sibling())
-            recursive_print_nodes(node, level+1, attributes, os);
+        for (auto child : get_sorted_child_nodes(node))
+            recursive_print_nodes(child, level+1, attributes, os);
     }
 
     int recursive_max_path_label_width(const SnapshotTreeNode* node, int level) {
@@ -276,9 +323,11 @@ struct TreeFormatter::TreeFormatterImpl
         // establish order of attribute columns
         //
 
+        init_sort_info(db);
+
         std::vector<Attribute> attributes;
 
-        switch (m_attribute_columns.selection) {
+        switch (m_spec.select.selection) {
         case QuerySpec::AttributeSelection::Default:
             // auto-attributes: skip hidden and global attributes
             for (auto &p : m_column_info) {
@@ -293,7 +342,7 @@ struct TreeFormatter::TreeFormatterImpl
                 attributes.push_back(p.first);
             break;
         case QuerySpec::AttributeSelection::List:
-            for (const std::string& s : m_attribute_columns.list) {
+            for (const std::string& s : m_spec.select.list) {
                 Attribute attr = db.get_attribute(s);
 
                 if (attr == Attribute::invalid)
@@ -342,27 +391,25 @@ struct TreeFormatter::TreeFormatterImpl
         // print tree nodes
         //
 
-        const SnapshotTreeNode* node = m_tree.root();
-
-        if (node)
-            for (node = node->first_child(); node; node = node->next_sibling())
-                recursive_print_nodes(node, 0, attributes, os);
+        for (auto node : get_sorted_child_nodes(m_tree.root()))
+            recursive_print_nodes(node, 0, attributes, os);
     }
 
-    TreeFormatterImpl()
-        : m_path_column_width(0),
+    TreeFormatterImpl(const QuerySpec& spec)
+        : m_spec(spec),
+          m_path_column_width(0),
           m_max_column_width(48),
           m_use_nested(true),
           m_print_globals(false)
-    { }
+    {
+        configure(spec);
+    }
 };
 
 
 TreeFormatter::TreeFormatter(const QuerySpec& spec)
-    : mP { new TreeFormatterImpl }
-{
-    mP->configure(spec);
-}
+    : mP { new TreeFormatterImpl(spec) }
+{ }
 
 TreeFormatter::~TreeFormatter()
 {

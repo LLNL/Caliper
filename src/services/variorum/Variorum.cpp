@@ -94,7 +94,6 @@ class VariorumService
 
     void snapshot_cb(Caliper* c,
                      Channel* /*channel*/,
-                     int /*scopes*/,
                      SnapshotView /*trigger_info*/,
                      SnapshotBuilder& rec)
     {
@@ -297,8 +296,8 @@ public:
                 instance->post_init_cb(c, channel);
             });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec){
-                instance->snapshot_cb(c, channel, scopes, trigger_info, rec);
+            [instance](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec){
+                instance->snapshot_cb(c, channel, trigger_info, rec);
             });
         channel->events().finish_evt.connect(
             [instance](Caliper* c, Channel* channel){

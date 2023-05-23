@@ -60,7 +60,7 @@ public:
         typedef util::callback<void(Caliper*,Channel*)>
             caliper_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,int,SnapshotView,SnapshotBuilder&)>
+        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotBuilder&)>
             snapshot_cbvec;
         typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotView)>
             process_snapshot_cbvec;
@@ -87,12 +87,8 @@ public:
         update_cbvec           post_begin_evt;
         /// \brief Invoked when value is set, \e before it has been put on the blackboard.
         update_cbvec           pre_set_evt;
-        /// \brief Invoked when value is set, \e after it has been put on the blackboard.
-        update_cbvec           post_set_evt;
         /// \brief Invoked on region end, \e before it has been removed from the blackboard.
         update_cbvec           pre_end_evt;
-        /// \brief Invoked on region end, \e after it has been removed from the blackboard.
-        update_cbvec           post_end_evt;
 
         /// \brief Invoked when a new thread context is being created.
         caliper_cbvec          create_thread_evt;
@@ -335,14 +331,8 @@ public:
     ///
     /// This function is signal safe.
     ///
-    /// \param channel The %Caliper channel to fetch the context from.
-    /// \param scopes Defines which blackboard contents (thread, process,
-    ///   channel) are returned. Bitwise combination of cali_context_scope_t
-    ///   flags.
-    /// \param trigger_info A caller-provided record that is passed to the
-    ///   snapshot callback, and added to the returned snapshot record.
     /// \param rec The snapshot record buffer to update.
-    void     pull_context(Channel* channel, int scopes, SnapshotBuilder& rec);
+    void     pull_context(SnapshotBuilder& rec);
 
     /// \brief Trigger and return a snapshot.
     ///
@@ -362,13 +352,10 @@ public:
     /// This function is signal safe.
     ///
     /// \param channel The %Caliper channel to fetch the snapshot from.
-    /// \param scopes Defines which blackboard contents (thread, process,
-    ///   channel) are returned. Bitwise combination of cali_context_scope_t
-    ///   flags.
     /// \param trigger_info A caller-provided record that is passed to the
     ///   snapshot callback, and added to the returned snapshot record.
     /// \param rec The snapshot record buffer to update.
-    void      pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec);
+    void      pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec);
 
     // --- Flush and I/O API
 

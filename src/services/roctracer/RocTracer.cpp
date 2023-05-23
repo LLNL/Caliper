@@ -357,7 +357,7 @@ class RocTracerService {
         roctracer_flush_activity_expl(m_roctracer_pool);
     }
 
-    void snapshot_cb(Caliper* c, Channel* channel, int scopes, const SnapshotView, SnapshotBuilder& snapshot) {
+    void snapshot_cb(Caliper* c, Channel* channel, const SnapshotView, SnapshotBuilder& snapshot) {
         uint64_t timestamp = 0;
         roctracer_get_timestamp(&timestamp);
 
@@ -487,8 +487,8 @@ class RocTracerService {
             c->set(m_host_timestamp_attr, cali_make_variant_from_uint(starttime));
 
             channel->events().snapshot.connect(
-                [](Caliper* c, Channel* chn, int scopes, SnapshotView info, SnapshotBuilder& rec){
-                    s_instance->snapshot_cb(c, chn, scopes, info, rec);
+                [](Caliper* c, Channel* chn,  SnapshotView info, SnapshotBuilder& rec){
+                    s_instance->snapshot_cb(c, chn, info, rec);
                 });
         }
 

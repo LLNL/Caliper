@@ -17,6 +17,10 @@ configure_file(
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
+if (CALIPER_HAVE_LIBUNWIND)
+  include_directories(${LIBUNWIND_INCLUDE_DIRS})
+endif()
+
 add_library(caliper-sampler OBJECT ${CALIPER_SAMPLER_SOURCES})
 
 add_service_objlib("caliper-sampler")

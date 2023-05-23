@@ -188,7 +188,8 @@ const char* testcontroller_spec = R"json(
        "query": 
         [
          { "level": "local", "group by": "g", "let": "x=scale(y,2)", "select": 
-           [ { "expr": "sum(x)", "as": X, "unit": "Foos" } ]
+           [ { "expr": "sum(x)", "as": X, "unit": "Foos" } ],
+           "aggregate": [ "min(y)", "max(y)" ], "order by": [ "min#y desc" ]
          }
         ]
       },
@@ -371,6 +372,8 @@ TEST(ConfigManagerTest, BuildQuery)
             " select me,sum(x) as \"X\" unit \"Foos\""
             " group by z,g"
             " where xyz=42"
+            " aggregate min(y),max(y)"
+            " order by min#y desc"
             " format expand";
 
         EXPECT_STREQ(q1.c_str(), expect);
@@ -383,6 +386,8 @@ TEST(ConfigManagerTest, BuildQuery)
             " let x=scale(y,2)"
             " select me,sum(x)"
             " group by g"
+            " aggregate min(y),max(y)"
+            " order by min#y desc"
             " format expand";
 
         EXPECT_STREQ(q2.c_str(), expect);

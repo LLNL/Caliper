@@ -100,6 +100,30 @@ class CaliperCAPITest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'ci_test_c': 'snapshot', 'string_arg': 'teststring', 'int_arg': '42' }))
 
+    def test_channel_c_api(self):
+        target_cmd = [ './ci_test_channel_api' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY' : '0'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'region': 'foo',
+                         'a': '2',
+                         'b': '4' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'region': 'foo',
+                         'b': '4',
+                         'c': '8' }))
+        self.assertFalse(cat.has_snapshot_with_attributes(
+            snapshots, { 'region': 'foo',
+                         'a': '2',
+                         'b': '4',
+                         'c': '8' }))
 
 if __name__ == "__main__":
     unittest.main()

@@ -148,7 +148,11 @@ class Aggregate
             check_aggregation_attribute(c, a);
 
         const int prop = CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS;
-        info.count_attr = c->create_attribute("count", CALI_TYPE_INT, prop);
+
+        info.count_attr = 
+            c->create_attribute("count", CALI_TYPE_UINT, prop);
+        info.slot_attr =
+            c->create_attribute("aggregate.slot", CALI_TYPE_UINT, prop);
     }
 
     void flush_cb(Caliper* c, Channel* chn, SnapshotFlushFn proc_fn) {

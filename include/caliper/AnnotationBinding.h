@@ -15,12 +15,13 @@
 #include "caliper/common/RuntimeConfig.h"
 
 #include <iostream>
+#include <memory>
 #include <vector>
 
-namespace cali 
+namespace cali
 {
 
-class Filter;
+class RegionFilter;
 class Node;
 
 /// \brief Base class for bindings to third-party annotation APIs
@@ -46,15 +47,15 @@ class Node;
 ///    class MyBinding : public cali::AnnotationBinding {
 ///      public:
 ///
-///        const char* service_tag() const { 
-///          return "mybinding"; 
+///        const char* service_tag() const {
+///          return "mybinding";
 ///        }
 ///
 ///        void on_begin(cali::Caliper* c, cali::Channel*, const cali::Attribute& attr, const cali::Variant& value) {
 ///          std::string str = attr.name();
 ///          str.append("=");
 ///          str.append(value.to_string()); // create "<attribute name>=<value>" string
-///          
+///
 ///          mybegin(str.c_str());
 ///        }
 ///
@@ -69,11 +70,12 @@ class Node;
 /// Also see the \a nvprof and \a vtune service implementations for examples of
 /// using AnnotationBinding in a %Caliper service.
 
-class AnnotationBinding 
+class AnnotationBinding
 {
     ConfigSet m_config;
-    Filter*   m_filter;
     Attribute m_marker_attr;
+
+    std::unique_ptr<RegionFilter> m_filter;
 
     std::vector<std::string> m_trigger_attr_names;
 
@@ -88,7 +90,7 @@ class AnnotationBinding
     /// These callbacks are internal Caliper mechanisms
     /// not meant to be touched by the code of services
     /// implementing an AnnotationBinding.
-    /// 
+    ///
     /// User code should instead use on_mark_attribute(),
     /// on_begin(), and on_end().
 
@@ -115,13 +117,13 @@ protected:
     /// \brief Callback for an annotation begin event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper begin event was invoked.
-    /// \param value The annotation name/value. 
+    /// \param value The annotation name/value.
     virtual void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) { }
 
     /// \brief Callback for an annotation end event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper end event was invoked.
-    /// \param value The annotation name/value. 
+    /// \param value The annotation name/value.
     virtual void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)   { }
 
     /// \brief Initialization callback. Invoked after the %Caliper
@@ -134,10 +136,7 @@ protected:
 public:
 
     /// \brief Constructor. Usually invoked through \a make_binding().
-    AnnotationBinding()
-        : m_filter(nullptr),
-          m_marker_attr(Attribute::invalid)
-        { }
+    AnnotationBinding();
 
     virtual ~AnnotationBinding();
 

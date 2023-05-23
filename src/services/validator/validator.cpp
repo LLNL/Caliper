@@ -32,7 +32,7 @@ std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
 {
     FixedSizeSnapshotRecord<120> snapshot;
 
-    c->pull_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, SnapshotView(), snapshot.builder());
+    c->pull_snapshot(chn, SnapshotView(), snapshot.builder());
 
     os << "{ ";
 

@@ -187,6 +187,8 @@ class ConfigManager::OptionSpec
         std::vector< std::string   > groupby;
         std::vector< std::string   > let;
         std::vector< std::string   > where;
+        std::vector< std::string   > aggregate;
+        std::vector< std::string   > orderby;
     };
 
     struct option_spec_t {
@@ -238,6 +240,14 @@ class ConfigManager::OptionSpec
             it = dict.find("where");
             if (it != dict.end())
                 qarg.where = ::to_stringlist(it->second.rec_list());
+
+            it = dict.find("aggregate");
+            if (it != dict.end())
+                qarg.aggregate = ::to_stringlist(it->second.rec_list());
+
+            it = dict.find("order by");
+            if (it != dict.end())
+                qarg.orderby = ::to_stringlist(it->second.rec_list());
 
             it = dict.find("select");
             if (it != dict.end())
@@ -601,6 +611,42 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
+    query_aggregate(const char* level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &s : q->aggregate) {
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(s);
+            }
+        }
+
+        if (!ret.empty())
+            ret = std::string(" aggregate ") + ret;
+
+        return ret;
+    }
+
+    std::string
+    query_orderby(const char* level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &s : q->orderby) {
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(s);
+            }
+        }
+
+        if (!ret.empty())
+            ret = std::string(" order by ") + ret;
+
+        return ret;
+    }
+
+    std::string
     build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) {
         std::string ret;
 
@@ -608,17 +654,13 @@ struct ConfigManager::Options::OptionsImpl
         ret.append(query_select(level, ::find_or(in, "select"), use_alias));
         ret.append(query_groupby(level, ::find_or(in, "group by")));
         ret.append(query_where(level, ::find_or(in, "where")));
+        ret.append(query_aggregate(level, ::find_or(in, "aggregate")));
+        ret.append(query_orderby(level, ::find_or(in, "order by")));
 
         {
             auto it = in.find("format");
             if (it != in.end())
                 ret.append(" format ").append(it->second);
-        }
-
-        {
-            auto it = in.find("aggregate");
-            if (it != in.end())
-                ret.append(" aggregate ").append(it->second);
         }
 
         return ret;

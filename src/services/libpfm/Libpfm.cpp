@@ -733,7 +733,7 @@ public:
                 });
         if (sI->record_counters)
             chn->events().snapshot.connect(
-                [](Caliper*, Channel*, int, SnapshotView, SnapshotBuilder& rec){
+                [](Caliper*, Channel*, SnapshotView, SnapshotBuilder& rec){
                     sI->snapshot_cb(rec);
                 });
 

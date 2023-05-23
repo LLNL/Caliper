@@ -13,19 +13,7 @@ using namespace std;
 Attribute
 Attribute::make_attribute(Node* node)
 {
-    // sanity check: make sure we have the necessary attributes (name and type)
-
-    // Given node must be attribute name
-
-    if (!node || node->attribute() == CALI_INV_ID || node->attribute() != NAME_ATTR_ID)
-        return Attribute::invalid;
-
-    // Find type attribute
-    for (const Node* p = node; p && p->attribute() != CALI_INV_ID; p = p->parent())
-        if (p->attribute() == TYPE_ATTR_ID)
-            return Attribute(node);
-
-    return Attribute::invalid;
+    return node && node->attribute() == NAME_ATTR_ID ? Attribute(node) : Attribute::invalid;
 }
 
 std::string

@@ -122,6 +122,7 @@ const char* controller_spec =
     "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
     "     \"CALI_TIMER_UNIT\"                 : \"sec\""
     "   },"
+    " \"defaults\"    : { \"node.order\": \"true\" },"
     " \"options\": "
     " ["
     "  { "

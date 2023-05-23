@@ -248,7 +248,7 @@ public:
         }
 
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel*, int, SnapshotView, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec){
                 instance->snapshot(c, rec);
             });
         channel->events().post_init_evt.connect(

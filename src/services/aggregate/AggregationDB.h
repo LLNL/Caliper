@@ -39,6 +39,7 @@ struct AttributeInfo
     std::vector<ResultAttributes> result_attrs;
 
     cali::Attribute               count_attr;
+    cali::Attribute               slot_attr;
 
     bool implicit_grouping;
     bool group_nested;

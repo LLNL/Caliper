@@ -93,51 +93,6 @@ log_invalid_cfg_value(const char* var, const char* value, const char* prefix = n
                     << std::endl;
 }
 
-int
-parse_snapshot_scopes(const char* channel_name, const StringConverter& cfg)
-{
-    const struct {
-        const char* name; cali_context_scope_t scope;
-    } scopemap[] = {
-        { "process", CALI_SCOPE_PROCESS },
-        { "thread",  CALI_SCOPE_THREAD  },
-        { "channel", CALI_SCOPE_CHANNEL }
-    };
-
-    int scopes = 0;
-    auto list = cfg.to_stringlist(",.");
-
-    for (const auto &e : scopemap) {
-        auto it = std::find(list.begin(), list.end(),
-                            std::string(e.name));
-
-        if (it != list.end()) {
-            scopes |= e.scope;
-            list.erase(it);
-        }
-    }
-
-    for (const auto &s : list)
-        log_invalid_cfg_value("CALI_CHANNEL_SNAPSHOT_SCOPES", s.c_str(), channel_name);
-
-    if (Log::verbosity() > 1) {
-        std::string selected_scopes;
-
-        for (const auto &e : scopemap)
-            if (scopes & e.scope)
-                selected_scopes.append(std::string(" ") + e.name);
-
-        if (selected_scopes.empty())
-            selected_scopes = " none";
-
-        Log(2).stream() << channel_name
-                        << ": snapshot scopes:" << selected_scopes
-                        << std::endl;
-    }
-
-    return scopes;
-}
-
 std::ostream&
 print_available_services(std::ostream& os)
 {
@@ -213,18 +168,17 @@ struct Channel::ChannelImpl
 
     Blackboard                      channel_blackboard;
 
-    int                             snapshot_scopes;
-
     ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
-        : id(_id), name(_name), active(true), config(cfg), snapshot_scopes(0)
+        : id(_id),
+          name(_name),
+          active(true),
+          config(cfg)
         {
             ConfigSet cali_cfg =
                 config.init("channel", s_configdata);
 
             flush_on_exit =
                 cali_cfg.get("flush_on_exit").to_bool();
-            snapshot_scopes =
-                ::parse_snapshot_scopes(_name, cali_cfg.get("snapshot_scopes"));
         }
 
     ~ChannelImpl()
@@ -245,11 +199,6 @@ const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
     { "flush_on_exit", CALI_TYPE_BOOL, "true",
       "Flush Caliper buffers at program exit",
       "Flush Caliper buffers at program exit"
-    },
-    { "snapshot_scopes", CALI_TYPE_STRING, "process,thread",
-      "List of blackboard scopes to include in snapshots",
-      "List of blackboard scopes to include in snapshots"
-      " (process, thread, and channel)."
     },
     ConfigSet::Terminator
 };
@@ -305,25 +254,16 @@ struct Caliper::ThreadData
 
     // This thread's blackboard
     Blackboard     thread_blackboard;
-
     // copy of the last process blackboard snapshot
     SnapshotRecord process_snapshot;
-    // copy of the last channel blackboard snapshot
-    SnapshotRecord channel_snapshot;
-
-    // versions of the last process blackboard and channel snapshots
+    // version of the last process blackboard snapshot
     int            process_bb_count;
-    int            channel_bb_count;
-    // channel id of the channel snapshot copy
-    int            channel_bb_id;
 
     bool           is_initial_thread;
     bool           stack_error;
 
     ThreadData(bool initial_thread = false)
         : process_bb_count(-1),
-          channel_bb_count(-1),
-          channel_bb_id(-1),
           is_initial_thread(initial_thread),
           stack_error(false)
         { }
@@ -338,6 +278,22 @@ struct Caliper::ThreadData
             << std::endl;
         thread_blackboard.print_statistics( os << "  Thread blackboard: " )
             << std::endl;
+    }
+
+    void update_process_snapshot(Blackboard& process_blackboard) {
+        //   Check if the process or channel blackboards have been updated
+        // since the last snapshot on this thread.
+        //   We keep a copy of the last process/channel snapshot data in our
+        // thread-local storage so we don't have to access (and lock) the
+        // process/channel blackboards when they haven't changed.
+        int process_bb_count_now = process_blackboard.count();
+        if (process_bb_count_now > process_bb_count) {
+            //   Process blackboard has been updated:
+            // update thread-local snapshot data
+            process_snapshot.reset();
+            process_blackboard.snapshot(process_snapshot.builder());
+            process_bb_count = process_bb_count_now;
+        }
     }
 };
 
@@ -910,60 +866,32 @@ Caliper::get_globals(Channel* channel)
 // --- Snapshot interface
 
 void
-Caliper::pull_context(Channel* channel, int scopes, SnapshotBuilder& rec)
+Caliper::pull_context(SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // Get thread blackboard data
-    if (scopes & CALI_SCOPE_THREAD) {
-        sT->thread_blackboard.snapshot(rec);
-    }
+    sT->thread_blackboard.snapshot(rec);
 
-    // Get process and channel blackboard data
-    if (scopes & CALI_SCOPE_PROCESS) {
-        //   Check if the process or channel blackboards have been updated
-        // since the last snapshot on this thread.
-        //   We keep a copy of the last process/channel snapshot data in our
-        // thread-local storage so we don't have to access (and lock) the
-        // process/channel blackboards when they haven't changed.
-
-        int process_bb_count_now = sG->process_blackboard.count();
-        if (process_bb_count_now > sT->process_bb_count) {
-            //   Process blackboard has been updated:
-            // update thread-local snapshot data
-            sT->process_snapshot.reset();
-            sG->process_blackboard.snapshot(sT->process_snapshot.builder());
-            sT->process_bb_count = process_bb_count_now;
-        }
-
-        rec.append(sT->process_snapshot.view());
-    }
-
-    if (scopes & CALI_SCOPE_CHANNEL) {
-        int channel_bb_count_now = channel->mP->channel_blackboard.count();
-        if (sT->channel_bb_id   != static_cast<int>(channel->id()) ||
-            channel_bb_count_now > sT->channel_bb_count) {
-            sT->channel_snapshot.reset();
-            channel->mP->channel_blackboard.snapshot(sT->channel_snapshot.builder());
-
-            sT->channel_bb_count = channel_bb_count_now;
-            sT->channel_bb_id    = static_cast<int>(channel->id());
-        }
-
-        rec.append(sT->channel_snapshot.view());
-    }
+    // Get process blackboard data
+    sT->update_process_snapshot(sG->process_blackboard);
+    rec.append(sT->process_snapshot.view());
 }
 
 void
-Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec)
+Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
     rec.append(trigger_info);
-    channel->mP->events.snapshot(this, channel, scopes, trigger_info, rec);
-    pull_context(channel, scopes, rec);
+    channel->mP->events.snapshot(this, channel, trigger_info, rec);
+
+    // copy pull_context() functionality to avoid superfluous siglock update
+    sT->thread_blackboard.snapshot(rec);
+    sT->update_process_snapshot(sG->process_blackboard);
+    rec.append(sT->process_snapshot.view());
 }
 
 void
@@ -974,7 +902,14 @@ Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
 
     SnapshotRecord rec;
 
-    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, rec.builder());
+    // copy pull_snapshot() functionality to avoid superfluous siglock update
+    rec.builder().append(trigger_info);
+    channel->mP->events.snapshot(this, channel, trigger_info, rec.builder());
+
+    sT->thread_blackboard.snapshot(rec.builder());
+    sT->update_process_snapshot(sG->process_blackboard);
+    rec.builder().append(sT->process_snapshot.view());
+
     channel->mP->events.process_snapshot(this, channel, trigger_info, rec.view());
 }
 
@@ -1100,12 +1035,6 @@ Caliper::end(const Attribute& attr)
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
 }
 
 void
@@ -1152,12 +1081,6 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, current.entry.value());
 }
 
 void
@@ -1184,12 +1107,6 @@ Caliper::set(const Attribute& attr, const Variant& data)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
     else if (scope == CALI_ATTR_SCOPE_PROCESS)
         handle_set(attr, data, prop, sG->process_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_set_evt(this, channel.get(), attr, data);
 }
 
 void
@@ -1236,10 +1153,6 @@ Caliper::end(Channel* channel, const Attribute& attr)
         channel->mP->events.pre_end_evt(this, channel, attr, current.entry.value());
 
     handle_end(attr, prop, current.merged_entry, key, channel->mP->channel_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.post_end_evt(this, channel, attr, current.entry.value());
 }
 
 void
@@ -1256,10 +1169,6 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
         channel->mP->events.pre_set_evt(this, channel, attr, data);
 
     handle_set(attr, data, prop, channel->mP->channel_blackboard, sT->tree);
-
-    // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.post_set_evt(this, channel, attr, data);
 }
 
 // --- Query
