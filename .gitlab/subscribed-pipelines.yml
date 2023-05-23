@@ -41,17 +41,18 @@ ruby-build-and-test:
   needs: [ruby-up-check]
   extends: [.build-and-test]
 
-# QUARTZ
-quartz-up-check:
-  variables:
-    CI_MACHINE: "QUARTZ"
-  extends: [.machine-check]
-
-quartz-build-and-test:
-  variables:
-    CI_MACHINE: "quartz"
-  needs: [quartz-up-check]
-  extends: [.build-and-test]
+# Quartz it very similar to ruby, let’s deactivate it for now
+## QUARTZ
+#quartz-up-check:
+#  variables:
+#    CI_MACHINE: "QUARTZ"
+#  extends: [.machine-check]
+#
+#quartz-build-and-test:
+#  variables:
+#    CI_MACHINE: "quartz"
+#  needs: [quartz-up-check]
+#  extends: [.build-and-test]
 
 # CORONA
 corona-up-check:
