@@ -161,8 +161,10 @@ MetadataTree::create_path(const Attribute& attr, size_t n, const Variant* data, 
     char*  ptr  = nullptr;
 
     if (copy) {
-        for (size_t i = 0; i < n; ++i)
-            data_size += data[i].size() + (align - data[i].size()%align);
+        for (size_t i = 0; i < n; ++i) {
+            // ensure all allocations are aligned and have 0-padding so we can safely hand out string ptrs
+            data_size += data[i].size() + (align - (data[i].size()+1)%align);
+        }
 
         ptr = static_cast<char*>(m_mempool.allocate(data_size));
 
@@ -182,7 +184,7 @@ MetadataTree::create_path(const Attribute& attr, size_t n, const Variant* data, 
 
         if (copy) {
             dptr = memcpy(ptr, dptr, size);
-            ptr += size+(align-size%align);
+            ptr += size + (align-(size+1)%align);
         }
 
         size_t index = m_nodeblock->index++;
@@ -212,7 +214,7 @@ MetadataTree::create_child(const Attribute& attr, const Variant& value, Node* pa
     void* ptr = nullptr;
 
     if (value.has_unmanaged_data())
-        ptr = m_mempool.allocate(value.size());
+        ptr = m_mempool.allocate(value.size() + 1 /* ensure 0-padding so we can safely hand out string ptrs */);
 
     size_t index = m_nodeblock->index++;
     GlobalData* g = mG.load();

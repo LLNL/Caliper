@@ -49,7 +49,10 @@ struct MemoryPool::MemoryPoolImpl
     void expand(size_t bytes) {
         size_t len = max((bytes+sizeof(uint64_t)-1)/sizeof(uint64_t), chunksize);
 
-        m_chunks.push_back( { new uint64_t[len], 0, len } );
+        uint64_t* ptr = new uint64_t[len];
+        std::fill_n(ptr, len, 0);
+
+        m_chunks.push_back( { ptr, 0, len } );
 
         m_total_reserved += len;
     }
