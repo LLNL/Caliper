@@ -461,7 +461,7 @@ class SpotController : public cali::internal::CustomOutputController
 
 public:
 
-    void 
+    void
     collective_flush(OutputStream& stream, Comm& comm) override
     {
         Log(1).stream() << name() << ": Flushing Caliper data" << std::endl;
@@ -538,60 +538,85 @@ check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
     return "";
 }
 
-const char* spot_controller_spec =
-    "{"
-    " \"name\"        : \"spot\","
-    " \"description\" : \"Record a time profile for the Spot web visualization framework\","
-    " \"categories\"  : [ \"adiak\", \"metric\", \"output\", \"region\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"event\", \"timer\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
-    "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
-    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
-    "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
-    "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
-    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
-    "   },"
-    " \"defaults\"    : { \"node.order\": \"true\" },"
-    " \"options\": "
-    " ["
-    "  {"
-    "   \"name\": \"timeseries\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Collect time-series data for annotated loops\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.maxrows\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Max number of rows in timeseries output. Set to 0 to show all. Default: 20.\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.iteration_interval\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Measure every N loop iterations in timeseries\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.time_interval\","
-    "   \"type\": \"double\","
-    "   \"description\": \"Measure after t seconds in timeseries\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.target_loops\","
-    "   \"type\": \"string\","
-    "   \"description\": \"List of loops to target for timeseries measurements. Default: any top-level loop.\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.metrics\","
-    "   \"type\": \"string\","
-    "   \"description\": \"Metrics to record for timeseries measurements.\""
-    "  },"
-    "  {"
-    "   \"name\": \"outdir\","
-    "   \"type\": \"string\","
-    "   \"description\": \"Output directory name\""
-    "  }"
-    " ]"
-    "}";
+const char* spot_controller_spec = R"json(
+    {
+     "name"        : "spot",
+     "description" : "Record a time profile for the Spot web visualization framework",
+     "categories"  : [ "adiak", "metric", "output", "region", "event" ],
+     "services"    : [ "aggregate", "event", "timer" ],
+     "config"      :
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
+         "CALI_CHANNEL_CONFIG_CHECK"       : "false",
+         "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
+         "CALI_TIMER_SNAPSHOT_DURATION"    : "true",
+         "CALI_TIMER_INCLUSIVE_DURATION"   : "false",
+         "CALI_TIMER_UNIT"                 : "sec"
+       },
+     "defaults"    : { "node.order": "true" },
+     "options":
+     [
+      {
+       "name": "time.exclusive",
+       "type": "bool",
+       "category": "metric",
+       "description": "Collect exclusive time per region",
+       "query":
+       [
+        {
+         "level"  : "local",
+         "select" :
+         [
+          { "expr": "sum(sum#time.duration)", "as": "Time (exc)", "unit": "sec" }
+         ]
+        },
+        {
+         "level"  : "cross",
+         "select" :
+         [
+          { "expr": "avg(sum#sum#time.duration)", "as": "Avg time/rank (exc)", "unit": "sec" },
+          { "expr": "sum(sum#sum#time.duration)", "as": "Total time (exc)", "unit": "sec" }
+         ]
+        }
+       ]
+      },
+      {
+       "name": "timeseries",
+       "type": "bool",
+       "description": "Collect time-series data for annotated loops"
+      },
+      {
+       "name": "timeseries.maxrows",
+       "type": "int",
+       "description": "Max number of rows in timeseries output. Set to 0 to show all. Default: 20."
+      },
+      {
+       "name": "timeseries.iteration_interval",
+       "type": "int",
+       "description": "Measure every N loop iterations in timeseries"
+      },
+      {
+       "name": "timeseries.time_interval",
+       "type": "double",
+       "description": "Measure after t seconds in timeseries"
+      },
+      {
+       "name": "timeseries.target_loops",
+       "type": "string",
+       "description": "List of loops to target for timeseries measurements. Default: any top-level loop."
+      },
+      {
+       "name": "timeseries.metrics",
+       "type": "string",
+       "description": "Metrics to record for timeseries measurements."
+      },
+      {
+       "name": "outdir",
+       "type": "string",
+       "description": "Output directory name"
+      }
+     ]
+    }
+)json";
 
 
 cali::ChannelController*
