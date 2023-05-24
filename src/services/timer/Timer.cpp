@@ -62,8 +62,6 @@ class TimerService
 
     bool      record_inclusive_duration;
 
-    double    scale_factor   { 1.0 };
-
     Attribute begin_evt_attr { Attribute::invalid };
     Attribute end_evt_attr   { Attribute::invalid };
 
@@ -89,17 +87,17 @@ class TimerService
 
     void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
         auto now = clock::now();
-        uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
+        uint64_t nsec = chrono::duration_cast<chrono::nanoseconds>(now - tstart).count();
 
-        rec.append(offset_attr, Variant(usec));
+        rec.append(offset_attr, Variant(nsec));
 
         TimerInfo* ti = acquire_timerinfo(c);
 
         if (!ti)
             return;
 
-        rec.append(snapshot_duration_attr, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
-        ti->prev_snapshot_timestamp = usec;
+        rec.append(snapshot_duration_attr, Variant(1e-9 * (nsec - ti->prev_snapshot_timestamp)));
+        ti->prev_snapshot_timestamp = nsec;
 
         if (record_inclusive_duration && !info.empty() && !c->is_signal()) {
             Entry event = info.get(begin_evt_attr);
@@ -113,7 +111,7 @@ class TimerService
 
             if (event.attribute() == begin_evt_attr.id()) {
                 // begin event: push current timestamp onto the inclusive timer stack
-                ti->inclusive_timer_stack[evt_attr_id].push_back(usec);
+                ti->inclusive_timer_stack[evt_attr_id].push_back(nsec);
             } else if (event.attribute() == end_evt_attr.id()) {
                 // end event: fetch begin timestamp from inclusive timer stack
                 auto stack_it = ti->inclusive_timer_stack.find(evt_attr_id);
@@ -123,7 +121,7 @@ class TimerService
                     return;
                 }
 
-                rec.append(inclusive_duration_attr, Variant(scale_factor * (usec - stack_it->second.back())));
+                rec.append(inclusive_duration_attr, Variant(1e-9 * (nsec - stack_it->second.back())));
                 stack_it->second.pop_back();
             }
         }
@@ -164,40 +162,29 @@ class TimerService
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
-            Variant   usec_val  = Variant("usec");
+            Variant   nsec_val  = Variant("nsec");
             Variant   sec_val   = Variant("sec");
 
-            Variant   unit_val  = usec_val;
-
-            std::string unitstr = config.get("unit").to_string();
-
-            if (unitstr == "sec") {
-                unit_val = sec_val;
-                scale_factor = 1e-6;
-            } else if (unitstr != "usec")
-                Log(0).stream() << chn->name() << ": timestamp: Unknown unit " << unitstr
-                                << std::endl;
-
             offset_attr =
-                c->create_attribute("time.offset",    CALI_TYPE_UINT,
+                c->create_attribute("time.offset.ns", CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
-                                    1, &unit_attr, &usec_val);
+                                    1, &unit_attr, &nsec_val);
             snapshot_duration_attr =
                 c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |
                                     CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &unit_val);
+                                    1, &unit_attr, &sec_val);
             inclusive_duration_attr =
                 c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |
                                     CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &unit_val);
+                                    1, &unit_attr, &sec_val);
             timerinfo_attr =
                 c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
                                     CALI_ATTR_ASVALUE       |
@@ -252,11 +239,6 @@ const char* TimerService::s_spec = R"json(
             "description": "Record inclusive duration of begin/end regions",
             "type": "bool",
             "value": "false"
-        },
-        {   "name": "unit",
-            "description": "Unit for time durations (sec, usec)",
-            "type": "string",
-            "value": "sec"
         }
     ]
 }

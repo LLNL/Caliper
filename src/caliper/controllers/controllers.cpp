@@ -14,10 +14,7 @@ const char* event_trace_spec = R"json(
      "description" : "Record a trace of region enter/exit events in .cali format",
      "services"    : [ "event", "recorder", "timer", "trace" ],
      "categories"  : [ "output", "event" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"    : "false",
-         "CALI_TIMER_UNIT"               : "sec"
-       },
+     "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
      "options":
      [
       { "name"        : "trace.io",
