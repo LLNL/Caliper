@@ -161,9 +161,7 @@ class TimerService
 
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-
             Variant   nsec_val  = Variant("nsec");
-            Variant   sec_val   = Variant("sec");
 
             offset_attr =
                 c->create_attribute("time.offset.ns", CALI_TYPE_UINT,
@@ -177,14 +175,14 @@ class TimerService
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |
                                     CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &sec_val);
+                                    1, &unit_attr, &nsec_val);
             inclusive_duration_attr =
-                c->create_attribute("time.inclusive.duration.ns", CALI_TYPE_DOUBLE,
+                c->create_attribute("time.inclusive.duration.ns", CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |
                                     CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &sec_val);
+                                    1, &unit_attr, &nsec_val);
             timerinfo_attr =
                 c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
                                     CALI_ATTR_ASVALUE       |
