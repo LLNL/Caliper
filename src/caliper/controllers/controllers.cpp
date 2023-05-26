@@ -14,10 +14,7 @@ const char* event_trace_spec = R"json(
      "description" : "Record a trace of region enter/exit events in .cali format",
      "services"    : [ "event", "recorder", "timer", "trace" ],
      "categories"  : [ "output", "event" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"    : "false",
-         "CALI_TIMER_UNIT"               : "sec"
-       },
+     "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
      "options":
      [
       { "name"        : "trace.io",
@@ -151,7 +148,9 @@ const char* mpireport_spec = R"json(
           "MPI_Comm_size,MPI_Comm_rank,MPI_Wtime",
         "CALI_MPIREPORT_WRITE_ON_FINALIZE" : "false",
         "CALI_MPIREPORT_CONFIG" :
-          "select
+          "let
+              sum#time.duration=scale(sum#time.duration.ns,1e-9)
+           select
               mpi.function as Function,
               min(count) as \"Count (min)\",
               max(count) as \"Count (max)\",
@@ -519,8 +518,9 @@ const char* builtin_option_specs = R"json(
        { "level"   : "local",
          "let"     :
          [
-          "t.omp.work=first(sum#time.duration,time.duration) if omp.work",
-          "t.omp.sync=first(sum#time.duration,time.duration) if omp.sync",
+          "t.omp.ns=first(sum#time.duration.ns,time.duration.ns)",
+          "t.omp.work=scale(t.omp.ns,1e-9) if omp.work",
+          "t.omp.sync=scale(t.omp.ns,1e-9) if omp.sync",
           "t.omp.total=first(t.omp.work,t.omp.sync)"
          ],
          "select"  :
@@ -643,18 +643,18 @@ const char* builtin_option_specs = R"json(
         "let"      :
          [
            "irb.bytes.read=first(sum#io.bytes.read,io.bytes.read)",
-           "irb.time=first(sum#time.duration,time.duration)"
+           "irb.time.ns=first(sum#time.duration.ns,time.duration.ns)"
          ],
         "select"   :
          [
           { "expr": "io.region", "as": "I/O" },
-          { "expr": "ratio(irb.bytes.read,irb.time,8e-6)", "as": "Read Mbit/s", "unit": "Mb/s" }
+          { "expr": "ratio(irb.bytes.read,irb.time.ns,8e3)", "as": "Read Mbit/s", "unit": "Mb/s" }
          ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "avg(ratio#irb.bytes_read/irb.time)", "as": "Avg read Mbit/s", "unit": "Mb/s" },
-        { "expr": "max(ratio#irb.bytes_read/irb.time)", "as": "Max read Mbit/s", "unit": "Mb/s" }
+        { "expr": "avg(ratio#irb.bytes_read/irb.time.ns)", "as": "Avg read Mbit/s", "unit": "Mb/s" },
+        { "expr": "max(ratio#irb.bytes_read/irb.time.ns)", "as": "Max read Mbit/s", "unit": "Mb/s" }
        ]
       }
      ]
@@ -672,12 +672,12 @@ const char* builtin_option_specs = R"json(
         "let"      :
          [
            "iwb.bytes.written=first(sum#io.bytes.written,io.bytes.written)",
-           "iwb.time=first(sum#time.duration,time.duration)"
+           "iwb.time.ns=first(sum#time.duration.ns,time.duration.ns)"
          ],
         "select"   :
          [
           { "expr": "io.region", "as": "I/O" },
-          { "expr": "ratio(iwb.bytes.written,iwb.time,8e-6)", "as": "Write Mbit/s", "unit": "Mb/s" }
+          { "expr": "ratio(iwb.bytes.written,iwb.time.ns,8e3)", "as": "Write Mbit/s", "unit": "Mb/s" }
          ]
       },
       { "level": "cross", "select":

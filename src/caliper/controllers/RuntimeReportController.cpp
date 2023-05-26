@@ -26,6 +26,9 @@ public:
     RuntimeReportController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
         : ChannelController(name, 0, initial_cfg)
         {
+            std::string local_let =
+                "sum#time.duration=scale(sum#time.duration.ns,1e-9)";
+
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
                 " sum(sum#time.duration)";
@@ -60,6 +63,7 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
+                            { "let",       local_let },
                             { "select",    local_select  },
                             { "group by",  "path" }
                         });
@@ -74,6 +78,7 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
+                            { "let",       local_let },
                             { "select",    serial_select },
                             { "group by",  "path" },
                             { "format",    format }

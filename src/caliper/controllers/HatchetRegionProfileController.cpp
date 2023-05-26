@@ -61,6 +61,7 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("local", {
+                            { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
                             { "select",   "*,sum(sum#time.duration) as time unit sec" },
                             { "group by", "path,mpi.rank" },
                             { "format",   format }
@@ -70,6 +71,7 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
+                            { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
                             { "select",   "*,sum(sum#time.duration) as time unit sec" },
                             { "group by", "path" },
                             { "format",   format }

@@ -25,7 +25,8 @@ public:
         : ChannelController(name, 0, initial_cfg)
         {
             const char* let =
-                " n.threads=first(omp.num.threads)"
+                " sum#time.duration=scale(sum#time.duration.ns,1e-9)"
+                ",n.threads=first(omp.num.threads)"
                 ",t.initial=first(sum#time.duration) if omp.thread.type=initial";
 
             // Config for first aggregation step in MPI mode (process-local aggregation)

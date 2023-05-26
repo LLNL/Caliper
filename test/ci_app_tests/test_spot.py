@@ -74,8 +74,8 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertIn('timeseries', obj['globals']['spot.channels'])
         self.assertIn('regionprofile', obj['globals']['spot.channels'])
 
-        self.assertIn('avg#ratio#loop.iterations/time.duration', obj['globals']['spot.timeseries.metrics'])
-        self.assertIn('avg#ratio#loop.iterations/time.duration', obj['records'][0])
+        self.assertIn('avg#ratio#loop.iterations/time.duration.ns', obj['globals']['spot.timeseries.metrics'])
+        self.assertIn('avg#ratio#loop.iterations/time.duration.ns', obj['records'][0])
         self.assertEqual(obj['records'][0]['spot.channel'], 'timeseries')
 
         blocks = []

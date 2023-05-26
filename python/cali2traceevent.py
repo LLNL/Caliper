@@ -25,9 +25,10 @@ def _get_timestamp(rec):
 
     timestamp_attributes = {
         "cupti.timestamp"      : 1e-3,
-        "gputrace.timestamp"   : 1e-3,
         "rocm.host.timestamp"  : 1e-3,
+        "time.offset.ns"       : 1e-3,
         "time.offset"          : 1.0,
+        "gputrace.timestamp"   : 1e-3,
         "cupti.activity.start" : 1e-3,
         "rocm.starttime"       : 1e-3
     }

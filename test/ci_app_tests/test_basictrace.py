@@ -24,7 +24,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
+            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
@@ -47,7 +47,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
+            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
@@ -94,54 +94,6 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'cali.attribute.name': 'iteration',
                          'cali.attribute.prop': '13' # CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE
-            }))
-
-    def test_sec_unit_selection(self):
-        target_cmd = [ './ci_test_basic' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,time.unit' ]
-
-        caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_TIMER_INCLUSIVE_DURATION' : 'true',
-            'CALI_TIMER_UNIT'        : 'sec',
-            'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0',
-        }
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
-
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'time.duration',
-                         'time.unit':           'sec'
-            }))
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'time.inclusive.duration',
-                         'time.unit':           'sec'
-            }))
-
-    def test_usec_unit_selection(self):
-        target_cmd = [ './ci_test_basic' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,time.unit' ]
-
-        caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_TIMER_INCLUSIVE_DURATION' : 'true',
-            'CALI_TIMER_UNIT'        : 'usec',
-            'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0',
-        }
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
-
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'time.duration',
-                         'time.unit':           'usec'
-            }))
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'time.inclusive.duration',
-                         'time.unit':           'usec'
             }))
 
     def test_largetrace(self):

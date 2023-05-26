@@ -21,7 +21,7 @@ class CaliperCAPITest(unittest.TestCase):
         self.assertTrue(len(snapshots) >= 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.duration', 'global.int' }))
+            snapshots, {'iteration', 'phase', 'time.duration.ns', 'global.int' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#phase': 'loop', 'phase': 'loop'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
