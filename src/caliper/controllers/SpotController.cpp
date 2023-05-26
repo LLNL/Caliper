@@ -567,15 +567,15 @@ const char* spot_controller_spec = R"json(
          "level"  : "local",
          "select" :
          [
-          { "expr": "sum(sum#time.duration)", "as": "Time (exc)", "unit": "sec" }
+          { "expr": "scale(sum#time.duration.ns,1e-9)", "as": "Time (exc)", "unit": "sec" }
          ]
         },
         {
          "level"  : "cross",
          "select" :
          [
-          { "expr": "avg(sum#sum#time.duration)", "as": "Avg time/rank (exc)", "unit": "sec" },
-          { "expr": "sum(sum#sum#time.duration)", "as": "Total time (exc)", "unit": "sec" }
+          { "expr": "avg(scale#sum#time.duration.ns)", "as": "Avg time/rank (exc)", "unit": "sec" },
+          { "expr": "sum(scale#sum#time.duration.ns)", "as": "Total time (exc)", "unit": "sec" }
          ]
         }
        ]
