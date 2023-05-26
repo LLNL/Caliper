@@ -28,18 +28,18 @@ public:
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
-                " inclusive_sum(sum#time.duration)"
+                " inclusive_scale(sum#time.duration.ns,1e-9)"
                 ",inclusive_scale(sum#rocm.activity.duration,1e-9)";
             // Config for serial-mode aggregation
             std::string serial_select =
-                " inclusive_sum(sum#time.duration) as \"Host Time\""
+                " inclusive_scale(sum#time.duration.ns,1e-9) as \"Host Time\""
                 ",inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU Time\""
                 ",inclusive_ratio(sum#rocm.activity.duration,sum#time.duration,1e-7) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
-                " avg(inclusive#sum#time.duration) as \"Avg Host Time\""
-                ",max(inclusive#sum#time.duration) as \"Max Host Time\""
+                " avg(inclusive#scale#time.duration.ns) as \"Avg Host Time\""
+                ",max(inclusive#scale#time.duration.ns) as \"Max Host Time\""
                 ",avg(iscale#sum#rocm.activity.duration) as \"Avg GPU Time\""
                 ",max(iscale#sum#rocm.activity.duration) as \"Max GPU Time\""
                 ",ratio(iscale#sum#rocm.activity.duration,inclusive#sum#time.duration,100.0) as \"GPU %\"";

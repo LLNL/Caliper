@@ -83,13 +83,13 @@ class LoopReportController : public cali::internal::CustomOutputController
             " loop"
             ",count()"
             ",sum(loop.iterations)"
-            ",sum(time.duration)"
+            ",scale(time.duration.ns,1e-9)"
             ",min(iter_per_sec)"
             ",max(iter_per_sec)"
             ",avg(iter_per_sec)";
 
         std::string query = m_opts.build_query("local", {
-                { "let",      "iter_per_sec = ratio(loop.iterations,time.duration)" },
+                { "let",      "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
                 { "select",   select },
                 { "group by", "loop" },
                 { "where",    "loop" }
@@ -102,10 +102,10 @@ class LoopReportController : public cali::internal::CustomOutputController
         const char* select =
             " loop as Loop"
             ",max(sum#loop.iterations) as \"Iterations\""
-            ",max(sum#time.duration)   as \"Time (s)\""
+            ",max(scale#time.duration.ns) as \"Time (s)\""
             ",min(min#iter_per_sec) as \"Iter/s (min)\""
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
-            ",ratio(sum#loop.iterations,sum#time.duration) as \"Iter/s (avg)\"";
+            ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\"";
 
         std::string query = m_opts.build_query("cross", {
                 { "select",    select },
@@ -120,9 +120,9 @@ class LoopReportController : public cali::internal::CustomOutputController
     Aggregator timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
         const char* select =
             " Block"
-            ",sum(time.duration)"
+            ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
-            ",ratio(loop.iterations,time.duration)";
+            ",ratio(loop.iterations,time.duration.ns,1e9)";
 
         std::string block =
             std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
@@ -141,8 +141,8 @@ class LoopReportController : public cali::internal::CustomOutputController
         const char* select =
             " Block"
             ",max(sum#loop.iterations) as \"Iterations\""
-            ",max(sum#time.duration) as \"Time (s)\""
-            ",avg(ratio#loop.iterations/time.duration) as \"Iter/s\"";
+            ",max(scale#time.duration.ns) as \"Time (s)\""
+            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\"";
 
         std::string query = m_opts.build_query("cross", {
                 { "select",   select  },

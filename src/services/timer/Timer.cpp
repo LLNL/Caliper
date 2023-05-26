@@ -96,7 +96,7 @@ class TimerService
         if (!ti)
             return;
 
-        rec.append(snapshot_duration_attr, Variant(1e-9 * (nsec - ti->prev_snapshot_timestamp)));
+        rec.append(snapshot_duration_attr, cali_make_variant_from_uint(nsec - ti->prev_snapshot_timestamp));
         ti->prev_snapshot_timestamp = nsec;
 
         if (record_inclusive_duration && !info.empty() && !c->is_signal()) {
@@ -121,7 +121,7 @@ class TimerService
                     return;
                 }
 
-                rec.append(inclusive_duration_attr, Variant(1e-9 * (nsec - stack_it->second.back())));
+                rec.append(inclusive_duration_attr, cali_make_variant_from_uint(nsec - stack_it->second.back()));
                 stack_it->second.pop_back();
             }
         }
@@ -172,14 +172,14 @@ class TimerService
                                     CALI_ATTR_SKIP_EVENTS,
                                     1, &unit_attr, &nsec_val);
             snapshot_duration_attr =
-                c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
+                c->create_attribute("time.duration.ns", CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |
                                     CALI_ATTR_AGGREGATABLE,
                                     1, &unit_attr, &sec_val);
             inclusive_duration_attr =
-                c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
+                c->create_attribute("time.inclusive.duration.ns", CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS   |

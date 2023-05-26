@@ -24,7 +24,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
+            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
@@ -47,7 +47,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
+            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(

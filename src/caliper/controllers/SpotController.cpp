@@ -155,9 +155,9 @@ public:
             " cali.channel"
             ",loop"
             ",block"
-            ",sum(time.duration)"
+            ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
-            ",ratio(loop.iterations,time.duration)";
+            ",ratio(loop.iterations,time.duration.ns,1e9)";
 
         std::string block =
             std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
@@ -178,8 +178,8 @@ public:
             ",loop"
             ",block"
             ",max(sum#loop.iterations) as \"Iterations\" unit iterations"
-            ",max(sum#time.duration) as \"Time (s)\" unit sec"
-            ",avg(ratio#loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
+            ",max(scale#time.duration.ns) as \"Time (s)\" unit sec"
+            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\" unit iter/s";
 
         std::string query = m_opts.build_query("cross", {
                 { "select",   select },
@@ -372,6 +372,7 @@ class SpotController : public cali::internal::CustomOutputController
         //     region profile inclusive times
         {
             std::string query = m_opts.build_query("local", {
+                    { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
                     { "select",   "inclusive_sum(sum#time.duration)" },
                     { "group by", "path" },
                 }, false /* no aliases */);
