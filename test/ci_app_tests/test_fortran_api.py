@@ -19,7 +19,7 @@ class CaliperFortranAPITest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'region', 'time.duration' }))
+            snapshots, { 'region', 'time.duration.ns' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region': 'main/work' }))
         self.assertTrue(cat.has_snapshot_with_attributes(

@@ -24,10 +24,10 @@ class CaliperAggregationTest(unittest.TestCase):
 
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, [ 'loop.id', 'region', 
-                         'sum#time.inclusive.duration',
-                         'min#time.inclusive.duration',
-                         'max#time.inclusive.duration',
-                         'sum#time.duration',
+                         'sum#time.inclusive.duration.ns',
+                         'min#time.inclusive.duration.ns',
+                         'max#time.inclusive.duration.ns',
+                         'sum#time.duration.ns',
                          'count' ] ))
 
         self.assertTrue(calitest.has_snapshot_with_attributes(

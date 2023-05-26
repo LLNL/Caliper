@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/RegionProfile.h"
@@ -42,7 +42,7 @@ RegionProfile::region_profile_t
 RegionProfile::exclusive_region_times(const std::string& region_type)
 {
     Caliper c;
-    FlatExclusiveRegionProfile rp(c, "sum#time.duration", region_type.c_str());
+    FlatExclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
     if (channel())
         c.flush(channel(), SnapshotView(), rp);
@@ -50,7 +50,15 @@ RegionProfile::exclusive_region_times(const std::string& region_type)
         Log(1).stream() << "RegionProfile::exclusive_region_times(): channel is not enabled"
                         << std::endl;
 
-    return rp.result();
+    auto res = rp.result();
+
+    // convert from nanosec to sec
+    std::get<1>(res) *= 1e-9;
+    std::get<2>(res) *= 1e-9;
+    for (auto &p : std::get<0>(res))
+        p.second *= 1e-9;
+
+    return res;
 }
 
 
@@ -58,7 +66,7 @@ RegionProfile::region_profile_t
 RegionProfile::inclusive_region_times(const std::string& region_type)
 {
     Caliper c;
-    FlatInclusiveRegionProfile rp(c, "sum#time.duration", region_type.c_str());
+    FlatInclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
     if (channel())
         c.flush(channel(), SnapshotView(), rp);
@@ -66,14 +74,21 @@ RegionProfile::inclusive_region_times(const std::string& region_type)
         Log(1).stream() << "RegionProfile::inclusive_region_times(): channel is not enabled"
                         << std::endl;
 
-    return rp.result();
+    auto res = rp.result();
+
+    std::get<1>(res) *= 1e-9;
+    std::get<2>(res) *= 1e-9;
+    for (auto &p : std::get<0>(res))
+        p.second *= 1e-9;
+
+    return res;
 }
 
 void
 RegionProfile::clear()
 {
     Channel* chn = channel();
-    
+
     if (chn)
         Caliper::instance().clear(chn);
 }

@@ -44,7 +44,8 @@
   "services": [ "papi" ],
   "config": 
   {
-      "CALI_PAPI_COUNTERS": "PAPI_DP_OPS,PAPI_SP_OPS"
+      "CALI_PAPI_COUNTERS": "PAPI_DP_OPS,PAPI_SP_OPS",
+      "CALI_PAPI_ENABLE_MULTIPLEXING": "true"
   },
   "query":
   [
