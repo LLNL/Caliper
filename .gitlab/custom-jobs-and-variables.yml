@@ -59,7 +59,7 @@ variables:
 # Project specific variants for lassen
   PROJECT_LASSEN_VARIANTS: ""
 # Project specific deps for lassen
-  PROJECT_LASSEN_DEPS: ""
+  PROJECT_LASSEN_DEPS: "^adiak ~mpi"
 
 
 # Configuration shared by build and test jobs specific to this project.
