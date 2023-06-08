@@ -18,7 +18,7 @@ variables:
 # Arguments for job level allocation
   RUBY_BUILD_AND_TEST_JOB_ALLOC: "--time=30 --nodes=1"
 # Project specific variants for ruby
-  PROJECT_RUBY_VARIANTS: ""
+  PROJECT_RUBY_VARIANTS: " +tests"
 # Project specific deps for ruby
   PROJECT_RUBY_DEPS: ""
 
@@ -28,7 +28,7 @@ variables:
 # Arguments for job level allocation
   QUARTZ_BUILD_AND_TEST_JOB_ALLOC: "--time=30 --nodes=1"
 # Project specific variants for ruby
-  PROJECT_QUARTZ_VARIANTS: ""
+  PROJECT_QUARTZ_VARIANTS: " +tests"
 # Project specific deps for ruby
   PROJECT_QUARTZ_DEPS: ""
 
@@ -38,7 +38,7 @@ variables:
 # Arguments for job level allocation
   CORONA_BUILD_AND_TEST_JOB_ALLOC: "--time-limit=30m --nodes=1"
 # Project specific variants for corona
-  PROJECT_CORONA_VARIANTS: ""
+  PROJECT_CORONA_VARIANTS: " +tests"
 # Project specific deps for corona
   PROJECT_CORONA_DEPS: ""
 
@@ -48,7 +48,7 @@ variables:
 # Arguments for job level allocation
   TIOGA_BUILD_AND_TEST_JOB_ALLOC: "--time-limit=30m --nodes=1"
 # Project specific variants for tioga
-  PROJECT_TIOGA_VARIANTS: ""
+  PROJECT_TIOGA_VARIANTS: " +tests"
 # Project specific deps for tioga
   PROJECT_TIOGA_DEPS: ""
 
@@ -57,7 +57,7 @@ variables:
 # Arguments for job level allocation
   LASSEN_BUILD_AND_TEST_JOB_ALLOC: "1 -W 30"
 # Project specific variants for lassen
-  PROJECT_LASSEN_VARIANTS: ""
+  PROJECT_LASSEN_VARIANTS: " +tests"
 # Project specific deps for lassen
   PROJECT_LASSEN_DEPS: "^adiak ~mpi"
 
