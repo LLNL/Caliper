@@ -12,5 +12,5 @@ variables:
 ## Template for extra jobs defined by the project.
 master:
   variables:
-    SPEC: "@master"
+    SPEC: "@master +tests"
   extends: .build_and_test_on_ruby
