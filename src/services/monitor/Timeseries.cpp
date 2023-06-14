@@ -29,6 +29,7 @@ inline double get_timestamp()
 class TimeseriesService
 {
     Attribute m_timestamp_attr;
+    Attribute m_snapshot_attr;
     Attribute m_duration_attr;
 
     ChannelController m_timeprofile;
@@ -39,23 +40,26 @@ class TimeseriesService
         double ts_now = get_timestamp();
         Variant v_prev = c->exchange(m_timestamp_attr, Variant(ts_now));
 
-        Entry ts_entry(m_timestamp_attr, v_prev);
+        std::array<Entry, 2> ts_entries = {
+            Entry(m_timestamp_attr, v_prev),
+            Entry(m_snapshot_attr, cali_make_variant_from_uint(m_snapshots))
+        };
 
         Channel* prof_chn = m_timeprofile.channel();
 
-        c->flush(prof_chn, info, [c,channel,info,ts_entry](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
+        c->flush(prof_chn, info, [c,channel,info,ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
                 std::vector<Entry> rec;
-                rec.reserve(frec.size() + info.size() + 1);
+                rec.reserve(frec.size() + info.size() + ts_entries.size());
                 rec.insert(rec.end(), frec.begin(), frec.end());
                 rec.insert(rec.end(), info.begin(), info.end());
-                rec.push_back(ts_entry);
+                rec.insert(rec.end(), ts_entries.begin(), ts_entries.end());
 
                 channel->events().process_snapshot(c, channel, SnapshotView(), SnapshotView(rec.size(), rec.data()));
             });
 
         c->clear(prof_chn);
 
-        srec.append(ts_entry);
+        srec.append(ts_entries.size(), ts_entries.data());
         srec.append(m_duration_attr, Variant(ts_now - v_prev.to_double()));
 
         ++m_snapshots;
@@ -83,6 +87,10 @@ class TimeseriesService
     {
         m_timestamp_attr =
             c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE,
+                                CALI_ATTR_ASVALUE |
+                                CALI_ATTR_SKIP_EVENTS);
+        m_snapshot_attr =
+            c->create_attribute("timeseries.snapshot", CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE |
                                 CALI_ATTR_SKIP_EVENTS);
         m_duration_attr =
