@@ -23,6 +23,7 @@ then
           job_unique_id=manual_job_$(date +%s)
       done
     fi
+    prefix="${prefix}-${job_unique_id}"
 fi
 
 echo "Creating directory ${prefix}"
