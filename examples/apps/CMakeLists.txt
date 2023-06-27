@@ -26,6 +26,7 @@ endforeach()
 foreach(app ${CALIPER_C_EXAMPLE_APPS})
   add_executable(${app} ${app}.c)
   target_link_libraries(${app} caliper)
+  target_compile_features(${app} PRIVATE c_std_99)
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
 endforeach()
 

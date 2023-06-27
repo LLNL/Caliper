@@ -29,7 +29,7 @@ endmacro()
 
 macro(add_service_objlib)
   target_compile_options("${ARGN}" PRIVATE ${Wall_flag})
-  target_compile_features("${ARGN}" PUBLIC cxx_std_11 c_std_99)
+  target_compile_features("${ARGN}" PUBLIC cxx_std_11)
   list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
