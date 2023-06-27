@@ -42,7 +42,7 @@ add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
 set_target_properties(caliper-serial PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper-serial PROPERTIES VERSION ${CALIPER_VERSION})
 
-target_compile_features(caliper-serial PUBLIC cxx_std_11 c_std_99)
+target_compile_features(caliper-serial PUBLIC cxx_std_11)
 
 target_include_directories(
   caliper-serial
@@ -67,7 +67,7 @@ add_library(caliper ${CALIPER_ALL_OBJS})
 set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
 
-target_compile_features(caliper PUBLIC cxx_std_11 c_std_99)
+target_compile_features(caliper PUBLIC cxx_std_11)
 
 target_include_directories(
   caliper

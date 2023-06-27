@@ -36,6 +36,7 @@ target_link_libraries(ci_test_nesting Threads::Threads)
 foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
+  target_compile_features(${app} PRIVATE c_std_99)
   target_link_libraries(${app} caliper-serial)
 endforeach()
 
