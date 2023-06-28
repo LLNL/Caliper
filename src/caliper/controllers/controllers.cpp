@@ -17,6 +17,12 @@ const char* event_trace_spec = R"json(
      "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
      "options":
      [
+      {
+        "name"        : "outdir",
+        "description" : "Output directory",
+        "type"        : "string",
+        "config"      : { "CALI_RECORDER_DIRECTORY": "{}" }
+      },
       { "name"        : "trace.io",
         "description" : "Trace I/O events",
         "type"        : "bool",
