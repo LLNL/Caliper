@@ -769,6 +769,37 @@ const char* builtin_option_specs = R"json(
      "config"      : { "CALI_UMPIRE_ALLOCATOR_FILTER": "{}" }
     },
     {
+     "name"        : "mem.pages",
+     "description" : "Memory pages used via /proc/self/statm",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "memstat" ],
+     "query"  :
+     [
+       { "level"   : "local",
+         "let"     :
+           [ "mem.vmsize = first(max#memstat.vmsize,memstat.vmsize)",
+             "mem.vmrss = first(max#memstat.vmrss,memstat.vmrss)",
+             "mem.data = first(max#memstat.data,memstat.data)"
+           ],
+         "select"  :
+           [
+            { "expr": "max(mem.vmsize)", "as": "VmSize", "unit": "pages" },
+            { "expr": "max(mem.vmrss)", "as": "VmRSS", "unit": "pages" },
+            { "expr": "max(mem.data)", "as": "Data", "unit": "pages" }
+           ]
+       },
+       { "level"   : "cross",
+         "select"  :
+           [
+            { "expr": "max(max#mem.vmsize)", "as": "VmSize (max)", "unit": "pages" },
+            { "expr": "max(max#mem.vmrss)", "as": "VmRSS (max)", "unit": "pages" },
+            { "expr": "max(max#mem.data)", "as": "Data (max)", "unit": "pages" }
+           ]
+       }
+     ]
+    },
+    {
      "name"        : "mem.highwatermark",
      "description" : "Report memory high-water mark",
      "type"        : "bool",

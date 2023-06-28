@@ -1,5 +1,5 @@
 set(CALIPER_MEMUSAGE_SOURCES
-  MemUsageService.cpp)
+  MemStatService.cpp)
 
 add_service_sources(${CALIPER_MEMUSAGE_SOURCES})
-add_caliper_service("memusage")
+add_caliper_service("memstat")
