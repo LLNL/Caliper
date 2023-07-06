@@ -6,6 +6,7 @@
 
 void handle_libdl();
 extern void update_all_library_gots(hash_table_t *bindings);
+extern long lookup_exported_symbol(const char* name, const struct link_map *lib, void** symbol);
 extern int prepare_symbol(struct internal_binding_t *binding);
 
 extern gotcha_wrappee_handle_t orig_dlopen_handle;

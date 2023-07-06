@@ -47,6 +47,48 @@ static void setInternalBindingAddressPointer(void** in, void* value){
   writeAddress(target, value);
 }
 
+long lookup_exported_symbol(const char* name, const struct link_map *lib, void** symbol) {
+    long result;
+    if (is_vdso(lib)) {
+        debug_printf(2, "Skipping VDSO library at 0x%lx with name %s\n",
+                     lib->l_addr, LIB_NAME(lib));
+        return -1;
+    }
+    debug_printf(2, "Searching for exported symbols in %s\n", LIB_NAME(lib));
+    INIT_DYNAMIC(lib);
+
+    if (!gnu_hash && !elf_hash) {
+        debug_printf(3, "Library %s does not export or import symbols\n", LIB_NAME(lib));
+        return -1;
+    }
+    result = -1;
+    if (gnu_hash) {
+        debug_printf(3, "Checking GNU hash for %s in %s\n", name, LIB_NAME(lib));
+        result = lookup_gnu_hash_symbol(name, symtab, strtab,
+                                        (struct gnu_hash_header *) gnu_hash);
+    }
+    if (elf_hash && result == -1) {
+        debug_printf(3, "Checking ELF hash for %s in %s\n", name, LIB_NAME(lib));
+        result = lookup_elf_hash_symbol(name, symtab, strtab,
+                                        (ElfW(Word) *)elf_hash);
+    }
+    if (result == -1) {
+        debug_printf(3, "%s not found in %s\n", name, LIB_NAME(lib));
+        return -1;
+    }
+    if (! GOTCHA_CHECK_VISIBILITY(symtab[result])) {
+        debug_printf(3, "Symbol %s found but not exported in %s\n",
+                     name, LIB_NAME(lib));
+        return -1;
+    }
+
+    debug_printf(2, "Symbol %s found in %s at 0x%lx\n",
+                 name, LIB_NAME(lib),
+                 symtab[result].st_value + lib->l_addr);
+    *symbol = (void *) (symtab[result].st_value + lib->l_addr);
+    return result;
+}
+
 int prepare_symbol(struct internal_binding_t *binding)
 {
    int result;
@@ -57,51 +99,15 @@ int prepare_symbol(struct internal_binding_t *binding)
    for (lib = _r_debug.r_map; lib != 0; lib = lib->l_next) {
       struct library_t *int_library = get_library(lib);
       if (!int_library) {
-         debug_printf(3, "Creating new library object for %s\n", LIB_NAME(lib));
-         int_library = add_library(lib);
+          debug_printf(3, "Creating new library object for %s\n", LIB_NAME(lib));
+          int_library = add_library(lib);
       }
-      
-      if (is_vdso(lib)) {
-         debug_printf(2, "Skipping VDSO library at 0x%lx with name %s\n",
-                      lib->l_addr, LIB_NAME(lib));
-         continue;
+      void* symbol;
+      result = lookup_exported_symbol(user_binding->name, lib, &symbol);
+      if (result != -1) {
+          setInternalBindingAddressPointer(user_binding->function_handle, symbol);
+          return 0;
       }
-      debug_printf(2, "Searching for exported symbols in %s\n", LIB_NAME(lib));
-      INIT_DYNAMIC(lib);
-
-      if (!gnu_hash && !elf_hash) {
-         debug_printf(3, "Library %s does not export or import symbols\n", LIB_NAME(lib));
-         continue;
-      }
-      result = -1;
-      if (gnu_hash) {
-         debug_printf(3, "Checking GNU hash for %s in %s\n",
-                      user_binding->name, LIB_NAME(lib));
-         result = lookup_gnu_hash_symbol(user_binding->name, symtab, strtab,
-                                         (struct gnu_hash_header *) gnu_hash);
-      }
-      if (elf_hash && result == -1) {
-         debug_printf(3, "Checking ELF hash for %s in %s\n",
-                      user_binding->name, LIB_NAME(lib));
-         result = lookup_elf_hash_symbol(user_binding->name, symtab, strtab,
-                                         (ElfW(Word) *)elf_hash);
-      }
-      if (result == -1) {
-         debug_printf(3, "%s not found in %s\n",
-                      user_binding->name, LIB_NAME(lib));
-         continue;
-      }
-      if (! GOTCHA_CHECK_VISIBILITY(symtab[result])) {
-         debug_printf(3, "Symbol %s found but not exported in %s\n", 
-                      user_binding->name, LIB_NAME(lib));
-         continue;
-      }
-
-      debug_printf(2, "Symbol %s found in %s at 0x%lx\n", 
-                   user_binding->name, LIB_NAME(lib),
-                   symtab[result].st_value + lib->l_addr);
-      setInternalBindingAddressPointer(user_binding->function_handle,(void *)(symtab[result].st_value + lib->l_addr));
-      return 0;
    }
    debug_printf(1, "Symbol %s was found in program\n", user_binding->name);
    return -1;
