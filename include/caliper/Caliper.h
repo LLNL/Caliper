@@ -483,6 +483,9 @@ public:
     ///   An empty Entry object if this attribute is not set.
     Entry     get(Channel* channel, const Attribute& attr);
 
+    /// \brief Retrieve the current path entry from the blackboard.
+    Entry     get_path_node();
+
     /// \brief Return all global attributes for the default channel
     /// \sa get_globals(Channel*)
     std::vector<Entry> get_globals();

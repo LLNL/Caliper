@@ -321,6 +321,21 @@ cali_variant_t
 cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
 
 /**
+ * \brief Return the innermost current %Caliper region on the calling thread.
+ *
+ * \note This function is async-signal safe
+ *
+ * \param \a alt String to return if there is no region or the innermost
+ *   region is not a string attribute.
+ *
+ * \return A string pointer to the current innermost %Caliper region, or
+ *   \a alt if no region has been set or the innermost path region is
+ *   not a string attribute.
+ */
+const char*
+cali_get_current_region_or(const char* alt);
+
+/**
  * \}
  */
 

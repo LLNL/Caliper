@@ -17,9 +17,12 @@ TEST(C_Wrapper, BufferedRegionProfile) {
     CALI_MARK_BEGIN("wrap.rp.outer");
     CALI_MARK_BEGIN("wrap.rp.inner");
     usleep(20000);
+    EXPECT_STREQ(cali_get_current_region_or("UNKNOWN"), "wrap.rp.inner");
     CALI_MARK_END("wrap.rp.inner");
     usleep(10000);
     CALI_MARK_END("wrap.rp.outer");
+
+    EXPECT_STREQ(cali_get_current_region_or("NONE"), "NONE");
 
     cali_BufferedRegionProfile_stop(&rp);
 

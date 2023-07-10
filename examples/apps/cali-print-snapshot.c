@@ -123,6 +123,7 @@ int main()
 
     CALI_MARK_FUNCTION_BEGIN;
 
+    printf("In region %s\n", cali_get_current_region_or("UNKNOWN"));
     do_work(channel);
 
     CALI_MARK_FUNCTION_END;
