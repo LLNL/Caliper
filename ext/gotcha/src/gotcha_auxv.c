@@ -160,8 +160,7 @@ static int read_line(char *line, int size, int fd)
          return 0;
       }
    }
-   if (size > 0)
-      line[size-1] = '\0';
+   line[size-1] = '\0';
    return 0;
 }
 
@@ -259,7 +258,7 @@ struct link_map *get_vdso_from_maps()
    return NULL;
 }
 
-int is_vdso(struct link_map *map)
+int is_vdso(const struct link_map *map)
 {
    static int vdso_checked = 0;
    static struct link_map *vdso = NULL;
