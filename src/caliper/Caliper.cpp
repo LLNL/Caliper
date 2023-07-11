@@ -1208,6 +1208,28 @@ Caliper::get(Channel* channel, const Attribute& attr)
     return channel->mP->channel_blackboard.get(key).get(attr);
 }
 
+Entry
+Caliper::get_path_node()
+{
+    Entry e;
+
+    {
+        std::lock_guard<::siglock>
+            g(sT->lock);
+
+        e = sT->thread_blackboard.get(REGION_KEY);
+
+        if (e.empty())
+            e = sG->process_blackboard.get(REGION_KEY);
+    }
+
+    for (Node* node = e.node(); node; node = node->parent())
+        if (get_attribute(node->attribute()).is_nested())
+            return Entry(node);
+
+    return e;
+}
+
 // --- Memory region tracking
 
 void

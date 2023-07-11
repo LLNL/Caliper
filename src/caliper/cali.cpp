@@ -354,6 +354,22 @@ cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
     return c.get(channel, c.get_attribute(attr_id)).value().c_variant();
 }
 
+const char*
+cali_get_current_region_or(const char* alt)
+{
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return alt;
+
+    Entry e = c.get_path_node();
+
+    if (!e.empty() && e.value().type() == CALI_TYPE_STRING)
+        return static_cast<const char*>(e.value().data());
+
+    return alt;
+}
+
 //
 // --- Annotation interface
 //
