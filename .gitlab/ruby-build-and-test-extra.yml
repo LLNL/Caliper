@@ -1,0 +1,16 @@
+##############################################################################
+# Copyright (c) 2022, Lawrence Livermore National Security, LLC and RADIUSS
+# project contributors. See the COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (MIT)
+##############################################################################
+
+# With GitLab CI, included files cannot be empty.
+variables:
+  INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
+
+## Template for extra jobs defined by the project.
+master:
+  variables:
+    SPEC: "@master +tests"
+  extends: .build_and_test_on_ruby
