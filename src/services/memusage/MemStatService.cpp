@@ -13,6 +13,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <array>
+
 using namespace cali;
 
 namespace
