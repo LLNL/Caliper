@@ -75,7 +75,7 @@ public:
                     opts.build_query("local", {
                             { "select",
                               "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                              " ,sale(sum#time.duration.ns,1e-9) as \"time\" unit sec" },
+                              " ,scale(sum#time.duration.ns,1e-9) as \"time\" unit sec" },
                             { "group by", "path,rocm.kernel.name,rocm.activity.kind" },
                             { "format",   format }
                         });

@@ -34,7 +34,7 @@ public:
             std::string serial_select =
                 " inclusive_scale(sum#time.duration.ns,1e-9) as \"Host Time\""
                 ",inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU Time\""
-                ",inclusive_ratio(sum#rocm.activity.duration,sum#time.duration,1e-7) as \"GPU %\"";
+                ",inclusive_ratio(sum#rocm.activity.duration,sum#time.duration.ns,100.0) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -42,7 +42,7 @@ public:
                 ",max(inclusive#scale#time.duration.ns) as \"Max Host Time\""
                 ",avg(iscale#sum#rocm.activity.duration) as \"Avg GPU Time\""
                 ",max(iscale#sum#rocm.activity.duration) as \"Max GPU Time\""
-                ",ratio(iscale#sum#rocm.activity.duration,inclusive#sum#time.duration,100.0) as \"GPU %\"";
+                ",ratio(iscale#sum#rocm.activity.duration,iscale#sum#time.duration.ns,100.0) as \"GPU %\"";
 
             std::string groupby = "path";
 
