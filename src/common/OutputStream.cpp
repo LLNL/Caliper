@@ -28,7 +28,10 @@ namespace
 bool check_and_create_directory(const std::filesystem::path& filepath)
 {
     try {
-        bool result = std::filesystem::create_directories(filepath.parent_path());
+        auto parent = filepath.parent_path();
+        if (parent.empty())
+            return true;
+        bool result = std::filesystem::create_directories(parent);
         if (result) {
             Log(2).stream() << "OutputStream: created directories for " << filepath << std::endl;
         }
