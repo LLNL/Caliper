@@ -44,6 +44,19 @@ target program:
 
     $ g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
 
+Caliper provides the `caliper` CMake target, which can be used to add
+a dependency on Caliper in CMake: ::
+
+  find_package(caliper)
+  add_executable(MyExample MyExample.cpp)
+  target_link_libraries(MyExample PRIVATE caliper)
+
+When configuring the target program, point CMake to the desired
+Caliper installation with `caliper_DIR`: ::
+
+  cmake -Dcaliper_DIR=<caliper-installation-dir>/share/cmake/caliper ..
+
+
 Region profiling
 --------------------------------
 

@@ -75,7 +75,7 @@ This table contains a quick reference of all CalQL statements:
     table                      # human-readable text table
     tree                       # human-readable text tree output
 
-  ORDER BY <list>              # Sort records in output (table formatter only)
+  ORDER BY <list>              # Sort records in output (table and tree formatters)
     <attribute>                # order by <attribute>
     ... ASC                    # sort in ascending order
     ... DESC                   # sort in descending order
@@ -269,9 +269,8 @@ ORDER BY
 
 Sort output records by the given sort criteria. The statement defines
 a list of attributes to sort output records by. Records can be sorted
-ascending (using the ASC keyword) or descending (using DESC). Note
-that the sorting is performed by the output formatter and only
-available in some formatters (e.g., table).
+ascending (using the ASC keyword) or descending (using DESC).
+Sorting is available in the "tree" and "table" formatters.
 
 The following example prints a iteration/function profile ordered by
 time and iteration number. Note that one must use the original
