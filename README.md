@@ -5,17 +5,20 @@ Caliper: A Performance Analysis Toolbox in a Library
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 [![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
-Caliper is a library to integrate performance profiling capabilities
-into applications. To use Caliper, developers mark code regions of
-interest using Caliper's annotation API. Applications can then enable
-performance profiling at runtime with Caliper's configuration API.
-Alternatively, you can configure Caliper through environment variables
-or config files.
+Caliper is a performance instrumentation and profiling library for HPC
+(high-performance computing) programs. It provides source-code annotation
+APIs for marking regions of interest in C, C++, and Fortran code, as well as
+a set of built-in performance measurement recipes for a wide range of
+performance engineering use cases, such as lightweight always-on profiling,
+event tracing, or performance monitoring. Alternatively, users can create
+custom measurement configurations for specialized use cases.
 
-Caliper can be used for lightweight always-on profiling or advanced
-performance engineering use cases, such as tracing, monitoring,
-and auto-tuning. It is primarily aimed at HPC applications, but works
-for any C/C++/Fortran program on Unix/Linux.
+Caliper can either generate simple human-readable reports or machine-readable
+JSON or .cali files for automated data processing with user-provided scripts
+or analysis frameworks like [Hatchet](https://github.com/LLNL/hatchet)
+and [Thicket](https://github.com/LLNL/thicket).
+It can also generate detailed event traces for timeline visualizations with
+[Perfetto](https://perfetto.dev) and the Google Chrome trace viewer.
 
 Features include:
 
@@ -27,21 +30,20 @@ Features include:
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
   models like MPI
-* Synchronous (event-based) and asynchronous (sampling) performance
-  data collection
+* Event-based as well as sample-based performance measurements
 * Trace and profile recording
-* Connection to third-party tools, e.g. NVidia NVProf or
-  Intel(R) VTune(tm)
+* Connection to third-party tools, e.g. NVidia's NSight tools, AMD
+  ROCProf, or Intel(R) VTune(tm)
 * Measurement and profiling functionality such as timers, PAPI
   hardware counters, and Linux perf_events
-* Memory allocation annotations: associate performance measurements
-  with named memory regions
+* Memory annotations to associate performance measurements
+  with memory regions
 
 Documentation
 ------------------------------------------
 
 Extensive documentation is available here:
-https://llnl.github.io/Caliper/
+https://software.llnl.gov/Caliper/
 
 Usage examples of the C++, C, and Fortran annotation and ConfigManager
 APIs are provided in the [examples](examples/apps) directory.
@@ -51,7 +53,7 @@ See the "Getting started" section below for a brief tutorial.
 Building and installing
 ------------------------------------------
 
-You can install Caliper with the [spack](https://github.com/spack/spack) 
+You can install Caliper with the [spack](https://github.com/spack/spack)
 package manager:
 
     $ spack install caliper
@@ -156,8 +158,8 @@ Other measurement configurations besides runtime-report include:
 * mpi-report: Print time spent in MPI functions.
 * callpath-sample-report: Print a time spent in functions using call-path sampling.
 * event-trace: Record a trace of region enter/exit events in .cali format.
-* hatchet-region-profile: Record a region time profile for processing with the
-  [hatchet](https://github.com/LLNL/hatchet) library or cali-query.
+* hatchet-region-profile: Record a region time profile for processing with
+  [Hatchet](https://github.com/LLNL/hatchet) or cali-query.
 
 See the "Builtin configurations" section in the documentation to learn more
 about different configurations and their options.
@@ -204,7 +206,7 @@ Caliper configuration with the `-P` command-line argument, e.g.
         foo         0.000719      0.000719      0.000719 33.179511
       init          0.000021      0.000021      0.000021  0.969082
 
-See the [Caliper documentation](https://llnl.github.io/Caliper/) for more
+See the [Caliper documentation](https://software.llnl.gov/Caliper) for more
 examples and the full API and configuration reference.
 
 Authors
