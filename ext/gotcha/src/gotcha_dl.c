@@ -132,7 +132,7 @@ static void* dlopen_wrapper(const char* filename, int flags) {
    foreach_hash_entry(&notfound_binding_table, NULL, per_binding);
 
    debug_printf(2, "Updating GOT entries for new dlopened libraries\n");
-   update_all_library_gots(&function_hash_table);
+   update_all_library_gots(&function_hash_table, 0);
   
    return handle;
 }

@@ -64,12 +64,12 @@ long lookup_exported_symbol(const char* name, const struct link_map *lib, void**
     result = -1;
     if (gnu_hash) {
         debug_printf(3, "Checking GNU hash for %s in %s\n", name, LIB_NAME(lib));
-        result = lookup_gnu_hash_symbol(name, symtab, strtab,
+        result = lookup_gnu_hash_symbol(name, symtab, versym, strtab,
                                         (struct gnu_hash_header *) gnu_hash);
     }
     if (elf_hash && result == -1) {
         debug_printf(3, "Checking ELF hash for %s in %s\n", name, LIB_NAME(lib));
-        result = lookup_elf_hash_symbol(name, symtab, strtab,
+        result = lookup_elf_hash_symbol(name, symtab, versym, strtab,
                                         (ElfW(Word) *)elf_hash);
     }
     if (result == -1) {
@@ -233,7 +233,7 @@ static int mark_got_writable(struct link_map *lib)
    return 0;
 }
 
-static int update_library_got(struct link_map *map, hash_table_t *bindingtable)
+static int update_library_got(struct link_map *map, hash_table_t *bindingtable, int lookup_rel)
 {
    struct library_t *lib = get_library(map);
    if (!lib) {
@@ -256,18 +256,18 @@ static int update_library_got(struct link_map *map, hash_table_t *bindingtable)
       lib->flags |= LIB_GOT_MARKED_WRITEABLE;
    }
 
-   FOR_EACH_PLTREL(map, update_lib_bindings, map, bindingtable);
+   FOR_EACH_PLTREL(lookup_rel, map, update_lib_bindings, map, bindingtable);
 
    lib->generation = current_generation;
    return 0;
 }
 
-void update_all_library_gots(hash_table_t *bindings)
+void update_all_library_gots(hash_table_t *bindings, int lookup_rel)
 {
    struct link_map *lib_iter;
    debug_printf(2, "Searching all callsites for %lu bindings\n", (unsigned long) bindings->entry_count);
    for (lib_iter = _r_debug.r_map; lib_iter != 0; lib_iter = lib_iter->l_next) {
-      update_library_got(lib_iter, bindings);
+      update_library_got(lib_iter, bindings, lookup_rel);
    }   
 }
 
@@ -313,9 +313,12 @@ GOTCHA_EXPORT enum gotcha_error_t gotcha_wrap(struct gotcha_binding_t* user_bind
   }
 
   debug_printf(2, "Processing %d bindings\n", num_actions);
+  int lookup_rel = 0;
   for (i = 0; i < num_actions; i++) {
      struct internal_binding_t *binding = bindings->internal_bindings + i;
-
+     if (gotcha_strcmp(binding->user_binding->name,"main")==0 ||
+        gotcha_strcmp(binding->user_binding->name,"__libc_start_main")==0)
+         lookup_rel = 1;
      int result = rewrite_wrapper_orders(binding);
      if (result & RWO_NEED_LOOKUP) {
         debug_printf(2, "Symbol %s needs lookup operation\n", binding->user_binding->name);
@@ -336,9 +339,9 @@ GOTCHA_EXPORT enum gotcha_error_t gotcha_wrap(struct gotcha_binding_t* user_bind
         new_bindings_count++;
      }
   }
-  
+
   if (new_bindings_count) {
-     update_all_library_gots(&new_bindings);
+     update_all_library_gots(&new_bindings, lookup_rel);
      destroy_hashtable(&new_bindings);
   }
 

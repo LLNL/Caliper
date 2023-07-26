@@ -31,12 +31,26 @@ static uint32_t gnu_hash_func(const char *str) {
   return hash;
 }
 
+/* Symbol versioning
+ *
+ * https://refspecs.linuxfoundation.org/LSB_3.0.0/LSB-PDA/LSB-PDA.junk/symversion.html
+ *
+ * versym[symidx] does only provides an index into the ElfW(Verdef) array
+ * (DT_VERDEF/SHT_GNU_verdef) and is not the version itself, but SHT_GNU_verdef
+ * is sorted in ascending order and the entries have a parent relation, thus a
+ * higher index should always be a higher version. As we only search for the
+ * latest symbol/highest version it is sufficient to compare the index.
+ */
+
 signed long lookup_gnu_hash_symbol(const char *name, ElfW(Sym) * syms,
+                                   ElfW(Half) *versym,
                                    char *symnames,
                                    void *sheader) {
   uint32_t *buckets, *vals;
   uint32_t hash_val;
   uint32_t cur_sym, cur_sym_hashval;
+  signed long latest_sym = -1;
+  ElfW(Half) latest_sym_ver = 0;
   struct gnu_hash_header *header = (struct gnu_hash_header *) (sheader);
 
   buckets = (uint32_t *)(((unsigned char *)(header + 1)) +
@@ -54,13 +68,22 @@ signed long lookup_gnu_hash_symbol(const char *name, ElfW(Sym) * syms,
     cur_sym_hashval = vals[cur_sym - header->symndx];
     if (((cur_sym_hashval & ~1) == hash_val) &&
         (gotcha_strcmp(name, symnames + syms[cur_sym].st_name) == 0)) {
-      return (signed long)cur_sym;
+      if (!versym) {
+        return (signed long)cur_sym;
+      }
+
+      if ((versym[cur_sym] & 0x7fff) > latest_sym_ver) {
+        latest_sym = (signed long)cur_sym;
+        latest_sym_ver = versym[cur_sym] & 0x7fff;
+      }
     }
     if (cur_sym_hashval & 1) {
-      return -1;
+      break;
     }
     cur_sym++;
   }
+
+  return latest_sym;
 }
 
 static unsigned long elf_hash(const unsigned char *name) {
@@ -76,19 +99,29 @@ static unsigned long elf_hash(const unsigned char *name) {
 }
 
 signed long lookup_elf_hash_symbol(const char *name, ElfW(Sym) * syms,
+                                   ElfW(Half) *versym,
                                    char *symnames, ElfW(Word) * header) {
   ElfW(Word) *nbucket = header + 0;
   ElfW(Word) *buckets = header + 2;
   ElfW(Word) *chains = buckets + *nbucket;
+  signed long latest_sym = -1;
+  ElfW(Half) latest_sym_ver = 0;
 
   unsigned int x = elf_hash((const unsigned char *)name);
   signed long y = (signed long)buckets[x % *nbucket];
   while (y != STN_UNDEF) {
     if (gotcha_strcmp(name, symnames + syms[y].st_name) == 0) {
-      return y;
+      if (!versym) {
+        return y;
+      }
+
+      if ((versym[y] & 0x7fff) > latest_sym_ver) {
+        latest_sym = y;
+        latest_sym_ver = versym[y] & 0x7fff;
+      }
     }
     y = chains[y];
   }
 
-  return -1;
+  return latest_sym;
 }

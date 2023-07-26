@@ -31,14 +31,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 static ElfW(Ehdr) *vdso_ehdr = NULL;
 static unsigned int auxv_pagesz = 0;
-
+#define BUFFER_LEN 4096
 
 int parse_auxv_contents()
 {
    char name[] = "/proc/self/auxv";
    int fd, done = 0;
-   char buffer[4096];
-   ssize_t buffer_size = 4096, offset = 0, result;
+   char buffer[BUFFER_LEN];
+   const ssize_t buffer_size = BUFFER_LEN;
+   ssize_t offset = 0, result;
    ElfW(auxv_t) *auxv, *a;
    static int parsed_auxv = 0;
 
@@ -223,11 +224,11 @@ struct link_map *get_vdso_from_maps()
 {
    int maps, hit_eof;
    ElfW(Addr) addr_begin, addr_end, dynamic;
-   char name[4096], line[4096], *line_pos;
+   char name[BUFFER_LEN], line[BUFFER_LEN], *line_pos;
    struct link_map *m;
    maps = gotcha_open("/proc/self/maps", O_RDONLY);
    for (;;) {
-      hit_eof = read_line(line, 4096, maps);
+      hit_eof = read_line(line, BUFFER_LEN, maps);
       if (hit_eof) {
          gotcha_close(maps);
          return NULL;
