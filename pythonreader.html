@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Python reader API &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Python reader API &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="tools.html" title="Caliper tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Python reader API</a></li> 
       </ul>
     </div>  
@@ -350,7 +347,37 @@ snapshot records.</p>
     <ul>
 <li><a class="reference internal" href="#">Python reader API</a><ul>
 <li><a class="reference internal" href="#usage">Usage</a></li>
-<li><a class="reference internal" href="#module-caliperreader">API reference</a></li>
+<li><a class="reference internal" href="#module-caliperreader">API reference</a><ul>
+<li><a class="reference internal" href="#caliperreader.read_caliper_contents"><code class="docutils literal notranslate"><span class="pre">read_caliper_contents()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.read_caliper_globals"><code class="docutils literal notranslate"><span class="pre">read_caliper_globals()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.CaliperReader"><code class="docutils literal notranslate"><span class="pre">CaliperReader</span></code></a><ul>
+<li><a class="reference internal" href="#caliperreader.CaliperReader.attribute"><code class="docutils literal notranslate"><span class="pre">CaliperReader.attribute()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.CaliperReader.attributes"><code class="docutils literal notranslate"><span class="pre">CaliperReader.attributes()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.CaliperReader.read"><code class="docutils literal notranslate"><span class="pre">CaliperReader.read()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#caliperreader.CaliperStreamReader"><code class="docutils literal notranslate"><span class="pre">CaliperStreamReader</span></code></a><ul>
+<li><a class="reference internal" href="#caliperreader.CaliperStreamReader.attribute"><code class="docutils literal notranslate"><span class="pre">CaliperStreamReader.attribute()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.CaliperStreamReader.attributes"><code class="docutils literal notranslate"><span class="pre">CaliperStreamReader.attributes()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.CaliperStreamReader.read"><code class="docutils literal notranslate"><span class="pre">CaliperStreamReader.read()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute"><code class="docutils literal notranslate"><span class="pre">Attribute</span></code></a><ul>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.attribute_type"><code class="docutils literal notranslate"><span class="pre">Attribute.attribute_type()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.get"><code class="docutils literal notranslate"><span class="pre">Attribute.get()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.id"><code class="docutils literal notranslate"><span class="pre">Attribute.id()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.is_aggregatable"><code class="docutils literal notranslate"><span class="pre">Attribute.is_aggregatable()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.is_global"><code class="docutils literal notranslate"><span class="pre">Attribute.is_global()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.is_hidden"><code class="docutils literal notranslate"><span class="pre">Attribute.is_hidden()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.is_nested"><code class="docutils literal notranslate"><span class="pre">Attribute.is_nested()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.is_value"><code class="docutils literal notranslate"><span class="pre">Attribute.is_value()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.metadata"><code class="docutils literal notranslate"><span class="pre">Attribute.metadata()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.name"><code class="docutils literal notranslate"><span class="pre">Attribute.name()</span></code></a></li>
+<li><a class="reference internal" href="#caliperreader.metadatadb.Attribute.scope"><code class="docutils literal notranslate"><span class="pre">Attribute.scope()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -402,13 +429,13 @@ snapshot records.</p>
         <li class="right" >
           <a href="tools.html" title="Caliper tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Python reader API</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

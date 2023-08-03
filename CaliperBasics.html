@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper Basics &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Caliper Basics &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>  
@@ -64,13 +61,13 @@ this tutorial: <a class="reference internal" href="#cxx-example"><span class="st
 <h2>Build and install<a class="headerlink" href="#build-and-install" title="Permalink to this heading">¶</a></h2>
 <p>You can install Caliper with <a class="reference external" href="https://github.com/spack/spack">Spack</a>, or
 clone it directly from Github:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/LLNL/Caliper.git
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/LLNL/Caliper.git
 </pre></div>
 </div>
 <p>Caliper uses CMake and C++11. To build it, run cmake:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> build
-$ cmake ..
-$ make <span class="o">&amp;&amp;</span> make install
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+$<span class="w"> </span>cmake<span class="w"> </span>..
+$<span class="w"> </span>make<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>install
 </pre></div>
 </div>
 <p>There are many build flags to enable optional features, such as <cite>-DWITH_MPI</cite>
@@ -78,7 +75,19 @@ for MPI support. See <a class="reference internal" href="build.html"><span class
 <p>Caliper installs files into the <code class="docutils literal notranslate"><span class="pre">lib64</span></code>, <code class="docutils literal notranslate"><span class="pre">include</span></code>, and <code class="docutils literal notranslate"><span class="pre">bin</span></code> directories
 under <cite>CMAKE_INSTALL_PREFIX</cite>. To use Caliper, link <code class="docutils literal notranslate"><span class="pre">libcaliper</span></code> to the
 target program:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ g++ -o app app.o -L&lt;path to caliper installation&gt;/lib64 -lcaliper
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>g++<span class="w"> </span>-o<span class="w"> </span>app<span class="w"> </span>app.o<span class="w"> </span>-L&lt;path<span class="w"> </span>to<span class="w"> </span>caliper<span class="w"> </span>installation&gt;/lib64<span class="w"> </span>-lcaliper
+</pre></div>
+</div>
+<p>Caliper provides the <cite>caliper</cite> CMake target, which can be used to add
+a dependency on Caliper in CMake:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">find_package</span><span class="p">(</span><span class="n">caliper</span><span class="p">)</span>
+<span class="n">add_executable</span><span class="p">(</span><span class="n">MyExample</span> <span class="n">MyExample</span><span class="o">.</span><span class="n">cpp</span><span class="p">)</span>
+<span class="n">target_link_libraries</span><span class="p">(</span><span class="n">MyExample</span> <span class="n">PRIVATE</span> <span class="n">caliper</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When configuring the target program, point CMake to the desired
+Caliper installation with <cite>caliper_DIR</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">Dcaliper_DIR</span><span class="o">=&lt;</span><span class="n">caliper</span><span class="o">-</span><span class="n">installation</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;/</span><span class="n">share</span><span class="o">/</span><span class="n">cmake</span><span class="o">/</span><span class="n">caliper</span> <span class="o">..</span>
 </pre></div>
 </div>
 </section>
@@ -89,26 +98,26 @@ of interest in your program. Much of Caliper’s functionality depends on these
 region annotations.</p>
 <p>Caliper provides macros and functions for C, C++, and Fortran to mark
 functions, loops, or sections of source-code. For example, use
-<a class="reference internal" href="AnnotationAPI.html#c.CALI_CXX_MARK_FUNCTION" title="CALI_CXX_MARK_FUNCTION"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code></a> to mark a function in C++:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code> to mark a function in C++:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
 <span class="w">    </span><span class="c1">// ...</span>
-<span class="p">}</span><span class="w"></span>
+<span class="p">}</span>
 </pre></div>
 </div>
-<p>You can mark arbitrary code regions with the <a class="reference internal" href="AnnotationAPI.html#c.CALI_MARK_BEGIN" title="CALI_MARK_BEGIN"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code></a>
-and <a class="reference internal" href="AnnotationAPI.html#c.CALI_MARK_END" title="CALI_MARK_END"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code></a> macros or the corresponding
-<a class="reference internal" href="AnnotationAPI.html#_CPPv417cali_begin_regionPKc" title="cali_begin_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_begin_region()</span></code></a> and <a class="reference internal" href="AnnotationAPI.html#_CPPv415cali_end_regionPKc" title="cali_end_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_end_region()</span></code></a>
+<p>You can mark arbitrary code regions with the <code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code>
+and <code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code> macros or the corresponding
+<code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_begin_region()</span></code> and <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_end_region()</span></code>
 functions:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
 <span class="c1">// ...</span>
-<span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;my region&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;my region&quot;</span><span class="p">);</span>
 <span class="c1">// ...</span>
-<span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;my region&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;my region&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>You can have as many regions as you like. Regions can be nested, but they
@@ -125,14 +134,14 @@ spent in the annotated regions. You can activate built-in measurement
 configurations with the <a class="reference internal" href="#configmgr-api"><span class="std std-ref">ConfigManager API</span></a> or with the
 <span class="target" id="index-0"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a> environment variable.
 Let’s try this on Caliper’s cxx-example program:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Caliper/build
-$ make cxx-example
-$ <span class="nv">CALI_CONFIG</span><span class="o">=</span>runtime-report ./examples/apps/cxx-example
-Path       Min time/rank Max time/rank Avg time/rank Time %
-main            <span class="m">0</span>.000119      <span class="m">0</span>.000119      <span class="m">0</span>.000119  <span class="m">7</span>.079120
-  mainloop      <span class="m">0</span>.000067      <span class="m">0</span>.000067      <span class="m">0</span>.000067  <span class="m">3</span>.985723
-    foo         <span class="m">0</span>.000646      <span class="m">0</span>.000646      <span class="m">0</span>.000646 <span class="m">38</span>.429506
-  init          <span class="m">0</span>.000017      <span class="m">0</span>.000017      <span class="m">0</span>.000017  <span class="m">1</span>.011303
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Caliper/build
+$<span class="w"> </span>make<span class="w"> </span>cxx-example
+$<span class="w"> </span><span class="nv">CALI_CONFIG</span><span class="o">=</span>runtime-report<span class="w"> </span>./examples/apps/cxx-example
+Path<span class="w">       </span>Min<span class="w"> </span>time/rank<span class="w"> </span>Max<span class="w"> </span>time/rank<span class="w"> </span>Avg<span class="w"> </span>time/rank<span class="w"> </span>Time<span class="w"> </span>%
+main<span class="w">            </span><span class="m">0</span>.000119<span class="w">      </span><span class="m">0</span>.000119<span class="w">      </span><span class="m">0</span>.000119<span class="w">  </span><span class="m">7</span>.079120
+<span class="w">  </span>mainloop<span class="w">      </span><span class="m">0</span>.000067<span class="w">      </span><span class="m">0</span>.000067<span class="w">      </span><span class="m">0</span>.000067<span class="w">  </span><span class="m">3</span>.985723
+<span class="w">    </span>foo<span class="w">         </span><span class="m">0</span>.000646<span class="w">      </span><span class="m">0</span>.000646<span class="w">      </span><span class="m">0</span>.000646<span class="w"> </span><span class="m">38</span>.429506
+<span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000017<span class="w">      </span><span class="m">0</span>.000017<span class="w">      </span><span class="m">0</span>.000017<span class="w">  </span><span class="m">1</span>.011303
 </pre></div>
 </div>
 <p>Like most built-in configurations, the runtime-report config works for MPI and
@@ -145,12 +154,12 @@ additional Caliper functionality, such as profiling MPI and CUDA functions in
 addition to the user-defined regions, or additional metrics like memory usage.
 Another example is the <cite>calc.inclusive</cite> option, which prints inclusive instead
 of exclusive region times:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_CONFIG</span><span class="o">=</span>runtime-report,calc.inclusive ./examples/apps/cxx-example
-Path       Min time/rank Max time/rank Avg time/rank Time %
-main            <span class="m">0</span>.000658      <span class="m">0</span>.000658      <span class="m">0</span>.000658 <span class="m">55</span>.247691
-  mainloop      <span class="m">0</span>.000637      <span class="m">0</span>.000637      <span class="m">0</span>.000637 <span class="m">53</span>.484467
-    foo         <span class="m">0</span>.000624      <span class="m">0</span>.000624      <span class="m">0</span>.000624 <span class="m">52</span>.392947
-  init          <span class="m">0</span>.000003      <span class="m">0</span>.000003      <span class="m">0</span>.000003  <span class="m">0</span>.251889
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_CONFIG</span><span class="o">=</span>runtime-report,calc.inclusive<span class="w"> </span>./examples/apps/cxx-example
+Path<span class="w">       </span>Min<span class="w"> </span>time/rank<span class="w"> </span>Max<span class="w"> </span>time/rank<span class="w"> </span>Avg<span class="w"> </span>time/rank<span class="w"> </span>Time<span class="w"> </span>%
+main<span class="w">            </span><span class="m">0</span>.000658<span class="w">      </span><span class="m">0</span>.000658<span class="w">      </span><span class="m">0</span>.000658<span class="w"> </span><span class="m">55</span>.247691
+<span class="w">  </span>mainloop<span class="w">      </span><span class="m">0</span>.000637<span class="w">      </span><span class="m">0</span>.000637<span class="w">      </span><span class="m">0</span>.000637<span class="w"> </span><span class="m">53</span>.484467
+<span class="w">    </span>foo<span class="w">         </span><span class="m">0</span>.000624<span class="w">      </span><span class="m">0</span>.000624<span class="w">      </span><span class="m">0</span>.000624<span class="w"> </span><span class="m">52</span>.392947
+<span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000003<span class="w">      </span><span class="m">0</span>.000003<span class="w">      </span><span class="m">0</span>.000003<span class="w">  </span><span class="m">0</span>.251889
 </pre></div>
 </div>
 <p>Caliper provides many more performance measurement configurations in addition
@@ -169,23 +178,23 @@ threads. You can set the visibility scope (<code class="docutils literal notrans
 <p>A common practice is to mark code regions only on the master thread, outside
 of multi-threaded regions. In this case, it is useful to set the visibility
 scope to <code class="docutils literal notranslate"><span class="pre">process</span></code>:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">cali_config_set</span><span class="p">(</span><span class="s">&quot;CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;process&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">cali_config_set</span><span class="p">(</span><span class="s">&quot;CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;process&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span>
 
 <span class="cp">#pragma omp parallel</span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// ...</span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>The annotation placement inside or outside of threads also affects performance
@@ -199,21 +208,21 @@ these measurements with the “parallel” and “main” regions on any thread.
 <p>In contrast, in the example below, we enter and exit the “parallel” region on
 every thread, and metrics reported by <cite>runtime-report</cite> therefore cover all
 threads. However, the “main” region is only visible on the master thread.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
 
 <span class="cp">#pragma omp parallel</span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span>
 <span class="w">        </span><span class="c1">// ...</span>
-<span class="w">        </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;parallel&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -229,49 +238,49 @@ interprets a short configuration string that can be hard-coded in the program
 or provided by the user in some form, e.g. as a command-line parameter or
 in the program’s configuration file.</p>
 <p>To access and control the built-in configurations, create a
-<a class="reference internal" href="ConfigManagerAPI.html#_CPPv4N4cali13ConfigManagerE" title="cali::ConfigManager"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::ConfigManager</span></code></a> object. Add a configuration string with
+<code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::ConfigManager</span></code> object. Add a configuration string with
 <code class="docutils literal notranslate"><span class="pre">add()</span></code>, start the requested configuration channels with <code class="docutils literal notranslate"><span class="pre">start()</span></code>,
 and trigger output with <code class="docutils literal notranslate"><span class="pre">flush()</span></code>. In MPI programs, the <code class="docutils literal notranslate"><span class="pre">flush()</span></code> method
 must be called before <code class="docutils literal notranslate"><span class="pre">MPI_Finalize</span></code>:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali-manager.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali-manager.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;mpi.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;mpi.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="w"> </span><span class="n">mgr</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="w"> </span><span class="n">mgr</span><span class="p">;</span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
 
 <span class="w">    </span><span class="c1">// Check for configuration errors</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mgr</span><span class="p">.</span><span class="n">error</span><span class="p">())</span><span class="w"></span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="s">&quot;Caliper error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">error_msg</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mgr</span><span class="p">.</span><span class="n">error</span><span class="p">())</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Caliper error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">error_msg</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// Start configured performance measurements, if any</span>
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// ...</span>
 
 <span class="w">    </span><span class="c1">// Flush output before finalizing MPI</span>
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span>
 
-<span class="w">    </span><span class="n">MPI_Finalize</span><span class="p">();</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">MPI_Finalize</span><span class="p">();</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>The <a class="reference internal" href="#cxx-example"><span class="std std-ref">C++ example program</span></a> uses the ConfigManager API to let users specify a
 Caliper configuration with the <cite>-P</cite> command-line argument, e.g.
 <code class="docutils literal notranslate"><span class="pre">-P</span> <span class="pre">runtime-report</span></code>:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P runtime-report
-Path       Min time/rank Max time/rank Avg time/rank Time %
-main            <span class="m">0</span>.000129      <span class="m">0</span>.000129      <span class="m">0</span>.000129  <span class="m">5</span>.952930
-  mainloop      <span class="m">0</span>.000080      <span class="m">0</span>.000080      <span class="m">0</span>.000080  <span class="m">3</span>.691740
-    foo         <span class="m">0</span>.000719      <span class="m">0</span>.000719      <span class="m">0</span>.000719 <span class="m">33</span>.179511
-  init          <span class="m">0</span>.000021      <span class="m">0</span>.000021      <span class="m">0</span>.000021  <span class="m">0</span>.969082
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>runtime-report
+Path<span class="w">       </span>Min<span class="w"> </span>time/rank<span class="w"> </span>Max<span class="w"> </span>time/rank<span class="w"> </span>Avg<span class="w"> </span>time/rank<span class="w"> </span>Time<span class="w"> </span>%
+main<span class="w">            </span><span class="m">0</span>.000129<span class="w">      </span><span class="m">0</span>.000129<span class="w">      </span><span class="m">0</span>.000129<span class="w">  </span><span class="m">5</span>.952930
+<span class="w">  </span>mainloop<span class="w">      </span><span class="m">0</span>.000080<span class="w">      </span><span class="m">0</span>.000080<span class="w">      </span><span class="m">0</span>.000080<span class="w">  </span><span class="m">3</span>.691740
+<span class="w">    </span>foo<span class="w">         </span><span class="m">0</span>.000719<span class="w">      </span><span class="m">0</span>.000719<span class="w">      </span><span class="m">0</span>.000719<span class="w"> </span><span class="m">33</span>.179511
+<span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000021<span class="w">      </span><span class="m">0</span>.000021<span class="w">      </span><span class="m">0</span>.000021<span class="w">  </span><span class="m">0</span>.969082
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">ConfigManager API reference</span></a> for the complete API documentation. The
@@ -305,12 +314,12 @@ reports I/O bytes written and read, and the <cite>mem.highwatermark</cite> optio
 the memory high-watermark. In the example below, the <cite>mem.highwatermark</cite>
 option for <cite>runtime-report</cite> adds the “Allocated MB” column that shows the
 maximum amount of memory that was allocated in each region:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P runtime-report,mem.highwatermark
-Path       Min time/rank Max time/rank Avg time/rank Time %   Allocated MB
-main            <span class="m">0</span>.000179      <span class="m">0</span>.000179      <span class="m">0</span>.000179 <span class="m">2</span>.054637     <span class="m">0</span>.000047
-  mainloop      <span class="m">0</span>.000082      <span class="m">0</span>.000082      <span class="m">0</span>.000082 <span class="m">0</span>.941230     <span class="m">0</span>.000016
-    foo         <span class="m">0</span>.000778      <span class="m">0</span>.000778      <span class="m">0</span>.000778 <span class="m">8</span>.930211     <span class="m">0</span>.000016
-  init          <span class="m">0</span>.000020      <span class="m">0</span>.000020      <span class="m">0</span>.000020 <span class="m">0</span>.229568     <span class="m">0</span>.000000
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>runtime-report,mem.highwatermark
+Path<span class="w">       </span>Min<span class="w"> </span>time/rank<span class="w"> </span>Max<span class="w"> </span>time/rank<span class="w"> </span>Avg<span class="w"> </span>time/rank<span class="w"> </span>Time<span class="w"> </span>%<span class="w">   </span>Allocated<span class="w"> </span>MB
+main<span class="w">            </span><span class="m">0</span>.000179<span class="w">      </span><span class="m">0</span>.000179<span class="w">      </span><span class="m">0</span>.000179<span class="w"> </span><span class="m">2</span>.054637<span class="w">     </span><span class="m">0</span>.000047
+<span class="w">  </span>mainloop<span class="w">      </span><span class="m">0</span>.000082<span class="w">      </span><span class="m">0</span>.000082<span class="w">      </span><span class="m">0</span>.000082<span class="w"> </span><span class="m">0</span>.941230<span class="w">     </span><span class="m">0</span>.000016
+<span class="w">    </span>foo<span class="w">         </span><span class="m">0</span>.000778<span class="w">      </span><span class="m">0</span>.000778<span class="w">      </span><span class="m">0</span>.000778<span class="w"> </span><span class="m">8</span>.930211<span class="w">     </span><span class="m">0</span>.000016
+<span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w"> </span><span class="m">0</span>.229568<span class="w">     </span><span class="m">0</span>.000000
 </pre></div>
 </div>
 <p>You can use the cali-query and mpi-caliquery programs to list available
@@ -360,14 +369,14 @@ configuring Caliper services manually. See <a class="reference internal" href="c
 <p>Loop profiling allows analysis of performance over time in iterative programs.
 To use loop profiling, annotate loops and loop iterations with Caliper’s loop
 annotation macros:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mainloop&quot;</span><span class="p">);</span><span class="w"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mainloop&quot;</span><span class="p">);</span>
 
-<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
 <span class="w">    </span><span class="c1">// ...</span>
-<span class="p">}</span><span class="w"></span>
+<span class="p">}</span>
 
-<span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">);</span><span class="w"></span>
+<span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">CALI_CXX_MARK_LOOP_BEGIN</span></code> macro gets a unique identifier (<cite>mainloop_id</cite>
@@ -379,31 +388,31 @@ We recommend to only annotate top-level loops, such as the main timestepping
 loop in a simulation code.
 With the loop annotations in place, we can use the loop-report config to print
 loop performance information:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P loop-report <span class="m">5000</span>
-Loop summary:
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>loop-report<span class="w"> </span><span class="m">5000</span>
+Loop<span class="w"> </span>summary:
 ------------
 
-Loop     Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s <span class="o">(</span>min<span class="o">)</span> Iter/s <span class="o">(</span>max<span class="o">)</span> Iter/s <span class="o">(</span>avg<span class="o">)</span>
-mainloop       <span class="m">5000</span> <span class="m">7</span>.012186   <span class="m">389</span>.323701  <span class="m">2406</span>.931322   <span class="m">713</span>.178697
+Loop<span class="w">     </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>min<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>max<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>avg<span class="o">)</span>
+mainloop<span class="w">       </span><span class="m">5000</span><span class="w"> </span><span class="m">7</span>.012186<span class="w">   </span><span class="m">389</span>.323701<span class="w">  </span><span class="m">2406</span>.931322<span class="w">   </span><span class="m">713</span>.178697
 
-Iteration summary <span class="o">(</span>mainloop<span class="o">)</span>:
+Iteration<span class="w"> </span>summary<span class="w"> </span><span class="o">(</span>mainloop<span class="o">)</span>:
 -----------------
 
-Block Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s
-    <span class="m">0</span>       <span class="m">1204</span> <span class="m">0</span>.500222 <span class="m">2406</span>.931322
- <span class="m">1204</span>        <span class="m">536</span> <span class="m">0</span>.500921 <span class="m">1070</span>.029007
- <span class="m">1740</span>        <span class="m">429</span> <span class="m">0</span>.500715  <span class="m">856</span>.774812
- <span class="m">2169</span>        <span class="m">365</span> <span class="m">0</span>.501464  <span class="m">727</span>.868800
- <span class="m">2534</span>        <span class="m">324</span> <span class="m">0</span>.500800  <span class="m">646</span>.964856
- <span class="m">2858</span>        <span class="m">295</span> <span class="m">0</span>.501248  <span class="m">588</span>.531027
- <span class="m">3153</span>        <span class="m">272</span> <span class="m">0</span>.500612  <span class="m">543</span>.334958
- <span class="m">3425</span>        <span class="m">254</span> <span class="m">0</span>.501714  <span class="m">506</span>.264525
- <span class="m">3679</span>        <span class="m">249</span> <span class="m">0</span>.501720  <span class="m">496</span>.292753
- <span class="m">3928</span>        <span class="m">237</span> <span class="m">0</span>.500152  <span class="m">473</span>.855948
- <span class="m">4165</span>        <span class="m">223</span> <span class="m">0</span>.501182  <span class="m">444</span>.948143
- <span class="m">4388</span>        <span class="m">215</span> <span class="m">0</span>.501665  <span class="m">428</span>.572852
- <span class="m">4603</span>        <span class="m">203</span> <span class="m">0</span>.501471  <span class="m">404</span>.809052
- <span class="m">4806</span>        <span class="m">194</span> <span class="m">0</span>.498300  <span class="m">389</span>.323701
+Block<span class="w"> </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s
+<span class="w">    </span><span class="m">0</span><span class="w">       </span><span class="m">1204</span><span class="w"> </span><span class="m">0</span>.500222<span class="w"> </span><span class="m">2406</span>.931322
+<span class="w"> </span><span class="m">1204</span><span class="w">        </span><span class="m">536</span><span class="w"> </span><span class="m">0</span>.500921<span class="w"> </span><span class="m">1070</span>.029007
+<span class="w"> </span><span class="m">1740</span><span class="w">        </span><span class="m">429</span><span class="w"> </span><span class="m">0</span>.500715<span class="w">  </span><span class="m">856</span>.774812
+<span class="w"> </span><span class="m">2169</span><span class="w">        </span><span class="m">365</span><span class="w"> </span><span class="m">0</span>.501464<span class="w">  </span><span class="m">727</span>.868800
+<span class="w"> </span><span class="m">2534</span><span class="w">        </span><span class="m">324</span><span class="w"> </span><span class="m">0</span>.500800<span class="w">  </span><span class="m">646</span>.964856
+<span class="w"> </span><span class="m">2858</span><span class="w">        </span><span class="m">295</span><span class="w"> </span><span class="m">0</span>.501248<span class="w">  </span><span class="m">588</span>.531027
+<span class="w"> </span><span class="m">3153</span><span class="w">        </span><span class="m">272</span><span class="w"> </span><span class="m">0</span>.500612<span class="w">  </span><span class="m">543</span>.334958
+<span class="w"> </span><span class="m">3425</span><span class="w">        </span><span class="m">254</span><span class="w"> </span><span class="m">0</span>.501714<span class="w">  </span><span class="m">506</span>.264525
+<span class="w"> </span><span class="m">3679</span><span class="w">        </span><span class="m">249</span><span class="w"> </span><span class="m">0</span>.501720<span class="w">  </span><span class="m">496</span>.292753
+<span class="w"> </span><span class="m">3928</span><span class="w">        </span><span class="m">237</span><span class="w"> </span><span class="m">0</span>.500152<span class="w">  </span><span class="m">473</span>.855948
+<span class="w"> </span><span class="m">4165</span><span class="w">        </span><span class="m">223</span><span class="w"> </span><span class="m">0</span>.501182<span class="w">  </span><span class="m">444</span>.948143
+<span class="w"> </span><span class="m">4388</span><span class="w">        </span><span class="m">215</span><span class="w"> </span><span class="m">0</span>.501665<span class="w">  </span><span class="m">428</span>.572852
+<span class="w"> </span><span class="m">4603</span><span class="w">        </span><span class="m">203</span><span class="w"> </span><span class="m">0</span>.501471<span class="w">  </span><span class="m">404</span>.809052
+<span class="w"> </span><span class="m">4806</span><span class="w">        </span><span class="m">194</span><span class="w"> </span><span class="m">0</span>.498300<span class="w">  </span><span class="m">389</span>.323701
 </pre></div>
 </div>
 <p>Here, we run the cxx-example program with 5000 loop iterations. The loop-report
@@ -423,22 +432,22 @@ measurements, the time for each iteration block is the same.</p>
 <p>We can configure the measurement mode and output. The <cite>iteration_interval</cite>
 option switches to an iteration-based instead of a time-based measurement
 interval. For example, we can take measurements every 500 loop iterations:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P loop-report,iteration_interval<span class="o">=</span><span class="m">500</span> <span class="m">5000</span>
-Iteration summary <span class="o">(</span>mainloop<span class="o">)</span>:
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>loop-report,iteration_interval<span class="o">=</span><span class="m">500</span><span class="w"> </span><span class="m">5000</span>
+Iteration<span class="w"> </span>summary<span class="w"> </span><span class="o">(</span>mainloop<span class="o">)</span>:
 -----------------
 
-Block Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s
-               <span class="m">0</span> <span class="m">0</span>.000032    <span class="m">0</span>.000000
-    <span class="m">0</span>        <span class="m">500</span> <span class="m">0</span>.110812 <span class="m">4512</span>.146699
-  <span class="m">500</span>        <span class="m">500</span> <span class="m">0</span>.244453 <span class="m">2045</span>.382957
- <span class="m">1000</span>        <span class="m">500</span> <span class="m">0</span>.378453 <span class="m">1321</span>.168018
- <span class="m">1500</span>        <span class="m">500</span> <span class="m">0</span>.532856  <span class="m">938</span>.339814
- <span class="m">2000</span>        <span class="m">500</span> <span class="m">0</span>.660435  <span class="m">757</span>.076775
- <span class="m">2500</span>        <span class="m">500</span> <span class="m">0</span>.785368  <span class="m">636</span>.644223
- <span class="m">3000</span>        <span class="m">500</span> <span class="m">0</span>.911957  <span class="m">548</span>.271465
- <span class="m">3500</span>        <span class="m">500</span> <span class="m">1</span>.034089  <span class="m">483</span>.517376
- <span class="m">4000</span>        <span class="m">500</span> <span class="m">1</span>.159672  <span class="m">431</span>.156396
- <span class="m">4500</span>        <span class="m">500</span> <span class="m">1</span>.285956  <span class="m">388</span>.815792
+Block<span class="w"> </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s
+<span class="w">               </span><span class="m">0</span><span class="w"> </span><span class="m">0</span>.000032<span class="w">    </span><span class="m">0</span>.000000
+<span class="w">    </span><span class="m">0</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.110812<span class="w"> </span><span class="m">4512</span>.146699
+<span class="w">  </span><span class="m">500</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.244453<span class="w"> </span><span class="m">2045</span>.382957
+<span class="w"> </span><span class="m">1000</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.378453<span class="w"> </span><span class="m">1321</span>.168018
+<span class="w"> </span><span class="m">1500</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.532856<span class="w">  </span><span class="m">938</span>.339814
+<span class="w"> </span><span class="m">2000</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.660435<span class="w">  </span><span class="m">757</span>.076775
+<span class="w"> </span><span class="m">2500</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.785368<span class="w">  </span><span class="m">636</span>.644223
+<span class="w"> </span><span class="m">3000</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">0</span>.911957<span class="w">  </span><span class="m">548</span>.271465
+<span class="w"> </span><span class="m">3500</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">1</span>.034089<span class="w">  </span><span class="m">483</span>.517376
+<span class="w"> </span><span class="m">4000</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">1</span>.159672<span class="w">  </span><span class="m">431</span>.156396
+<span class="w"> </span><span class="m">4500</span><span class="w">        </span><span class="m">500</span><span class="w"> </span><span class="m">1</span>.285956<span class="w">  </span><span class="m">388</span>.815792
 </pre></div>
 </div>
 <p>Now, the iterations per block remain at 500, whereas the time for
@@ -448,15 +457,15 @@ a useful performance metric independent of the measurement mode.</p>
 (20 by default) to avoid visual clutter in programs with long-running loops.
 We can change this number with the <cite>timeseries.maxrows</cite> option. For example,
 we can choose a maximum of 3 blocks:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P loop-report,iteration_interval<span class="o">=</span><span class="m">500</span>,timeseries.maxrows<span class="o">=</span><span class="m">3</span> <span class="m">5000</span>
-Iteration summary <span class="o">(</span>mainloop<span class="o">)</span>:
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>loop-report,iteration_interval<span class="o">=</span><span class="m">500</span>,timeseries.maxrows<span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="m">5000</span>
+Iteration<span class="w"> </span>summary<span class="w"> </span><span class="o">(</span>mainloop<span class="o">)</span>:
 -----------------
 
-Block Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s
-               <span class="m">0</span> <span class="m">0</span>.000034    <span class="m">0</span>.000000
-    <span class="m">0</span>       <span class="m">2000</span> <span class="m">1</span>.294308 <span class="m">1545</span>.227257
- <span class="m">1666</span>       <span class="m">1500</span> <span class="m">2</span>.359132  <span class="m">635</span>.827075
- <span class="m">3332</span>       <span class="m">1500</span> <span class="m">3</span>.484032  <span class="m">430</span>.535655
+Block<span class="w"> </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s
+<span class="w">               </span><span class="m">0</span><span class="w"> </span><span class="m">0</span>.000034<span class="w">    </span><span class="m">0</span>.000000
+<span class="w">    </span><span class="m">0</span><span class="w">       </span><span class="m">2000</span><span class="w"> </span><span class="m">1</span>.294308<span class="w"> </span><span class="m">1545</span>.227257
+<span class="w"> </span><span class="m">1666</span><span class="w">       </span><span class="m">1500</span><span class="w"> </span><span class="m">2</span>.359132<span class="w">  </span><span class="m">635</span>.827075
+<span class="w"> </span><span class="m">3332</span><span class="w">       </span><span class="m">1500</span><span class="w"> </span><span class="m">3</span>.484032<span class="w">  </span><span class="m">430</span>.535655
 </pre></div>
 </div>
 <p>Setting <code class="docutils literal notranslate"><span class="pre">timeseries.maxrows=0</span></code> disables the block limit and outputs all
@@ -467,21 +476,21 @@ measured blocks. Thus, the configuration</p>
 <p>shows performance data for every single loop iteration.</p>
 <p>We can enable other performance metrics in the loop report, such as the memory
 high-water mark:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P loop-report,timeseries.maxrows<span class="o">=</span><span class="m">4</span>,mem.highwatermark <span class="m">5000</span>
-Loop summary:
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>loop-report,timeseries.maxrows<span class="o">=</span><span class="m">4</span>,mem.highwatermark<span class="w"> </span><span class="m">5000</span>
+Loop<span class="w"> </span>summary:
 ------------
 
-Loop     Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s <span class="o">(</span>min<span class="o">)</span> Iter/s <span class="o">(</span>max<span class="o">)</span> Iter/s <span class="o">(</span>avg<span class="o">)</span> Allocated MB
-mainloop       <span class="m">5000</span> <span class="m">7</span>.138860   <span class="m">371</span>.436531  <span class="m">2408</span>.400822   <span class="m">684</span>.238039     <span class="m">0</span>.000016
+Loop<span class="w">     </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>min<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>max<span class="o">)</span><span class="w"> </span>Iter/s<span class="w"> </span><span class="o">(</span>avg<span class="o">)</span><span class="w"> </span>Allocated<span class="w"> </span>MB
+mainloop<span class="w">       </span><span class="m">5000</span><span class="w"> </span><span class="m">7</span>.138860<span class="w">   </span><span class="m">371</span>.436531<span class="w">  </span><span class="m">2408</span>.400822<span class="w">   </span><span class="m">684</span>.238039<span class="w">     </span><span class="m">0</span>.000016
 
-Iteration summary <span class="o">(</span>mainloop<span class="o">)</span>:
+Iteration<span class="w"> </span>summary<span class="w"> </span><span class="o">(</span>mainloop<span class="o">)</span>:
 -----------------
 
-Block Iterations Time <span class="o">(</span>s<span class="o">)</span> Iter/s      Allocated MB
-    <span class="m">0</span>       <span class="m">1745</span> <span class="m">1</span>.001062 <span class="m">1743</span>.148776     <span class="m">0</span>.000016
- <span class="m">1250</span>        <span class="m">788</span> <span class="m">1</span>.000955  <span class="m">787</span>.248178     <span class="m">0</span>.000016
- <span class="m">2500</span>       <span class="m">1382</span> <span class="m">2</span>.502447  <span class="m">552</span>.259448     <span class="m">0</span>.000016
- <span class="m">3750</span>       <span class="m">1085</span> <span class="m">2</span>.634396  <span class="m">411</span>.859113     <span class="m">0</span>.000016
+Block<span class="w"> </span>Iterations<span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>s<span class="o">)</span><span class="w"> </span>Iter/s<span class="w">      </span>Allocated<span class="w"> </span>MB
+<span class="w">    </span><span class="m">0</span><span class="w">       </span><span class="m">1745</span><span class="w"> </span><span class="m">1</span>.001062<span class="w"> </span><span class="m">1743</span>.148776<span class="w">     </span><span class="m">0</span>.000016
+<span class="w"> </span><span class="m">1250</span><span class="w">        </span><span class="m">788</span><span class="w"> </span><span class="m">1</span>.000955<span class="w">  </span><span class="m">787</span>.248178<span class="w">     </span><span class="m">0</span>.000016
+<span class="w"> </span><span class="m">2500</span><span class="w">       </span><span class="m">1382</span><span class="w"> </span><span class="m">2</span>.502447<span class="w">  </span><span class="m">552</span>.259448<span class="w">     </span><span class="m">0</span>.000016
+<span class="w"> </span><span class="m">3750</span><span class="w">       </span><span class="m">1085</span><span class="w"> </span><span class="m">2</span>.634396<span class="w">  </span><span class="m">411</span>.859113<span class="w">     </span><span class="m">0</span>.000016
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a> or run <code class="docutils literal notranslate"><span class="pre">mpi-caliquery</span> <span class="pre">--help=loop-report</span></code>
@@ -497,22 +506,22 @@ data from multiple runs, such as scaling studies.</p>
 <p>The Caliper annotation API provides the
 <code class="docutils literal notranslate"><span class="pre">cali_set_global_(double|int|string|uint)_byname()</span></code> family of functions to
 save global attributes in the form of key-value pairs:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cali_set_global_int_byname</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span><span class="w"></span>
-<span class="n">cali_set_global_string_byname</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cali_set_global_int_byname</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span>
+<span class="n">cali_set_global_string_byname</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </pre></div>
 </div>
 <p>Most machine-readable output formats, e.g. the hatchet JSON format written by the
 hatchet-region-profile config, include this data:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ./examples/apps/cxx-example -P hatchet-region-profile,output<span class="o">=</span>stdout
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>hatchet-region-profile,output<span class="o">=</span>stdout
 <span class="o">{</span>
-<span class="s2">&quot;data&quot;</span>: <span class="o">[</span>
-    ...
+<span class="s2">&quot;data&quot;</span>:<span class="w"> </span><span class="o">[</span>
+<span class="w">    </span>...
 <span class="o">]</span>,
 ...
-<span class="s2">&quot;caliper.config&quot;</span>: <span class="s2">&quot;hatchet-region-profile,output=stdout&quot;</span>,
-<span class="s2">&quot;iterations&quot;</span>: <span class="s2">&quot;4&quot;</span>,
-<span class="s2">&quot;cali.caliper.version&quot;</span>: <span class="s2">&quot;2.5.0-dev&quot;</span>,
-<span class="s2">&quot;cali.channel&quot;</span>: <span class="s2">&quot;hatchet-region-profile&quot;</span>
+<span class="s2">&quot;caliper.config&quot;</span>:<span class="w"> </span><span class="s2">&quot;hatchet-region-profile,output=stdout&quot;</span>,
+<span class="s2">&quot;iterations&quot;</span>:<span class="w"> </span><span class="s2">&quot;4&quot;</span>,
+<span class="s2">&quot;cali.caliper.version&quot;</span>:<span class="w"> </span><span class="s2">&quot;2.5.0-dev&quot;</span>,
+<span class="s2">&quot;cali.channel&quot;</span>:<span class="w"> </span><span class="s2">&quot;hatchet-region-profile&quot;</span>
 <span class="o">}</span>
 </pre></div>
 </div>
@@ -525,12 +534,12 @@ provides built-in functionality to record common information such as user
 name, executable name, command-line arguments, etc. The example below uses
 Adiak to record the “iterations” and “caliper.config” attributes as shown
 above, and also the user name, launch date, and MPI job size:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">adiak</span><span class="o">::</span><span class="n">user</span><span class="p">();</span><span class="w"></span>
-<span class="n">adiak</span><span class="o">::</span><span class="n">launchdate</span><span class="p">();</span><span class="w"></span>
-<span class="n">adiak</span><span class="o">::</span><span class="n">jobsize</span><span class="p">();</span><span class="w"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">adiak</span><span class="o">::</span><span class="n">user</span><span class="p">();</span>
+<span class="n">adiak</span><span class="o">::</span><span class="n">launchdate</span><span class="p">();</span>
+<span class="n">adiak</span><span class="o">::</span><span class="n">jobsize</span><span class="p">();</span>
 
-<span class="n">adiak</span><span class="o">::</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span><span class="w"></span>
-<span class="n">adiak</span><span class="o">::</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="n">adiak</span><span class="o">::</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span>
+<span class="n">adiak</span><span class="o">::</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </pre></div>
 </div>
 <p>Most Caliper configs automatically import metadata attributes set through
@@ -571,122 +580,122 @@ analysis views.</p>
 <span class="c1">// For example, &quot;$ cxx-example -P runtime-report&quot; will print a</span>
 <span class="c1">// hierarchical runtime summary for all annotated regions.</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali-manager.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali-manager.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;time.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;time.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstring&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstring&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">print_help</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="o">&amp;</span><span class="w"> </span><span class="n">mgr</span><span class="p">)</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Usage: cxx-example [-P caliper-config(arg=...,),...] [iterations].&quot;</span><span class="w"></span>
-<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Available configurations: &quot;</span><span class="p">;</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">print_help</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="o">&amp;</span><span class="w"> </span><span class="n">mgr</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Usage: cxx-example [-P caliper-config(arg=...,),...] [iterations].&quot;</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">Available configurations: &quot;</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">configs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">available_config_specs</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">configs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">available_config_specs</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// Print info on all available ConfigManager configurations.</span>
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">configs</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">get_documentation_for_spec</span><span class="p">(</span><span class="n">str</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">str</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">configs</span><span class="p">)</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">get_documentation_for_spec</span><span class="p">(</span><span class="n">str</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span class="kt">double</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
+<span class="kt">double</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
+<span class="p">{</span>
 <span class="w">    </span><span class="c1">//   A function annotation. Opens region &quot;function=foo&quot; in Caliper,</span>
 <span class="w">    </span><span class="c1">// and automatically closes it at the end of the function.</span>
-<span class="w">    </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">sleeptime</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="o">&lt;</span><span class="kt">time_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">100000</span><span class="p">)</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
-<span class="w">    </span><span class="n">nanosleep</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sleeptime</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">sleeptime</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="o">&lt;</span><span class="kt">time_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">100000</span><span class="p">)</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="n">nanosleep</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sleeptime</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mf">0.5</span><span class="o">*</span><span class="n">i</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mf">0.5</span><span class="o">*</span><span class="n">i</span><span class="p">;</span>
+<span class="p">}</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
 <span class="w">    </span><span class="c1">//   The ConfigManager manages built-in or custom Caliper measurement</span>
 <span class="w">    </span><span class="c1">// configurations, and provides an API to control performance profiling.</span>
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="w"> </span><span class="n">mgr</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="w"> </span><span class="n">mgr</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">//   Parse command-line arguments. Let users choose a Caliper performance</span>
 <span class="w">    </span><span class="c1">// profiling configuration via the &quot;-P&quot; command-line argument.</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">configstr</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">configstr</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">argc</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;-h&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;--help&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">print_help</span><span class="p">(</span><span class="n">mgr</span><span class="p">);</span><span class="w"></span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;-P&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="o">++</span><span class="n">a</span><span class="p">;</span><span class="w"></span>
-<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">argc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"></span>
-<span class="w">                </span><span class="n">configstr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">];</span><span class="w"></span>
-<span class="w">            </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Expected config string after </span><span class="se">\&quot;</span><span class="s">-P</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">;</span><span class="w"></span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
-<span class="w">            </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">                </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]);</span><span class="w"></span>
-<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">invalid_argument</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Invalid argument: </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"></span>
-<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">. Expected a number.&quot;</span><span class="w"></span>
-<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span><span class="w"></span>
-<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w"></span>
-<span class="w">            </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">argc</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;-h&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;--help&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">print_help</span><span class="p">(</span><span class="n">mgr</span><span class="p">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;-P&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="o">++</span><span class="n">a</span><span class="p">;</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">argc</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">                </span><span class="n">configstr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">];</span>
+<span class="w">            </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Expected config string after </span><span class="se">\&quot;</span><span class="s">-P</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]);</span>
+<span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">invalid_argument</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Invalid argument: </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">. Expected a number.&quot;</span>
+<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">//   Enable the requested performance measurement channels and start</span>
 <span class="w">    </span><span class="c1">// profiling.</span>
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mgr</span><span class="p">.</span><span class="n">error</span><span class="p">())</span><span class="w"></span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Caliper config error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">error_msg</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mgr</span><span class="p">.</span><span class="n">error</span><span class="p">())</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Caliper config error: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">mgr</span><span class="p">.</span><span class="n">error_msg</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">//   Add some run metadata information to be stored in the</span>
 <span class="w">    </span><span class="c1">// performance profiles.</span>
-<span class="w">    </span><span class="n">cali_set_global_int_byname</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">cali_set_global_string_byname</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali_set_global_int_byname</span><span class="p">(</span><span class="s">&quot;iterations&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">iterations</span><span class="p">);</span>
+<span class="w">    </span><span class="n">cali_set_global_string_byname</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 
 <span class="w">    </span><span class="c1">//   Mark begin of the current function. Must be manually closed.</span>
 <span class="w">    </span><span class="c1">// Opens region &quot;function=main&quot; in Caliper.</span>
-<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_BEGIN</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_BEGIN</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// Mark a code region. Opens region &quot;annotation=init&quot; in Caliper.</span>
-<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Mark a loop. Opens region &quot;loop=mainloop&quot; in Caliper.</span>
-<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mainloop&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mainloop&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">iterations</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">iterations</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//   Mark loop iterations of an annotated loop.</span>
 <span class="w">        </span><span class="c1">// Sets &quot;iteration#main loop=&lt;i&gt; in Caliper.</span>
-<span class="w">        </span><span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
 
 <span class="w">        </span><span class="c1">//   A Caliper snapshot taken at this point will contain</span>
 <span class="w">        </span><span class="c1">// { &quot;function&quot;=&quot;main&quot;, &quot;loop&quot;=&quot;mainloop&quot;, &quot;iteration#main loop&quot;=&lt;i&gt; }</span>
 
-<span class="w">        </span><span class="n">t</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">t</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Mark the end of the &quot;loop=mainloop&quot; region.</span>
-<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">loop_ann</span><span class="p">);</span>
 <span class="w">    </span><span class="c1">// Mark the end of the &quot;function=main&quot; region.</span>
-<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">//   Trigger output in all Caliper control channels.</span>
 <span class="w">    </span><span class="c1">// This should be done after all measurement regions have been closed.</span>
-<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -768,13 +777,13 @@ analysis views.</p>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

@@ -27,7 +27,8 @@ Cali
 --------------------------------
 
 The `cali` formatter writes Caliper raw data that can be read by
-`cali-query`.
+`cali-query`, the :doc:`pythonreader`, and the ``caliper_native_reader``
+importer in `Hatchet <https://github.com/LLNL/hatchet>`_.
 
 Expand
 --------------------------------
@@ -52,7 +53,7 @@ Output::
 
 Table
 --------------------------------
-    
+
 The `table` formatter prints a human-readable text table with
 automatically determined column widths. It supports `ORDER BY`.
 
@@ -93,17 +94,13 @@ Tree
 --------------------------------
 
 The `tree` formatter prints records in hierarchical form based on the
-input data, such as nested functions and regions. 
+input data, such as nested functions and regions.
 
 The attribute used to build the hierarchy can be given as an argument
 to the formatter (e.g. ``FORMAT tree(function)`` to use `function`). By
 default, the hierarchy is built from all attributes flagged as `NESTED`,
 which includes the default `function`, `loop`, and `region`
 annotations.
-
-Results can be unintuitive if there are multiple records with the same
-tree node in the input data. It is best to aggregate data so that
-there is only one record for each node.
 
 Example::
 
@@ -188,7 +185,7 @@ hierarchical information between them.
 
 The top-level object contains the following fields:
 
-data 
+data
   The Caliper records as a 2D array (array of arrays). Each row is a
   record, each column is an attribute. The attribute/column labels are
   stored in the `columns` array.  Missing values in a record are
@@ -201,12 +198,12 @@ data
   determines which columns are value and which are reference entries.
 
 columns
-  The labels (i.e., attribute names) of the data columns as array of 
+  The labels (i.e., attribute names) of the data columns as array of
   strings.
 
 column_metadata
   Any metadata for the data columns as array of objects. The objects
-  contain the `is_value` entry, which determines if the corresponding 
+  contain the `is_value` entry, which determines if the corresponding
   data column stores a value or a reference entry.
 
 nodes
@@ -219,7 +216,7 @@ nodes
   node's hierarchical parent node in the `nodes` array. It is
   guaranteed that a parent node is placed before all of its children
   in the array.
-  
+
 Example::
 
     SELECT function,loop,count(),sum(time.inclusive.duration) GROUP BY function,loop FORMAT json-split

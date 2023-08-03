@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Building Caliper &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Building Caliper &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="SampleProfiling.html" title="Sample profiling"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>  
@@ -52,11 +49,11 @@
 compiler, and a Python interpreter. To build Caliper manually, clone it from the
 <a class="reference external" href="https://github.com/LLNL/Caliper">github repository</a>.
 Next, configure and build Caliper, e.g.:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> &lt;path to caliper root directory&gt;
-$ mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> build
-$ cmake -DCMAKE_INSTALL_PREFIX<span class="o">=</span>&lt;path to install location&gt; ..
-$ make
-$ make install
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>caliper<span class="w"> </span>root<span class="w"> </span>directory&gt;
+$<span class="w"> </span>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+$<span class="w"> </span>cmake<span class="w"> </span>-DCMAKE_INSTALL_PREFIX<span class="o">=</span>&lt;path<span class="w"> </span>to<span class="w"> </span>install<span class="w"> </span>location&gt;<span class="w"> </span>..
+$<span class="w"> </span>make
+$<span class="w"> </span>make<span class="w"> </span>install
 </pre></div>
 </div>
 <p>This is a minimal configuration, see below for additional CMake configuration flags.</p>
@@ -138,25 +135,15 @@ installs it in &lt;caliper-installation-dir&gt;/lib64/cmake/caliper. The
 package file defines Caliper’s include directories and exports targets
 for the Caliper libraries. Projects using CMake can use find_package()
 and target_link_libraries() to integrate Caliper as a dependency.</p>
-<p>This example CMakeLists.txt builds a program which depends on Caliper:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cmake_minimum_required(VERSION 3.0)
-
-project(MyExample CXX)
-
-find_package(caliper)
-
-add_executable(MyExample MyExample.cpp)
-
-target_include_directories(MyExample
-  PRIVATE ${caliper_INCLUDE_DIR})
-
-target_link_libraries(MyExample
-  caliper)
+<p>This example CMake code builds a program which depends on Caliper:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">find_package</span><span class="p">(</span><span class="n">caliper</span><span class="p">)</span>
+<span class="n">add_executable</span><span class="p">(</span><span class="n">MyExample</span> <span class="n">MyExample</span><span class="o">.</span><span class="n">cpp</span><span class="p">)</span>
+<span class="n">target_link_libraries</span><span class="p">(</span><span class="n">MyExample</span> <span class="n">PRIVATE</span> <span class="n">caliper</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>When configuring the target program, point CMake to the desired
 Caliper installation with <cite>caliper_DIR</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">Dcaliper_DIR</span><span class="o">=&lt;</span><span class="n">caliper</span><span class="o">-</span><span class="n">installation</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;/</span><span class="n">lib64</span><span class="o">/</span><span class="n">cmake</span><span class="o">/</span><span class="n">caliper</span> <span class="o">..</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">Dcaliper_DIR</span><span class="o">=&lt;</span><span class="n">caliper</span><span class="o">-</span><span class="n">installation</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;/</span><span class="n">share</span><span class="o">/</span><span class="n">cmake</span><span class="o">/</span><span class="n">caliper</span> <span class="o">..</span>
 </pre></div>
 </div>
 <p>The CMake package defines the following variables and targets:</p>
@@ -251,13 +238,13 @@ dependencies (target)</p></td>
         <li class="right" >
           <a href="SampleProfiling.html" title="Sample profiling"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

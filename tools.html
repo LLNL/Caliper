@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper tools &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Caliper tools &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="OutputFormats.html" title="Output formatting"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper tools</a></li> 
       </ul>
     </div>  
@@ -154,15 +151,15 @@ contents into a single output stream.</p>
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">cali-query</span></code> can only be used on the <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files created by using a configured
 Caliper library in a program. The program <a class="reference internal" href="#example-cpp">example.cpp</a> was run:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,timestamp,trace <span class="nv">example</span>
-<span class="o">==</span> CALIPER: Registered event trigger <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered trace <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Initialized
-<span class="nv">b</span> <span class="o">=</span> <span class="nv">34</span>
-<span class="o">==</span> CALIPER: Trace: Flushed <span class="m">45</span> snapshots.
-<span class="o">==</span> CALIPER: Wrote <span class="m">169</span> records.
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,timestamp,trace<span class="w"> </span><span class="nv">example</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>event<span class="w"> </span>trigger<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>recorder<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>timestamp<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>trace<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
+<span class="nv">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">34</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Trace:<span class="w"> </span>Flushed<span class="w"> </span><span class="m">45</span><span class="w"> </span>snapshots.
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Wrote<span class="w"> </span><span class="m">169</span><span class="w"> </span>records.
 </pre></div>
 </div>
 <p>and produced the following file:</p>
@@ -180,8 +177,8 @@ __rec=node,id=11,attr=10,data=148,parent=0
 </div>
 <section id="basic-use">
 <h4>Basic Use<a class="headerlink" href="#basic-use" title="Permalink to this heading">¶</a></h4>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -o cali-query.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-o<span class="w"> </span>cali-query.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>Note that <code class="docutils literal notranslate"><span class="pre">-o</span></code> is being used to control the output in all examples.</p>
@@ -204,14 +201,14 @@ __rec=node,id=13,attr=10,data=148,parent=0
 SQL-like CalQL language (see <a class="reference internal" href="calql.html"><span class="doc">The CalQL query language</span></a>). For example, filtering and
 aggregating trace records to print a table report can be accomplished
 with the following expression:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -q <span class="s2">&quot;SELECT *,sum(time.inclusive.duration) WHERE main=loop FORMAT table&quot;</span> *.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-q<span class="w"> </span><span class="s2">&quot;SELECT *,sum(time.inclusive.duration) WHERE main=loop FORMAT table&quot;</span><span class="w"> </span>*.cali
 </pre></div>
 </div>
 </section>
 <section id="t-table">
 <h4><code class="docutils literal notranslate"><span class="pre">-t</span></code> / <code class="docutils literal notranslate"><span class="pre">--table</span></code><a class="headerlink" href="#t-table" title="Permalink to this heading">¶</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">--table</span></code> option prints snaphsots in a human-readable table format. For example,</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -t <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-t<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 </pre></div>
 </div>
 <p>will print snapsots as follows:</p>
@@ -235,7 +232,7 @@ with “event.” or “cali.”.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">--sort-by</span></code> option specifies a list of attributes to be used as sorting
 criteria. If given, rows will be printed in ascending order according to the value
 of the given attributes:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -t <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali --sort-by<span class="o">=</span>time.inclusive.duration
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-t<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali<span class="w"> </span>--sort-by<span class="o">=</span>time.inclusive.duration
 </pre></div>
 </div>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>main            time.inclusive.duration iteration factorial
@@ -255,8 +252,8 @@ init                               1813
 <h4><code class="docutils literal notranslate"><span class="pre">-e</span></code> and <code class="docutils literal notranslate"><span class="pre">--expand</span></code><a class="headerlink" href="#e-and-expand" title="Permalink to this heading">¶</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">-e</span></code> or <code class="docutils literal notranslate"><span class="pre">--expand</span></code> option expands snapshot records into
 comma-separated <cite>attribute=value</cite> lists.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -e -o cali-query-expanded.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-e<span class="w"> </span>-o<span class="w"> </span>cali-query-expanded.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>The first six lines of records after expansion look like this:</p>
@@ -274,8 +271,8 @@ be using the <code class="docutils literal notranslate"><span class="pre">-e</sp
 <section id="s-and-select">
 <h4><code class="docutils literal notranslate"><span class="pre">-s</span></code> and <code class="docutils literal notranslate"><span class="pre">--select</span></code><a class="headerlink" href="#s-and-select" title="Permalink to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">-s</span></code> and <code class="docutils literal notranslate"><span class="pre">--select</span></code> expands and/or prints only records that contain the selected attributes.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -s <span class="s2">&quot;iteration=3,factorial&quot;</span> -e -o cali-query-selected.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;iteration=3,factorial&quot;</span><span class="w"> </span>-e<span class="w"> </span>-o<span class="w"> </span>cali-query-selected.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>Here, only the records that contain the <code class="docutils literal notranslate"><span class="pre">iteration=3</span></code> attribute value and the <code class="docutils literal notranslate"><span class="pre">factorial</span></code> attribute
@@ -293,8 +290,8 @@ event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.lev
 <h4><code class="docutils literal notranslate"><span class="pre">-a</span></code>/ <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> and <code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code><a class="headerlink" href="#a-aggregate-and-aggregate-key" title="Permalink to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">-a</span></code> and <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> will give the appropriate values of the operations in <code class="docutils literal notranslate"><span class="pre">AGGREGATION_OPS</span></code> for the specified attribute(s)
 performed over all snapshots with a matching key.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;sum(time.inclusive.duration)&quot;</span> -e -o cali-query-aggregated.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-a<span class="w"> </span><span class="s2">&quot;sum(time.inclusive.duration)&quot;</span><span class="w"> </span>-e<span class="w"> </span>-o<span class="w"> </span>cali-query-aggregated.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>This is the last six records after aggregation of the <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code> attribute:</p>
@@ -307,7 +304,7 @@ event.end#main=conclusion,cali.snapshot.event.end=38,cali.snapshot.event.attr.le
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code> will collapse the aggregated value(s) by what attributes you select with <code class="docutils literal notranslate"><span class="pre">ATTRIBUTES</span></code>.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;count,sum(time.inclusive.duration)&quot;</span> --aggregate-key<span class="o">=</span><span class="s2">&quot;event.end#main,event.end#factorial&quot;</span> -e <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-a<span class="w"> </span><span class="s2">&quot;count,sum(time.inclusive.duration)&quot;</span><span class="w"> </span>--aggregate-key<span class="o">=</span><span class="s2">&quot;event.end#main,event.end#factorial&quot;</span><span class="w"> </span>-e<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">event.end</span></code> attributes work in <code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code> to add up all of the values for the listed attribute:</p>
@@ -341,8 +338,8 @@ the listed attributes, <code class="docutils literal notranslate"><span class="p
 <p><code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code> controls which parts of each record are written to the output
 with the <code class="docutils literal notranslate"><span class="pre">--expand</span></code> and <code class="docutils literal notranslate"><span class="pre">--table</span></code> formatters.
 Only the selected attributes will print in each record.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;time.inclusive.duration&quot;</span> --print-attributes<span class="o">=</span><span class="s2">&quot;main,iteration,time.inclusive.duration&quot;</span> -e -o cali-query-print-aggregated.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-a<span class="w"> </span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="w"> </span>--print-attributes<span class="o">=</span><span class="s2">&quot;main,iteration,time.inclusive.duration&quot;</span><span class="w"> </span>-e<span class="w"> </span>-o<span class="w"> </span>cali-query-print-aggregated.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>This is the last six records as above, but printing only the
@@ -381,7 +378,7 @@ format is specified with a format string of the form
 <section id="t-and-title">
 <h4><code class="docutils literal notranslate"><span class="pre">-T</span></code> and <code class="docutils literal notranslate"><span class="pre">--title</span></code><a class="headerlink" href="#t-and-title" title="Permalink to this heading">¶</a></h4>
 <p>Prints a custom title string for the <code class="docutils literal notranslate"><span class="pre">--format</span></code> output option. The format is any string.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -f <span class="s2">&quot;%[10]main% %[20]factorial% %[10]time.inclusive.duration%&quot;</span> -t <span class="s2">&quot;Main         Factorial              Time&quot;</span> -o cali-print-agg-format-title.output cali-query-aggregated.output
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-query<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;%[10]main% %[20]factorial% %[10]time.inclusive.duration%&quot;</span><span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;Main         Factorial              Time&quot;</span><span class="w"> </span>-o<span class="w"> </span>cali-print-agg-format-title.output<span class="w"> </span>cali-query-aggregated.output
 </pre></div>
 </div>
 <p>This is the same as the <code class="docutils literal notranslate"><span class="pre">--format</span></code> example, but with a custom title:</p>
@@ -436,8 +433,8 @@ in a program. Multiple <code class="docutils literal notranslate"><span class="p
 <h3>Examples<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
 <section id="id5">
 <h4>Basic Use<a class="headerlink" href="#id5" title="Permalink to this heading">¶</a></h4>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-stat -o cali-stat.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-stat<span class="w"> </span>-o<span class="w"> </span>cali-stat.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>The report generated:</p>
@@ -466,8 +463,8 @@ in a program. Multiple <code class="docutils literal notranslate"><span class="p
 <section id="r-and-reuse-statistics">
 <h4><code class="docutils literal notranslate"><span class="pre">-r</span></code> and <code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code><a class="headerlink" href="#r-and-reuse-statistics" title="Permalink to this heading">¶</a></h4>
 <p><code class="docutils literal notranslate"><span class="pre">-r</span></code> and <code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code> prints how often a node is reused in the tree.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-stat -r -o cali-stat-reuse.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cali-stat<span class="w"> </span>-r<span class="w"> </span>-o<span class="w"> </span>cali-stat-reuse.output<span class="w"> </span><span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 </pre></div>
 </div>
 <p>The report is the same as above with the following added at the end:</p>
@@ -501,86 +498,86 @@ in a program. Multiple <code class="docutils literal notranslate"><span class="p
 <h2>Example Files<a class="headerlink" href="#example-files" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-cpp notranslate" id="example-cpp"><div class="highlight"><pre><span></span><span class="c1">// An example program for Caliper functionality //</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/Annotation.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
-<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">std</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/Annotation.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdlib.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">std</span><span class="p">;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">);</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// Mark begin of &quot;initialization&quot; phase</span>
-<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">main_attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">main_attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Initialize program</span>
-<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Mark end of &quot;initilization&quot; phase</span>
-<span class="w">  </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;body&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;body&quot;</span><span class="p">);</span>
 
-<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 
 <span class="w">    </span><span class="c1">// Mark begin of &quot;init&quot; phase in the body</span>
-<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// Set phase to &quot;loop&quot;</span>
-<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Create &quot;iteration&quot; attribute to export the iteration count</span>
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">iteration_attr</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">iteration_attr</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">count</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 
 <span class="w">      </span><span class="c1">// Export current iteration count under &quot;iteration&quot;</span>
-<span class="w">      </span><span class="n">iteration_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="n">iteration_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
 
 <span class="w">      </span><span class="c1">// Perform computation</span>
-<span class="w">      </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">b</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">      </span><span class="n">b</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Clear the iteration attribute</span>
-<span class="w">    </span><span class="n">iteration_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">iteration_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// Change main to &quot;conclusion&quot;</span>
-<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;conclusion&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;conclusion&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Conclude the program</span>
-<span class="w">    </span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;b = &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">endl</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;b = &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">endl</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// End the main attribute</span>
-<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">main_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
 
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// Create and set the factorial attribute to &quot;init&quot;</span>
-<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">fact_attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;factorial&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="w"> </span><span class="n">fact_attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;factorial&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Initialize program</span>
-<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Set factorial attr to &quot;comp&quot;</span>
-<span class="w">  </span><span class="n">fact_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;comp&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">fact_attr</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s">&quot;comp&quot;</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Perform computations</span>
-<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="mi">-1</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="mi">-1</span><span class="p">)</span><span class="o">*</span><span class="n">n</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="c1">// End factorial attr</span>
-<span class="w">  </span><span class="n">fact_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="n">fact_attr</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
 
 <span class="w">  </span><span class="c1">// End program</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -681,13 +678,13 @@ in a program. Multiple <code class="docutils literal notranslate"><span class="p
         <li class="right" >
           <a href="OutputFormats.html" title="Output formatting"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper tools</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

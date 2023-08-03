@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The CalQL query language &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>The CalQL query language &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="services.html" title="Caliper services"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>  
@@ -69,10 +66,12 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># computes &lt;a&gt; = &lt;b&gt;*S</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">truncate</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>      <span class="c1"># computes &lt;a&gt; = &lt;b&gt; - mod(&lt;b&gt;, S)</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">first</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># &lt;a&gt; is the first of &lt;a0&gt;, &lt;a1&gt;, ... found in the input record</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="nb">sum</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">...</span><span class="p">)</span>     <span class="c1"># computes sum of &lt;a0&gt;, &lt;a1&gt;, ... in the input record</span>
   <span class="o">...</span> <span class="n">IF</span> <span class="o">&lt;</span><span class="n">condition</span><span class="o">&gt;</span>         <span class="c1"># apply only if input record meets condition</span>
 
 <span class="n">SELECT</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                <span class="c1"># Select attributes and define aggregations (i.e., select columns)</span>
   <span class="o">*</span>                          <span class="c1"># select all attributes</span>
+  <span class="n">path</span>                       <span class="c1"># select the nested region hierarchy</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># select &lt;attribute&gt;</span>
   <span class="n">count</span><span class="p">()</span>                    <span class="c1"># number of input records in grouping</span>
   <span class="nb">sum</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># compute sum of &lt;attribute&gt; for grouping</span>
@@ -86,12 +85,16 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="n">inclusive_scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>   <span class="c1"># computes inclusive scaled sum of &lt;a&gt; in a nested hierarchy</span>
   <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># computes inclusive percent-of-total of &lt;a&gt; in a nested hierarchy</span>
   <span class="nb">any</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># pick one value for &lt;attribute&gt; out of all records in grouping</span>
+  <span class="n">scale_count</span><span class="p">(</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># count number of input records for grouping and multiplied by &lt;S&gt;</span>
+  <span class="n">inclusive_ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># computes inclusive_sum(&lt;a&gt;)/inclusive_sum(&lt;b&gt;)*&lt;S&gt;</span>
+  <span class="n">inclusive_min</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># compute inclusive min of &lt;a&gt;</span>
+  <span class="n">inclusive_max</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># compute inclusive max of &lt;a&gt;</span>
   <span class="o">...</span> <span class="n">AS</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>              <span class="c1"># use &lt;name&gt; as column header in tree or table formatter</span>
   <span class="o">...</span> <span class="n">UNIT</span> <span class="o">&lt;</span><span class="n">unit</span><span class="o">&gt;</span>            <span class="c1"># use &lt;unit&gt; as unit name</span>
 
 <span class="n">GROUP</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Define aggregation grouping (what to aggregate over, e.g. &quot;function,mpi.rank&quot;)</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># include &lt;attribute&gt; in grouping</span>
-  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>                <span class="c1"># include default annotation attributes (&#39;function&#39;, &#39;annotation&#39;, ...) in grouping</span>
+  <span class="n">path</span>                       <span class="c1"># include the nested region hierarchy in grouping</span>
 
 <span class="n">WHERE</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                 <span class="c1"># define filter (i.e., select records/rows)</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># records where &lt;attribute&gt; exists</span>
@@ -110,7 +113,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="n">table</span>                      <span class="c1"># human-readable text table</span>
   <span class="n">tree</span>                       <span class="c1"># human-readable text tree output</span>
 
-<span class="n">ORDER</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Sort records in output (table formatter only)</span>
+<span class="n">ORDER</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Sort records in output (table and tree formatters)</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># order by &lt;attribute&gt;</span>
   <span class="o">...</span> <span class="n">ASC</span>                    <span class="c1"># sort in ascending order</span>
   <span class="o">...</span> <span class="n">DESC</span>                   <span class="c1"># sort in descending order</span>
@@ -127,7 +130,7 @@ subsequent aggregations:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
   <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span>
 <span class="n">SELECT</span>
-  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
+  <span class="n">path</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>We can use the truncate() operator on an iteration counter to
@@ -147,7 +150,7 @@ names found in an input record. It can also be used to rename attributes:</p>
 <span class="n">SELECT</span>
   <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
 <span class="n">GROUP</span> <span class="n">BY</span>
-  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>
+  <span class="n">path</span>
 </pre></div>
 </div>
 <p>LET terms have the general form</p>
@@ -172,7 +175,7 @@ efficiency from the total and “work” time:</p>
 sum(work)                 AS Work,
 ratio(work,time.duration) AS Efficiency</p>
 </dd>
-<dt>GROUP BY</dt><dd><p>prop:nested</p>
+<dt>GROUP BY</dt><dd><p>path</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -213,7 +216,7 @@ applies to the hierarchy defined by attributes with the
   <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span>
   <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span>
 <span class="n">GROUP</span> <span class="n">BY</span>
-  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>
+  <span class="n">path</span>
 <span class="n">FORMAT</span>
   <span class="n">tree</span>
 </pre></div>
@@ -296,9 +299,8 @@ human-readable output (text tables or a tree representation).</p>
 <h2>ORDER BY<a class="headerlink" href="#order-by" title="Permalink to this heading">¶</a></h2>
 <p>Sort output records by the given sort criteria. The statement defines
 a list of attributes to sort output records by. Records can be sorted
-ascending (using the ASC keyword) or descending (using DESC). Note
-that the sorting is performed by the output formatter and only
-available in some formatters (e.g., table).</p>
+ascending (using the ASC keyword) or descending (using DESC).
+Sorting is available in the “tree” and “table” formatters.</p>
 <p>The following example prints a iteration/function profile ordered by
 time and iteration number. Note that one must use the original
 attribute name and not an alias assigned with <code class="docutils literal notranslate"><span class="pre">AS</span></code>:</p>
@@ -398,13 +400,13 @@ attribute name and not an alias assigned with <code class="docutils literal notr
         <li class="right" >
           <a href="services.html" title="Caliper services"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

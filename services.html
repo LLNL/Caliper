@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper services &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Caliper services &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>  
@@ -114,40 +111,40 @@ input snapshots with the given aggregation key were found. Attributes
 that are neither aggregation attributes nor part of the aggregation
 key will not appear in the aggregate snapshot records.</p>
 <p>As an example, consider the following program:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/Annotation.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/Annotation.h&gt;</span>
 
-<span class="kt">void</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
-<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;function&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;function&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// ...</span>
-<span class="p">}</span><span class="w"></span>
+<span class="p">}</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
 <span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="c1">// &quot;A&quot; loop</span>
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
-<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
 
-<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="c1">// &quot;B&quot; loop</span>
-<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
-<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
 
-<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>Assuming snapshots are generated from the <cite>function</cite> annotation and
@@ -191,17 +188,17 @@ annotation separated by loop id. Note: when using
 recommend to include the <cite>event.end</cite> event attributes for all
 annotations of interest in the aggregation key (e.g.,
 <cite>event.end#function</cite> in the example), or use the default, empty key.</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>aggregate,event,recorder,timestamp <span class="se">\</span>
-    <span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span><span class="k">function</span> <span class="se">\</span>
-    <span class="nv">CALI_AGGREGATE_KEY</span><span class="o">=</span>event.end#function,loop.id <span class="se">\</span>
-      ./test/cali-basic-aggregate
-<span class="o">==</span> CALIPER: Registered aggregation <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered event <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
-<span class="o">==</span> CALIPER: <span class="nv">Initialized</span>
-<span class="o">==</span> CALIPER: aggregate: flushed <span class="m">4</span> snapshots.
-<span class="o">==</span> CALIPER: Wrote <span class="m">57</span> records.
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>aggregate,event,recorder,timestamp<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span><span class="k">function</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">CALI_AGGREGATE_KEY</span><span class="o">=</span>event.end#function,loop.id<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>./test/cali-basic-aggregate
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>aggregation<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>event<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>recorder<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>timestamp<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span><span class="nv">Initialized</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>aggregate:<span class="w"> </span>flushed<span class="w"> </span><span class="m">4</span><span class="w"> </span>snapshots.
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Wrote<span class="w"> </span><span class="m">57</span><span class="w"> </span>records.
 </pre></div>
 </div>
 <p>The resulting file has the following contents:</p>
@@ -261,12 +258,12 @@ call-stack addresses. Set <code class="docutils literal notranslate"><span class
 function names on-line. Call-path addresses are provided in the
 <code class="docutils literal notranslate"><span class="pre">callpath.address</span></code> attribute, call-path region names in
 <code class="docutils literal notranslate"><span class="pre">callpath.regname</span></code>. Example:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>callpath:event:recorder:trace
-$ <span class="nb">export</span> <span class="nv">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="nb">true</span>
-$ <span class="nb">export</span> <span class="nv">CALI_CALLPATH_USE_ADDRESS</span><span class="o">=</span><span class="nb">true</span>
-$ ./test/cali-basic
-$ cali-query -e --print-attributes<span class="o">=</span>callpath.address:callpath.regname
-$ callpath.address<span class="o">=</span><span class="m">401207</span>/2aaaac052d5d/400fd9,callpath.regname<span class="o">=</span>main/__libc_start_main/_start
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>callpath:event:recorder:trace
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="nb">true</span>
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_CALLPATH_USE_ADDRESS</span><span class="o">=</span><span class="nb">true</span>
+$<span class="w"> </span>./test/cali-basic
+$<span class="w"> </span>cali-query<span class="w"> </span>-e<span class="w"> </span>--print-attributes<span class="o">=</span>callpath.address:callpath.regname
+$<span class="w"> </span>callpath.address<span class="o">=</span><span class="m">401207</span>/2aaaac052d5d/400fd9,callpath.regname<span class="o">=</span>main/__libc_start_main/_start
 </pre></div>
 </div>
 <p>The example shows the <code class="docutils literal notranslate"><span class="pre">callpath.address</span></code> and <code class="docutils literal notranslate"><span class="pre">callpath.regname</span></code>
@@ -556,9 +553,9 @@ that triggered the snapshot, in the following form:</p>
 <code class="docutils literal notranslate"><span class="pre">cali_set_int_byname(&quot;my.iteration&quot;,</span> <span class="pre">42);</span></code> includes the attribute
 <cite>event.set#my.iteration=42</cite> to describe the triggering event.
 Example:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,trace
-$ ./test/cali-basic
-$ cali-query -e <span class="m">150819</span>-113409_40027_W5Z0mWvoJUyn.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,trace
+$<span class="w"> </span>./test/cali-basic
+$<span class="w"> </span>cali-query<span class="w"> </span>-e<span class="w"> </span><span class="m">150819</span>-113409_40027_W5Z0mWvoJUyn.cali
 event.begin#initialization<span class="o">=</span>true,cali.snapshot.event.begin<span class="o">=</span><span class="m">39</span>
 event.end#initialization<span class="o">=</span>true,cali.snapshot.event.end<span class="o">=</span><span class="m">39</span>,initialization<span class="o">=</span><span class="nb">true</span>
 event.begin#loop<span class="o">=</span>true,cali.snapshot.event.begin<span class="o">=</span><span class="m">53</span>
@@ -572,10 +569,10 @@ event.end#loop<span class="o">=</span>true,cali.snapshot.event.end<span class="o
 </div>
 <p>By setting <code class="docutils literal notranslate"><span class="pre">CALI_EVENT_TRIGGER</span></code>, we can configure the example to
 only trigger snapshot for “iteration” attribute updates:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,trace
-$ <span class="nb">export</span> <span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span>iteration
-$ ./test/cali-basic
-$ cali-query -e <span class="m">150819</span>-113409_40027_W5Z0mWvoJUyn.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,trace
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span>iteration
+$<span class="w"> </span>./test/cali-basic
+$<span class="w"> </span>cali-query<span class="w"> </span>-e<span class="w"> </span><span class="m">150819</span>-113409_40027_W5Z0mWvoJUyn.cali
 event.set#iteration<span class="o">=</span><span class="m">0</span>,cali.snapshot.event.set<span class="o">=</span><span class="m">63</span>,loop<span class="o">=</span><span class="nb">true</span>
 event.set#iteration<span class="o">=</span><span class="m">1</span>,cali.snapshot.event.set<span class="o">=</span><span class="m">63</span>,iteration<span class="o">=</span><span class="m">0</span>,loop<span class="o">=</span><span class="nb">true</span>
 event.set#iteration<span class="o">=</span><span class="m">2</span>,cali.snapshot.event.set<span class="o">=</span><span class="m">63</span>,iteration<span class="o">=</span><span class="m">1</span>,loop<span class="o">=</span><span class="nb">true</span>
@@ -599,7 +596,7 @@ exclude filters. There are three pattern types:</p>
 <p>You can specify multiple patterns and combine them as needed, e.g. to
 include only “important_region” as well as any region starting with
 <code class="docutils literal notranslate"><span class="pre">MPI_</span></code> or <code class="docutils literal notranslate"><span class="pre">mylib_</span></code>:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_EVENT_INCLUDE_REGIONS</span><span class="o">=</span><span class="s2">&quot;match(important_region),startswith(MPI_,mylib_)&quot;</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_EVENT_INCLUDE_REGIONS</span><span class="o">=</span><span class="s2">&quot;match(important_region),startswith(MPI_,mylib_)&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -632,28 +629,28 @@ stream. This is useful to debug source-code annotations. Note that you
 need to set Caliper’s verbosity level to at least 2 to see the log
 output.</p>
 <p>Example:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>debug
-$ <span class="nb">export</span> <span class="nv">CALI_LOG_VERBOSITY</span><span class="o">=</span><span class="m">2</span>
-$ ./test/cali-basic
-<span class="o">==</span> CALIPER: Available services: callpath papi debug event pthread recorder timestamp <span class="nv">mpi</span>
-<span class="o">==</span> CALIPER: Registered debug <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Initialized
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>debug
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_LOG_VERBOSITY</span><span class="o">=</span><span class="m">2</span>
+$<span class="w"> </span>./test/cali-basic
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Available<span class="w"> </span>services:<span class="w"> </span>callpath<span class="w"> </span>papi<span class="w"> </span>debug<span class="w"> </span>event<span class="w"> </span>pthread<span class="w"> </span>recorder<span class="w"> </span>timestamp<span class="w"> </span><span class="nv">mpi</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>debug<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
 ...
-<span class="o">==</span> CALIPER: Event: create_attribute <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: create_attribute <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
-<span class="o">==</span> CALIPER: Event: <span class="nv">finish</span>
-<span class="o">==</span> CALIPER: Finished
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>create_attribute<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_begin<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_begin<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_end<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_begin<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>create_attribute<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_set<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_set<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_set<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_set<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_end<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>iteration<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_end<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span>pre_end<span class="w"> </span><span class="o">(</span><span class="nv">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>phase<span class="o">)</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Event:<span class="w"> </span><span class="nv">finish</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Finished
 </pre></div>
 </div>
 </section>
@@ -1053,16 +1050,16 @@ increase of that counter since the previous snapshot.</p>
 </dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,papi,trace,report
-$ <span class="nv">CALI_PAPI_COUNTERS</span><span class="o">=</span>PAPI_TOT_CYC,PAPI_L1_DCM
-$ ./test/cali-basic
-papi.PAPI_TOT_CYC papi.PAPI_L1_DCM <span class="k">function</span> annotation loop     iteration#mainloop
-            <span class="m">36146</span>              <span class="m">431</span>
-            <span class="m">28328</span>              <span class="m">372</span> main
-            <span class="m">20601</span>              <span class="m">311</span> main     init
-            <span class="m">37010</span>              <span class="m">546</span> main
-             <span class="m">7147</span>              <span class="m">150</span> main                mainloop
-             <span class="m">8425</span>              <span class="m">115</span> main                mainloop                  <span class="m">0</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,papi,trace,report
+$<span class="w"> </span><span class="nv">CALI_PAPI_COUNTERS</span><span class="o">=</span>PAPI_TOT_CYC,PAPI_L1_DCM
+$<span class="w"> </span>./test/cali-basic
+papi.PAPI_TOT_CYC<span class="w"> </span>papi.PAPI_L1_DCM<span class="w"> </span><span class="k">function</span><span class="w"> </span>annotation<span class="w"> </span>loop<span class="w">     </span>iteration#mainloop
+<span class="w">            </span><span class="m">36146</span><span class="w">              </span><span class="m">431</span>
+<span class="w">            </span><span class="m">28328</span><span class="w">              </span><span class="m">372</span><span class="w"> </span>main
+<span class="w">            </span><span class="m">20601</span><span class="w">              </span><span class="m">311</span><span class="w"> </span>main<span class="w">     </span>init
+<span class="w">            </span><span class="m">37010</span><span class="w">              </span><span class="m">546</span><span class="w"> </span>main
+<span class="w">             </span><span class="m">7147</span><span class="w">              </span><span class="m">150</span><span class="w"> </span>main<span class="w">                </span>mainloop
+<span class="w">             </span><span class="m">8425</span><span class="w">              </span><span class="m">115</span><span class="w"> </span>main<span class="w">                </span>mainloop<span class="w">                  </span><span class="m">0</span>
 </pre></div>
 </div>
 </section>
@@ -1294,17 +1291,17 @@ You can select which attribute updates trigger a text log output, define the
 output format, and set the output stream (stdout, stderr, or a file name).</p>
 <p>The following example prints a text log for the <cite>phase</cite> attribute of the
 test application with Caliper’s auto-generated format string:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:textlog:timestamp
-$ <span class="nb">export</span> <span class="nv">CALI_TEXTLOG_TRIGGER</span><span class="o">=</span>phase
-$ ./test/cali-basic
-<span class="o">==</span> CALIPER: Registered event trigger <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Registered text log <span class="nv">service</span>
-<span class="o">==</span> CALIPER: Initialized
-<span class="nv">phase</span><span class="o">=</span>main/init                                                       <span class="m">21</span>
-<span class="nv">phase</span><span class="o">=</span>main/loop                                                       <span class="m">84</span>
-<span class="nv">phase</span><span class="o">=</span>main                                                            <span class="nv">219</span>
-<span class="o">==</span> CALIPER: Finished
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:textlog:timestamp
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">CALI_TEXTLOG_TRIGGER</span><span class="o">=</span>phase
+$<span class="w"> </span>./test/cali-basic
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>event<span class="w"> </span>trigger<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>timestamp<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Registered<span class="w"> </span>text<span class="w"> </span>log<span class="w"> </span><span class="nv">service</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Initialized
+<span class="nv">phase</span><span class="o">=</span>main/init<span class="w">                                                       </span><span class="m">21</span>
+<span class="nv">phase</span><span class="o">=</span>main/loop<span class="w">                                                       </span><span class="m">84</span>
+<span class="nv">phase</span><span class="o">=</span>main<span class="w">                                                            </span><span class="nv">219</span>
+<span class="o">==</span><span class="w"> </span>CALIPER:<span class="w"> </span>Finished
 </pre></div>
 </div>
 <dl>
@@ -1322,7 +1319,7 @@ log strings with two fields: the value of the <cite>app.phase</cite> attribute w
 a minimum width of 40 characters, and the value of  <cite>time.phase.duration</cite>
 attribute with a minimum width of 6 characters, respectively. A resulting
 log entry might look like this:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>Phase: main/loop                       <span class="m">7018</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>Phase:<span class="w"> </span>main/loop<span class="w">                       </span><span class="m">7018</span>
 </pre></div>
 </div>
 <p>Default: empty; Caliper will automatically create a format string based on
@@ -1539,13 +1536,13 @@ otherwise it will create separate records for each Umpire allocator.</p>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

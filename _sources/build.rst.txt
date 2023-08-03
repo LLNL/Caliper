@@ -115,26 +115,16 @@ package file defines Caliper's include directories and exports targets
 for the Caliper libraries. Projects using CMake can use find_package()
 and target_link_libraries() to integrate Caliper as a dependency.
 
-This example CMakeLists.txt builds a program which depends on Caliper: ::
-
-  cmake_minimum_required(VERSION 3.0)
-
-  project(MyExample CXX)
+This example CMake code builds a program which depends on Caliper: ::
 
   find_package(caliper)
-
   add_executable(MyExample MyExample.cpp)
-
-  target_include_directories(MyExample
-    PRIVATE ${caliper_INCLUDE_DIR})
-
-  target_link_libraries(MyExample
-    caliper)
+  target_link_libraries(MyExample PRIVATE caliper)
 
 When configuring the target program, point CMake to the desired
 Caliper installation with `caliper_DIR`: ::
 
-  cmake -Dcaliper_DIR=<caliper-installation-dir>/lib64/cmake/caliper ..
+  cmake -Dcaliper_DIR=<caliper-installation-dir>/share/cmake/caliper ..
 
 The CMake package defines the following variables and targets:
 

@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Output formatting &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Output formatting &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>  
@@ -70,7 +67,8 @@ to print records in a given order, but not all of them do.</p>
 <section id="cali">
 <h2>Cali<a class="headerlink" href="#cali" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cali</cite> formatter writes Caliper raw data that can be read by
-<cite>cali-query</cite>.</p>
+<cite>cali-query</cite>, the <a class="reference internal" href="pythonreader.html"><span class="doc">Python reader API</span></a>, and the <code class="docutils literal notranslate"><span class="pre">caliper_native_reader</span></code>
+importer in <a class="reference external" href="https://github.com/LLNL/hatchet">Hatchet</a>.</p>
 </section>
 <section id="expand">
 <h2>Expand<a class="headerlink" href="#expand" title="Permalink to this heading">¶</a></h2>
@@ -138,9 +136,6 @@ to the formatter (e.g. <code class="docutils literal notranslate"><span class="p
 default, the hierarchy is built from all attributes flagged as <cite>NESTED</cite>,
 which includes the default <cite>function</cite>, <cite>loop</cite>, and <cite>region</cite>
 annotations.</p>
-<p>Results can be unintuitive if there are multiple records with the same
-tree node in the input data. It is best to aggregate data so that
-there is only one record for each node.</p>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function GROUP BY function FORMAT tree</span>
 </pre></div>
@@ -356,13 +351,13 @@ in the array.</p>
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>

@@ -1,20 +1,17 @@
-
 <!DOCTYPE html>
 
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Annotation API reference &#8212; Caliper 2.9.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    <title>Annotation API reference &#8212; Caliper 2.10.0-dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=355e25cc"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -36,7 +33,7 @@
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>  
@@ -67,35 +64,35 @@ the function begin and <em>all</em> exit points must be marked. In C++, only
 the begin has to be marked. Caliper exports the hierarchy of annotated
 functions in the <cite>function</cite> attribute.</p>
 <p>C++ example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
 <span class="w">  </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span><span class="w"> </span><span class="c1">// Exports &quot;function=foo&quot;</span>
 
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="mi">-1</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span>
 <span class="w">  </span><span class="c1">// In C++, the function annotation is closed automatically</span>
-<span class="p">}</span><span class="w"></span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>C example:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">CALI_MARK_FUNCTION</span><span class="p">;</span><span class="w">       </span><span class="cm">/* Exports &quot;function=foo&quot;          */</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">CALI_MARK_FUNCTION</span><span class="p">;</span><span class="w">       </span><span class="cm">/* Exports &quot;function=foo&quot;          */</span>
 
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span><span class="w"> </span><span class="cm">/* ALL exit points must be marked! */</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="mi">-1</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span><span class="w"> </span><span class="cm">/* ALL exit points must be marked! */</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span><span class="w">   </span><span class="cm">/* ALL exit points must be marked! */</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span><span class="w">   </span><span class="cm">/* ALL exit points must be marked! */</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </section>
@@ -110,32 +107,32 @@ the <cite>loop</cite> attribute. Loop iterations are exported in per-loop
 attributes named <cite>iteration#name</cite>, where <cite>name</cite> is the user-provided
 loop name given to the loop annotation.</p>
 <p>C++ example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
 <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;myloop&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// exports loop=myloop</span>
-<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ITER</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ITER</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w">  </span><span class="c1">// exports iteration#myloop=&lt;i&gt;</span>
 
 <span class="w">  </span><span class="c1">// In C++, the iteration annotation is closed automatically</span>
-<span class="p">}</span><span class="w"></span>
-<span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span>
+<span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>C example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
 <span class="n">CALI_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;myloop&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// exports loop=myloop</span>
-<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ITER</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ITER</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">CALI_MARK_ITERATION_BEGIN</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="c1">// exports iteration#myloop=&lt;i&gt;</span>
 
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">test</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">test</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">CALI_MARK_ITERATION_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span><span class="w">    </span><span class="c1">// must mark ALL iteration exit points</span>
-<span class="w">    </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">break</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="n">CALI_MARK_ITERATION_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span><span class="w">      </span><span class="c1">// must mark ALL iteration exit points</span>
-<span class="p">}</span><span class="w"></span>
-<span class="n">CALI_MARK_LOOP_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span>
+<span class="n">CALI_MARK_LOOP_END</span><span class="p">(</span><span class="n">myloop_id</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
@@ -146,11 +143,11 @@ regions. Caliper exports the region names in the <cite>annotation</cite>
 attribute. Annotated code regions must be properly nested (see
 <a class="reference internal" href="#nesting">Nesting</a>).</p>
 <p>Example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
 <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;Important code&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// exports annotation=&quot;Important code&quot;</span>
 <span class="c1">// ... important code</span>
-<span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;Important code&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;Important code&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
@@ -162,23 +159,23 @@ each other. Caliper preserves this nesting information. Users must
 ensure that the nesting is correct. That is, annotated code regions
 have to be enclosed completely within each other; they cannot
 partially overlap. Example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span><span class="w"></span>
-<span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span><span class="w"></span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;outer&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;outer&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;inner&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// The hierarchy is now &quot;foo/outer/inner&quot;</span>
 
-<span class="cp">#if 0</span><span class="c"></span>
+<span class="cp">#if 0</span>
 <span class="c">  CALI_MARK_END(&quot;outer&quot;);   // Error! Must end &quot;inner&quot; before &quot;outer&quot;!</span>
 <span class="c">  CALI_MARK_END(&quot;inner&quot;);</span>
 <span class="cp">#endif</span>
 
-<span class="w">  </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;inner&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;inner&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;outer&quot;</span><span class="p">);</span><span class="w">   </span><span class="c1">// Correct nesting</span>
-<span class="p">}</span><span class="w"></span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <p>To annotate arbitrary features or regions that can overlap with
@@ -199,111 +196,15 @@ but users can create their own. Attribute keys have a unique name, and
 store the attribute’s data type as well as optional property flags.
 Property flags control how the Caliper runtime system handles the
 associated attributes.</p>
-<dl class="cpp enum">
-<dt class="sig sig-object cpp" id="_CPPv420cali_attr_properties">
-<span id="_CPPv320cali_attr_properties"></span><span id="_CPPv220cali_attr_properties"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5ca"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_attr_properties</span></span></span><a class="headerlink" href="#_CPPv420cali_attr_properties" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Attribute property flags. </p>
-<p>These flags control how the caliper runtime system handles the associated attributes. Flags can be combined with a bitwise OR (however, the scope flags are mutually exclusive). </p>
-<p><em>Values:</em></p>
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_DEFAULTE">
-<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_DEFAULTE"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_DEFAULTE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa4b116315bb43d15d204b6fc4306a967d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_DEFAULT</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_DEFAULTE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Default value. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_ASVALUEE">
-<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_ASVALUEE"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_ASVALUEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa5f2d48cb4030e23aae7c72d95fe45bf2"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_ASVALUE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_ASVALUEE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Store directly as key:value pair, not in the context tree. </p>
-<p>Entries with this property will be not be put into the context tree, but stored directly as key:value pairs on the blackboard and in snapshot records. ASVALUE attributes cannot be nested. Only applicable to scalar data types. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_NOMERGEE">
-<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_NOMERGEE"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_NOMERGEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa6750ad25cdd1deb8f9e41fdfcba3bc1d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_NOMERGE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_NOMERGEE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Create a separate context tree root node for this attribute. </p>
-<p>Useful for attributes that form overlapping hierarchies separate from the main region stack. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties23CALI_ATTR_SCOPE_PROCESSE">
-<span id="_CPPv3N20cali_attr_properties23CALI_ATTR_SCOPE_PROCESSE"></span><span id="_CPPv2N20cali_attr_properties23CALI_ATTR_SCOPE_PROCESSE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa4b80a68db7b4542f0858d840b8048be8"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_SCOPE_PROCESS</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties23CALI_ATTR_SCOPE_PROCESSE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Process-scope attribute. Shared between all threads. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties22CALI_ATTR_SCOPE_THREADE">
-<span id="_CPPv3N20cali_attr_properties22CALI_ATTR_SCOPE_THREADE"></span><span id="_CPPv2N20cali_attr_properties22CALI_ATTR_SCOPE_THREADE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa2659fdafdab0c2c1140dbc06cceb0213"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_SCOPE_THREAD</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties22CALI_ATTR_SCOPE_THREADE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Thread-scope attribute. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties20CALI_ATTR_SCOPE_TASKE">
-<span id="_CPPv3N20cali_attr_properties20CALI_ATTR_SCOPE_TASKE"></span><span id="_CPPv2N20cali_attr_properties20CALI_ATTR_SCOPE_TASKE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caad01163dc50d3fbddbf42eaeff8983502"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_SCOPE_TASK</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties20CALI_ATTR_SCOPE_TASKE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Task-scope attribute. Currently unused. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties21CALI_ATTR_SKIP_EVENTSE">
-<span id="_CPPv3N20cali_attr_properties21CALI_ATTR_SKIP_EVENTSE"></span><span id="_CPPv2N20cali_attr_properties21CALI_ATTR_SKIP_EVENTSE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa40a540e1668851df683a334d11570f30"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_SKIP_EVENTS</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties21CALI_ATTR_SKIP_EVENTSE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Skip event callbacks for blackboard updates with this attribute. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties16CALI_ATTR_HIDDENE">
-<span id="_CPPv3N20cali_attr_properties16CALI_ATTR_HIDDENE"></span><span id="_CPPv2N20cali_attr_properties16CALI_ATTR_HIDDENE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa974d8faafa9eb497b38d805853f7f268"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_HIDDEN</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties16CALI_ATTR_HIDDENE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Do not include this attribute in snapshots. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties16CALI_ATTR_NESTEDE">
-<span id="_CPPv3N20cali_attr_properties16CALI_ATTR_NESTEDE"></span><span id="_CPPv2N20cali_attr_properties16CALI_ATTR_NESTEDE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caaea5e00782e7b5f9768ecb1e287b9ab89"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_NESTED</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties16CALI_ATTR_NESTEDE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin/end calls are properly aligned with the call stack. </p>
-<p>Indicates that <em>begin/end</em> calls for this attribute are correctly nested with the call stack and other NESTED attributes. That is, an active region of a NESTED attribute does not partially overlap function calls or other NESTED attribute regions. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties16CALI_ATTR_GLOBALE">
-<span id="_CPPv3N20cali_attr_properties16CALI_ATTR_GLOBALE"></span><span id="_CPPv2N20cali_attr_properties16CALI_ATTR_GLOBALE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caaa02430c4cc50e9f0f64f1e19a62c4344"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_GLOBAL</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties16CALI_ATTR_GLOBALE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A metadata attribute describing global information for a measurement run. </p>
-<p>Global attributes represent metadata associated with an application run (e.g., application executable name and version, start date and time, and so on). They may be written in a separate metadata section in some output formats. For distributed programs (e.g. MPI), global attributes should have the same value on each process. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties19CALI_ATTR_UNALIGNEDE">
-<span id="_CPPv3N20cali_attr_properties19CALI_ATTR_UNALIGNEDE"></span><span id="_CPPv2N20cali_attr_properties19CALI_ATTR_UNALIGNEDE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa3fce362775ecb83416bd399a72a0d336"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_UNALIGNED</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties19CALI_ATTR_UNALIGNEDE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This attribute is not aligned with stacked begin/end regions. </p>
-<p>Entries with this property may still be merged into a single context tree branch, but one that is separate from the properly nested region branch. Stack nesting checks are skipped. </p>
-</dd></dl>
-
-<dl class="cpp enumerator">
-<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE">
-<span id="_CPPv3N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span id="_CPPv2N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa478c211b1beb8b4a6e0bd67305451da1"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_AGGREGATABLE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This attribute is aggregatable (i.e., a metric). </p>
-<p>Attributes with this flag will automatically be aggregated by the <em>aggregate</em> service. This flag replaces the previous <em>class.aggregatable</em> meta-attribute. </p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygenenum: Cannot find file: /usr/WS2/boehme3/src/Caliper-dev/build-quartz-doc/doc/doxygen/xml/index.xml</p>
+</div>
 <p>Attribute keys can be created with <code class="xref c c-func docutils literal notranslate"><span class="pre">cali_create_attribute()</span></code>:</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv421cali_create_attributePKc14cali_attr_typei">
-<span id="_CPPv321cali_create_attributePKc14cali_attr_typei"></span><span id="_CPPv221cali_create_attributePKc14cali_attr_typei"></span><span id="cali_create_attribute__cCP.cali_attr_type.i"></span><span class="target" id="cali_8h_1a8b7546c4ceff7ed8047a406de6de1c5e"></span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_create_attribute</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span>, <span class="n"><span class="pre">cali_attr_type</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">type</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">properties</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv421cali_create_attributePKc14cali_attr_typei" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Create an attribute key. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – Name of the attribute </p></li>
-<li><p><strong>type</strong> – Type of the attribute </p></li>
-<li><p><strong>properties</strong> – Attribute properties </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Attribute id </p>
-</dd>
-</dl>
-</dd></dl>
-
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygenfunction: Cannot find file: /usr/WS2/boehme3/src/Caliper-dev/build-quartz-doc/doc/doxygen/xml/index.xml</p>
+</div>
 </section>
 <section id="c-annotation-api">
 <h3>C annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this heading">¶</a></h3>
@@ -324,29 +225,29 @@ attribute.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">byname</span></code> variants refer to attribute keys by their name. If no
 attribute key with the given name exists, it will be created with
 default properties. The basic variants take an attribute ID, e.g.
-from <a class="reference internal" href="#_CPPv421cali_create_attributePKc14cali_attr_typei" title="cali_create_attribute"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_create_attribute()</span></code></a>.</p>
+from <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_create_attribute()</span></code>.</p>
 <p>Example:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
 
-<span class="cm">/* Exports CustomAttribute=&quot;My great example&quot; */</span><span class="w"></span>
-<span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;CustomAttribute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;My great example&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="cm">/* Exports CustomAttribute=&quot;My great example&quot; */</span>
+<span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;CustomAttribute&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;My great example&quot;</span><span class="p">)</span>
 
-<span class="cm">/* Creates attribute key &quot;myvar&quot; with ASVALUE storage property */</span><span class="w"></span>
-<span class="n">cali_id_t</span><span class="w"> </span><span class="n">myvar_attr</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">  </span><span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;myvar&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CALI_TYPE_INT</span><span class="p">,</span><span class="w"> </span><span class="n">CALI_ATTR_ASVALUE</span><span class="p">);</span><span class="w"></span>
+<span class="cm">/* Creates attribute key &quot;myvar&quot; with ASVALUE storage property */</span>
+<span class="n">cali_id_t</span><span class="w"> </span><span class="n">myvar_attr</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;myvar&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">CALI_TYPE_INT</span><span class="p">,</span><span class="w"> </span><span class="n">CALI_ATTR_ASVALUE</span><span class="p">);</span>
 
-<span class="cm">/* Exports myvar=42 */</span><span class="w"></span>
-<span class="n">cali_set_int</span><span class="p">(</span><span class="n">myvar_attr</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">);</span><span class="w"></span>
+<span class="cm">/* Exports myvar=42 */</span>
+<span class="n">cali_set_int</span><span class="p">(</span><span class="n">myvar_attr</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">);</span>
 
-<span class="cm">/* Closes CustomAttribute=&quot;My great example&quot; */</span><span class="w"></span>
-<span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;CustomAttribute&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="cm">/* Closes CustomAttribute=&quot;My great example&quot; */</span>
+<span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;CustomAttribute&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
 <section id="id1">
 <h3>C++ annotation API<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <p>The C++ annotation API is implemented in the class
-<a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::Annotation</span></code></a>.</p>
+<code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::Annotation</span></code>.</p>
 </section>
 </section>
 <section id="data-tracking-api">
@@ -389,739 +290,10 @@ following example shows both:</p>
 </section>
 <section id="api-reference">
 <h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this heading">¶</a></h2>
-<dl>
-<dt class="sig sig-object cpp">
-<span class="target" id="group__AnnotationAPI"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">AnnotationAPI</span></span></dt>
-<dd><p>The user-facing source-code annotation API. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-low-level-source-code-annotation-api">Low-level source-code annotation API</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv417cali_begin_regionPKc">
-<span id="_CPPv317cali_begin_regionPKc"></span><span id="_CPPv217cali_begin_regionPKc"></span><span id="cali_begin_region__cCP"></span><span class="target" id="group__AnnotationAPI_1ga75b0a3869ec4d9e692a347e0cf925637"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_region</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417cali_begin_regionPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin nested region <em>name</em>. </p>
-<p>Begins nested region <em>name</em> using the built-in <em>annotation</em> attribute. Equivalent to the macro CALI_MARK_REGION_BEGIN.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga0c64d607f91b80513f68f28b60a71470"><span class="std std-ref">cali_end_region()</span></a> </p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>doxygengroup: Cannot find file: /usr/WS2/boehme3/src/Caliper-dev/build-quartz-doc/doc/doxygen/xml/index.xml</p>
 </div>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv415cali_end_regionPKc">
-<span id="_CPPv315cali_end_regionPKc"></span><span id="_CPPv215cali_end_regionPKc"></span><span id="cali_end_region__cCP"></span><span class="target" id="group__AnnotationAPI_1ga0c64d607f91b80513f68f28b60a71470"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_end_region</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415cali_end_regionPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>End nested region <em>name</em>. </p>
-<p>Ends nested region <em>name</em> using the built-in <em>annotation</em> attribute. Prints an error if <em>name</em> does not match the currently open region. Equivalent to the macro CALI_MARK_REGION_END.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga75b0a3869ec4d9e692a347e0cf925637"><span class="std std-ref">cali_begin_region()</span></a> </p>
-</div>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv410cali_begin9cali_id_t">
-<span id="_CPPv310cali_begin9cali_id_t"></span><span id="_CPPv210cali_begin9cali_id_t"></span><span id="cali_begin__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1gad07cdc2014a2f52414c9f33120336dba"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv410cali_begin9cali_id_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region where the value for <em>attr</em> is <code class="docutils literal notranslate"><span class="pre">true</span></code> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv417cali_begin_double9cali_id_td">
-<span id="_CPPv317cali_begin_double9cali_id_td"></span><span id="_CPPv217cali_begin_double9cali_id_td"></span><span id="cali_begin_double__cali_id_t.double"></span><span class="target" id="group__AnnotationAPI_1gab08c083cd8cd11af2246bd39c6a26297"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_double</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417cali_begin_double9cali_id_td" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute <em>attr</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv414cali_begin_int9cali_id_ti">
-<span id="_CPPv314cali_begin_int9cali_id_ti"></span><span id="_CPPv214cali_begin_int9cali_id_ti"></span><span id="cali_begin_int__cali_id_t.i"></span><span class="target" id="group__AnnotationAPI_1ga0f1a8dd5b328ff7e09648c863c9dd593"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_int</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414cali_begin_int9cali_id_ti" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute <em>attr</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv417cali_begin_string9cali_id_tPKc">
-<span id="_CPPv317cali_begin_string9cali_id_tPKc"></span><span id="_CPPv217cali_begin_string9cali_id_tPKc"></span><span id="cali_begin_string__cali_id_t.cCP"></span><span class="target" id="group__AnnotationAPI_1ga983ce6cb3499cf5ad24660bfa982a8ee"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_string</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417cali_begin_string9cali_id_tPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute <em>attr</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv48cali_end9cali_id_t">
-<span id="_CPPv38cali_end9cali_id_t"></span><span id="_CPPv28cali_end9cali_id_t"></span><span id="cali_end__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1gaa5be667bb1525fede7a1435a051d273c"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_end</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv48cali_end9cali_id_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>End innermost open region for <em>attr</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv420cali_safe_end_string9cali_id_tPKc">
-<span id="_CPPv320cali_safe_end_string9cali_id_tPKc"></span><span id="_CPPv220cali_safe_end_string9cali_id_tPKc"></span><span id="cali_safe_end_string__cali_id_t.cCP"></span><span class="target" id="group__AnnotationAPI_1ga45849bcbd62f94534b0de42727aed6bd"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_safe_end_string</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv420cali_safe_end_string9cali_id_tPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Remove innermost value for attribute <em>attr</em> from the blackboard. </p>
-<p>Creates a mismatch warning if the current value does not match <em>val</em>. This function is primarily used by the high-level annotation API.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>attr</strong> – Attribute ID </p></li>
-<li><p><strong>val</strong> – Expected value </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv48cali_set9cali_id_tPKv6size_t">
-<span id="_CPPv38cali_set9cali_id_tPKv6size_t"></span><span id="_CPPv28cali_set9cali_id_tPKv6size_t"></span><span id="cali_set__cali_id_t.voidCP.s"></span><span class="target" id="group__AnnotationAPI_1ga7eb947c9a3a474efc56510a45ae5b8cd"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">value</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv48cali_set9cali_id_tPKv6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute <em>attr</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv415cali_set_double9cali_id_td">
-<span id="_CPPv315cali_set_double9cali_id_td"></span><span id="_CPPv215cali_set_double9cali_id_td"></span><span id="cali_set_double__cali_id_t.double"></span><span class="target" id="group__AnnotationAPI_1ga48e25e5b0f95f1fd789e4c2af20667b3"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_double</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415cali_set_double9cali_id_td" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute <em>attr</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv412cali_set_int9cali_id_ti">
-<span id="_CPPv312cali_set_int9cali_id_ti"></span><span id="_CPPv212cali_set_int9cali_id_ti"></span><span id="cali_set_int__cali_id_t.i"></span><span class="target" id="group__AnnotationAPI_1gab31e1f32ccd8332d9fd411a492b31c94"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_int</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv412cali_set_int9cali_id_ti" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute <em>attr</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv415cali_set_string9cali_id_tPKc">
-<span id="_CPPv315cali_set_string9cali_id_tPKc"></span><span id="_CPPv215cali_set_string9cali_id_tPKc"></span><span id="cali_set_string__cali_id_t.cCP"></span><span class="target" id="group__AnnotationAPI_1gadbb369bc3e56a3e46c40525ae261d5fc"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_string</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">attr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415cali_set_string9cali_id_tPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute <em>attr</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv417cali_begin_bynamePKc">
-<span id="_CPPv317cali_begin_bynamePKc"></span><span id="_CPPv217cali_begin_bynamePKc"></span><span id="cali_begin_byname__cCP"></span><span class="target" id="group__AnnotationAPI_1ga2b36175fd67acb02d9a07aef70a7a1c0"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv417cali_begin_bynamePKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region where the value for the attribute named <em>attr_name</em> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> on the blackboard. </p>
-<p><dl>
-<dt class="sig sig-object cpp">
-<em><span class="pre">Deprecated:</span></em></dt>
-<dd><p>Use <a class="reference internal" href="#group__AnnotationAPI_1ga75b0a3869ec4d9e692a347e0cf925637"><span class="std std-ref">cali_begin_region()</span></a> </p>
-</dd></dl>
-
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv424cali_begin_double_bynamePKcd">
-<span id="_CPPv324cali_begin_double_bynamePKcd"></span><span id="_CPPv224cali_begin_double_bynamePKcd"></span><span id="cali_begin_double_byname__cCP.double"></span><span class="target" id="group__AnnotationAPI_1gaf517bd56255ea3974a18181c2220e42b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_double_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv424cali_begin_double_bynamePKcd" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute named <em>attr_name</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv421cali_begin_int_bynamePKci">
-<span id="_CPPv321cali_begin_int_bynamePKci"></span><span id="_CPPv221cali_begin_int_bynamePKci"></span><span id="cali_begin_int_byname__cCP.i"></span><span class="target" id="group__AnnotationAPI_1gafeffeb02cc1a4af5d4ebcafdd42aead7"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_int_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv421cali_begin_int_bynamePKci" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute named <em>attr_name</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv424cali_begin_string_bynamePKcPKc">
-<span id="_CPPv324cali_begin_string_bynamePKcPKc"></span><span id="_CPPv224cali_begin_string_bynamePKcPKc"></span><span id="cali_begin_string_byname__cCP.cCP"></span><span class="target" id="group__AnnotationAPI_1gada680caa1f07d01fc7a1e38ef2e2c20a"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_string_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv424cali_begin_string_bynamePKcPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin region <em>val</em> for attribute named <em>attr_name</em> on the blackboard. </p>
-<p>The region may be nested. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv422cali_set_double_bynamePKcd">
-<span id="_CPPv322cali_set_double_bynamePKcd"></span><span id="_CPPv222cali_set_double_bynamePKcd"></span><span id="cali_set_double_byname__cCP.double"></span><span class="target" id="group__AnnotationAPI_1ga2f4eeae1e2ce82f77166b6ffc0b10ae5"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_double_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv422cali_set_double_bynamePKcd" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute named <em>attr_name</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv419cali_set_int_bynamePKci">
-<span id="_CPPv319cali_set_int_bynamePKci"></span><span id="_CPPv219cali_set_int_bynamePKci"></span><span id="cali_set_int_byname__cCP.i"></span><span class="target" id="group__AnnotationAPI_1gac6c490a9393b8a141866983dffe97c57"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_int_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv419cali_set_int_bynamePKci" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute named <em>attr_name</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv422cali_set_string_bynamePKcPKc">
-<span id="_CPPv322cali_set_string_bynamePKcPKc"></span><span id="_CPPv222cali_set_string_bynamePKcPKc"></span><span id="cali_set_string_byname__cCP.cCP"></span><span class="target" id="group__AnnotationAPI_1ga6169a60199e4f669b236c1492d9a174b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_string_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv422cali_set_string_bynamePKcPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set value for attribute named <em>attr_name</em> to <em>val</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv415cali_end_bynamePKc">
-<span id="_CPPv315cali_end_bynamePKc"></span><span id="_CPPv215cali_end_bynamePKc"></span><span id="cali_end_byname__cCP"></span><span class="target" id="group__AnnotationAPI_1ga1f3eb054233b538c1e9d328c33f53752"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_end_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv415cali_end_bynamePKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>End innermost open region for attribute named <em>attr_name</em> on the blackboard. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv429cali_set_global_double_bynamePKcd">
-<span id="_CPPv329cali_set_global_double_bynamePKcd"></span><span id="_CPPv229cali_set_global_double_bynamePKcd"></span><span id="cali_set_global_double_byname__cCP.double"></span><span class="target" id="group__AnnotationAPI_1gaca4905330a61a99421bf663de2dd0f4a"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_global_double_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv429cali_set_global_double_bynamePKcd" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set a global attribute with name <em>attr_name</em> to <em>val</em>. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv426cali_set_global_int_bynamePKci">
-<span id="_CPPv326cali_set_global_int_bynamePKci"></span><span id="_CPPv226cali_set_global_int_bynamePKci"></span><span id="cali_set_global_int_byname__cCP.i"></span><span class="target" id="group__AnnotationAPI_1gaf3f1e403098bb94e71a53ef175b07080"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_global_int_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv426cali_set_global_int_bynamePKci" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set a global attribute with name <em>attr_name</em> to <em>val</em>. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv429cali_set_global_string_bynamePKcPKc">
-<span id="_CPPv329cali_set_global_string_bynamePKcPKc"></span><span id="_CPPv229cali_set_global_string_bynamePKcPKc"></span><span id="cali_set_global_string_byname__cCP.cCP"></span><span class="target" id="group__AnnotationAPI_1ga653e74292f9cb98ae38634a44291907e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_global_string_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv429cali_set_global_string_bynamePKcPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set a global attribute with name <em>attr_name</em> to <em>val</em>. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv427cali_set_global_uint_bynamePKc8uint64_t">
-<span id="_CPPv327cali_set_global_uint_bynamePKc8uint64_t"></span><span id="_CPPv227cali_set_global_uint_bynamePKc8uint64_t"></span><span id="cali_set_global_uint_byname__cCP.uint64_t"></span><span class="target" id="group__AnnotationAPI_1gada2dbf482848c59c627ebd105bd1732e"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_set_global_uint_byname</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">attr_name</span></span>, <span class="n"><span class="pre">uint64_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">val</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv427cali_set_global_uint_bynamePKc8uint64_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set a global attribute with name <em>attr_name</em> to <em>val</em>. </p>
-</dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_DATATRACKER_TRACK">
-<span class="target" id="group__AnnotationAPI_1ga71349331af2fb31a489b9d5c9fece8bf"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_DATATRACKER_TRACK</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ptr</span></span>, <span class="n"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_DATATRACKER_TRACK" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Label and track the given memory region. </p>
-<p>Labels the memory region of size <em>size</em> bytes pointed to by <em>ptr</em> with the variable name of <em>ptr</em>. The memory region can then be tracked and resolved with the alloc service. </p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_DATATRACKER_TRACK_DIMENSIONAL">
-<span class="target" id="group__AnnotationAPI_1ga54562618bbe7904e4c5d083755663075"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_DATATRACKER_TRACK_DIMENSIONAL</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ptr</span></span>, <span class="n"><span class="pre">elem_size</span></span>, <span class="n"><span class="pre">dimensions</span></span>, <span class="n"><span class="pre">num_dimensions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_DATATRACKER_TRACK_DIMENSIONAL" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Label and track a multi-dimensional array. </p>
-<p>Labels a multi-dimensional array with with the variable name of <em>ptr</em>. The array can then be tracked and resolved with the alloc service.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>elem_size</strong> – Size of the array elements in bytes </p></li>
-<li><p><strong>dimension</strong> – Array of type size_t[] with the sizes of each dimension. Must have <em>num_dimensions</em> entries. </p></li>
-<li><p><strong>num_dimensions</strong> – The number of dimensions </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_DATATRACKER_UNTRACK">
-<span class="target" id="group__AnnotationAPI_1ga8f2bf02741e096aa719b16a043dd7dd7"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_DATATRACKER_UNTRACK</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_DATATRACKER_UNTRACK" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Stop tracking the memory region pointed to by <em>ptr</em>. </p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_CXX_MARK_FUNCTION">
-<span class="target" id="group__AnnotationAPI_1ga9b665c9c3cdbfb1afe2bcc3e59e721ae"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_CXX_MARK_FUNCTION</span></span></span><a class="headerlink" href="#c.CALI_CXX_MARK_FUNCTION" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>C++ macro to mark a function. </p>
-<p>Mark begin and end of a function. Should be placed at the top of the function, and will automatically “close” the function at any return point. Will export the annotated function by name in the pre-defined <code class="docutils literal notranslate"><span class="pre">function</span></code> attribute. Only available in C++. </p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_CXX_MARK_SCOPE">
-<span class="target" id="group__AnnotationAPI_1ga2196b5e18b04fd2539c983af47bfbabd"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_CXX_MARK_SCOPE</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_CXX_MARK_SCOPE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>C++ macro marking a scoped region. </p>
-<p>Mark begin and end of a C++ scope. Should be placed at the top of the scope, and will automatically “close” the function at any return point. Will export the annotated function by name in the pre-defined <code class="docutils literal notranslate"><span class="pre">annotation</span></code> attribute. Only available in C++. </p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_CXX_MARK_LOOP_BEGIN">
-<span class="target" id="group__AnnotationAPI_1ga54ddb303fd7d379e33bcd112b509ae63"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_CXX_MARK_LOOP_BEGIN</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span>, <span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_CXX_MARK_LOOP_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark loop in C++. </p>
-<p>Mark begin of a loop. Will export the user-provided loop name in the pre-defined <code class="docutils literal notranslate"><span class="pre">loop</span></code> attribute. This macro should be placed before the loop of interest, and <a class="reference internal" href="#group__AnnotationAPI_1gad7d753b24fe015222062129476072341"><span class="std std-ref">CALI_MARK_LOOP_END</span></a> should be placed after the loop.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – A loop identifier. Needed to refer to the loop from the <em>iteration</em> and <em>end</em> annotations. </p></li>
-<li><p><strong>name</strong> – Name of the loop. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_CXX_MARK_LOOP_END">
-<span class="target" id="group__AnnotationAPI_1gad5413aaa455192f874bf9a4a0910e656"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_CXX_MARK_LOOP_END</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_CXX_MARK_LOOP_END" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark loop end in C++. </p>
-<p>Mark end of a loop. Will export the user-provided loop name in the pre-defined <code class="docutils literal notranslate"><span class="pre">loop</span></code> attribute.</p>
-<p>This macro should be placed after the loop of interest. Users must ensure proper begin/end matching: If the surrounding function can be exited from within the loop (e.g., from a <code class="docutils literal notranslate"><span class="pre">return</span></code> statement within the loop), an exit marker must be placed there as well.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – The loop identifier given to <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_CXX_MARK_LOOP_ITERATION">
-<span class="target" id="group__AnnotationAPI_1ga5f1c8a89999cb44c50046056dbb5f633"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_CXX_MARK_LOOP_ITERATION</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span>, <span class="n"><span class="pre">iter</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_CXX_MARK_LOOP_ITERATION" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>C++ macro for a loop iteration. </p>
-<p>Create a C++ annotation for a loop iteration. The loop must be marked with <a class="reference internal" href="#group__AnnotationAPI_1ga54ddb303fd7d379e33bcd112b509ae63"><span class="std std-ref">CALI_CXX_MARK_LOOP_BEGIN</span></a> and <a class="reference internal" href="#group__AnnotationAPI_1gad5413aaa455192f874bf9a4a0910e656"><span class="std std-ref">CALI_CXX_MARK_LOOP_END</span></a>. This will export the loop’s iteration count given in <em>iter</em> in an attribute named <code class="docutils literal notranslate"><span class="pre">iteration#name</span></code>, where <em>name</em> is the loop name given in <a class="reference internal" href="#group__AnnotationAPI_1ga54ddb303fd7d379e33bcd112b509ae63"><span class="std std-ref">CALI_CXX_MARK_LOOP_BEGIN</span></a>. The macro should be placed at the beginning of the loop block. The annotation will be closed automatically. Example:</p>
-<p><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span> <span class="s2">&quot;mainloop&quot;</span><span class="p">);</span>
-<span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">ITER</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
-  <span class="o">//</span> <span class="o">...</span>
-<span class="p">}</span>
-<span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop_id</span><span class="p">);</span>
-</pre></div>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – The loop identifier given to <a class="reference internal" href="#group__AnnotationAPI_1ga54ddb303fd7d379e33bcd112b509ae63"><span class="std std-ref">CALI_CXX_MARK_LOOP_BEGIN</span></a> </p></li>
-<li><p><strong>iter</strong> – The iteration number. Must be convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_FUNCTION_BEGIN">
-<span class="target" id="group__AnnotationAPI_1ga8b5407ad0bd3b228455d07969537b969"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_FUNCTION_BEGIN</span></span></span><a class="headerlink" href="#c.CALI_MARK_FUNCTION_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark begin of a function. </p>
-<p>Exports the annotated function’s name in the pre=defined <code class="docutils literal notranslate"><span class="pre">function</span></code> attribute. A <a class="reference internal" href="#group__AnnotationAPI_1ga4c0b930345223797fef28eec10fcd24c"><span class="std std-ref">CALI_MARK_FUNCTION_END</span></a> marker must be placed at <em>all</em> function exit points. For C++, we recommend using <a class="reference internal" href="#group__AnnotationAPI_1ga9b665c9c3cdbfb1afe2bcc3e59e721ae"><span class="std std-ref">CALI_CXX_MARK_FUNCTION</span></a> instead. <div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga4c0b930345223797fef28eec10fcd24c"><span class="std std-ref">CALI_MARK_FUNCTION_END</span></a>, <a class="reference internal" href="#group__AnnotationAPI_1ga9b665c9c3cdbfb1afe2bcc3e59e721ae"><span class="std std-ref">CALI_CXX_MARK_FUNCTION</span></a> </p>
-</div>
-</p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_FUNCTION_END">
-<span class="target" id="group__AnnotationAPI_1ga4c0b930345223797fef28eec10fcd24c"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_FUNCTION_END</span></span></span><a class="headerlink" href="#c.CALI_MARK_FUNCTION_END" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark end of a function. </p>
-<p>Must be placed at <em>all</em> exit points of a function marked with <a class="reference internal" href="#group__AnnotationAPI_1ga8b5407ad0bd3b228455d07969537b969"><span class="std std-ref">CALI_MARK_FUNCTION_BEGIN</span></a>. <div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga8b5407ad0bd3b228455d07969537b969"><span class="std std-ref">CALI_MARK_FUNCTION_BEGIN</span></a> </p>
-</div>
-</p>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_LOOP_BEGIN">
-<span class="target" id="group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_LOOP_BEGIN</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span>, <span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark a loop. </p>
-<p>Mark begin of a loop. Will export the user-provided loop name in the pre-defined <code class="docutils literal notranslate"><span class="pre">loop</span></code> attribute. This macro should be placed before the loop of interest, and <a class="reference internal" href="#group__AnnotationAPI_1gad7d753b24fe015222062129476072341"><span class="std std-ref">CALI_MARK_LOOP_END</span></a> should be placed after the loop.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – A loop identifier. Needed to refer to the loop from the <em>iteration</em> and <em>end</em> annotations. </p></li>
-<li><p><strong>name</strong> – Name of the loop. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_LOOP_END">
-<span class="target" id="group__AnnotationAPI_1gad7d753b24fe015222062129476072341"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_LOOP_END</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_END" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark a loop. </p>
-<p>Mark end of a loop. Will export the user-provided loop name in the pre-defined <code class="docutils literal notranslate"><span class="pre">loop</span></code> attribute.</p>
-<p>This macro should be placed after the loop of interest. Users must ensure proper begin/end matching: If the surrounding function can be exited from within the loop (e.g., from a <code class="docutils literal notranslate"><span class="pre">return</span></code> statement within the loop), an exit marker must be placed there as well.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – The loop identifier given to <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_ITERATION_BEGIN">
-<span class="target" id="group__AnnotationAPI_1ga657e71331376533a3e1f030e6d1acec7"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_ITERATION_BEGIN</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span>, <span class="n"><span class="pre">iter</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark begin of a loop iteration. </p>
-<p>This annotation should be placed at the top inside of the loop body. The loop must be annotated with <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. The iteration number will be exported in the attribute <code class="docutils literal notranslate"><span class="pre">iteration::name</span></code>, where <em>name</em> is the loop name given to <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. In C++, we recommend using <a class="reference internal" href="#group__AnnotationAPI_1ga5f1c8a89999cb44c50046056dbb5f633"><span class="std std-ref">CALI_CXX_MARK_LOOP_ITERATION</span></a>.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga6ac3f6a7ad35a386e1c09b62da3c4e97"><span class="std std-ref">CALI_MARK_ITERATION_END</span></a>, <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>, <a class="reference internal" href="#group__AnnotationAPI_1ga5f1c8a89999cb44c50046056dbb5f633"><span class="std std-ref">CALI_CXX_MARK_LOOP_ITERATION</span></a> </p>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>:</strong> (<span><span class="cpp-expr sig sig-inline cpp">loop_id,</span></span>) – Loop identifier, must match the identifier given to <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. </p></li>
-<li><p><strong>iter</strong> – Current iteration number. This macro argument must be convertible to <code class="docutils literal notranslate"><span class="pre">int</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_ITERATION_END">
-<span class="target" id="group__AnnotationAPI_1ga6ac3f6a7ad35a386e1c09b62da3c4e97"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_ITERATION_END</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">loop_id</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_END" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark end of a loop iteration. </p>
-<p>This annotation should be placed at the end inside of the loop body. If an iteration can be left prematurely (e.g., from a <code class="docutils literal notranslate"><span class="pre">continue</span></code>, <code class="docutils literal notranslate"><span class="pre">break</span></code>, or <code class="docutils literal notranslate"><span class="pre">return</span></code> statement), an end marker must be placed there as well.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga657e71331376533a3e1f030e6d1acec7"><span class="std std-ref">CALI_MARK_ITERATION_BEGIN</span></a> </p>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>loop_id</strong> – Loop identifier given in <a class="reference internal" href="#group__AnnotationAPI_1gac524ec4a11fae7b68edcacfdf790871a"><span class="std std-ref">CALI_MARK_LOOP_BEGIN</span></a>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_WRAP_STATEMENT">
-<span class="target" id="group__AnnotationAPI_1gab966d75a5eb18aa984a1d5ddefb027df"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_WRAP_STATEMENT</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span>, <span class="n"><span class="pre">statement</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_WRAP_STATEMENT" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Wrap Caliper annotations around a C/C++ statement. </p>
-<p>The wrapped statement will be annotated with the given <em>name</em> in the <code class="docutils literal notranslate"><span class="pre">statement</span></code> attribute. Example</p>
-<p><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">double</span> <span class="n">res</span><span class="p">;</span>
-<span class="o">/*</span> <span class="n">Wrap</span> <span class="n">the</span> <span class="n">sqrt</span><span class="p">()</span> <span class="n">call</span> <span class="o">*/</span>
-<span class="n">CALI_WRAP_STATEMENT</span><span class="p">(</span> <span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">49</span><span class="p">)</span> <span class="p">);</span>
-</pre></div>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The user-defined region name. Must be convertible into a <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char*</span></code>. </p></li>
-<li><p><strong>statement</strong> – C/C++ statement(s) that should be wrapped. The statements must complete within the wrapped region, that is, they cannot branch out of the macro (e.g. with <code class="docutils literal notranslate"><span class="pre">goto</span></code>, <code class="docutils literal notranslate"><span class="pre">continue</span></code>, <code class="docutils literal notranslate"><span class="pre">break</span></code>, or <code class="docutils literal notranslate"><span class="pre">return</span></code>). </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_BEGIN">
-<span class="target" id="group__AnnotationAPI_1ga640a1bcf0e40a455c694f438949ebe8a"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_BEGIN</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark begin of a user-defined code region. </p>
-<p>This annotation should be placed before a code region of interest. The user-provided region name will be exported in the pre-defined <code class="docutils literal notranslate"><span class="pre">annotation</span></code> attribute.</p>
-<p>Users must ensure proper nesting: Each CALI_MARK_BEGIN must be matched by a corresponding <a class="reference internal" href="#group__AnnotationAPI_1ga485a7b6e380c57e7d1229fa1c71348b9"><span class="std std-ref">CALI_MARK_END</span></a> in the correct order. Regions may be nested within another, but they cannot overlap partially.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga485a7b6e380c57e7d1229fa1c71348b9"><span class="std std-ref">CALI_MARK_END</span></a> </p>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The region name. Must be convertible to <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">char*</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp macro">
-<dt class="sig sig-object cpp" id="c.CALI_MARK_END">
-<span class="target" id="group__AnnotationAPI_1ga485a7b6e380c57e7d1229fa1c71348b9"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_END</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_END" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Mark end of a user-defined code region. </p>
-<p>This annotation should be placed after a code region of interest that has been annotated with <a class="reference internal" href="#group__AnnotationAPI_1ga640a1bcf0e40a455c694f438949ebe8a"><span class="std std-ref">CALI_MARK_BEGIN</span></a>.</p>
-<p><div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#group__AnnotationAPI_1ga640a1bcf0e40a455c694f438949ebe8a"><span class="std std-ref">CALI_MARK_BEGIN</span></a> </p>
-</div>
-</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The region name given to <a class="reference internal" href="#group__AnnotationAPI_1ga640a1bcf0e40a455c694f438949ebe8a"><span class="std std-ref">CALI_MARK_BEGIN</span></a>. The macro will check if the name matches, and report an error if it doesn’t. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-functions">Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv425cali_datatracker_allocatePKc6size_t">
-<span id="_CPPv325cali_datatracker_allocatePKc6size_t"></span><span id="_CPPv225cali_datatracker_allocatePKc6size_t"></span><span id="cali_datatracker_allocate__cCP.s"></span><span class="target" id="group__AnnotationAPI_1ga8d1ec6ad5b89ec370b809bb4bce63c14"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_allocate</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv425cali_datatracker_allocatePKc6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Allocate and track the resulting allocation in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Tracking information will be automatically removed if the allocation is freed</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>label</strong> – The unique label with which to track the allocation requested </p></li>
-<li><p><strong>size</strong> – The total size of the allocation requested </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A new allocation of size <code class="docutils literal notranslate"><span class="pre">size</span></code> </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv437cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t">
-<span id="_CPPv337cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t"></span><span id="_CPPv237cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t"></span><span id="cali_datatracker_allocate_dimensional__cCP.s.sCP.s"></span><span class="target" id="group__AnnotationAPI_1gab539209211ba9006aac3db8013b3f53d"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_allocate_dimensional</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">elem_size</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dimensions</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_dimensions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv437cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Allocate and track the resulting allocation, with dimensions, in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Tracking information will be automatically removed if the allocation is freed</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>label</strong> – The unique label with which to track the allocation requested </p></li>
-<li><p><strong>elem_size</strong> – The size of an individual element in the allocation requested </p></li>
-<li><p><strong>dimensions</strong> – An array of the dimensions of the allocation requested </p></li>
-<li><p><strong>num_dimensions</strong> – The number of dimensions in <code class="docutils literal notranslate"><span class="pre">dimensions</span></code> </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A new allocation of size <code class="docutils literal notranslate"><span class="pre">product(dimensions)*elem_size</span></code> </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv421cali_datatracker_freePv">
-<span id="_CPPv321cali_datatracker_freePv"></span><span id="_CPPv221cali_datatracker_freePv"></span><span id="cali_datatracker_free__voidP"></span><span class="target" id="group__AnnotationAPI_1ga85420669a100cd7f4deb53f9eb5de95f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_free</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv421cali_datatracker_freePv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Free and untrack an allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ptr</strong> – The pointer to the beginning of the allocation to free/untrack </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv422cali_datatracker_trackPKvPKc6size_t">
-<span id="_CPPv322cali_datatracker_trackPKvPKc6size_t"></span><span id="_CPPv222cali_datatracker_trackPKvPKc6size_t"></span><span id="cali_datatracker_track__voidCP.cCP.s"></span><span class="target" id="group__AnnotationAPI_1gaca7d5eaad1e2ac74da2e106bf1aa8ee3"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_track</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv422cali_datatracker_trackPKvPKc6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Track an existing allocation in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This will track the entire allocation pointed to by ptr. To track a subset of a larger allocation, use <code class="docutils literal notranslate"><span class="pre">cali_datatracker_track_dimensional</span></code>.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ptr</strong> – The pointer to the beginning of the allocation to track </p></li>
-<li><p><strong>label</strong> – The unique label with which to track the allocation </p></li>
-<li><p><strong>size</strong> – Size of the allocation </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv434cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t">
-<span id="_CPPv334cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t"></span><span id="_CPPv234cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t"></span><span id="cali_datatracker_track_dimensional__voidCP.cCP.s.sCP.s"></span><span class="target" id="group__AnnotationAPI_1gab96e1b5f408d10601d0c74b6f13d7d6b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_track_dimensional</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">elem_size</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dimensions</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_dimensions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv434cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Track an existing allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ptr</strong> – The pointer to the beginning of the allocation to track </p></li>
-<li><p><strong>label</strong> – The unique label with which to track the allocation </p></li>
-<li><p><strong>elem_size</strong> – The size of an individual element in the allocation </p></li>
-<li><p><strong>dimensions</strong> – An array of the dimensions of the allocation </p></li>
-<li><p><strong>num_dimensions</strong> – The number of dimensions in <code class="docutils literal notranslate"><span class="pre">dimensions</span></code> </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv424cali_datatracker_untrackPKv">
-<span id="_CPPv324cali_datatracker_untrackPKv"></span><span id="_CPPv224cali_datatracker_untrackPKv"></span><span id="cali_datatracker_untrack__voidCP"></span><span class="target" id="group__AnnotationAPI_1gaea9b6341c9553bdd2040506bb8fd4e29"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_untrack</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv424cali_datatracker_untrackPKv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Untrack a previously tracked allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ptr</strong> – The pointer to the beginning of the allocation to untrack </p>
-</dd>
-</dl>
-</dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-variables">Variables</p>
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv421cali_function_attr_id">
-<span id="_CPPv321cali_function_attr_id"></span><span id="_CPPv221cali_function_attr_id"></span><span id="cali_function_attr_id__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1ga88cb25fee73c53983a50c8adc452b9de"></span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_function_attr_id</span></span></span><a class="headerlink" href="#_CPPv421cali_function_attr_id" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv417cali_loop_attr_id">
-<span id="_CPPv317cali_loop_attr_id"></span><span id="_CPPv217cali_loop_attr_id"></span><span id="cali_loop_attr_id__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1ga3bc09139775b7e4a21e1d2673e0f7559"></span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_loop_attr_id</span></span></span><a class="headerlink" href="#_CPPv417cali_loop_attr_id" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv422cali_statement_attr_id">
-<span id="_CPPv322cali_statement_attr_id"></span><span id="_CPPv222cali_statement_attr_id"></span><span id="cali_statement_attr_id__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1ga94dec293d8a0fc1c17df5715a8cf8827"></span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_statement_attr_id</span></span></span><a class="headerlink" href="#_CPPv422cali_statement_attr_id" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp var">
-<dt class="sig sig-object cpp" id="_CPPv423cali_annotation_attr_id">
-<span id="_CPPv323cali_annotation_attr_id"></span><span id="_CPPv223cali_annotation_attr_id"></span><span id="cali_annotation_attr_id__cali_id_t"></span><span class="target" id="group__AnnotationAPI_1gabe133a608ada70087fcdae60b699194f"></span><span class="n"><span class="pre">cali_id_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_annotation_attr_id</span></span></span><a class="headerlink" href="#_CPPv423cali_annotation_attr_id" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-</div>
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali8FunctionE">
-<span id="_CPPv3N4cali8FunctionE"></span><span id="_CPPv2N4cali8FunctionE"></span><span id="cali::Function"></span><span class="target" id="classcali_1_1Function"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Function</span></span></span><a class="headerlink" href="#_CPPv4N4cali8FunctionE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;Annotation.h&gt;</em></div>
-<p>Pre-defined function annotation class. </p>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali15ScopeAnnotationE">
-<span id="_CPPv3N4cali15ScopeAnnotationE"></span><span id="_CPPv2N4cali15ScopeAnnotationE"></span><span id="cali::ScopeAnnotation"></span><span class="target" id="classcali_1_1ScopeAnnotation"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ScopeAnnotation</span></span></span><a class="headerlink" href="#_CPPv4N4cali15ScopeAnnotationE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;Annotation.h&gt;</em></div>
-<p>Pre-defined region annotation class. Region begins and ends with object construction and destruction. </p>
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali4LoopE">
-<span id="_CPPv3N4cali4LoopE"></span><span id="_CPPv2N4cali4LoopE"></span><span id="cali::Loop"></span><span class="target" id="classcali_1_1Loop"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Loop</span></span></span><a class="headerlink" href="#_CPPv4N4cali4LoopE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;Annotation.h&gt;</em></div>
-<p>Pre-defined loop annotation class, with optional iteration attribute. </p>
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali4Loop9IterationE">
-<span id="_CPPv3N4cali4Loop9IterationE"></span><span id="_CPPv2N4cali4Loop9IterationE"></span><span id="cali::Loop::Iteration"></span><span class="target" id="classcali_1_1Loop_1_1Iteration"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Iteration</span></span></span><a class="headerlink" href="#_CPPv4N4cali4Loop9IterationE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10AnnotationE">
-<span id="_CPPv3N4cali10AnnotationE"></span><span id="_CPPv2N4cali10AnnotationE"></span><span id="cali::Annotation"></span><span class="target" id="classcali_1_1Annotation"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Annotation</span></span></span><a class="headerlink" href="#_CPPv4N4cali10AnnotationE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;Annotation.h&gt;</em></div>
-<p>Instrumentation interface to add and manipulate context attributes. </p>
-<p>The <a class="reference internal" href="#classcali_1_1Annotation"><span class="std std-ref">Annotation</span></a> class is the primary source-code instrumentation interface for Caliper. Annotation objects provide access to named Caliper context attributes. If the referenced attribute does not exist yet, it will be created automatically.</p>
-<p>Example: <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cali</span><span class="p">::</span><span class="n">Annotation</span> <span class="n">phase_ann</span><span class="p">(</span><span class="s2">&quot;myprogram.phase&quot;</span><span class="p">);</span>
-
-<span class="n">phase_ann</span><span class="o">.</span><span class="n">begin</span><span class="p">(</span><span class="s2">&quot;Initialization&quot;</span><span class="p">);</span>
-  <span class="o">//</span> <span class="o">...</span>
-<span class="n">phase_ann</span><span class="o">.</span><span class="n">end</span><span class="p">();</span>
-</pre></div>
-</div>
- This example creates an annotation object for the <code class="docutils literal notranslate"><span class="pre">myprogram.phase</span></code> attribute, and uses the <code class="docutils literal notranslate"><span class="pre">begin()/end</span></code>() methods to mark a section of code where that attribute is set to “Initialization”.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Access to the underlying named context attribute through Annotation objects is not exclusive: multiple Annotation objects can reference and update the same context attribute. </p>
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-begin()-overloads">begin() overloads</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation5beginEi">
-<span id="_CPPv3N4cali10Annotation5beginEi"></span><span id="_CPPv2N4cali10Annotation5beginEi"></span><span id="cali::Annotation::begin__i"></span><span class="target" id="classcali_1_1Annotation_1a145c599a06bcee47e79934f321541b6a"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation5beginEi" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin <em>name</em>=<em>data</em> region for the associated context attribute. </p>
-<p>Marks begin of the <em>name</em>=<em>data</em> region, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The new value will be nested under already open regions for the <em>name</em> context attribute. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation5beginEd">
-<span id="_CPPv3N4cali10Annotation5beginEd"></span><span id="_CPPv2N4cali10Annotation5beginEd"></span><span id="cali::Annotation::begin__double"></span><span class="target" id="classcali_1_1Annotation_1a30551078f2d3e056325d8c3ac399c0a7"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation5beginEd" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin <em>name</em>=<em>data</em> region for the associated context attribute. </p>
-<p>Marks begin of the <em>name</em>=<em>data</em> region, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The new value will be nested under already open regions for the <em>name</em> context attribute. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation5beginEPKc">
-<span id="_CPPv3N4cali10Annotation5beginEPKc"></span><span id="_CPPv2N4cali10Annotation5beginEPKc"></span><span id="cali::Annotation::begin__cCP"></span><span class="target" id="classcali_1_1Annotation_1a1f9196b140dadb001e36e21177298aab"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation5beginEPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin <em>name</em>=<em>data</em> region for the associated context attribute. </p>
-<p>Marks begin of the <em>name</em>=<em>data</em> region, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The new value will be nested under already open regions for the <em>name</em> context attribute. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation5beginERK7Variant">
-<span id="_CPPv3N4cali10Annotation5beginERK7Variant"></span><span id="_CPPv2N4cali10Annotation5beginERK7Variant"></span><span id="cali::Annotation::begin__VariantCR"></span><span class="target" id="classcali_1_1Annotation_1a03ec4cc322939d7c0a0f3868baf10aa7"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Variant</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation5beginERK7Variant" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Begin <em>name</em>=<em>data</em> region for the associated context attribute. </p>
-<p>Marks begin of the <em>name</em>=<em>data</em> region, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The new value will be nested under already open regions for the <em>name</em> context attribute. </p>
-</dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-set()-overloads">set() overloads</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation3setEi">
-<span id="_CPPv3N4cali10Annotation3setEi"></span><span id="_CPPv2N4cali10Annotation3setEi"></span><span id="cali::Annotation::set__i"></span><span class="target" id="classcali_1_1Annotation_1a8b81ebc869c143f451c59546eafa403a"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">set</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation3setEi" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set <em>name</em>=<em>data</em> for the associated context attribute. </p>
-<p>Exports <em>name</em>=<em>data</em>, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The top-most prior open value for the <em>name</em> context attribute, if any, will be overwritten. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation3setEd">
-<span id="_CPPv3N4cali10Annotation3setEd"></span><span id="_CPPv2N4cali10Annotation3setEd"></span><span id="cali::Annotation::set__double"></span><span class="target" id="classcali_1_1Annotation_1ac3142b6e1db75f93d08ac10aea8df839"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">set</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation3setEd" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set <em>name</em>=<em>data</em> for the associated context attribute. </p>
-<p>Exports <em>name</em>=<em>data</em>, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The top-most prior open value for the <em>name</em> context attribute, if any, will be overwritten. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation3setEPKc">
-<span id="_CPPv3N4cali10Annotation3setEPKc"></span><span id="_CPPv2N4cali10Annotation3setEPKc"></span><span id="cali::Annotation::set__cCP"></span><span class="target" id="classcali_1_1Annotation_1ae25a33e69c3f7bff9cc9bbd262027edc"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">set</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation3setEPKc" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set <em>name</em>=<em>data</em> for the associated context attribute. </p>
-<p>Exports <em>name</em>=<em>data</em>, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The top-most prior open value for the <em>name</em> context attribute, if any, will be overwritten. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation3setERK7Variant">
-<span id="_CPPv3N4cali10Annotation3setERK7Variant"></span><span id="_CPPv2N4cali10Annotation3setERK7Variant"></span><span id="cali::Annotation::set__VariantCR"></span><span class="target" id="classcali_1_1Annotation_1ac894a00e6a0e4cc65e6168a0b8a011bc"></span><a class="reference internal" href="#_CPPv4N4cali10AnnotationE" title="cali::Annotation"><span class="n"><span class="pre">Annotation</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">set</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">Variant</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">data</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation3setERK7Variant" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Set <em>name</em>=<em>data</em> for the associated context attribute. </p>
-<p>Exports <em>name</em>=<em>data</em>, where <em>name</em> is the attribute name given in <a class="reference internal" href="#classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"><span class="std std-ref">cali::Annotation::Annotation()</span></a>. The top-most prior open value for the <em>name</em> context attribute, if any, will be overwritten. </p>
-</dd></dl>
-
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation10AnnotationEPKci">
-<span id="_CPPv3N4cali10Annotation10AnnotationEPKci"></span><span id="_CPPv2N4cali10Annotation10AnnotationEPKci"></span><span id="cali::Annotation::Annotation__cCP.i"></span><span class="target" id="classcali_1_1Annotation_1a4d62d01baa99e8c279f5da580d1f194d"></span><span class="sig-name descname"><span class="n"><span class="pre">Annotation</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">opt</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation10AnnotationEPKci" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Creates an annotation object to manipulate the context attribute with the given <em>name</em>. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The attribute name </p></li>
-<li><p><strong>opt</strong> – Attribute flags. Bitwise OR combination of <a class="reference internal" href="#cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5ca"><span class="std std-ref">cali_attr_properties</span></a> values. </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation10AnnotationEPKcRK16MetadataListTypei">
-<span id="_CPPv3N4cali10Annotation10AnnotationEPKcRK16MetadataListTypei"></span><span id="_CPPv2N4cali10Annotation10AnnotationEPKcRK16MetadataListTypei"></span><span id="cali::Annotation::Annotation__cCP.MetadataListTypeCR.i"></span><span class="target" id="classcali_1_1Annotation_1afa27dd1df339f44fc1d6e51b52c130f9"></span><span class="sig-name descname"><span class="n"><span class="pre">Annotation</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">MetadataListType</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">metadata</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">opt</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation10AnnotationEPKcRK16MetadataListTypei" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Creates an annotation object to manipulate the context attribute with the given <em>name</em>. </p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – The attribute name </p></li>
-<li><p><strong>opt</strong> – Attribute flags. Bitwise OR combination of <a class="reference internal" href="#cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5ca"><span class="std std-ref">cali_attr_properties</span></a> values. </p></li>
-<li><p><strong>metadata, :</strong> – a map of </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation3endEv">
-<span id="_CPPv3N4cali10Annotation3endEv"></span><span id="_CPPv2N4cali10Annotation3endEv"></span><span id="cali::Annotation::end"></span><span class="target" id="classcali_1_1Annotation_1a476aa22da7af7d43656f25fa7cc00ab4"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N4cali10Annotation3endEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Close top-most open region for the associated context attribute. </p>
-</dd></dl>
-
-</div>
-<dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4N4cali10Annotation5GuardE">
-<span id="_CPPv3N4cali10Annotation5GuardE"></span><span id="_CPPv2N4cali10Annotation5GuardE"></span><span id="cali::Annotation::Guard"></span><span class="target" id="classcali_1_1Annotation_1_1Guard"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Guard</span></span></span><a class="headerlink" href="#_CPPv4N4cali10Annotation5GuardE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><div class="docutils container">
-<em>#include &lt;Annotation.h&gt;</em></div>
-<p>Scope guard to automatically close an annotation at the end of the C++ scope. </p>
-<p>Example: <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">int</span> <span class="n">var</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
-<span class="k">while</span> <span class="p">(</span><span class="n">condition</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">cali</span><span class="p">::</span><span class="n">Annotation</span><span class="p">::</span><span class="n">Guard</span>
-    <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="p">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s2">&quot;myvar&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="p">);</span>
-  <span class="o">//</span> <span class="n">Sets</span> <span class="s2">&quot;myvar=&lt;var&gt;&quot;</span> <span class="ow">and</span> <span class="n">automatically</span> <span class="n">closes</span> <span class="n">it</span> <span class="n">at</span> <span class="n">the</span> <span class="n">end</span> <span class="n">of</span> <span class="n">the</span> <span class="n">loop</span>
-<span class="p">}</span>
-</pre></div>
-</div>
- </p>
-</dd></dl>
-
-</dd></dl>
-
-</dd></dl>
-
 </section>
 </section>
 
@@ -1205,13 +377,13 @@ following example shows both:</p>
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.9.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
     </div>
   </body>
 </html>
