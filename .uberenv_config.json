@@ -1,6 +1,6 @@
 {
     "package_name" : "caliper",
-    "package_version" : "develop",
+    "package_version" : "master",
     "package_source_dir" : "../..",
     "package_final_phase" : "initconfig",
     "spack_url": "https://github.com/spack/spack.git",

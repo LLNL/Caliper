@@ -18,5 +18,5 @@ variables:
 
 master:
   variables:
-    SPEC: "@master +tests"
+    SPEC: " +tests"
   extends: .build_and_test_on_corona
