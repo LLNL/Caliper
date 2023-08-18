@@ -29,12 +29,8 @@
 
 cff-version: 1.2.0
 message: "If you are referencing Caliper in a publication, please cite the paper below"
-authors:
-- family-names: "Boehme"
-  given-names: "David"
-  orcid: "0000-0002-4159-1519"
-title: "Caliper"
-url: "https://github.com/LLNL/Caliper"
+title: Caliper
+repository-code: https://github.com/LLNL/Caliper
 preferred-citation:
   type: conference-paper
   doi: 10.1109/SC.2016.46
