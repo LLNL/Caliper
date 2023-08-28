@@ -91,12 +91,12 @@ get_timeseries_config_string(const ConfigManager::Options& opts)
     std::string ret = "spot.timeseries(";
     std::string tsopts;
 
+    if (opts.is_set("timeseries.metrics"))
+        tsopts.append(opts.get("timeseries.metrics").to_string());
+
     convert_timeseries_option(opts, "iteration_interval", tsopts);
     convert_timeseries_option(opts, "time_interval", tsopts);
     convert_timeseries_option(opts, "target_loops", tsopts);
-
-    if (opts.is_set("timeseries.metrics"))
-        ret.append(opts.get("timeseries.metrics").to_string());
 
     ret.append(tsopts);
     ret.append(")");
