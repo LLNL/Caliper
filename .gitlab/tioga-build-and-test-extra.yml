@@ -18,5 +18,5 @@ variables:
 
 master:
   variables:
-    SPEC: "@master +tests %cce@15.0.1"
+    SPEC: " +tests %cce@15.0.1"
   extends: .build_and_test_on_tioga
