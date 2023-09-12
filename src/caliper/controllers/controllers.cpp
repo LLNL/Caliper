@@ -443,10 +443,10 @@ const char* builtin_option_specs = R"json(
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(iscale#rocm.activity.duration)", "as": "Avg GPU Time/rank", "unit": "sec" },
-           { "expr": "min(iscale#rocm.activity.duration)", "as": "Min GPU Time/rank", "unit": "sec" },
-           { "expr": "max(iscale#rocm.activity.duration)", "as": "Max GPU Time/rank", "unit": "sec" },
-           { "expr": "sum(iscale#rocm.activity.duration)", "as": "Total GPU Time", "unit": "sec" }
+         [ { "expr": "avg(iscale#sum#rocm.activity.duration)", "as": "Avg GPU Time/rank", "unit": "sec" },
+           { "expr": "min(iscale#sum#rocm.activity.duration)", "as": "Min GPU Time/rank", "unit": "sec" },
+           { "expr": "max(iscale#sum#rocm.activity.duration)", "as": "Max GPU Time/rank", "unit": "sec" },
+           { "expr": "sum(iscale#sum#rocm.activity.duration)", "as": "Total GPU Time", "unit": "sec" }
          ]
        }
      ]
