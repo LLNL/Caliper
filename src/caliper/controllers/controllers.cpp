@@ -416,14 +416,14 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "select"  :
-         [ { "expr": "inclusive_scale(cupti.activity.duration,1e-9)", "as": "GPU Time (I)", "unit": "sec" },
+         [ { "expr": "inclusive_scale(cupti.activity.duration,1e-9)", "as": "GPU time (I)", "unit": "sec" },
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(iscale#cupti.activity.duration)", "as": "Avg GPU Time/rank", "unit": "sec" },
-           { "expr": "min(iscale#cupti.activity.duration)", "as": "Min GPU Time/rank", "unit": "sec" },
-           { "expr": "max(iscale#cupti.activity.duration)", "as": "Max GPU Time/rank", "unit": "sec" },
-           { "expr": "sum(iscale#cupti.activity.duration)", "as": "Total GPU Time", "unit": "sec" }
+         [ { "expr": "avg(iscale#cupti.activity.duration)", "as": "Avg GPU time/rank", "unit": "sec" },
+           { "expr": "min(iscale#cupti.activity.duration)", "as": "Min GPU time/rank", "unit": "sec" },
+           { "expr": "max(iscale#cupti.activity.duration)", "as": "Max GPU time/rank", "unit": "sec" },
+           { "expr": "sum(iscale#cupti.activity.duration)", "as": "Total GPU time", "unit": "sec" }
          ]
        }
      ]
@@ -439,14 +439,14 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "select"  :
-         [ { "expr": "inclusive_scale(sum#rocm.activity.duration,1e-9)", "as": "GPU Time (I)", "unit": "sec" },
+         [ { "expr": "inclusive_scale(sum#rocm.activity.duration,1e-9)", "as": "GPU time (I)", "unit": "sec" },
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(iscale#sum#rocm.activity.duration)", "as": "Avg GPU Time/rank", "unit": "sec" },
-           { "expr": "min(iscale#sum#rocm.activity.duration)", "as": "Min GPU Time/rank", "unit": "sec" },
-           { "expr": "max(iscale#sum#rocm.activity.duration)", "as": "Max GPU Time/rank", "unit": "sec" },
-           { "expr": "sum(iscale#sum#rocm.activity.duration)", "as": "Total GPU Time", "unit": "sec" }
+         [ { "expr": "avg(iscale#sum#rocm.activity.duration)", "as": "Avg GPU time/rank", "unit": "sec" },
+           { "expr": "min(iscale#sum#rocm.activity.duration)", "as": "Min GPU time/rank", "unit": "sec" },
+           { "expr": "max(iscale#sum#rocm.activity.duration)", "as": "Max GPU time/rank", "unit": "sec" },
+           { "expr": "sum(iscale#sum#rocm.activity.duration)", "as": "Total GPU time", "unit": "sec" }
          ]
        }
      ]
