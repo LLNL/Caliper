@@ -2,7 +2,9 @@
 
 #include "caliper/cali.h"
 
-int main()
+#include <cstring>
+
+int main(int argc, char* argv[])
 {
     std::map<const char*, cali::Variant> metadata = {
         { "meta.int", cali::Variant(42) }
@@ -11,6 +13,9 @@ int main()
     // Test proper escaping
     cali_set_string_byname(" =\\weird \"\"attribute\"=  ", "  \\\\ weird,\" name\",");
     cali_set_global_string_byname(" =\\weird \"\" global attribute\"=  ", "  \\\\ weird,\" name\",");
+
+    if (argc > 1 && strcmp(argv[1], "newline") == 0)
+        cali_set_string_byname("newline", "A newline:\n!");
 
     cali::Annotation phase_ann("phase", metadata);
     std::size_t size = 8;

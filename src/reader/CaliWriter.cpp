@@ -19,14 +19,12 @@ using namespace cali;
 namespace
 {
 
-const char* esc_chars { "\\,=\n" }; ///< characters that need to be escaped
-
 void write_node_content(std::ostream& os, const cali::Node* node)
 {
     os << "__rec=node,id=" << node->id()
        << ",attr="         << node->attribute();
 
-    util::write_esc_string(os << ",data=", node->data().to_string(), esc_chars);
+    util::write_cali_esc_string(os << ",data=", node->data().to_string());
 
     if (node->parent() && node->parent()->id() != CALI_INV_ID)
         os << ",parent=" << node->parent()->id();
@@ -36,12 +34,12 @@ void write_node_content(std::ostream& os, const cali::Node* node)
 
 void write_record_content(std::ostream& os, const char* record_type, int nr, int ni, const std::vector<Entry>& rec) {
     os << "__rec=" << record_type;
-            
+
     // write reference entries
 
     if (nr > 0) {
         os << ",ref";
-            
+
         for (const Entry& e : rec)
             if (e.is_reference())
                 os << '=' << e.node()->id();
@@ -60,7 +58,7 @@ void write_record_content(std::ostream& os, const char* record_type, int nr, int
 
         for (const Entry& e : rec)
             if (e.is_immediate())
-                util::write_esc_string(os << '=', e.value().to_string(), esc_chars);
+                util::write_cali_esc_string(os << '=', e.value().to_string());
     }
 
     os << '\n';
@@ -83,7 +81,7 @@ struct CaliWriter::CaliWriterImpl
         : m_os(os),
           m_num_written(0)
     { }
-    
+
     void recursive_write_node(const CaliperMetadataAccessInterface& db, cali_id_t id)
     {
         if (id < 11) // don't write the hard-coded metadata nodes
@@ -114,7 +112,7 @@ struct CaliWriter::CaliWriterImpl
                 g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
-            
+
             ::write_node_content(*real_os, node);
             ++m_num_written;
         }
@@ -125,7 +123,7 @@ struct CaliWriter::CaliWriterImpl
 
             if (m_written_nodes.count(id) > 0)
                 return;
-       
+
             m_written_nodes.insert(id);
         }
     }
@@ -135,10 +133,10 @@ struct CaliWriter::CaliWriterImpl
                          const std::vector<Entry>& rec)
     {
         // write node entries; count the number of ref and immediate entries
-        
+
         int nr = 0;
         int ni = 0;
-        
+
         for (const Entry& e : rec) {
             if (e.is_reference()) {
                 recursive_write_node(db, e.node()->id());
@@ -150,7 +148,7 @@ struct CaliWriter::CaliWriterImpl
         }
 
         // write the record
-        
+
         {
             std::lock_guard<std::mutex>
                 g(m_os_lock);

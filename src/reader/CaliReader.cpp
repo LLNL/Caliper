@@ -38,6 +38,9 @@ vector<string> split(const string& line, char sep, bool keep_escape = false) {
             vec.emplace_back(std::move(str));
             str.clear();
             str.reserve(line.size());
+        } else if (escaped && !keep_escape && *it == 'n') {
+            str.push_back('\n');
+            escaped = false;
         } else {
             str.push_back(*it);
             escaped = false;
