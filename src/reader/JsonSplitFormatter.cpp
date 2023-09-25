@@ -51,8 +51,8 @@ class Hierarchy
         const std::string& label() const { return m_label; }
 
         std::ostream& write_json(std::ostream& os) const {
-            util::write_esc_string(os << "{ \"label\": \"",  m_label ) << "\"";
-            util::write_esc_string(os << ", \"column\": \"", m_column) << "\"";
+            util::write_json_esc_string(os << "{ \"label\": \"",  m_label ) << "\"";
+            util::write_json_esc_string(os << ", \"column\": \"", m_column) << "\"";
 
             if (parent() && parent()->id() != CALI_INV_ID)
                 os << ", \"parent\": " << parent()->id();
@@ -250,7 +250,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
         if (!path.attributes.empty())
             columns.push_back(path);
-        
+
         return columns;
     }
 
@@ -281,7 +281,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         for (const Entry& e : list)
             if (e.attribute() == attr.id()) {
                 if (quote)
-                    util::write_esc_string(os << "\"", e.value().to_string()) << "\"";
+                    util::write_json_esc_string(os << "\"", e.value().to_string()) << "\"";
                 else
                     os << e.value().to_string();
 
@@ -294,7 +294,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_records_lock);
-        
+
         m_records.push_back(list);
     }
 
@@ -316,8 +316,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                 global_vals[e.attribute()] = e.value().to_string();
 
         for (auto &p : global_vals) {
-            util::write_esc_string(os << ",\n  \"", db.get_attribute(p.first).name()) << "\": ";
-            util::write_esc_string(os << '"', p.second) << '\"';
+            util::write_json_esc_string(os << ",\n  \"", db.get_attribute(p.first).name()) << "\": ";
+            util::write_json_esc_string(os << '"', p.second) << '\"';
         }
 
         return os;
@@ -340,8 +340,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                 if (attr.id() < 12 || attr.is_hidden())
                     continue;
 
-                util::write_esc_string(os << ", \"", attr.name_c_str())        << "\": ";
-                util::write_esc_string(os << "\"",   node->data().to_string()) << "\"";
+                util::write_json_esc_string(os << ", \"", attr.name_c_str())        << "\": ";
+                util::write_json_esc_string(os << "\"",   node->data().to_string()) << "\"";
             }
         }
 
@@ -355,7 +355,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         {
             int count = 0;
             for (const Column& c : columns)
-                util::write_esc_string(os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
+                util::write_json_esc_string(os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
         }
 
         // close "columns", start "column_metadata"

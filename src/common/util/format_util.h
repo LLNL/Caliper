@@ -15,25 +15,55 @@ namespace util
 /// \brief Write string \a str to \a os,
 ///   escaping all characters in \a mask_chars with \a esc.
 inline std::ostream&
-write_esc_string(std::ostream& os, const char* str, std::string::size_type size, const char* mask_chars = "\\\"", char esc = '\\')
+write_json_esc_string(std::ostream& os, const char* str, std::string::size_type size)
 {
     for (size_t i = 0; i < size; ++i) {
-        for (const char* p = mask_chars; *p; ++p)
-            if (str[i] == *p) {
-                os << esc;
-                break;
-            }
-        
-        os << str[i];
+        const char c = str[i];
+
+        if (c == '\n') // handle newline in string
+            os << "\\n";
+        if (c < 0x20)  // skip control characters
+            continue;
+        if (c == '\\' || c == '\"')
+            os << '\\';
+
+        os << c;
     }
-    
+
+    return os;
+}
+
+/// \brief Write string \a str to \a os,
+///   escaping all characters in \a mask_chars with \a esc.
+inline std::ostream&
+write_cali_esc_string(std::ostream& os, const char* str, std::string::size_type size)
+{
+    for (size_t i = 0; i < size; ++i) {
+        const char c = str[i];
+
+        if (c == '\n') // handle newline in string
+            os << "\\n";
+        if (c < 0x20)  // skip control characters
+            continue;
+        if (c == '\\' || c == ',' || c == '=')
+            os << '\\';
+
+        os << c;
+    }
+
     return os;
 }
 
 inline std::ostream&
-write_esc_string(std::ostream& os, const std::string& str, const char* mask_chars = "\\\"", char esc = '\\')
+write_json_esc_string(std::ostream& os, const std::string& str)
 {
-    return write_esc_string(os, str.data(), str.size(), mask_chars, esc);
+    return write_json_esc_string(os, str.data(), str.size());
+}
+
+inline std::ostream&
+write_cali_esc_string(std::ostream& os, const std::string& str)
+{
+    return write_cali_esc_string(os, str.data(), str.size());
 }
 
 std::ostream&

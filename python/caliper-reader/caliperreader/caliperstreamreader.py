@@ -142,7 +142,10 @@ def _read_cali_record(line):
     for c in iterator:
         if c == '\\':
             c = next(iterator)
-            string += c
+            if c == 'n':
+                string += '\n'
+            else:
+                string += c
         elif c == ',':
             entry.append(string)
             result[entry[0]] = entry[1:]

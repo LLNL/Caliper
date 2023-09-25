@@ -194,14 +194,14 @@ struct JsonFormatter::JsonFormatterImpl
             for (auto &p : quote_kvs) {
                 *real_os << (count++ > 0 ? "," : "")
                          << (m_opt_pretty ? "\n\t" : "");
-                util::write_esc_string(*real_os << "\"", p.first) << "\":";
-                util::write_esc_string(*real_os << "\"", p.second) << "\"";
+                util::write_json_esc_string(*real_os << "\"", p.first) << "\":";
+                util::write_json_esc_string(*real_os << "\"", p.second) << "\"";
             }
             for (auto &p : noquote_kvs) {
                 *real_os << (count++ > 0 ? "," : "")
                          << (m_opt_pretty ? "\n\t" : "");
-                util::write_esc_string(*real_os << "\"", p.first) << "\":";
-                util::write_esc_string(*real_os, p.second);
+                util::write_json_esc_string(*real_os << "\"", p.first) << "\":";
+                util::write_json_esc_string(*real_os, p.second);
             }
 
             *real_os << (m_opt_pretty ? "\n" : "") << "}";
@@ -242,8 +242,8 @@ struct JsonFormatter::JsonFormatterImpl
 
             // print meta-info
             for (const Node* node = a.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
-                util::write_esc_string(os << ",\"", db.get_attribute(node->attribute()).name()) << "\": ";
-                util::write_esc_string(os << "\"", node->data().to_string()) << '\"';
+                util::write_json_esc_string(os << ",\"", db.get_attribute(node->attribute()).name()) << "\": ";
+                util::write_json_esc_string(os << "\"", node->data().to_string()) << '\"';
             }
 
             os << "}";
@@ -276,8 +276,8 @@ struct JsonFormatter::JsonFormatterImpl
             if (m_opt_pretty)
                 os << '\t';
 
-            util::write_esc_string(os << '\"', db.get_attribute(p.first).name()) << "\": ";
-            util::write_esc_string(os << '\"', p.second) << '\"';
+            util::write_json_esc_string(os << '\"', db.get_attribute(p.first).name()) << "\": ";
+            util::write_json_esc_string(os << '\"', p.second) << '\"';
         }
 
         return os;
