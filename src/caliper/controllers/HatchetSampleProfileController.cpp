@@ -125,10 +125,10 @@ check_args(const cali::ConfigManager::Options& opts) {
 cali::ChannelController*
 make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
 
     if (format == "hatchet")
-        format = "json-split";
+        format = "cali";
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
         format = "json-split";
