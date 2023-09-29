@@ -9,7 +9,7 @@ class CaliperOpenMPMetrics(unittest.TestCase):
     """ Caliper OpenMP/OMPT test case """
 
     def test_ioservice(self):
-        target_cmd = [ './ci_test_openmp', 'hatchet-region-profile,openmp.times,output=stdout' ]
+        target_cmd = [ './ci_test_openmp', 'hatchet-region-profile,openmp.times,output=stdout,output.format=json-split' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'
