@@ -60,7 +60,7 @@ namespace
           "ATTRIBUTES"
         },
         { "expand", "expand", 'e', false,
-          "Expand context records and print the selected attributes (default: all)",
+          "Print records as comma-separated key=value lists",
           nullptr
         },
         { "attributes", "print-attributes", 0, true,
@@ -80,7 +80,7 @@ namespace
           "STRING"
         },
         { "table", "table", 't', false,
-          "Print attributes in human-readable table form",
+          "Print records in human-readable table form",
           nullptr
         },
         { "tree" , "tree", 'T', false,
@@ -111,20 +111,16 @@ namespace
           "Set Caliper configuration for profiling cali-query",
           "CALIPER-CONFIG"
         },
-        { "caliper-config-vars", "caliper-config-vars", 0, true,
-          "Caliper configuration flags (for cali-query profiling)",
-          "KEY=VALUE,..."
-        },
         { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
         { "version", "version", 'V', false, "Print version number",     nullptr },
         { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
         { "help",    "help",    'h', true,  "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
-          "Extract and list attributes in Caliper stream instead of snapshot records",
+          "List attribute info. Use with -j, -t, etc. to select output format.",
           nullptr
         },
         { "list-globals", "list-globals", 'G', false,
-          "Extract and list global per-run attributes",
+          "List global run metadata. Use with -j, -t, etc. to select output format.",
           nullptr
         },
         Args::Table::Terminator
@@ -203,21 +199,6 @@ void setup_caliper_config(const Args& args)
 
     if (args.is_set("verbose"))
         cali_config_preset("CALI_LOG_VERBOSITY", "1");
-
-    std::vector<std::string> config_list =
-        StringConverter(args.get("caliper-config-vars")).to_stringlist();
-
-    for (const std::string entry : config_list) {
-        auto p = entry.find('=');
-
-        if (p == std::string::npos) {
-            std::cerr << "cali-query: error: invalid Caliper configuration flag format \""
-                      << entry << "\" (missing \"=\")" << std::endl;
-            continue;
-        }
-
-        cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
-    }
 }
 
 //

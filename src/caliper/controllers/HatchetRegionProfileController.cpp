@@ -98,10 +98,10 @@ check_args(const cali::ConfigManager::Options& opts) {
 cali::ChannelController*
 make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
 
     if (format == "hatchet")
-        format = "json-split";
+        format = "cali";
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
         format = "json-split";
@@ -113,32 +113,49 @@ make_controller(const char* name, const config_map_t& initial_cfg, const cali::C
     return new HatchetRegionProfileController(name, initial_cfg, opts, format);
 }
 
-const char* controller_spec =
-    "{"
-    " \"name\"        : \"hatchet-region-profile\","
-    " \"description\" : \"Record a region time profile for processing with hatchet\","
-    " \"categories\"  : [ \"adiak\", \"metric\", \"output\", \"region\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"event\", \"timer\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
-    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
-    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
-    "   },"
-    " \"defaults\"    : { \"node.order\": \"true\" },"
-    " \"options\": "
-    " ["
-    "  { "
-    "    \"name\": \"output.format\","
-    "    \"type\": \"string\","
-    "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
-    "  },"
-    "  { "
-    "    \"name\": \"use.mpi\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Merge results into a single output stream in MPI programs\""
-    "  }"
-    " ]"
-    "}";
+const char* controller_spec = R"json(
+    {
+     "name"        : "hatchet-region-profile",
+     "description" : "Record a region time profile for processing with hatchet",
+     "categories"  : [ "adiak", "metric", "output", "region", "event" ],
+     "services"    : [ "aggregate", "event", "timer" ],
+     "config"      :
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
+         "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
+         "CALI_TIMER_UNIT"                 : "sec"
+       },
+     "defaults"    : { "node.order": "true" },
+     "options":
+     [
+      {
+       "name": "output.format",
+       "type": "string",
+       "description": "Output format ('hatchet', 'cali', 'json')"
+      },
+      {
+       "name": "use.mpi",
+       "type": "bool",
+       "description": "Merge results into a single output stream in MPI programs"
+      },
+      {
+       "name": "time.inclusive",
+       "type": "bool",
+       "category": "metric",
+       "description": "Add inclusive time metric",
+       "query":
+       [
+        {
+         "level"  : "local",
+         "select" :
+         [
+          { "expr": "inclusive_scale(sum#time.duration.ns,1e-9)", "as": "time (inc)", "unit": "sec" }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+)json";
 
 } // namespace [anonymous]
 

@@ -107,7 +107,7 @@ class CaliperJSONTest(unittest.TestCase):
     def test_hatchetcontroller(self):
         """ Test hatchet-region-profile controller """
 
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,use.mpi=false,output=stdout,node.order=false' ]
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json-split,node.order=false' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'
