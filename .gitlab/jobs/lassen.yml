@@ -13,4 +13,4 @@ variables:
 master:
   variables:
     SPEC: " +tests"
-  extends: .build_and_test_on_lassen
+  extends: .job_on_lassen
