@@ -55,6 +55,6 @@ variables:
 # Not all configuration can be shared. Here projects can fine tune the
 # CI behavior.
 # See Umpire for an example (export junit test reports).
-.custom_build_and_test:
+.custom_job:
   variables:
     JOB_TEMPLATE_CANNOT_BE_EMPTY: "True"
