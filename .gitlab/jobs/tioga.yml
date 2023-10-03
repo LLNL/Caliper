@@ -14,9 +14,9 @@ variables:
 #clang13.0.1-rocm5.4.1:
 #  variables:
 #    SPEC: "%clang@13.0.1 +rocm amdgpu_target=gfx90a ^hip@5.4.1"
-#  extends: .build_and_test_on_tioga
+#  extends: .job_on_tioga
 
 master:
   variables:
     SPEC: " +tests %cce@15.0.1"
-  extends: .build_and_test_on_tioga
+  extends: .job_on_tioga
