@@ -149,95 +149,105 @@ with the given Caliper and spack build options.
 
 +----------------+---------------+---------------------------+--------------------+
 | CMake option   | Spack option  | Enabled features/recipes  | Enabled services   |
-+----------------+---------------+---------------------------+--------------------+
++================+===============+===========================+====================+
 | WITH_ADIAK     | +adiak        | Import adiak metadata in  | adiak_import,      |
 |                |               | most config recipes       | adiak_export       |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_MPI       | +mpi          | mpi-report recipe;        | mpi, mpireport     |
-|                |               | profile.mpi,              |                    |
-|                |               | mpi.message.count,        |                    |
-|                |               | mpi.message.size          |                    |
-|                |               | recipe options;           |                    |
-|                |               | Cross-process aggregation |                    |
+| WITH_MPI       | +mpi          | - mpi-report recipe       | mpi, mpireport     |
+|                |               | - profile.mpi,            |                    |
+|                |               |   mpi.message.count,      |                    |
+|                |               |   mpi.message.size        |                    |
+|                |               |   recipe options          |                    |
+|                |               | - Cross-process           |                    |
+|                |               |   aggregation             |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_PAPI      | +papi         | topdown.all,              | papi, topdown      |
-|                |               | topdown.toplevel,         |                    |
-|                |               | topdown-counters.all,     |                    |
-|                |               | topdown-counters.toplevel |                    |
-|                |               | recipe options for some   |                    |
-|                |               | x86 systems;              |                    |
-|                |               | PAPI counter collection   |                    |
+| WITH_PAPI      | +papi         | - topdown.all,            | papi, topdown      |
+|                |               |   topdown.toplevel,       |                    |
+|                |               |   topdown-counters.*      |                    |
+|                |               |   recipe options for some |                    |
+|                |               |   x86 systems             |                    |
+|                |               | - PAPI counter collection |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_LIBDW     | +libdw        | source.module,            | symbollookup       |
-|                |               | source.function,          |                    |
-|                |               | source.location recipe    |                    |
-|                |               | options;                  |                    |
-|                |               | Symbol name lookup        |                    |
+| WITH_LIBDW     | +libdw        | - source.module,          | symbollookup       |
+|                |               |   source.function,        |                    |
+|                |               |   source.location         |                    |
+|                |               |   recipe options          |                    |
+|                |               | - Symbol name lookup      |                    |
 +----------------+---------------+---------------------------+--------------------+
 | WITH_LIBPFM    | +libpfm       | PerfEvent counter         | libpfm             |
 |                |               | collection and precise    |                    |
 |                |               | event sampling            |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_LIBUNWIND | +libunwind    | callpath option for       | callpath           |
-|                |               | sample-report and         |                    |
-|                |               | event-trace recipes (also |                    |
-|                |               | requires libdw);          |                    |
-|                |               | Stack unwinding           |                    |
+| WITH_LIBUNWIND | +libunwind    | - callpath option for     | callpath           |
+|                |               |   sample-report and       |                    |
+|                |               |   event-trace recipes     |                    |
+|                |               |   (requires libdw)        |                    |
+|                |               | - Call stack unwinding    |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_SAMPLER   | +sampler      | sample-report,            | sampler            |
-|                |               | hatchet-sample-profile    |                    |
-|                |               | recipes; sampling option  |                    |
-|                |               | for event-trace           |                    |
+| WITH_SAMPLER   | +sampler      | - sample-report,          | sampler            |
+|                |               |   hatchet-sample-profile  |                    |
+|                |               |   recipes                 |                    |
+|                |               | - sampling option for     |                    |
+|                |               |   event-trace recipe      |                    |
+|                |               | - Linux sampling support  |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_CUPTI     | +cuda         | cuda-activity-report,     | cupti, cuptitrace  |
-|                |               | cuda-activity-profile     |                    |
-|                |               | recipes; profile.cuda,    |                    |
-|                |               | cuda.gputime,             |                    |
-|                |               | cuda.memcpy recipe        |                    |
-|                |               | options                   |                    |
+| WITH_CUPTI     | +cuda         | - cuda-activity-report    | cupti, cuptitrace  |
+|                |               |   cuda-activity-profile   |                    |
+|                |               |   recipes                 |                    |
+|                |               | - profile.cuda,           |                    |
+|                |               |   cuda.gputime,           |                    |
+|                |               |   cuda.memcpy recipe      |                    |
+|                |               |   options                 |                    |
+|                |               | - CUDA API profiling      |                    |
+|                |               | - CUDA activity tracing   |                    |
 +----------------+               +---------------------------+--------------------+
-| WITH_NVTX      |               | nvtx recipe;              | nvtx               |
-|                |               | Caliper-to-NVTX region    |                    |
-|                |               | forwarding                |                    |
+| WITH_NVTX      |               | - nvtx recipe             | nvtx               |
+|                |               | - Caliper-to-NVTX region  |                    |
+|                |               |   forwarding              |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_ROCTRACER | +rocm         | rocm-activity-report,     | roctracer          |
-|                |               | rocm-activity-profile     |                    |
-|                |               | recipes; profile.hip,     |                    |
-|                |               | rocm.gputime,             |                    |
-|                |               | rocm.memcpy options       |                    |
+| WITH_ROCTRACER | +rocm         | - rocm-activity-report,   | roctracer          |
+|                |               |   rocm-activity-profile   |                    |
+|                |               |   recipes                 |                    |
+|                |               | - profile.hip             |                    |
+|                |               |   rocm.gputime,           |                    |
+|                |               |   rocm.memcpy recipe      |                    |
+|                |               |   options                 |                    |
+|                |               | - ROCm/HIP API profiling  |                    |
+|                |               | - ROCm activity tracing   |                    |
 +----------------+               +---------------------------+--------------------+
-| WITH_ROCTX     |               | roctx recipe;             | roctx              |
-|                |               | Caliper-to-ROCTX region   |                    |
-|                |               | forwarding                |                    |
+| WITH_ROCTX     |               | - roctx recipe            | roctx              |
+|                |               | - Caliper-to-ROCTX region |                    |
+|                |               |   forwarding              |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_OMPT      | not available | openmp-report recipe;     | ompt               |
-|                | yet           | openmp.times,             |                    |
-|                |               | openmp.threads,           |                    |
-|                |               | openmp.efficiency recipe  |                    |
-|                |               | options;                  |                    |
-|                |               | OpenMP tool interface     |                    |
-|                |               | support (CPU only, no     |                    |
-|                |               | target offload)           |                    |
+| WITH_OMPT      | not available | - openmp-report recipe    | ompt               |
+|                | yet           | - openmp.times,           |                    |
+|                |               |   openmp.threads,         |                    |
+|                |               |   openmp.efficiency       |                    |
+|                |               |   recipe options          |                    |
+|                |               | - OpenMP tools interface  |                    |
+|                |               |   support (CPU only, no   |                    |
+|                |               |   target offload)         |                    |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_GOTCHA    | +gotcha       | io.bytes.*,               | io, pthread,       |
-|                |               | io.*.bandwidth,           | sysalloc           |
-|                |               | mem.highwatermark,        |                    |
-|                |               | main_thread_only options; |                    |
-|                |               | Use Gotcha                |                    |
-|                |               | for MPI function wrapping |                    |
-|                |               | instead of PMPI           |                    |
+| WITH_GOTCHA    | +gotcha       | - io.bytes.*,             | io, pthread,       |
+|                |               |   io.*.bandwidth,         | sysalloc           |
+|                |               |   mem.highwatermark,      |                    |
+|                |               |   main_thread_only        |                    |
+|                |               |   recipe options          |                    |
+|                |               | - Use Gotcha for MPI      |                    |
+|                |               |   MPI function wrapping   |                    |
+|                |               |   instead of PMPI         |                    |
 +----------------+---------------+---------------------------+--------------------+
 | WITH_UMPIRE    | not available | umpire.totals,            | umpire             |
 |                | yet           | umpire.allocators options |                    |
 +----------------+---------------+---------------------------+--------------------+
 | WITH_VARIORUM  | +variorum     | Read variorum counters    | variorum           |
 +----------------+---------------+---------------------------+--------------------+
-| WITH_PCP       | not available | mem.*.bandwidth,          | pcp, pcp.memory    |
-|                | yet           | mem.*.bytes recipe        |                    |
-|                |               | options on some LLNL LC   |                    |
-|                |               | systems;                  |                    |
-|                |               | Read Performance CoPilot  |                    |
-|                |               | counters                  |                    |
+| WITH_PCP       | not available | - mem.*.bandwidth,        | pcp, pcp.memory    |
+|                | yet           |   mem.*.bytes recipe      |                    |
+|                |               |   options on some LLNL    |                    |
+|                |               |   LC systems              |                    |
+|                |               | - Read Performance        |                    |
+|                |               |   CoPilot counters        |                    |
 +----------------+---------------+---------------------------+--------------------+
 | WITH_VTUNE     | not available | Intel ITT API annotation  | vtune              |
 |                | yet           | forwarding                |                    |
