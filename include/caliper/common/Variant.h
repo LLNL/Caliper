@@ -128,12 +128,17 @@ public:
     // vector<unsigned char> data() const;
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);
+    friend bool operator != (const Variant& lhs, const Variant& rhs);
     friend bool operator <  (const Variant& lhs, const Variant& rhs);
     friend bool operator >  (const Variant& lhs, const Variant& rhs);
 };
 
 inline bool operator == (const Variant& lhs, const Variant& rhs) {
     return cali_variant_eq(lhs.m_v, rhs.m_v);
+}
+
+inline bool operator != (const Variant& lhs, const Variant& rhs) {
+    return !cali_variant_eq(lhs.m_v, rhs.m_v);
 }
 
 inline bool operator <  (const Variant& lhs, const Variant& rhs) {
