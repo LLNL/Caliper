@@ -635,6 +635,8 @@ log_stack_value_error(const Entry& current, Attribute attr, const Variant& expec
         error = "stack is empty";
     else {
         error = "current value is ";
+        error.append(attr.name());
+        error.append("=");
         error.append(current.value().to_string());
     }
 
@@ -1063,12 +1065,7 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
 
     auto current = load_current_entry(attr, key, *blackboard, sG->allow_region_overlap);
 
-    if (current.entry.empty()) {
-        sT->stack_error = true;
-        return;
-    }
-
-    if (data != current.entry.value()) {
+    if (current.entry.empty() || data != current.entry.value()) {
         log_stack_value_error(current.entry, attr, data);
         sT->stack_error = true;
         return;

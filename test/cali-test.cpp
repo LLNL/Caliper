@@ -247,6 +247,11 @@ void test_unclosed_region()
     a.end();
 }
 
+void test_empty_stack()
+{
+    cali_end_region("empty_stack_test");
+}
+
 int main(int argc, char* argv[])
 {
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
@@ -254,8 +259,6 @@ int main(int argc, char* argv[])
     // instance test has to run before Caliper initialization
 
     test_instance();
-
-    CALI_CXX_MARK_FUNCTION;
 
     const struct testcase_info_t {
         const char*  name;
@@ -273,12 +276,13 @@ int main(int argc, char* argv[])
         { "config-after-init",        test_config_after_init  },
         { "nesting-error",            test_nesting_error      },
         { "unclosed-region",          test_unclosed_region    },
+        { "empty-stack",              test_empty_stack        },
         { 0, 0 }
     };
 
     {
         cali::Annotation::Guard
-            g( cali::Annotation("cali-test").begin("checking") );
+            g( cali::Annotation("cali-test", CALI_ATTR_NOMERGE).begin("checking") );
 
         // check for missing/misspelled command line test cases
         for (int a = 1; a < argc; ++a) {
@@ -293,7 +297,7 @@ int main(int argc, char* argv[])
     }
 
     cali::Annotation::Guard
-        g( cali::Annotation("cali-test").begin("testing") );
+        g( cali::Annotation("cali-test", CALI_ATTR_NOMERGE).begin("testing") );
 
     for (const testcase_info_t* t = testcases; t->fn; ++t) {
         if (argc > 1) {
@@ -307,7 +311,7 @@ int main(int argc, char* argv[])
         }
 
         cali::Annotation::Guard
-            g( cali::Annotation("cali-test.test").begin(t->name) );
+            g( cali::Annotation("cali-test.test", CALI_ATTR_NOMERGE).begin(t->name) );
 
         print_padded(std::cout, t->name, 28) << " ... ";
         (*(t->fn))();
