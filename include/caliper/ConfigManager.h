@@ -109,6 +109,10 @@ public:
         /// configuration flags that may be required.
         void update_channel_config(config_map_t& config) const;
 
+        /// \brief Update the config controller's metadata
+        ///    according to the selected options
+        void update_channel_metadata(info_map_t& metadata) const;
+
         /// \brief Returns a CalQL query based on the fields in \a input
         ///   and option list.
         ///

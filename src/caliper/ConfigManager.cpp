@@ -50,6 +50,7 @@ ChannelController* make_basic_channel_controller(const char* name, const config_
                 }
 
                 opts.update_channel_config(config());
+                opts.update_channel_metadata(metadata());
             }
     };
 
@@ -510,6 +511,11 @@ struct ConfigManager::Options::OptionsImpl
         append_config(config);
     }
 
+    void
+    update_channel_metadata(info_map_t& info) {
+        info.insert(args.begin(), args.end());
+    }
+
     std::vector< const OptionSpec::query_arg_t* >
     get_enabled_query_args(const char* level) const {
         std::vector< const OptionSpec::query_arg_t* > ret;
@@ -801,6 +807,12 @@ void
 ConfigManager::Options::update_channel_config(config_map_t& config) const
 {
     mP->update_channel_config(config);
+}
+
+void
+ConfigManager::Options::update_channel_metadata(info_map_t& metadata) const
+{
+    mP->update_channel_metadata(metadata);
 }
 
 std::string
