@@ -40,7 +40,7 @@ void add_channel_metadata(Caliper& c, Channel* channel, const info_map_t& metada
 {
     for (const auto &entry : metadata) {
         std::string key = channel->name();
-        key.append(".");
+        key.append(":");
         key.append(entry.first);
 
         auto attr =
