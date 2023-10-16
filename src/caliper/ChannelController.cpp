@@ -15,6 +15,7 @@ struct ChannelController::ChannelControllerImpl
     std::string  name;
     int          flags;
     config_map_t config;
+    info_map_t   metadata;
 
     Channel*     channel = nullptr;
 
@@ -32,6 +33,25 @@ struct ChannelController::ChannelControllerImpl
     }
 };
 
+namespace
+{
+
+void add_channel_metadata(Caliper& c, Channel* channel, const info_map_t& metadata)
+{
+    for (const auto &entry : metadata) {
+        std::string key = channel->name();
+        key.append(":");
+        key.append(entry.first);
+
+        auto attr =
+            c.create_attribute(key, CALI_TYPE_STRING, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+        c.set(channel, attr, Variant(entry.second.c_str()));
+    }
+}
+
+} // namespace [anonymous]
+
 Channel*
 ChannelController::channel()
 {
@@ -48,6 +68,12 @@ config_map_t
 ChannelController::copy_config() const
 {
     return mP->config;
+}
+
+info_map_t&
+ChannelController::metadata()
+{
+    return mP->metadata;
 }
 
 Channel*
@@ -75,6 +101,8 @@ ChannelController::create()
         c.deactivate_channel(mP->channel);
 
     on_create(&c, mP->channel);
+
+    add_channel_metadata(c, mP->channel, mP->metadata);
 
     //   Reset the object's channel pointer if the channel is destroyed
     // behind our back (e.g., in Caliper::release())

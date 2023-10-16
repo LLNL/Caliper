@@ -270,6 +270,7 @@ public:
             config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = opts.get("target_loops").to_string();
 
         opts.update_channel_config(config());
+        opts.update_channel_metadata(metadata());
     }
 };
 

@@ -56,6 +56,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertEqual(r['spot.channel'], 'regionprofile')
 
         self.assertEqual('regionprofile', obj['globals']['spot.channels'])
+        self.assertEqual('true', obj['globals']['spot:region.count'])
 
     def test_spot_timeseries(self):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries,timeseries.iteration_interval=15)', '75' ]

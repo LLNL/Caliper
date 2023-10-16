@@ -20,6 +20,8 @@ class Channel;
 
 typedef std::map<std::string, std::string> config_map_t;
 
+typedef std::map<std::string, std::string> info_map_t;
+
 /// \class ChannelController
 /// \ingroup ControlChannelAPI
 /// \brief Base class for %Caliper channel controllers
@@ -45,6 +47,9 @@ protected:
     ///   Note that configuration modifications are only effective before
     /// the underlying %Caliper channel has been created.
     config_map_t& config();
+
+    /// \brief Provide access to the underlying metadata info map.
+    info_map_t&   metadata();
 
     /// \brief Create the channel with the controller's
     ///   name, flags, and config map

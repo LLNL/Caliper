@@ -89,6 +89,7 @@ public:
             }
 
             opts.update_channel_config(config());
+            opts.update_channel_metadata(metadata());
         }
 };
 
