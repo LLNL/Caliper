@@ -179,19 +179,13 @@ expand_variables(const std::string& in, const std::string& val)
 
 class ConfigManager::OptionSpec
 {
-    struct select_expr_t {
-        std::string expression;
-        std::string alias;
-        std::string unit;
-    };
-
     struct query_arg_t {
-        std::vector< select_expr_t > select;
-        std::vector< std::string   > groupby;
-        std::vector< std::string   > let;
-        std::vector< std::string   > where;
-        std::vector< std::string   > aggregate;
-        std::vector< std::string   > orderby;
+        std::vector<std::string> select;
+        std::vector<std::string> groupby;
+        std::vector<std::string> let;
+        std::vector<std::string> where;
+        std::vector<std::string> aggregate;
+        std::vector<std::string> orderby;
     };
 
     struct option_spec_t {
@@ -218,12 +212,33 @@ class ConfigManager::OptionSpec
 
     void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
         for (const StringConverter& sc : list) {
-            std::map<std::string, StringConverter> dict = sc.rec_dict();
-            qarg.select.push_back( {
-                    dict["expr"].to_string(),
-                    dict["as"  ].to_string(),
-                    dict["unit"].to_string()
-                } );
+            bool is_a_dict = false;
+            std::map<std::string, StringConverter> dict = sc.rec_dict(&is_a_dict);
+
+            // The deprecated syntax for a select spec is a list of
+            //   { "expr": "expression", "as": "alias", "unit": "unit" }
+            // dicts. The new syntax is just a list of
+            //   "expression AS alias UNIT unit"
+            // strings. Determine which we have and parse accordingly.
+            if (is_a_dict) {
+                std::string str = dict["expr"].to_string();
+                auto it = dict.find("as");
+                if (it != dict.end()) {
+                    str.append(" as \"");
+                    str.append(it->second.to_string());
+                    str.append("\"");
+                }
+                it = dict.find("unit");
+                if (it != dict.end()) {
+                    str.append(" unit \"");
+                    str.append(it->second.to_string());
+                    str.append("\"");
+                }
+
+                qarg.select.push_back(str);
+            } else {
+                qarg.select.push_back(sc.to_string());
+            }
         }
     }
 
@@ -542,21 +557,10 @@ struct ConfigManager::Options::OptionsImpl
         std::string ret = in;
 
         for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &p : q->select) {
-                if (p.expression.empty())
-                    break;
-
+            for (const auto &s : q->select) {
                 if (!ret.empty())
                     ret.append(",");
-
-                ret.append(p.expression);
-
-                if (use_alias) {
-                    if (!p.alias.empty())
-                        ret.append(" as \"").append(p.alias).append("\"");
-                    if (!p.unit.empty())
-                        ret.append(" unit \"").append(p.unit).append("\"");
-                }
+                ret.append(s);
             }
         }
 

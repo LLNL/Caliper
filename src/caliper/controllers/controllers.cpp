@@ -300,13 +300,14 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "rc.count=first(sum#region.count,region.count)" ],
-         "select"  : [ { "expr": "sum(rc.count)", "as": "Calls", "unit": "count" } ]
+         "select"  : [ "sum(rc.count) as Calls unit count" ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "min(sum#rc.count)", "as": "Calls (min)",   "unit": "count" },
-           { "expr": "max(sum#rc.count)", "as": "Calls (max)",   "unit": "count" },
-           { "expr": "avg(sum#rc.count)", "as": "Calls (avg)",   "unit": "count" },
-           { "expr": "sum(sum#rc.count)", "as": "Calls (total)", "unit": "count" }
+         [
+          "min(sum#rc.count) as \"Calls/rank (min)\" unit count",
+          "avg(sum#rc.count) as \"Calls/rank (avg)\" unit count",
+          "max(sum#rc.count) as \"Calls/rank (max)\" unit count",
+          "sum(sum#rc.count) as \"Calls/rank (total)\" unit count"
          ]
        }
      ]
