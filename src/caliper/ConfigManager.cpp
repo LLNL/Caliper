@@ -82,15 +82,17 @@ public:
     }
 };
 
-
-template<typename K, typename V>
-std::map<K, V>
-merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
+ConfigManager::arglist_t
+merge_new_elements(ConfigManager::arglist_t& to, const ConfigManager::arglist_t& from)
+{
     for (auto &p : from) {
-        auto it = to.lower_bound(p.first);
+        auto it = std::find_if(to.begin(), to.end(),
+            [p](const std::pair<std::string,std::string>& v){
+                    return p.first == v.first;
+                });
 
-        if (it == to.end() || it->first != p.first)
-            to.emplace_hint(it, p.first, p.second);
+        if (it == to.end())
+            to.push_back(p);
     }
 
     return to;
@@ -416,7 +418,7 @@ public:
 struct ConfigManager::Options::OptionsImpl
 {
     OptionSpec spec;
-    argmap_t   args;
+    arglist_t  args;
 
     std::vector<std::string> enabled_options;
 
@@ -494,13 +496,14 @@ struct ConfigManager::Options::OptionsImpl
             if (spec_it == spec.data.end())
                 continue;
 
-            if (spec_it->second.type == "bool") {
-                config.insert(spec_it->second.config.begin(), spec_it->second.config.end());
-            } else {
-                for (const auto &kv_p : spec_it->second.config) {
-                    // replace "{}" variable placeholders in spec with argument, if any
-                    config[kv_p.first] = ::expand_variables(kv_p.second, args[opt]);
-                }
+            for (const auto &kv_p : spec_it->second.config) {
+                auto it = std::find_if(args.begin(), args.end(),
+                    [&opt](const std::pair<std::string,std::string>& p){
+                            return opt == p.first;
+                        });
+                if (it != args.end())
+                // replace "{}" variable placeholders in spec with argument, if any
+                    config[kv_p.first] = ::expand_variables(kv_p.second, it->second);
             }
         }
     }
@@ -513,7 +516,8 @@ struct ConfigManager::Options::OptionsImpl
 
     void
     update_channel_metadata(info_map_t& info) {
-        info.insert(args.begin(), args.end());
+        for (const auto &p : args)
+            info[p.first] = p.second;
     }
 
     std::vector< const OptionSpec::query_arg_t* >
@@ -693,28 +697,6 @@ struct ConfigManager::Options::OptionsImpl
     find_enabled_options() {
         std::vector<std::string> vec;
 
-        {
-            // hack: explicitly add options for deprecated "profile" argument
-
-            auto it = args.find("profile");
-
-            if (it != args.end()) {
-                const struct profile_map_t {
-                    const char* oldarg; const char* newarg;
-                } profile_map[] = {
-                    { "mpi",  "profile.mpi"  },
-                    { "cuda", "profile.cuda" },
-                    { "mem.highwatermark", "mem.highwatermark" }
-                };
-
-                auto pl = StringConverter(it->second).to_stringlist();
-
-                for (const auto &p : profile_map)
-                    if (std::find(pl.begin(), pl.end(), std::string(p.oldarg)) != pl.end())
-                        vec.push_back(p.newarg);
-            }
-        }
-
         for (const auto &argp : args) {
             auto s_it = spec.data.find(argp.first);
 
@@ -735,20 +717,17 @@ struct ConfigManager::Options::OptionsImpl
             }
         }
 
-        std::sort(vec.begin(), vec.end());
-        vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-
         enabled_options = std::move(vec);
     }
 
-    OptionsImpl(const OptionSpec& s, const argmap_t& a)
+    OptionsImpl(const OptionSpec& s, const arglist_t& a)
         : spec(s), args(a)
         {
             find_enabled_options();
         }
 };
 
-ConfigManager::Options::Options(const OptionSpec& spec, const argmap_t& args)
+ConfigManager::Options::Options(const OptionSpec& spec, const arglist_t& args)
     : mP(new OptionsImpl(spec, args))
 { }
 
@@ -760,7 +739,11 @@ ConfigManager::Options::~Options()
 bool
 ConfigManager::Options::is_set(const char* option) const
 {
-    return mP->args.find(option) != mP->args.end();
+    std::string ostr(option);
+    return std::find_if(mP->args.begin(), mP->args.end(),
+        [&ostr](const std::pair<std::string,std::string>& p){
+                return ostr == p.first;
+            }) != mP->args.end();
 }
 
 bool
@@ -789,7 +772,11 @@ ConfigManager::Options::enabled_options() const
 StringConverter
 ConfigManager::Options::get(const char* option, const char* default_val) const
 {
-    auto it = mP->args.find(option);
+    std::string ostr(option);
+    auto it = std::find_if(mP->args.begin(), mP->args.end(),
+        [&ostr](const std::pair<std::string,std::string>& p){
+                return ostr == p.first;
+            });
 
     if (it != mP->args.end())
         return StringConverter(it->second);
@@ -832,11 +819,11 @@ struct ConfigManager::ConfigManagerImpl
     bool        m_error = false;
     std::string m_error_msg = "";
 
-    std::map< std::string, argmap_t >
+    std::map< std::string, arglist_t >
         m_default_parameters_for_spec;
 
-    argmap_t    m_default_parameters;
-    argmap_t    m_extra_vars;
+    arglist_t    m_default_parameters;
+    argmap_t     m_extra_vars;
 
     OptionSpec  m_global_opts;
 
@@ -849,7 +836,7 @@ struct ConfigManager::ConfigManagerImpl
         std::string    description;
         config_map_t   initial_cfg;
         OptionSpec     opts;
-        argmap_t       defaults; // default options, if any
+        arglist_t      defaults; // default options, if any
     };
 
     std::map< std::string, std::shared_ptr<config_spec_t> >
@@ -956,7 +943,7 @@ struct ConfigManager::ConfigManagerImpl
         it = dict.find("defaults");
         if (ok && !m_error && it != dict.end())
             for (const auto &p : it->second.rec_dict(&ok))
-                spec.defaults[p.first] = p.second.to_string();
+                spec.defaults.push_back(std::make_pair(p.first, p.second.to_string()));;
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
@@ -1003,9 +990,9 @@ struct ConfigManager::ConfigManagerImpl
         return val;
     }
 
-    argmap_t
+    arglist_t
     parse_arglist(std::istream& is, const OptionSpec& opts) {
-        argmap_t args;
+        arglist_t args;
 
         char c = util::read_char(is);
 
@@ -1037,7 +1024,7 @@ struct ConfigManager::ConfigManagerImpl
                 if (val.empty())
                     val = "true";
 
-                args[key] = val;
+                args.push_back(std::make_pair(key, val));
             }
 
             c = util::read_char(is);
@@ -1168,11 +1155,11 @@ struct ConfigManager::ConfigManagerImpl
 
     //   Returns found configs with their args. Also updates the default parameters list
     // and extra variables list.
-    std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> >
+    std::vector< std::pair<const std::shared_ptr<config_spec_t>, arglist_t> >
     parse_configstring(const char* config_string) {
         import_builtin_config_specs();
 
-        std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> > ret;
+        std::vector< std::pair<const std::shared_ptr<config_spec_t>, arglist_t> > ret;
 
         std::istringstream is(config_string);
         char c = 0;
@@ -1218,7 +1205,7 @@ struct ConfigManager::ConfigManagerImpl
                         if (val.empty())
                             val = "true";
 
-                        m_default_parameters[key] = val;
+                        m_default_parameters.push_back(std::make_pair(key, val));
                     }
                     else
                         m_extra_vars[key] = val;
@@ -1236,7 +1223,7 @@ struct ConfigManager::ConfigManagerImpl
         return ret;
     }
 
-    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) const {
+    arglist_t add_default_parameters(arglist_t& args, const config_spec_t& spec) const {
         auto it = m_default_parameters_for_spec.find(spec.name);
 
         if (it != m_default_parameters_for_spec.end())
@@ -1419,13 +1406,13 @@ ConfigManager::error_msg() const
 void
 ConfigManager::set_default_parameter(const char* key, const char* value)
 {
-    mP->m_default_parameters[key] = value;
+    mP->m_default_parameters.push_back(std::make_pair(key, value));
 }
 
 void
 ConfigManager::set_default_parameter_for_config(const char* config, const char* key, const char* value)
 {
-    mP->m_default_parameters_for_spec[config][key] = value;
+    mP->m_default_parameters_for_spec[config].push_back(std::make_pair(key, value));
 }
 
 ConfigManager::ChannelList

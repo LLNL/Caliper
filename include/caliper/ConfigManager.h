@@ -70,6 +70,7 @@ class ConfigManager
 public:
 
     typedef std::map<std::string, std::string> argmap_t;
+    typedef std::vector<std::pair<std::string, std::string>> arglist_t;
 
     /// \brief Manages the list of options given to a ConfigManager config controller.
     ///   Internal use.
@@ -77,7 +78,7 @@ public:
         struct OptionsImpl;
         std::shared_ptr<OptionsImpl> mP;
 
-        Options(const OptionSpec& specs, const argmap_t& args);
+        Options(const OptionSpec& specs, const arglist_t& args);
 
     public:
 
