@@ -312,6 +312,49 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "region.stats",
+     "description" : "Detailed region timing statistics (min/max/avg time per visit)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "timer", "event" ],
+     "config"      :
+     {
+      "CALI_TIMER_INCLUSIVE_DURATION"   : "true",
+      "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "true"
+     },
+     "query"  :
+     [
+       { "level"   : "local",
+         "let"     :
+         [
+          "rs.count=first(sum#region.count,region.count)",
+          "rs.min=scale(min#time.inclusive.duration.ns,1e-9)",
+          "rs.max=scale(max#time.inclusive.duration.ns,1e-9)",
+          "rs.sum=scale(sum#time.inclusive.duration.ns,1e-9)"
+         ],
+         "aggregate":
+         [
+          "sum(rs.sum)"
+         ],
+         "select"  :
+         [
+          { "expr": "sum(rs.count)", "as": "Visits", "unit": "count" },
+          { "expr": "min(rs.min)", "as": "Min time/visit", "unit": "sec" },
+          { "expr": "ratio(rs.sum,rs.count)", "as": "Avg time/visit", "unit": "sec" },
+          { "expr": "max(rs.max)", "as": "Max time/visit", "unit": "sec" }
+         ]
+       },
+       { "level"   : "cross", "select":
+         [
+          { "expr": "sum(sum#rs.count)", "as": "Visits", "unit": "count" },
+          { "expr": "min(min#rs.min)", "as": "Min time/visit", "unit": "sec" },
+          { "expr": "ratio(sum#rs.sum,sum#rs.count)", "as": "Avg time/visit", "unit": "sec" },
+          { "expr": "max(max#rs.max)", "as": "Max time/visit", "unit": "sec" }
+         ]
+       }
+     ]
+    },
+    {
      "name"        : "node.order",
      "description" : "Report order in which regions first appeared",
      "type"        : "bool",
