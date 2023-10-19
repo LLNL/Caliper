@@ -233,17 +233,20 @@ cali::StringConverter::rec_dict(bool *okptr) const
 {
     std::map<std::string, StringConverter> ret;
     bool error = false;
-    char c;
 
     std::istringstream is(m_str);
 
     int d = 0;
-    c = util::read_char(is);
+    char c = util::read_char(is);
 
     if (c == '{')
         ++d;
-    else
+    else {
         is.unget();
+        if (okptr)
+            *okptr = false;
+        return ret;
+    }
 
     do {
         std::string key = util::read_word(is, ":");
