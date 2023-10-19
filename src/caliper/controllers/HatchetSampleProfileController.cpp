@@ -169,7 +169,7 @@ const char* controller_spec = R"json(
         "query":
         [
          { "level": "local", "group by": "source.function#callpath.address",
-           "select": [ { "expr": "source.function#callpath.address" } ]
+           "select": [ "source.function#callpath.address" ]
          }
         ]
       },

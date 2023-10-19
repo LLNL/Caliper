@@ -339,18 +339,18 @@ const char* builtin_option_specs = R"json(
          ],
          "select"  :
          [
-          { "expr": "sum(rs.count)", "as": "Visits", "unit": "count" },
-          { "expr": "min(rs.min)", "as": "Min time/visit", "unit": "sec" },
-          { "expr": "ratio(rs.sum,rs.count)", "as": "Avg time/visit", "unit": "sec" },
-          { "expr": "max(rs.max)", "as": "Max time/visit", "unit": "sec" }
+          "sum(rs.count) as Visits unit count",
+          "min(rs.min) as \"Min time/visit\" unit sec",
+          "ratio(rs.sum,rs.count) as \"Avg time/visit\" unit sec",
+          "max(rs.max) as \"Max time/visit\" unit sec"
          ]
        },
        { "level"   : "cross", "select":
          [
-          { "expr": "sum(sum#rs.count)", "as": "Visits", "unit": "count" },
-          { "expr": "min(min#rs.min)", "as": "Min time/visit", "unit": "sec" },
-          { "expr": "ratio(sum#rs.sum,sum#rs.count)", "as": "Avg time/visit", "unit": "sec" },
-          { "expr": "max(max#rs.max)", "as": "Max time/visit", "unit": "sec" }
+          "sum(sum#rs.count) as Visits unit count",
+          "min(min#rs.min) as \"Min time/visit\" unit sec",
+          "ratio(sum#rs.sum,sum#rs.count) as \"Avg time/visit\" unit sec",
+          "max(max#rs.max) as \"Max time/visit\" unit sec"
          ]
        }
      ]
@@ -363,12 +363,10 @@ const char* builtin_option_specs = R"json(
      "query"  :
      [
        { "level"   : "local",
-         "select"  : [ { "expr": "min(aggregate.slot)", "as": "Node order" } ]
+         "select"  : [ "min(aggregate.slot) as \"Node order\"" ]
        },
-       { "level"   : "cross", "select":
-         [
-          { "expr": "min(min#aggregate.slot)", "as": "Node order" }
-         ]
+       { "level"   : "cross",
+         "select"  : [ "min(min#aggregate.slot) as \"Node order\"" ]
        }
      ]
     },
@@ -382,10 +380,10 @@ const char* builtin_option_specs = R"json(
      "query":
      [
       { "level": "local", "group by": "module#cali.sampler.pc",
-        "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
+        "select": [ "module#cali.sampler.pc as \"Module\"" ]
       },
       { "level": "cross", "group by": "module#cali.sampler.pc",
-        "select": [ { "expr": "module#cali.sampler.pc", "as": "Module" } ]
+        "select": [ "module#cali.sampler.pc as \"Module\"" ]
       }
      ]
     },
@@ -399,10 +397,10 @@ const char* builtin_option_specs = R"json(
      "query":
      [
       { "level": "local", "group by": "source.function#cali.sampler.pc",
-        "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
+        "select": [ "source.function#cali.sampler.pc as \"Function\"" ]
       },
       { "level": "cross", "group by": "source.function#cali.sampler.pc",
-        "select": [ { "expr": "source.function#cali.sampler.pc", "as": "Function" } ]
+        "select": [ "source.function#cali.sampler.pc as \"Function\"" ]
       }
      ]
     },
@@ -416,10 +414,10 @@ const char* builtin_option_specs = R"json(
      "query":
      [
       { "level": "local", "group by": "sourceloc#cali.sampler.pc",
-        "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
+        "select": [ "sourceloc#cali.sampler.pc as \"Source\"" ]
       },
       { "level": "cross", "group by": "sourceloc#cali.sampler.pc",
-        "select": [ { "expr": "sourceloc#cali.sampler.pc", "as": "Source" } ]
+        "select": [ "sourceloc#cali.sampler.pc as \"Source\"" ]
       }
      ]
     },
@@ -437,15 +435,17 @@ const char* builtin_option_specs = R"json(
           "cuda.memcpy.htod=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=HtoD"
          ],
          "select"  :
-         [ { "expr": "sum(cuda.memcpy.htod)", "as": "Copy CPU->GPU", "unit": "MB" },
-           { "expr": "sum(cuda.memcpy.dtoh)", "as": "Copy GPU->CPU", "unit": "MB" }
+         [
+          "sum(cuda.memcpy.htod) as \"Copy CPU->GPU\" unit MB",
+          "sum(cuda.memcpy.dtoh) as \"Copy GPU->CPU\" unit MB"
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(sum#cuda.memcpy.htod)", "as": "Copy CPU->GPU (avg)", "unit": "MB" },
-           { "expr": "max(sum#cuda.memcpy.htod)", "as": "Copy CPU->GPU (max)", "unit": "MB" },
-           { "expr": "avg(sum#cuda.memcpy.dtoh)", "as": "Copy GPU->CPU (avg)", "unit": "MB" },
-           { "expr": "max(sum#cuda.memcpy.dtoh)", "as": "Copy GPU->CPU (max)", "unit": "MB" }
+         [
+           "avg(sum#cuda.memcpy.htod) as \"Copy CPU->GPU (avg)\" unit MB",
+           "max(sum#cuda.memcpy.htod) as \"Copy CPU->GPU (max)\" unit MB",
+           "avg(sum#cuda.memcpy.dtoh) as \"Copy GPU->CPU (avg)\" unit MB",
+           "max(sum#cuda.memcpy.dtoh) as \"Copy GPU->CPU (max)\" unit MB"
          ]
        }
      ]
@@ -460,14 +460,16 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "select"  :
-         [ { "expr": "inclusive_scale(cupti.activity.duration,1e-9)", "as": "GPU time (I)", "unit": "sec" },
+         [
+          "inclusive_scale(cupti.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(iscale#cupti.activity.duration)", "as": "Avg GPU time/rank", "unit": "sec" },
-           { "expr": "min(iscale#cupti.activity.duration)", "as": "Min GPU time/rank", "unit": "sec" },
-           { "expr": "max(iscale#cupti.activity.duration)", "as": "Max GPU time/rank", "unit": "sec" },
-           { "expr": "sum(iscale#cupti.activity.duration)", "as": "Total GPU time", "unit": "sec" }
+         [
+           "avg(iscale#cupti.activity.duration) as \"Avg GPU time/rank\" unit sec",
+           "min(iscale#cupti.activity.duration) as \"Min GPU time/rank\" unit sec",
+           "max(iscale#cupti.activity.duration) as \"Max GPU time/rank\" unit sec",
+           "sum(iscale#cupti.activity.duration) as \"Total GPU time\" unit sec"
          ]
        }
      ]
@@ -483,14 +485,17 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "select"  :
-         [ { "expr": "inclusive_scale(sum#rocm.activity.duration,1e-9)", "as": "GPU time (I)", "unit": "sec" },
+         [
+          "inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU time (I)\" unit sec"
          ]
        },
-       { "level"   : "cross", "select":
-         [ { "expr": "avg(iscale#sum#rocm.activity.duration)", "as": "Avg GPU time/rank", "unit": "sec" },
-           { "expr": "min(iscale#sum#rocm.activity.duration)", "as": "Min GPU time/rank", "unit": "sec" },
-           { "expr": "max(iscale#sum#rocm.activity.duration)", "as": "Max GPU time/rank", "unit": "sec" },
-           { "expr": "sum(iscale#sum#rocm.activity.duration)", "as": "Total GPU time", "unit": "sec" }
+       { "level"   : "cross",
+         "select"  :
+         [
+           "avg(iscale#sum#rocm.activity.duration) as \"Avg GPU time/rank\" unit sec",
+           "min(iscale#sum#rocm.activity.duration) as \"Min GPU time/rank\" unit sec",
+           "max(iscale#sum#rocm.activity.duration) as \"Max GPU time/rank\" unit sec",
+           "sum(iscale#sum#rocm.activity.duration) as \"Total GPU time\" unit sec"
          ]
        }
      ]
@@ -511,16 +516,16 @@ const char* builtin_option_specs = R"json(
           "mpimsg.max=first(max#mpi.msg.size,mpi.msg.size)"
         ],
         "select"  : [
-          { "expr": "min(mpimsg.min)", "as": "Msg size (min)", "unit": "Byte" },
-          { "expr": "avg(mpimsg.avg)", "as": "Msg size (avg)", "unit": "Byte" },
-          { "expr": "max(mpimsg.max)", "as": "Msg size (max)", "unit": "Byte" }
+          "min(mpimsg.min) as \"Msg size (min)\" unit Byte",
+          "avg(mpimsg.avg) as \"Msg size (avg)\" unit Byte",
+          "max(mpimsg.max) as \"Msg size (max)\" unit Byte"
         ]
       },
       { "level"   : "cross",
         "select"  : [
-          { "expr": "min(min#mpimsg.min)", "as": "Msg size (min)", "unit": "Byte" },
-          { "expr": "avg(avg#mpimsg.avg)", "as": "Msg size (avg)", "unit": "Byte" },
-          { "expr": "max(max#mpimsg.max)", "as": "Msg size (max)", "unit": "Byte" }
+          "min(min#mpimsg.min) as \"Msg size (min)\" unit Byte",
+          "avg(avg#mpimsg.avg) as \"Msg size (avg)\" unit Byte",
+          "max(max#mpimsg.max) as \"Msg size (max)\" unit Byte"
         ]
       }
      ]
@@ -541,18 +546,18 @@ const char* builtin_option_specs = R"json(
           "mpicount.coll=first(sum#mpi.coll.count,mpi.coll.count)"
         ],
         "select"  : [
-          { "expr": "sum(mpicount.send)", "as": "Msgs sent", "unit": "Count" },
-          { "expr": "sum(mpicount.recv)", "as": "Msgs recvd", "unit": "Count" },
-          { "expr": "sum(mpicount.coll)", "as": "Collectives", "unit": "Count" }
+          "sum(mpicount.send) as \"Msgs sent\"   unit count",
+          "sum(mpicount.recv) as \"Msgs recvd\"  unit count",
+          "sum(mpicount.coll) as \"Collectives\" unit count"
         ]
       },
       { "level"   : "cross",
         "select"  : [
-          { "expr": "avg(sum#mpicount.send)", "as": "Msgs sent (avg)", "unit": "Count" },
-          { "expr": "max(sum#mpicount.send)", "as": "Msgs sent (max)", "unit": "Count" },
-          { "expr": "avg(sum#mpicount.recv)", "as": "Msgs recvd (avg)", "unit": "Count" },
-          { "expr": "max(sum#mpicount.recv)", "as": "Msgs recvd (max)", "unit": "Count" },
-          { "expr": "max(sum#mpicount.coll)", "as": "Collectives (max)", "unit": "Count" }
+          "avg(sum#mpicount.send) as \"Msgs sent (avg)\"   unit count",
+          "max(sum#mpicount.send) as \"Msgs sent (max)\"   unit count",
+          "avg(sum#mpicount.recv) as \"Msgs recvd (avg)\"  unit count",
+          "max(sum#mpicount.recv) as \"Msgs recvd (max)\"  unit count",
+          "max(sum#mpicount.coll) as \"Collectives (max)\" unit count"
         ]
       }
      ]
@@ -574,15 +579,15 @@ const char* builtin_option_specs = R"json(
           "t.omp.total=first(t.omp.work,t.omp.sync)"
          ],
          "select"  :
-         [ { "expr": "sum(t.omp.work)", "as": "Time (work)",    "unit": "sec" },
-           { "expr": "sum(t.omp.sync)", "as": "Time (barrier)", "unit": "sec" }
+         [ "sum(t.omp.work) as \"Time (work)\"    unit sec",
+           "sum(t.omp.sync) as \"Time (barrier)\" unit sec"
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(sum#t.omp.work)", "as": "Time (work) (avg)", "unit": "sec" },
-           { "expr": "avg(sum#t.omp.sync)", "as": "Time (barrier) (avg)", "unit": "sec" },
-           { "expr": "sum(sum#t.omp.work)", "as": "Time (work) (total)", "unit": "sec" },
-           { "expr": "sum(sum#t.omp.sync)", "as": "Time (barrier) (total)", "unit": "sec" }
+         [ "avg(sum#t.omp.work) as \"Time (work) (avg)\" unit sec",
+           "avg(sum#t.omp.sync) as \"Time (barrier) (avg)\" unit sec",
+           "sum(sum#t.omp.work) as \"Time (work) (total)\" unit sec",
+           "sum(sum#t.omp.sync) as \"Time (barrier) (total)\" unit sec"
          ]
        }
      ]
@@ -597,15 +602,15 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "select"  :
-         [ { "expr": "inclusive_ratio(t.omp.work,t.omp.total,100.0)", "as": "Work %",    "unit": "percent" },
-           { "expr": "inclusive_ratio(t.omp.sync,t.omp.total,100.0)", "as": "Barrier %", "unit": "percent" }
+         [ "inclusive_ratio(t.omp.work,t.omp.total,100.0) as \"Work %\"    unit percent",
+           "inclusive_ratio(t.omp.sync,t.omp.total,100.0) as \"Barrier %\" unit percent"
          ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "min(iratio#t.omp.work/t.omp.total)", "as": "Work % (min)", "unit": "percent" },
-           { "expr": "avg(iratio#t.omp.work/t.omp.total)", "as": "Work % (avg)", "unit": "percent" },
-           { "expr": "avg(iratio#t.omp.sync/t.omp.total)", "as": "Barrier % (avg)", "unit": "percent" },
-           { "expr": "max(iratio#t.omp.sync/t.omp.total)", "as": "Barrier % (max)", "unit": "percent" }
+         [ "min(iratio#t.omp.work/t.omp.total) as \"Work % (min)\" unit percent",
+           "avg(iratio#t.omp.work/t.omp.total) as \"Work % (avg)\" unit percent",
+           "avg(iratio#t.omp.sync/t.omp.total) as \"Barrier % (avg)\" unit percent",
+           "max(iratio#t.omp.sync/t.omp.total) as \"Barrier % (max)\" unit percent"
          ]
        }
      ]
@@ -622,15 +627,15 @@ const char* builtin_option_specs = R"json(
          "let"     : [ "n.omp.threads=first(omp.num.threads)" ],
          "group by": "omp.thread.id,omp.thread.type",
          "select"  :
-         [ { "expr": "max(n.omp.threads)", "as": "#Threads" },
-           { "expr": "omp.thread.id", "as": "Thread" }
+         [ "max(n.omp.threads) as \"#Threads\"",
+           "omp.thread.id as \"Thread\""
          ]
        },
        { "level"   : "cross",
          "group by": "omp.thread.id,omp.thread.type",
          "select"  :
-         [ { "expr": "max(max#n.omp.threads)", "as": "#Threads" },
-           { "expr": "omp.thread.id",   "as": "Thread" }
+         [ "max(max#n.omp.threads) as \"#Threads\"",
+           "omp.thread.id as Thread"
          ]
        }
      ]
@@ -645,11 +650,11 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "ibw.bytes.written=first(sum#io.bytes.written,io.bytes.written)" ],
-         "select"  : [ { "expr": "sum(ibw.bytes.written)", "as": "Bytes written", "unit": "Byte" } ]
+         "select"  : [ "sum(ibw.bytes.written) as \"Bytes written\" unit Byte" ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(sum#ibw.bytes.written)", "as": "Avg written",   "unit": "Byte" },
-           { "expr": "sum(sum#ibw.bytes.written)", "as": "Total written", "unit": "Byte" }
+         [ "avg(sum#ibw.bytes.written) as \"Avg written\" unit Byte",
+           "sum(sum#ibw.bytes.written) as \"Total written\" unit Byte"
          ]
        }
      ]
@@ -664,11 +669,11 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "ibr.bytes.read=first(sum#io.bytes.read,io.bytes.read)" ],
-         "select"  : [ { "expr": "sum(ibr.bytes.read)", "as": "Bytes read", "unit": "Byte" } ]
+         "select"  : [ "sum(ibr.bytes.read) as \"Bytes read\" unit Byte" ]
        },
        { "level"   : "cross", "select":
-         [ { "expr": "avg(sum#ibr.bytes.read)", "as": "Avg read",   "unit": "Byte" },
-           { "expr": "sum(sum#ibr.bytes.read)", "as": "Total read", "unit": "Byte" }
+         [ "avg(sum#ibr.bytes.read) as \"Avg read\"   unit Byte",
+           "sum(sum#ibr.bytes.read) as \"Total read\" unit Byte"
          ]
        }
      ]
@@ -697,14 +702,14 @@ const char* builtin_option_specs = R"json(
          ],
         "select"   :
          [
-          { "expr": "io.region", "as": "I/O" },
-          { "expr": "ratio(irb.bytes.read,irb.time.ns,8e3)", "as": "Read Mbit/s", "unit": "Mb/s" }
+          "io.region as I/O",
+          "ratio(irb.bytes.read,irb.time.ns,8e3) as \"Read Mbit/s\" unit Mb/s"
          ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "avg(ratio#irb.bytes_read/irb.time.ns)", "as": "Avg read Mbit/s", "unit": "Mb/s" },
-        { "expr": "max(ratio#irb.bytes_read/irb.time.ns)", "as": "Max read Mbit/s", "unit": "Mb/s" }
+        "avg(ratio#irb.bytes_read/irb.time.ns) as \"Avg read Mbit/s\" unit Mb/s",
+        "max(ratio#irb.bytes_read/irb.time.ns) as \"Max read Mbit/s\" unit Mb/s"
        ]
       }
      ]
@@ -726,14 +731,14 @@ const char* builtin_option_specs = R"json(
          ],
         "select"   :
          [
-          { "expr": "io.region", "as": "I/O" },
-          { "expr": "ratio(iwb.bytes.written,iwb.time.ns,8e3)", "as": "Write Mbit/s", "unit": "Mb/s" }
+          "io.region as I/O",
+          "ratio(iwb.bytes.written,iwb.time.ns,8e3) as \"Write Mbit/s\" unit Mb/s"
          ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "avg(ratio#iwb.bytes.written/iwb.time)", "as": "Avg write Mbit/s", "unit": "Mb/s" },
-        { "expr": "max(ratio#iwb.bytes.written/iwb.time)", "as": "Max write Mbit/s", "unit": "Mb/s" }
+        "avg(ratio#iwb.bytes.written/iwb.time) as \"Avg write Mbit/s\" unit Mb/s",
+        "max(ratio#iwb.bytes.written/iwb.time) as \"Max write Mbit/s\" unit Mb/s"
        ]
       }
      ]
@@ -756,18 +761,18 @@ const char* builtin_option_specs = R"json(
              "umpt.hwm=scale(umpt.hwm.bytes,1e-6)"
            ],
          "select"  :
-           [ { "expr": "inclusive_max(umpt.size)", "as": "Ump MB (Total)", "unit": "MB" },
-             { "expr": "inclusive_max(umpt.count)", "as": "Ump allocs (Total)" },
-             { "expr": "inclusive_max(umpt.hwm)", "as": "Ump HWM (Total)" }
+           [ "inclusive_max(umpt.size)  as \"Ump MB (Total)\" unit MB",
+             "inclusive_max(umpt.count) as \"Ump allocs (Total)\"",
+             "inclusive_max(umpt.hwm)   as \"Ump HWM (Total)\""
            ]
        },
        { "level"   : "cross",
          "select"  :
-           [ { "expr": "avg(imax#umpt.size)", "as": "Ump MB (avg)", "unit": "MB" },
-             { "expr": "max(imax#umpt.size)", "as": "Ump MB (max)", "unit": "MB" },
-             { "expr": "avg(imax#umpt.count)", "as": "Ump allocs (avg)" },
-             { "expr": "max(imax#umpt.count)", "as": "Ump allocs (max)" },
-             { "expr": "max(imax#umpt.hwm)", "as": "Ump HWM (max)" }
+           [ "avg(imax#umpt.size)  as \"Ump MB (avg)\" unit MB",
+             "max(imax#umpt.size)  as \"Ump MB (max)\" unit MB",
+             "avg(imax#umpt.count) as \"Ump allocs (avg)\"",
+             "max(imax#umpt.count) as \"Ump allocs (max)\"",
+             "max(imax#umpt.hwm)   as \"Ump HWM (max)\""
            ]
        }
      ]
@@ -790,22 +795,22 @@ const char* builtin_option_specs = R"json(
              "ump.hwm=scale(ump.hwm.bytes,1e-6)"
            ],
          "select"  :
-           [ { "expr": "umpire.alloc.name", "as": "Allocator" },
-             { "expr": "inclusive_max(ump.size)", "as": "Alloc MB", "unit": "MB" },
-             { "expr": "inclusive_max(ump.hwm)", "as": "Alloc HWM", "unit": "MB" },
-             { "expr": "inclusive_max(ump.count)", "as": "Num allocs" }
+           [ "umpire.alloc.name as Allocator",
+             "inclusive_max(ump.size)  as \"Alloc MB\"  unit MB",
+             "inclusive_max(ump.hwm)   as \"Alloc HWM\" unit MB",
+             "inclusive_max(ump.count) as \"Num allocs\""
            ],
          "group by": "umpire.alloc.name"
        },
        { "level"   : "cross",
          "select"  :
-           [ { "expr": "umpire.alloc.name", "as": "Allocator" },
-             { "expr": "avg(imax#ump.size)", "as": "Alloc MB (avg)", "unit": "MB" },
-             { "expr": "max(imax#ump.size)", "as": "Alloc MB (max)", "unit": "MB" },
-             { "expr": "avg(imax#ump.hwm)", "as": "Alloc HWM (avg)", "unit": "MB" },
-             { "expr": "max(imax#ump.hwm)", "as": "Alloc HWM (max)", "unit": "MB" },
-             { "expr": "avg(imax#ump.count)", "as": "Num allocs (avg)" },
-             { "expr": "max(imax#ump.count)", "as": "Num allocs (max)" }
+           [ "umpire.alloc.name   as Allocator",
+             "avg(imax#ump.size)  as \"Alloc MB (avg)\"  unit MB",
+             "max(imax#ump.size)  as \"Alloc MB (max)\"  unit MB",
+             "avg(imax#ump.hwm)   as \"Alloc HWM (avg)\" unit MB",
+             "max(imax#ump.hwm)   as \"Alloc HWM (max)\" unit MB",
+             "avg(imax#ump.count) as \"Num allocs (avg)\"",
+             "max(imax#ump.count) as \"Num allocs (max)\""
            ],
          "group by": "umpire.alloc.name"
        }
@@ -834,17 +839,17 @@ const char* builtin_option_specs = R"json(
            ],
          "select"  :
            [
-            { "expr": "max(mem.vmsize)", "as": "VmSize", "unit": "pages" },
-            { "expr": "max(mem.vmrss)", "as": "VmRSS", "unit": "pages" },
-            { "expr": "max(mem.data)", "as": "Data", "unit": "pages" }
+            "max(mem.vmsize) as VmSize unit pages",
+            "max(mem.vmrss) as VmRSS unit pages",
+            "max(mem.data) as Data unit pages"
            ]
        },
        { "level"   : "cross",
          "select"  :
            [
-            { "expr": "max(max#mem.vmsize)", "as": "VmSize (max)", "unit": "pages" },
-            { "expr": "max(max#mem.vmrss)", "as": "VmRSS (max)", "unit": "pages" },
-            { "expr": "max(max#mem.data)", "as": "Data (max)", "unit": "pages" }
+            "max(max#mem.vmsize) as \"VmSize (max)\" unit pages",
+            "max(max#mem.vmrss) as \"VmRSS (max)\" unit pages",
+            "max(max#mem.data) as \"Data (max)\" unit pages"
            ]
        }
      ]
@@ -863,10 +868,10 @@ const char* builtin_option_specs = R"json(
            [ "mem.highwatermark.bytes = first(max#alloc.region.highwatermark,alloc.region.highwatermark)",
              "mem.highwatermark = scale(mem.highwatermark.bytes,1e-6)"
            ],
-         "select"  : [ { "expr": "max(mem.highwatermark)", "as": "Allocated MB", "unit": "MB" } ]
+         "select"  : [ "max(mem.highwatermark) as \"Allocated MB\" unit MB" ]
        },
        { "level"   : "cross",
-         "select"  : [ { "expr": "max(max#mem.highwatermark)", "as": "Allocated MB", "unit": "MB" } ]
+         "select"  : [ "max(max#mem.highwatermark) as \"Allocated MB\" unit MB" ]
        }
      ]
     },
@@ -880,13 +885,13 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "mrb.time=first(pcp.time.duration,sum#pcp.time.duration)" ],
-         "select"  : [ { "expr": "ratio(mem.bytes.read,mrb.time,1e-6)", "as": "MB/s (r)", "unit": "MB/s" } ]
+         "select"  : [ "ratio(mem.bytes.read,mrb.time,1e-6) as \"MB/s (r)\" unit MB/s" ]
        },
        { "level"   : "cross", "select":
         [
-         { "expr"  : "avg(ratio#mem.bytes.read/mrb.time)", "as": "Avg MemBW (r) (MB/s)",   "unit": "MB/s" },
-         { "expr"  : "max(ratio#mem.bytes.read/mrb.time)", "as": "Max MemBW (r) (MB/s) ",  "unit": "MB/s" },
-         { "expr"  : "sum(ratio#mem.bytes.read/mrb.time)", "as": "Total MemBW (r) (MB/s)", "unit": "MB/s" }
+         "avg(ratio#mem.bytes.read/mrb.time) as \"Avg MemBW (r) (MB/s)\"   unit MB/s",
+         "max(ratio#mem.bytes.read/mrb.time) as \"Max MemBW (r) (MB/s)\"   unit MB/s",
+         "sum(ratio#mem.bytes.read/mrb.time) as \"Total MemBW (r) (MB/s)\" unit MB/s"
         ]
        }
      ]
@@ -901,13 +906,13 @@ const char* builtin_option_specs = R"json(
      [
        { "level"   : "local",
          "let"     : [ "mwb.time=first(pcp.time.duration,sum#pcp.time.duration)" ],
-         "select"  : [ { "expr": "ratio(mem.bytes.written,mwb.time,1e-6)", "as": "MB/s (w)", "unit": "MB/s" } ]
+         "select"  : [ "ratio(mem.bytes.written,mwb.time,1e-6) as \"MB/s (w)\" unit MB/s" ]
        },
        { "level"   : "cross", "select":
         [
-         { "expr"  : "avg(ratio#mem.bytes.written/mwb.time)", "as": "Avg MemBW (w) (MB/s)",   "unit": "MB/s" },
-         { "expr"  : "max(ratio#mem.bytes.written/mwb.time)", "as": "Max MemBW (w) (MB/s)",   "unit": "MB/s" },
-         { "expr"  : "sum(ratio#mem.bytes.written/mwb.time)", "as": "Total MemBW (w) (MB/s)", "unit": "MB/s" },
+         "avg(ratio#mem.bytes.written/mwb.time) as \"Avg MemBW (w) (MB/s)\"   unit MB/s",
+         "max(ratio#mem.bytes.written/mwb.time) as \"Max MemBW (w) (MB/s)\"   unit MB/s",
+         "sum(ratio#mem.bytes.written/mwb.time) as \"Total MemBW (w) (MB/s)\" unit MB/s",
         ]
        }
      ]
@@ -930,18 +935,18 @@ const char* builtin_option_specs = R"json(
      [
       { "level": "local", "select":
        [
-        { "expr": "any(topdown.retiring)", "as": "Retiring" },
-        { "expr": "any(topdown.backend_bound)", "as": "Backend bound" },
-        { "expr": "any(topdown.frontend_bound)", "as": "Frontend bound" },
-        { "expr": "any(topdown.bad_speculation)", "as": "Bad speculation" }
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\""
        ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "any(any#topdown.retiring)", "as": "Retiring" },
-        { "expr": "any(any#topdown.backend_bound)", "as": "Backend bound" },
-        { "expr": "any(any#topdown.frontend_bound)", "as": "Frontend bound" },
-        { "expr": "any(any#topdown.bad_speculation)", "as": "Bad speculation" }
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\""
        ]
       }
      ]
@@ -957,38 +962,38 @@ const char* builtin_option_specs = R"json(
      [
       { "level": "local", "select":
        [
-        { "expr": "any(topdown.retiring)", "as": "Retiring" },
-        { "expr": "any(topdown.backend_bound)", "as": "Backend bound" },
-        { "expr": "any(topdown.frontend_bound)", "as": "Frontend bound" },
-        { "expr": "any(topdown.bad_speculation)", "as": "Bad speculation" },
-        { "expr": "any(topdown.branch_mispredict)", "as": "Branch mispredict" },
-        { "expr": "any(topdown.machine_clears)", "as": "Machine clears" },
-        { "expr": "any(topdown.frontend_latency)", "as": "Frontend latency" },
-        { "expr": "any(topdown.frontend_bandwidth)", "as": "Frontend bandwidth" },
-        { "expr": "any(topdown.memory_bound)", "as": "Memory bound" },
-        { "expr": "any(topdown.core_bound)", "as": "Core bound" },
-        { "expr": "any(topdown.ext_mem_bound)", "as": "External Memory" },
-        { "expr": "any(topdown.l1_bound)", "as": "L1 bound" },
-        { "expr": "any(topdown.l2_bound)", "as": "L2 bound" },
-        { "expr": "any(topdown.l3_bound)", "as": "L3 bound" }
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\"",
+        "any(topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(topdown.machine_clears) as \"Machine clears\"",
+        "any(topdown.frontend_latency) as \"Frontend latency\"",
+        "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(topdown.memory_bound) as \"Memory bound\"",
+        "any(topdown.core_bound) as \"Core bound\"",
+        "any(topdown.ext_mem_bound) as \"External Memory\"",
+        "any(topdown.l1_bound) as \"L1 bound\"",
+        "any(topdown.l2_bound) as \"L2 bound\"",
+        "any(topdown.l3_bound) as \"L3 bound\""
        ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "any(any#topdown.retiring)", "as": "Retiring" },
-        { "expr": "any(any#topdown.backend_bound)", "as": "Backend bound" },
-        { "expr": "any(any#topdown.frontend_bound)", "as": "Frontend bound" },
-        { "expr": "any(any#topdown.bad_speculation)", "as": "Bad speculation" },
-        { "expr": "any(any#topdown.branch_mispredict)", "as": "Branch mispredict" },
-        { "expr": "any(any#topdown.machine_clears)", "as": "Machine clears" },
-        { "expr": "any(any#topdown.frontend_latency)", "as": "Frontend latency" },
-        { "expr": "any(any#topdown.frontend_bandwidth)", "as": "Frontend bandwidth" },
-        { "expr": "any(any#topdown.memory_bound)", "as": "Memory bound" },
-        { "expr": "any(any#topdown.core_bound)", "as": "Core bound" },
-        { "expr": "any(any#topdown.ext_mem_bound)", "as": "External Memory" },
-        { "expr": "any(any#topdown.l1_bound)", "as": "L1 bound" },
-        { "expr": "any(any#topdown.l2_bound)", "as": "L2 bound" },
-        { "expr": "any(any#topdown.l3_bound)", "as": "L3 bound" }
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\"",
+        "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(any#topdown.machine_clears) as \"Machine clears\"",
+        "any(any#topdown.frontend_latency) as \"Frontend latency\"",
+        "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(any#topdown.memory_bound) as \"Memory bound\"",
+        "any(any#topdown.core_bound) as \"Core bound\"",
+        "any(any#topdown.ext_mem_bound) as \"External Memory\"",
+        "any(any#topdown.l1_bound) as \"L1 bound\"",
+        "any(any#topdown.l2_bound) as \"L2 bound\"",
+        "any(any#topdown.l3_bound) as \"L3 bound\""
        ]
       }
      ]
@@ -1008,20 +1013,20 @@ const char* builtin_option_specs = R"json(
      [
       { "level": "local", "select":
        [
-        { "expr": "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
-        { "expr": "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    },
-        { "expr": "inclusive_sum(sum#papi.UOPS_ISSUED:ANY)",             "as": "uops_issued:any"              },
-        { "expr": "inclusive_sum(sum#papi.INT_MISC:RECOVERY_CYCLES)",    "as": "int_misc:recovery_cycles"     },
-        { "expr": "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE)", "as": "idq_uops_note_delivered:core" }
+        "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P) as cpu_clk_thread_unhalted:thread_p",
+        "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS) as uops_retired:retire_slots",
+        "inclusive_sum(sum#papi.UOPS_ISSUED:ANY) as uops_issued:any",
+        "inclusive_sum(sum#papi.INT_MISC:RECOVERY_CYCLES) as int_misc:recovery_cycles",
+        "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_note_delivered:core"
        ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
-        { "expr": "sum(inclusive#sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    },
-        { "expr": "sum(inclusive#sum#papi.UOPS_ISSUED:ANY)",             "as": "uops_issued:any"              },
-        { "expr": "sum(inclusive#sum#papi.INT_MISC:RECOVERY_CYCLES)",    "as": "int_misc:recovery_cycles"     },
-        { "expr": "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE)", "as": "idq_uops_note_delivered:core" }
+        "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P) as cpu_clk_thread_unhalted:thread_p",
+        "sum(inclusive#sum#papi.UOPS_RETIRED:RETIRE_SLOTS) as uops_retired:retire_slots",
+        "sum(inclusive#sum#papi.UOPS_ISSUED:ANY) as uops_issued:any",
+        "sum(inclusive#sum#papi.INT_MISC:RECOVERY_CYCLES) as int_misc:recovery_cycles",
+        "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_note_delivered:core"
        ]
       }
      ]
@@ -1056,42 +1061,42 @@ const char* builtin_option_specs = R"json(
      [
       { "level": "local", "select":
        [
-        { "expr": "inclusive_sum(sum#papi.BR_MISP_RETIRED:ALL_BRANCHES)", "as": "br_misp_retired:all_branches" },
-        { "expr": "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
-        { "expr": "inclusive_sum(sum#papi.CYCLE_ACTIVITY:CYCLES_NO_EXECUTE)", "as": "cycle_activity:cycles_no_execute" },
-        { "expr": "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_L1D_PENDING)", "as": "cycle_activity:stalls_l1d_pending" },
-        { "expr": "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_L2_PENDING)", "as": "cycle_activity:stalls_l2_pending" },
-        { "expr": "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_LDM_PENDING)", "as": "cycle_activity:stalls_ldm_pending" },
-        { "expr": "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE)", "as": "idq_uops_note_delivered:core" },
-        { "expr": "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE)", "as": "idq_uops_note_delivered:cycles_0_uops_deliv_core" },
-        { "expr": "inclusive_sum(sum#papi.INT_MISC:RECOVERY_CYCLES)", "as": "int_misc:recovery_cycles"     },
-        { "expr": "inclusive_sum(sum#papi.MACHINE_CLEARS:COUNT)", "as": "machine_clears:count" },
-        { "expr": "inclusive_sum(sum#papi.MEM_LOAD_UOPS_RETIRED:L3_HIT)", "as": "mem_load_uops_retired:l3_hit" },
-        { "expr": "inclusive_sum(sum#papi.MEM_LOAD_UOPS_RETIRED:L3_MISS)", "as": "mem_load_uops_retired:l3_miss" },
-        { "expr": "inclusive_sum(sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_1)", "as": "uops_executed:core_cycles_ge_1" },
-        { "expr": "inclusive_sum(sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_2)", "as": "uops_executed:core_cycles_ge_2" },
-        { "expr": "inclusive_sum(sum#papi.UOPS_ISSUED:ANY)",             "as": "uops_issued:any"              },
-        { "expr": "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    }
+        "inclusive_sum(sum#papi.BR_MISP_RETIRED:ALL_BRANCHES) as br_misp_retired:all_branches",
+        "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P) as cpu_clk_thread_unhalted:thread_p",
+        "inclusive_sum(sum#papi.CYCLE_ACTIVITY:CYCLES_NO_EXECUTE) as cycle_activity:cycles_no_execute",
+        "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_L1D_PENDING) as cycle_activity:stalls_l1d_pending",
+        "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_L2_PENDING) as cycle_activity:stalls_l2_pending",
+        "inclusive_sum(sum#papi.CYCLE_ACTIVITY:STALLS_LDM_PENDING) as cycle_activity:stalls_ldm_pending",
+        "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_note_delivered:core",
+        "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE) as idq_uops_note_delivered:cycles_0_uops_deliv_core",
+        "inclusive_sum(sum#papi.INT_MISC:RECOVERY_CYCLES) as int_misc:recovery_cycles",
+        "inclusive_sum(sum#papi.MACHINE_CLEARS:COUNT) as machine_clears:count",
+        "inclusive_sum(sum#papi.MEM_LOAD_UOPS_RETIRED:L3_HIT) as mem_load_uops_retired:l3_hit",
+        "inclusive_sum(sum#papi.MEM_LOAD_UOPS_RETIRED:L3_MISS) as mem_load_uops_retired:l3_miss",
+        "inclusive_sum(sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_1) as uops_executed:core_cycles_ge_1",
+        "inclusive_sum(sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_2) as uops_executed:core_cycles_ge_2",
+        "inclusive_sum(sum#papi.UOPS_ISSUED:ANY) as uops_issued:any",
+        "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS) as uops_retired:retire_slots"
        ]
       },
       { "level": "cross", "select":
        [
-        { "expr": "sum(inclusive#sum#papi.BR_MISP_RETIRED:ALL_BRANCHES)", "as": "br_misp_retired:all_branches" },
-        { "expr": "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
-        { "expr": "sum(inclusive#sum#papi.CYCLE_ACTIVITY:CYCLES_NO_EXECUTE)", "as": "cycle_activity:cycles_no_execute" },
-        { "expr": "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_L1D_PENDING)", "as": "cycle_activity:stalls_l1d_pending" },
-        { "expr": "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_L2_PENDING)", "as": "cycle_activity:stalls_l2_pending" },
-        { "expr": "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_LDM_PENDING)", "as": "cycle_activity:stalls_ldm_pending" },
-        { "expr": "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE)", "as": "idq_uops_note_delivered:core" },
-        { "expr": "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE)", "as": "idq_uops_note_delivered:cycles_0_uops_deliv_core" },
-        { "expr": "sum(inclusive#sum#papi.INT_MISC:RECOVERY_CYCLES)", "as": "int_misc:recovery_cycles"     },
-        { "expr": "sum(inclusive#sum#papi.MACHINE_CLEARS:COUNT)", "as": "machine_clears:count" },
-        { "expr": "sum(inclusive#sum#papi.MEM_LOAD_UOPS_RETIRED:L3_HIT)", "as": "mem_load_uops_retired:l3_hit" },
-        { "expr": "sum(inclusive#sum#papi.MEM_LOAD_UOPS_RETIRED:L3_MISS)", "as": "mem_load_uops_retired:l3_miss" },
-        { "expr": "sum(inclusive#sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_1)", "as": "uops_executed:core_cycles_ge_1" },
-        { "expr": "sum(inclusive#sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_2)", "as": "uops_executed:core_cycles_ge_2" },
-        { "expr": "sum(inclusive#sum#papi.UOPS_ISSUED:ANY)",             "as": "uops_issued:any"              },
-        { "expr": "sum(inclusive#sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    }
+        "sum(inclusive#sum#papi.BR_MISP_RETIRED:ALL_BRANCHES) as br_misp_retired:all_branches",
+        "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P) as cpu_clk_thread_unhalted:thread_p",
+        "sum(inclusive#sum#papi.CYCLE_ACTIVITY:CYCLES_NO_EXECUTE) as cycle_activity:cycles_no_execute",
+        "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_L1D_PENDING) as cycle_activity:stalls_l1d_pending",
+        "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_L2_PENDING) as cycle_activity:stalls_l2_pending",
+        "sum(inclusive#sum#papi.CYCLE_ACTIVITY:STALLS_LDM_PENDING) as cycle_activity:stalls_ldm_pending",
+        "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_note_delivered:core",
+        "sum(inclusive#sum#papi.IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE) as idq_uops_note_delivered:cycles_0_uops_deliv_core",
+        "sum(inclusive#sum#papi.INT_MISC:RECOVERY_CYCLES) as int_misc:recovery_cycles",
+        "sum(inclusive#sum#papi.MACHINE_CLEARS:COUNT) as machine_clears:count",
+        "sum(inclusive#sum#papi.MEM_LOAD_UOPS_RETIRED:L3_HIT) as mem_load_uops_retired:l3_hit",
+        "sum(inclusive#sum#papi.MEM_LOAD_UOPS_RETIRED:L3_MISS) as mem_load_uops_retired:l3_miss",
+        "sum(inclusive#sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_1) as uops_executed:core_cycles_ge_1",
+        "sum(inclusive#sum#papi.UOPS_EXECUTED:CORE_CYCLES_GE_2) as uops_executed:core_cycles_ge_2",
+        "sum(inclusive#sum#papi.UOPS_ISSUED:ANY) as uops_issued:any",
+        "sum(inclusive#sum#papi.UOPS_RETIRED:RETIRE_SLOTS) as uops_retired:retire_slots"
        ]
       }
      ]
