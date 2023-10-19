@@ -6,11 +6,11 @@
           "services"    : [ "papi" ],
           "config"      : { "CALI_PAPI_COUNTERS": "PAPI_TOT_INS" },
           "query"       : [
-              { "level": "local", "select": [ { "expr": "sum(sum#papi.PAPI_TOT_INS)", "as": "Instr." } ] },
+              { "level": "local", "select": [ "sum(sum#papi.PAPI_TOT_INS) as Instr." ] },
               { "level": "cross", "select": [
-                    { "expr": "avg(sum#sum#papi.PAPI_TOT_INS)", "as": "Instr. (avg)"   },
-                    { "expr": "sum(sum#sum#papi.PAPI_TOT_INS)", "as": "Instr. (total)" }
-                ] 
+                  "avg(sum#sum#papi.PAPI_TOT_INS) as \"Instr. (avg)\"",
+                  "sum(sum#sum#papi.PAPI_TOT_INS) as \"Instr. (total)\""
+                ]
               }
           ]
         },
@@ -20,13 +20,13 @@
           "services"    : [ "papi" ],
           "config"      : { "CALI_PAPI_COUNTERS": "PAPI_REF_CYC" },
           "query"       : [
-              { "level": "local", "select": [ { "expr": "sum(sum#papi.PAPI_REF_CYC)", "as": "Cycles" } ] },
+              { "level": "local", "select": [ "sum(sum#papi.PAPI_REF_CYC) as Cycles" ] },
               { "level": "cross", "select": [
-                    { "expr": "avg(sum#sum#papi.PAPI_REF_CYC)", "as": "Cycles (avg)"   },
-                    { "expr": "sum(sum#sum#papi.PAPI_REF_CYC)", "as": "Cycles (total)" }
-                ] 
+                  "avg(sum#sum#papi.PAPI_REF_CYC) as \"Cycles (avg)\"",
+                  "sum(sum#sum#papi.PAPI_REF_CYC) as \"Cycles (total)\""
+                ]
               }
            ]
-        }  
+        }
     ]
 }

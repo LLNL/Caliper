@@ -20,19 +20,19 @@
           ],
           "select" : 
           [
-            { "expr": "scale(flops.scalar,1e-6)", "as": "Mflops (scalar)" },
-            { "expr": "scale(flops.packed,1e-6)", "as": "Mops (vector)" },
-            { "expr": "ratio(flops.scalar,sum#time.duration,1e-6)", "as": "Mflops/s (scalar)" }
+            "scale(flops.scalar,1e-6) as \"Mflops (scalar)\"",
+            "scale(flops.packed,1e-6) as \"Mops (vector)\"",
+            "ratio(flops.scalar,sum#time.duration,1e-6) as \"Mflops/s (scalar)\""
           ]
         },
         { "level"  : "cross",
           "select" :
           [
-            { "expr": "sum(scale#flops.scalar)", "as": "Mflops (scalar)" },
-            { "expr": "sum(scale#flops.packed)", "as": "Mops (vector)" },
-            { "expr": "avg(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (avg)" },
-            { "expr": "max(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (max)" },
-            { "expr": "sum(ratio#flops.scalar/sum#time.duration)", "as": "Mflops/s (sum)" }
+            "sum(scale#flops.scalar) as \"Mflops (scalar)\"",
+            "sum(scale#flops.packed) as \"Mops (vector)\"",
+            "avg(ratio#flops.scalar/sum#time.duration) as \"Mflops/s (avg)\"",
+            "max(ratio#flops.scalar/sum#time.duration) as \"Mflops/s (max)\"",
+            "sum(ratio#flops.scalar/sum#time.duration) as \"Mflops/s (sum)\""
           ]
         }
     ]
@@ -58,17 +58,17 @@
         ],
         "select" : 
         [
-          { "expr": "scale(flops,1e-6)", "as": "Mflops" },
-          { "expr": "ratio(flops,sum#time.duration,1e-6)", "as": "Mflops/s" }
+          "scale(flops,1e-6) as Mflops",
+          "ratio(flops,sum#time.duration,1e-6) as Mflops/s"
         ]
       },
       { "level"  : "cross",
         "select" :
         [
-          { "expr": "sum(scale#flops)", "as": "Mflops" },
-          { "expr": "avg(ratio#flops/sum#time.duration)", "as": "Mflops/s (avg)" },
-          { "expr": "max(ratio#flops/sum#time.duration)", "as": "Mflops/s (max)" },
-          { "expr": "sum(ratio#flops/sum#time.duration)", "as": "Mflops/s (sum)" }
+          "sum(scale#flops) as Mflops",
+          "avg(ratio#flops/sum#time.duration) as \"Mflops/s (avg)\"",
+          "max(ratio#flops/sum#time.duration) as \"Mflops/s (max)\"",
+          "sum(ratio#flops/sum#time.duration) as \"Mflops/s (sum)\""
         ]
       }
   ]
