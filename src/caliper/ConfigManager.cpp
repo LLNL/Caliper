@@ -234,7 +234,6 @@ class ConfigManager::OptionSpec
                     str.append(it->second.to_string());
                     str.append("\"");
                 }
-
                 qarg.select.push_back(str);
             } else {
                 qarg.select.push_back(sc.to_string());
@@ -553,7 +552,7 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    query_select(const char* level, const std::string& in, bool use_alias) const {
+    query_select(const char* level, const std::string& in) const {
         std::string ret = in;
 
         for (const auto *q : get_enabled_query_args(level)) {
@@ -661,11 +660,11 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) {
+    build_query(const char* level, const std::map<std::string, std::string>& in) {
         std::string ret;
 
         ret.append(query_let(level, ::find_or(in, "let")));
-        ret.append(query_select(level, ::find_or(in, "select"), use_alias));
+        ret.append(query_select(level, ::find_or(in, "select")));
         ret.append(query_groupby(level, ::find_or(in, "group by")));
         ret.append(query_where(level, ::find_or(in, "where")));
         ret.append(query_aggregate(level, ::find_or(in, "aggregate")));
@@ -807,9 +806,9 @@ ConfigManager::Options::update_channel_metadata(info_map_t& metadata) const
 }
 
 std::string
-ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) const
+ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in) const
 {
-    return mP->build_query(level, in, use_alias);
+    return mP->build_query(level, in);
 }
 
 //

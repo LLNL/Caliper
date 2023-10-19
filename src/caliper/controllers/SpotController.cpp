@@ -167,7 +167,7 @@ public:
                 { "select",   select },
                 { "group by", "cali.channel,loop,block" },
                 { "where",    std::string("loop.start_iteration,loop=\"") + loopname + "\"" }
-            }, false /* no aliases */);
+            });
 
         local_aggregate(query.c_str(), c, channel(), db, output_agg);
     }
@@ -375,7 +375,7 @@ class SpotController : public cali::internal::CustomOutputController
                     { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
                     { "select",   "inclusive_sum(sum#time.duration)" },
                     { "group by", "path" },
-                }, false /* no aliases */);
+                });
 
             local_aggregate(query.c_str(), c, channel(), m_db, output_agg);
         }

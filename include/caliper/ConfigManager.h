@@ -130,7 +130,7 @@ public:
         /// \param in Base CalQL clauses as needed by the controller
         /// \return Complete CalQL query statement
         std::string
-        build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias = true) const;
+        build_query(const char* level, const std::map<std::string, std::string>& in) const;
 
         friend class ConfigManager;
     };
@@ -282,11 +282,11 @@ public:
     ///   " \"query\"       : "
     ///   " ["
     ///   "  { \"level\": \"local\", \"select\":"
-    ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
+    ///   "   [ \"sum(sum#papi.PAPI_TOT_INS)\" ]"
     ///   "  },"
     ///   "  { \"level\": \"cross\", \"select\":"
-    ///   "   [ { \"expr\": \"avg(sum#sum#papi.PAPI_TOT_INS)\", \"as\": \"Avg instr./rank\" },"
-    ///   "     { \"expr\": \"max(sum#sum#papi.PAPI_TOT_INS)\", \"as\": \"Max instr./rank\" }"
+    ///   "   [ \"avg(sum#sum#papi.PAPI_TOT_INS) as \\\"Avg instr./rank\\\",\"
+    ///   "     \"max(sum#sum#papi.PAPI_TOT_INS) as \\\"Max instr./rank\\\"\"
     ///   "   ]"
     ///   "  }"
     ///   " ]"
@@ -322,9 +322,8 @@ public:
     ///   two aggregation levels: \e local computes process-local
     ///   metrics, and \e cross computes cross-process
     ///   metrics in MPI programs. For each level, specify metrics
-    ///   using a list of "select" definitions, where \e expr defines an
-    ///   aggregation using a CalQL expression, and \e as provides a
-    ///   human-readable name for the metric. Metrics on the \e serial
+    ///   as a list of "select" definitions and aggregations
+    ///   using CalQL expressions. Metrics on the \e serial
     ///   and \e local levels use runtime aggregation results from
     ///   the "aggregate" service as input, metrics on the \e cross level
     ///   use "local" metrics as input.
