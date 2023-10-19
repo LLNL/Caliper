@@ -923,7 +923,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string key = util::read_word(is, ",=()\n");
 
             if (!key.empty()) {
-                if (!(key == "profile" || opts.contains(key))) {
+                if (!(opts.contains(key))) {
                     set_error("Unknown option: " + key);
                     args.clear();
                     return args;
@@ -956,9 +956,6 @@ struct ConfigManager::ConfigManagerImpl
     // Return true if key is an option in any config
     bool
     is_option(const std::string& key) {
-        if (key == "profile") // special-case for deprecated "profile=" argument
-            return true;
-
         if (m_global_opts.contains(key))
             return true;
 
