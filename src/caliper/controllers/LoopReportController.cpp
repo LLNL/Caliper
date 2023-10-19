@@ -93,7 +93,7 @@ class LoopReportController : public cali::internal::CustomOutputController
                 { "select",   select },
                 { "group by", "loop" },
                 { "where",    "loop" }
-            }, false);
+            });
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
@@ -132,7 +132,7 @@ class LoopReportController : public cali::internal::CustomOutputController
                 { "select",   select  },
                 { "group by", "Block" },
                 { "where",    std::string("loop=\"")+loopname+"\"" }
-            }, false);
+            });
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }

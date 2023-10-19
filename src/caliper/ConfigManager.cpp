@@ -125,6 +125,16 @@ join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
+void
+join_stringlist(std::string& in, const std::vector<std::string>& list)
+{
+    for (const auto &s : list) {
+        if (!in.empty())
+            in.append(",");
+        in.append(s);
+    }
+}
+
 std::string
 find_or(const std::map<std::string,std::string>& m, const std::string& k, const std::string v = "")
 {
@@ -179,19 +189,13 @@ expand_variables(const std::string& in, const std::string& val)
 
 class ConfigManager::OptionSpec
 {
-    struct select_expr_t {
-        std::string expression;
-        std::string alias;
-        std::string unit;
-    };
-
     struct query_arg_t {
-        std::vector< select_expr_t > select;
-        std::vector< std::string   > groupby;
-        std::vector< std::string   > let;
-        std::vector< std::string   > where;
-        std::vector< std::string   > aggregate;
-        std::vector< std::string   > orderby;
+        std::vector<std::string> select;
+        std::vector<std::string> groupby;
+        std::vector<std::string> let;
+        std::vector<std::string> where;
+        std::vector<std::string> aggregate;
+        std::vector<std::string> orderby;
     };
 
     struct option_spec_t {
@@ -218,12 +222,32 @@ class ConfigManager::OptionSpec
 
     void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
         for (const StringConverter& sc : list) {
-            std::map<std::string, StringConverter> dict = sc.rec_dict();
-            qarg.select.push_back( {
-                    dict["expr"].to_string(),
-                    dict["as"  ].to_string(),
-                    dict["unit"].to_string()
-                } );
+            bool is_a_dict = false;
+            std::map<std::string, StringConverter> dict = sc.rec_dict(&is_a_dict);
+
+            // The deprecated syntax for a select spec is a list of
+            //   { "expr": "expression", "as": "alias", "unit": "unit" }
+            // dicts. The new syntax is just a list of
+            //   "expression AS alias UNIT unit"
+            // strings. Determine which we have and parse accordingly.
+            if (is_a_dict) {
+                std::string str = dict["expr"].to_string();
+                auto it = dict.find("as");
+                if (it != dict.end()) {
+                    str.append(" as \"");
+                    str.append(it->second.to_string());
+                    str.append("\"");
+                }
+                it = dict.find("unit");
+                if (it != dict.end()) {
+                    str.append(" unit \"");
+                    str.append(it->second.to_string());
+                    str.append("\"");
+                }
+                qarg.select.push_back(str);
+            } else {
+                qarg.select.push_back(sc.to_string());
+            }
         }
     }
 
@@ -520,158 +544,49 @@ struct ConfigManager::Options::OptionsImpl
             info[p.first] = p.second;
     }
 
-    std::vector< const OptionSpec::query_arg_t* >
-    get_enabled_query_args(const char* level) const {
-        std::vector< const OptionSpec::query_arg_t* > ret;
+    std::string
+    build_query(const char* level, const std::map<std::string, std::string>& in) const {
+        std::string q_let = ::find_or(in, "let");
+        std::string q_select = ::find_or(in, "select");
+        std::string q_groupby = ::find_or(in, "group by");
+        std::string q_where = ::find_or(in, "where");
+        std::string q_aggregate = ::find_or(in, "aggregate");
+        std::string q_orderby = ::find_or(in, "order by");
+        std::string q_format = ::find_or(in, "format");
 
-        for (const std::string& opt : enabled_options) {
+        for (const std::string &opt : enabled_options) {
             auto s_it = spec.data.find(opt);
             if (s_it == spec.data.end())
                 continue;
 
             auto l_it = s_it->second.query_args.find(level);
-            if (l_it != s_it->second.query_args.end())
-                ret.push_back(&l_it->second);
-        }
-
-        return ret;
-    }
-
-    std::string
-    query_select(const char* level, const std::string& in, bool use_alias) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &p : q->select) {
-                if (p.expression.empty())
-                    break;
-
-                if (!ret.empty())
-                    ret.append(",");
-
-                ret.append(p.expression);
-
-                if (use_alias) {
-                    if (!p.alias.empty())
-                        ret.append(" as \"").append(p.alias).append("\"");
-                    if (!p.unit.empty())
-                        ret.append(" unit \"").append(p.unit).append("\"");
-                }
+            if (l_it != s_it->second.query_args.end()) {
+                const auto &q = l_it->second;
+                ::join_stringlist(q_let, q.let);
+                ::join_stringlist(q_select, q.select);
+                ::join_stringlist(q_groupby, q.groupby);
+                ::join_stringlist(q_where, q.where);
+                ::join_stringlist(q_aggregate, q.aggregate);
+                ::join_stringlist(q_orderby, q.orderby);
             }
         }
 
-        if (!ret.empty())
-            ret = std::string(" select ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    query_groupby(const char* level, const std::string& in) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &s : q->groupby) {
-                if (!ret.empty())
-                    ret.append(",");
-                ret.append(s);
-            }
-        }
-
-        if (!ret.empty())
-            ret = std::string(" group by ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    query_let(const char* level, const std::string& in) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &s : q->let) {
-                if (!ret.empty())
-                    ret.append(",");
-                ret.append(s);
-            }
-        }
-
-        if (!ret.empty())
-            ret = std::string(" let ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    query_where(const char* level, const std::string& in) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &s : q->where) {
-                if (!ret.empty())
-                    ret.append(",");
-                ret.append(s);
-            }
-        }
-
-        if (!ret.empty())
-            ret = std::string(" where ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    query_aggregate(const char* level, const std::string& in) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &s : q->aggregate) {
-                if (!ret.empty())
-                    ret.append(",");
-                ret.append(s);
-            }
-        }
-
-        if (!ret.empty())
-            ret = std::string(" aggregate ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    query_orderby(const char* level, const std::string& in) const {
-        std::string ret = in;
-
-        for (const auto *q : get_enabled_query_args(level)) {
-            for (const auto &s : q->orderby) {
-                if (!ret.empty())
-                    ret.append(",");
-                ret.append(s);
-            }
-        }
-
-        if (!ret.empty())
-            ret = std::string(" order by ") + ret;
-
-        return ret;
-    }
-
-    std::string
-    build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) {
         std::string ret;
 
-        ret.append(query_let(level, ::find_or(in, "let")));
-        ret.append(query_select(level, ::find_or(in, "select"), use_alias));
-        ret.append(query_groupby(level, ::find_or(in, "group by")));
-        ret.append(query_where(level, ::find_or(in, "where")));
-        ret.append(query_aggregate(level, ::find_or(in, "aggregate")));
-        ret.append(query_orderby(level, ::find_or(in, "order by")));
-
-        {
-            auto it = in.find("format");
-            if (it != in.end())
-                ret.append(" format ").append(it->second);
-        }
+        if (!q_let.empty())
+            ret.append(" let ").append(q_let);
+        if (!q_select.empty())
+            ret.append(" select ").append(q_select);
+        if (!q_groupby.empty())
+            ret.append(" group by ").append(q_groupby);
+        if (!q_where.empty())
+            ret.append(" where ").append(q_where);
+        if (!q_aggregate.empty())
+            ret.append(" aggregate ").append(q_aggregate);
+        if (!q_orderby.empty())
+            ret.append(" order by ").append(q_orderby);
+        if (!q_format.empty())
+            ret.append(" format ").append(q_format);
 
         return ret;
     }
@@ -803,9 +718,9 @@ ConfigManager::Options::update_channel_metadata(info_map_t& metadata) const
 }
 
 std::string
-ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) const
+ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in) const
 {
-    return mP->build_query(level, in, use_alias);
+    return mP->build_query(level, in);
 }
 
 //
@@ -1008,7 +923,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string key = util::read_word(is, ",=()\n");
 
             if (!key.empty()) {
-                if (!(key == "profile" || opts.contains(key))) {
+                if (!(opts.contains(key))) {
                     set_error("Unknown option: " + key);
                     args.clear();
                     return args;
@@ -1041,9 +956,6 @@ struct ConfigManager::ConfigManagerImpl
     // Return true if key is an option in any config
     bool
     is_option(const std::string& key) {
-        if (key == "profile") // special-case for deprecated "profile=" argument
-            return true;
-
         if (m_global_opts.contains(key))
             return true;
 

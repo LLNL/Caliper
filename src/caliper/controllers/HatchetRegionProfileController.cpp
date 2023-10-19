@@ -149,7 +149,7 @@ const char* controller_spec = R"json(
          "level"  : "local",
          "select" :
          [
-          { "expr": "inclusive_scale(sum#time.duration.ns,1e-9)", "as": "time (inc)", "unit": "sec" }
+          "inclusive_scale(sum#time.duration.ns,1e-9) as \"time (inc)\" unit sec"
          ]
         }
        ]

@@ -150,8 +150,8 @@ public:
         return a == b;
     }
 
-    std::string get_query(const char* level, const std::map<std::string, std::string>& in, bool aliases = true) const {
-        return opts.build_query(level, in, aliases);
+    std::string get_query(const char* level, const std::map<std::string, std::string>& in) const {
+        return opts.build_query(level, in);
     }
 
     std::string get_config(const std::string& key) {
@@ -381,10 +381,10 @@ TEST(ConfigManagerTest, BuildQuery)
         std::string q2 = tP->get_query("local", {
                 { "select", "me" },
                 { "format", "expand" },
-            }, false /* no aliases */);
+            });
         expect =
             " let x=scale(y,2)"
-            " select me,sum(x)"
+            " select me,sum(x) as \"X\" unit \"Foos\""
             " group by g"
             " aggregate min(y),max(y)"
             " order by min#y desc"
