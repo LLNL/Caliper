@@ -584,6 +584,18 @@ const char* spot_controller_spec = R"json(
        ]
       },
       {
+       "name": "time.variance",
+       "type": "bool",
+       "category": "metric",
+       "description": "Compute population variance of time across MPI ranks",
+       "query":
+       [
+        {
+         "level": "cross", "select": [ "variance(inclusive#sum#time.duration) as \"Variance time/rank\"" ]
+        }
+       ]
+      },
+      {
        "name": "timeseries",
        "type": "bool",
        "description": "Collect time-series data for annotated loops"

@@ -1245,6 +1245,124 @@ private:
     Config*    m_config;
 };
 
+class VarianceKernel : public AggregateKernel {
+public:
+
+    struct StatisticsAttributes {
+        Attribute variance;
+        Attribute sum;
+        Attribute sqsum;
+        Attribute count;
+    };
+
+    class Config : public AggregateKernelConfig {
+        std::string          m_target_attr_name;
+        Attribute            m_target_attr;
+
+        StatisticsAttributes m_stat_attrs;
+
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+            return m_target_attr;
+        }
+
+        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
+            if (m_target_attr == Attribute::invalid)
+                return false;
+            if (a.sum != Attribute::invalid) {
+                a = m_stat_attrs;
+                return true;
+            }
+
+            int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+            m_stat_attrs.variance =
+                db.create_attribute("variance#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop);
+            m_stat_attrs.count =
+                db.create_attribute("var.count#" + m_target_attr_name, CALI_TYPE_UINT,   prop | CALI_ATTR_HIDDEN);
+            m_stat_attrs.sum =
+                db.create_attribute("var.sum#"   + m_target_attr_name, CALI_TYPE_DOUBLE, prop | CALI_ATTR_HIDDEN);
+            m_stat_attrs.sqsum =
+                db.create_attribute("var.sqsum#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop | CALI_ATTR_HIDDEN);
+
+            a = m_stat_attrs;
+            return true;
+        }
+
+        AggregateKernel* make_kernel() {
+            return new VarianceKernel(this);
+        }
+
+        Config(const std::string& name)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid)
+            { }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
+        }
+    };
+
+    VarianceKernel(Config* config)
+        : m_count(0), m_sum(0.0), m_sqsum(0.0), m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        Attribute target_attr = m_config->get_target_attr(db);
+        StatisticsAttributes stat_attr;
+
+        if (!m_config->get_statistics_attributes(db, stat_attr))
+            return;
+
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attr.id()) {
+                double v = e.value().to_double();
+                m_sum   += v;
+                m_sqsum += (v*v);
+                ++m_count;
+            } else if (e.attribute() == stat_attr.sum.id()) {
+                m_sum += e.value().to_double();
+            } else if (e.attribute() == stat_attr.sqsum.id()) {
+                m_sqsum += e.value().to_double();
+            } else if (e.attribute() == stat_attr.count.id()) {
+                m_count += e.value().to_uint();
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (m_count > 0) {
+            StatisticsAttributes stat_attr;
+
+            if (!m_config->get_statistics_attributes(db, stat_attr))
+                return;
+
+            double avg = m_sum/m_count;
+            list.push_back(Entry(stat_attr.variance, Variant(m_sqsum/m_count - (avg*avg))));
+            list.push_back(Entry(stat_attr.sum, Variant(m_sum)));
+            list.push_back(Entry(stat_attr.sqsum, Variant(m_sqsum)));
+            list.push_back(Entry(stat_attr.count, Variant(cali_make_variant_from_uint(m_count))));
+        }
+    }
+
+private:
+
+    unsigned   m_count;
+    double     m_sum;
+    double     m_sqsum;
+
+    std::mutex m_lock;
+
+    Config*    m_config;
+};
 
 enum KernelID {
     Count         = 0,
@@ -1262,10 +1380,11 @@ enum KernelID {
     ScaledCount   = 12,
     IRatio        = 13,
     IMin          = 14,
-    IMax          = 15
+    IMax          = 15,
+    Variance      = 16
 };
 
-#define MAX_KERNEL_ID IMax
+#define MAX_KERNEL_ID Variance
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -1289,6 +1408,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::IRatio,        "inclusive_ratio", 2, 3, sratio_args },
     { KernelID::IMin,          "inclusive_min", 1, 1, kernel_args  },
     { KernelID::IMax,          "inclusive_max", 1, 1, kernel_args  },
+    { KernelID::Variance,      "variance",      1, 1, kernel_args  },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1313,6 +1433,7 @@ const struct KernelInfo {
     { "inclusive_ratio", ScaledRatioKernel::Config::create_inclusive },
     { "inclusive_min",   MinKernel::Config::create_inclusive },
     { "inclusive_max",   MaxKernel::Config::create_inclusive },
+    { "variance",        VarianceKernel::Config::create      },
 
     { 0, 0 }
 };
@@ -1651,6 +1772,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("imin#") + op.args[0];
     case KernelID::IMax:
         return std::string("imax#") + op.args[0];
+    case KernelID::Variance:
+        return std::string("variance#") + op.args[0];
     }
 
     return std::string();

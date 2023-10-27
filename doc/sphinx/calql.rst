@@ -51,6 +51,7 @@ This table contains a quick reference of all CalQL statements:
     inclusive_ratio(<a>,<b>,<S>) # computes inclusive_sum(<a>)/inclusive_sum(<b>)*<S>
     inclusive_min(<a>)         # compute inclusive min of <a>
     inclusive_max(<a>)         # compute inclusive max of <a>
+    variance(<a>)              # compute population variance (sum(a^2)/N - avg(a)^2) of <a>
     ... AS <name>              # use <name> as column header in tree or table formatter
     ... UNIT <unit>            # use <unit> as unit name
 
