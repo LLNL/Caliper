@@ -723,6 +723,7 @@ TEST(AggregatorTest, StatisticsKernels) {
     spec.aggregate.list.push_back(::make_op("min", "val"));
     spec.aggregate.list.push_back(::make_op("max", "val"));
     spec.aggregate.list.push_back(::make_op("avg", "val"));
+    spec.aggregate.list.push_back(::make_op("variance", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -744,10 +745,12 @@ TEST(AggregatorTest, StatisticsKernels) {
     Attribute attr_min = db.get_attribute("min#val");
     Attribute attr_max = db.get_attribute("max#val");
     Attribute attr_avg = db.get_attribute("avg#val");
+    Attribute attr_var = db.get_attribute("variance#val");
 
     ASSERT_NE(attr_min, Attribute::invalid);
     ASSERT_NE(attr_max, Attribute::invalid);
     ASSERT_NE(attr_avg, Attribute::invalid);
+    ASSERT_NE(attr_var, Attribute::invalid);
 
     std::vector<EntryList> resdb;
 
@@ -764,6 +767,7 @@ TEST(AggregatorTest, StatisticsKernels) {
     EXPECT_EQ(dict[attr_min.id()].value().to_int(), -4);
     EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
+    EXPECT_DOUBLE_EQ(dict[attr_var.id()].value().to_double(), 2018.0/4.0 - (16.5*16.5));
 }
 
 TEST(AggregatorTest, ScaledRatioKernel) {
