@@ -13,4 +13,4 @@ variables:
 master:
   variables:
     SPEC: " +tests"
-  extends: .job_on_ruby
+  extends: .job_on_poodle
