@@ -14,9 +14,9 @@ variables:
 
 # Ruby
 # Arguments for top level allocation
-  RUBY_SHARED_ALLOC: "--exclusive --partition=pdebug --time=30 --nodes=1"
+  RUBY_SHARED_ALLOC: "--exclusive --reservation=ci --qos=ci_ruby --time=5 --nodes=2"
 # Arguments for job level allocation
-  RUBY_JOB_ALLOC: "--overlap --time=20 --nodes=1"
+  RUBY_JOB_ALLOC: "--reservation=ci --qos=ci_ruby --time=4 --nodes=1"
 # Project specific variants for ruby
   PROJECT_RUBY_VARIANTS: "+tests"
 # Project specific deps for ruby
@@ -24,9 +24,9 @@ variables:
 
 # Poodle
 # Arguments for top level allocation
-  POODLE_SHARED_ALLOC: "--exclusive --partition=pdebug --time=15 --nodes=1"
+  POODLE_SHARED_ALLOC: "--exclusive --partition=pdebug --time=5 --nodes=2"
 # Arguments for job level allocation
-  POODLE_JOB_ALLOC: "--overlap --time=14 --nodes=1"
+  POODLE_JOB_ALLOC: "--overlap --time=4 --nodes=1"
 # Project specific variants for poodle
   PROJECT_POODLE_VARIANTS: "+tests"
 # Project specific deps for poodle
@@ -34,9 +34,9 @@ variables:
 
 # Corona
 # Arguments for top level allocation
-  CORONA_SHARED_ALLOC: "--exclusive --time-limit=15m --nodes=1"
+  CORONA_SHARED_ALLOC: "--exclusive --time-limit=8m --nodes=2"
 # Arguments for job level allocation
-  CORONA_JOB_ALLOC: "--time-limit=10m --nodes=1 --begin-time=+5s"
+  CORONA_JOB_ALLOC: "--time-limit=7m --nodes=1 --begin-time=+5s"
 # Project specific variants for corona
   PROJECT_CORONA_VARIANTS: "+tests"
 # Project specific deps for corona
@@ -44,9 +44,9 @@ variables:
 
 # Tioga
 # Arguments for top level allocation
-  TIOGA_SHARED_ALLOC: "--exclusive --time-limit=20m --nodes=1"
+  TIOGA_SHARED_ALLOC: "--exclusive --time-limit=8m --nodes=2"
 # Arguments for job level allocation
-  TIOGA_JOB_ALLOC: "--time-limit=10m --nodes=1 --begin-time=+5s"
+  TIOGA_JOB_ALLOC: "--time-limit=7m --nodes=1 --begin-time=+5s"
 # Project specific variants for tioga
   PROJECT_TIOGA_VARIANTS: "+tests"
 # Project specific deps for tioga

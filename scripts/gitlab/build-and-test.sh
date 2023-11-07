@@ -44,7 +44,7 @@ if [[ -z ${spec} ]]
 
 # generate cmake cache file with uberenv and radiuss spack package
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo "~~~~~ Building Dependencies"
+echo "~~~~~ Building Dependencies $(date)"
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 ./scripts/uberenv/uberenv.py --prefix ${prefix} --spec="${spec}"
 
@@ -83,7 +83,6 @@ cmake_exe=`grep 'CMake executable' ${hostconfig_path} | cut -d ':' -f 2 | xargs`
 # Build
 if [[ "${option}" != "--deps-only" && "${option}" != "--test-only" ]]
 then
-    date
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo "~~~~~ Prefix: ${prefix}"
     echo "~~~~~ Host-config: ${hostconfig_path}"
@@ -93,7 +92,7 @@ then
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo ""
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Building Caliper"
+    echo "~~~~~ Building Caliper $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
     # Map CPU core allocations
@@ -105,8 +104,6 @@ then
     #       use max cores.
     rm -rf ${build_dir} 2>/dev/null
     mkdir -p ${build_dir} && cd ${build_dir}
-
-    date
 
     if [[ "${truehostname}" == "corona" || "${truehostname}" == "tioga" ]]
     then
@@ -134,17 +131,15 @@ then
     fi
 
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper Built"
+    echo "~~~~~ Caliper Built $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    date
 fi
 
 # Test
 if [[ "${option}" != "--build-only" ]]
 then
-    date
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Testing Caliper"
+    echo "~~~~~ Testing Caliper $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
     echo "Moving to ${build_dir}"
@@ -167,7 +162,6 @@ then
     fi
 
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper Tests Complete"
+    echo "~~~~~ Caliper Tests Complete $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    date
 fi
