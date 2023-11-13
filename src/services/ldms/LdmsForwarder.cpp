@@ -125,7 +125,7 @@ void caliper_ldms_connector_initialize()
     const char* env_ldms_auth             = getenv("CALIPER_LDMS_AUTH");
 
     /* Check/set LDMS transport type */
-    if (!env_ldms_xprt || !env_ldms_host || !env_ldms_port || !env_ldms_auth || env_ldms_stream){
+    if (!env_ldms_xprt || !env_ldms_host || !env_ldms_port || !env_ldms_auth || !env_ldms_stream){
         printf("Either the transport, host, port or authentication is not given\n");
         return;
     }
