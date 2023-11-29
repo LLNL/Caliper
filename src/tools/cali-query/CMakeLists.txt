@@ -19,6 +19,5 @@ add_executable(cali-query
 
 target_link_libraries(cali-query caliper-tools-util caliper-serial)
 target_link_libraries(cali-query Threads::Threads)
-target_link_libraries(cali-query ${LDMS_LIBSTREAM} ${LDMS_LIBLDMS})
 
 install(TARGETS cali-query DESTINATION ${CMAKE_INSTALL_BINDIR})
