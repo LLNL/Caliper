@@ -125,15 +125,27 @@ void caliper_ldms_connector_initialize()
     const char* env_ldms_auth             = getenv("CALIPER_LDMS_AUTH");
 
     /* Check/set LDMS transport type */
-    if (!env_ldms_xprt || !env_ldms_host || !env_ldms_port || !env_ldms_auth || !env_ldms_stream){
-	Log(1).stream() << "Either the transport, host, port or authentication is not given\n";
-        return;
+    if (!env_ldms_xprt || !env_ldms_host || !env_ldms_port || !env_ldms_auth){
+	Log(1).stream() << "Either the transport, host, port or authentication is not given. Setting to default.\n";
+  
+    	if (env_ldms_xprt == NULL) 
+        	env_ldms_xprt = "sock";
+
+    	if (env_ldms_host == NULL)
+		env_ldms_host = "localhost";
+
+    	if (env_ldms_port == NULL)
+		env_ldms_port = "412";
+
+    	if (env_ldms_auth == NULL)
+		env_ldms_auth = "munge";
+    	   
     }
 
     pthread_mutex_lock(&ln_lock);
     ldms_cali = setup_connection(env_ldms_xprt, env_ldms_host, env_ldms_port, env_ldms_auth);
         if (conn_status != 0) {
-            Log(0).stream() << "Error setting up connection to LDMS streams daemon:" << conn_status << " -- exiting\n";
+            Log(1).stream() << "Error setting up connection to LDMS streams daemon:" << conn_status << " -- exiting\n";
             pthread_mutex_unlock(&ln_lock);
             return;
         }
