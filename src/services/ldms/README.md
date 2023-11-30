@@ -10,6 +10,8 @@ The LDMS Connector/Fowarder publishes Caliper messages to LDMS for analysis and 
   export CALIPER_LDMS_HOST="localhost"
   export CALIPER_LDMS_PORT="412"
   export CALIPER_LDMS_AUTH="munge"
+  export LD_LIBRARY_PATH="[path_to_LDMS_lib64]":$LD_LIBRARY_PATH
+  export PATH="[path_to_LDMS_bin_directory]":"[path_to_LDMS_sbin_directory]":$PATH
   ```
 - The following environmental variable allows you to debug your LDMS connection and confirm if messages are being pushed by the application and Caliper:
   ```
