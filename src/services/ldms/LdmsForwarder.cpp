@@ -126,19 +126,19 @@ void caliper_ldms_connector_initialize()
 
     /* Check/set LDMS transport type */
     if (!env_ldms_xprt || !env_ldms_host || !env_ldms_port || !env_ldms_auth || !env_ldms_stream){
-        printf("Either the transport, host, port or authentication is not given\n");
+	Log(1).stream() << "Either the transport, host, port or authentication is not given\n";
         return;
     }
 
     pthread_mutex_lock(&ln_lock);
     ldms_cali = setup_connection(env_ldms_xprt, env_ldms_host, env_ldms_port, env_ldms_auth);
         if (conn_status != 0) {
-            printf("Error setting up connection to LDMS streams daemon: %i -- exiting\n", conn_status);
+            Log(0).stream() << "Error setting up connection to LDMS streams daemon:" << conn_status << " -- exiting\n";
             pthread_mutex_unlock(&ln_lock);
             return;
         }
         else if (ldms_cali->disconnected){
-            printf("Disconnected from LDMS streams daemon -- exiting\n");
+            Log(1).stream() << "Disconnected from LDMS streams daemon -- exiting\n";
             pthread_mutex_unlock(&ln_lock);
             return;
         }
@@ -198,10 +198,10 @@ std::ostream& write_ldms_record(std::ostream& os, int mpi_rank, RegionProfile& p
 
 	int rc = ldmsd_stream_publish( ldms_cali, "caliper-perf-data", LDMSD_STREAM_JSON, buffer, strlen(buffer) + 1);
 	if (rc)
-		printf("Error %d publishing data.\n", rc);
+		 Log(0).stream() << "Error " << rc << " publishing data.\n";
 
 	else if (env_ldms_caliper_verbose > 0)
-		printf("Caliper Message published successfully\n");
+		 Log(2).stream() << "Caliper Message published successfully\n";
 	}
 
 	return os;
