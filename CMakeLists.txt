@@ -69,7 +69,7 @@ add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX}
 add_caliper_option(WITH_ROCTX     "Enable AMD RocTX support" FALSE)
 add_caliper_option(WITH_ROCTRACER "Enable AMD RocTracer support" FALSE)
 add_caliper_option(WITH_ROCM      "Enable AMD RocTracer and RocTX support" FALSE)
-# add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
+#add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
@@ -78,6 +78,7 @@ add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
+add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" TRUE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -461,6 +462,17 @@ if (WITH_UMPIRE)
   list(APPEND CALIPER_EXTERNAL_LIBS umpire)
 endif()
 
+if (WITH_LDMS)
+  include(FindLDMS)
+  if (LDMS_FOUND)
+     set(CALIPER_HAVE_LDMS TRUE)     
+     set(CALIPER_LDMS_CMAKE_MSG "Yes, using ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM}")
+     list(APPEND CALIPER_EXTERNAL_LIBS ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM})
+     message("Include Directory: ${LDMS_INCLUDE_DIRS}")
+     message("Library Names: ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM}")
+   endif()
+endif()
+
 # PGI 17.x has issues with some constexpr constructors
 if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
   set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
@@ -583,7 +595,8 @@ set(CALIPER_MODULES
   histogram
   variorum
   umpire
-  CrayPAT)
+  CrayPAT
+  LDMS)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
