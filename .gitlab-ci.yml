@@ -39,7 +39,7 @@ variables:
 
 ##### PROJECT VARIABLES
 # We build the projects in the CI clone directory (used in
-# script/gitlab/build_and_test.sh script).
+# script/gitlab/build-and-test.sh script).
 # TODO: add a clean-up mechanism.
   BUILD_ROOT: ${CI_PROJECT_DIR}
 
@@ -51,7 +51,7 @@ variables:
 # Nested variables are allowed and useful to customize the job command. We
 # prevent variable expansion so that you can define them at job level.
   JOB_CMD:
-    value: "./scripts/gitlab/build_and_test.sh"
+    value: "./scripts/gitlab/build-and-test.sh"
     expand: false
 # Override the pattern describing branches that will skip the "draft PR filter
 # test".  Add protected branches here. See default value in
