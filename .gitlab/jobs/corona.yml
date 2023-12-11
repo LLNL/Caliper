@@ -5,6 +5,12 @@
 # SPDX-License-Identifier: (MIT)
 ##############################################################################
 
+# Override reproducer section to define project specific variables.
+.corona_reproducer_vars: &corona_reproducer_vars
+    - |
+      echo -e "export MODULE_LIST=\"${MODULE_LIST}\""
+      echo -e "export SPEC=\"${SPEC//\"/\\\"}\""
+
 # With GitLab CI, included files cannot be empty.
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
