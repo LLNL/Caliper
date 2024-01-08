@@ -16,7 +16,7 @@ variables:
 # Arguments for top level allocation
   RUBY_SHARED_ALLOC: "--exclusive --reservation=ci --time=5 --nodes=2"
 # Arguments for job level allocation
-  RUBY_JOB_ALLOC: "--overlap --reservation=ci --time=4 --nodes=1"
+  RUBY_JOB_ALLOC: "--overlap --reservation=ci --nodes=1"
 # Project specific variants for ruby
   PROJECT_RUBY_VARIANTS: "+tests"
 # Project specific deps for ruby
@@ -26,7 +26,7 @@ variables:
 # Arguments for top level allocation
   POODLE_SHARED_ALLOC: "--exclusive --partition=pdebug --time=10 --nodes=1"
 # Arguments for job level allocation
-  POODLE_JOB_ALLOC: "--overlap --time=4 --nodes=1"
+  POODLE_JOB_ALLOC: "--overlap --nodes=1"
 # Project specific variants for poodle
   PROJECT_POODLE_VARIANTS: "+tests"
 # Project specific deps for poodle
@@ -36,7 +36,7 @@ variables:
 # Arguments for top level allocation
   CORONA_SHARED_ALLOC: "--exclusive --time-limit=8m --nodes=2 -o per-resource.count=2"
 # Arguments for job level allocation
-  CORONA_JOB_ALLOC: "--time-limit=7m --nodes=1 --begin-time=+5s"
+  CORONA_JOB_ALLOC: "--nodes=1 --begin-time=+5s"
 # Project specific variants for corona
   PROJECT_CORONA_VARIANTS: "+tests"
 # Project specific deps for corona
@@ -46,7 +46,7 @@ variables:
 # Arguments for top level allocation
   TIOGA_SHARED_ALLOC: "--exclusive --time-limit=15m --nodes=2 -o per-resource.count=2"
 # Arguments for job level allocation
-  TIOGA_JOB_ALLOC: "--time-limit=7m --nodes=1 --begin-time=+5s"
+  TIOGA_JOB_ALLOC: "--nodes=1 --begin-time=+5s"
 # Project specific variants for tioga
   PROJECT_TIOGA_VARIANTS: "+tests"
 # Project specific deps for tioga
@@ -66,5 +66,6 @@ variables:
 # CI behavior.
 # See Umpire for an example (export junit test reports).
 .custom_job:
-  variables:
-    JOB_TEMPLATE_CANNOT_BE_EMPTY: "True"
+  artifacts:
+    reports:
+      junit: junit.xml

@@ -96,7 +96,7 @@ then
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
     # Map CPU core allocations
-    declare -A core_counts=(["lassen"]=40 ["ruby"]=28 ["corona"]=32 ["rzansel"]=48 ["tioga"]=32)
+    declare -A core_counts=(["lassen"]=40 ["ruby"]=28 ["poodle"]=28 ["corona"]=32 ["rzansel"]=48 ["tioga"]=32)
 
     # If building, then delete everything first
     # NOTE: 'cmake --build . -j core_counts' attempts to reduce individual build resources.
@@ -155,6 +155,11 @@ then
     then
         echo "ERROR: No tests were found" && exit 1
     fi
+
+    echo "Copying Testing xml reports for export"
+    tree Testing
+    xsltproc -o junit.xml ${project_dir}/blt/tests/ctest-to-junit.xsl Testing/*/Test.xml
+    mv junit.xml ${project_dir}/junit.xml
 
     if grep -q "Errors while running CTest" ./tests_output.txt
     then
