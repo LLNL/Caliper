@@ -26,3 +26,9 @@ master:
   variables:
     SPEC: " +tests %cce@15.0.1"
   extends: .job_on_tioga
+
+rocmcc_5_6_0_hip:
+  variables:
+    ON_TIOGA: "OFF"
+    SPEC: "${PROJECT_TIOGA_VARIANTS} +rocm amdgpu_target=gfx90a %rocmcc@5.6.0 ^hip@5.6.0 ${PROJECT_TIOGA_DEPS}"
+  extends: .job_on_tioga
