@@ -78,7 +78,7 @@ add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
-add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" TRUE)
+add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" FALSE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
