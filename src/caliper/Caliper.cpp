@@ -252,6 +252,8 @@ struct Caliper::ThreadData
     MetadataTree   tree;
     ::siglock      lock;
 
+    SnapshotRecord snapshot;
+
     // This thread's blackboard
     Blackboard     thread_blackboard;
     // copy of the last process blackboard snapshot
@@ -902,17 +904,17 @@ Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord rec;
+    sT->snapshot.reset();
 
     // copy pull_snapshot() functionality to avoid superfluous siglock update
-    rec.builder().append(trigger_info);
-    channel->mP->events.snapshot(this, channel, trigger_info, rec.builder());
+    sT->snapshot.builder().append(trigger_info);
+    channel->mP->events.snapshot(this, channel, trigger_info, sT->snapshot.builder());
 
-    sT->thread_blackboard.snapshot(rec.builder());
+    sT->thread_blackboard.snapshot(sT->snapshot.builder());
     sT->update_process_snapshot(sG->process_blackboard);
-    rec.builder().append(sT->process_snapshot.view());
+    sT->snapshot.builder().append(sT->process_snapshot.view());
 
-    channel->mP->events.process_snapshot(this, channel, trigger_info, rec.view());
+    channel->mP->events.process_snapshot(this, channel, trigger_info, sT->snapshot.view());
 }
 
 void
