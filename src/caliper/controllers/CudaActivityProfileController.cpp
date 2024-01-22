@@ -65,7 +65,7 @@ public:
                               "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
                               " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec"
                             },
-                            { "group by", "prop:nested,cupti.kernel.name,cupti.activity.kind,mpi.rank" },
+                            { "group by", "path,cupti.kernel.name,cupti.activity.kind,mpi.rank" },
                             { "format",   format }
                         });
             } else {
@@ -76,7 +76,7 @@ public:
                             { "select",
                               "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
                               " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec" },
-                            { "group by", "prop:nested,cupti.kernel.name,cupti.activity.kind" },
+                            { "group by", "path,cupti.kernel.name,cupti.activity.kind" },
                             { "format",   format }
                         });
             }
@@ -90,7 +90,7 @@ std::string
 check_args(const cali::ConfigManager::Options& opts) {
     // Check if output.format is valid
 
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
     std::set<std::string> allowed_formats = { "cali", "json", "json-split", "hatchet" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
@@ -102,46 +102,48 @@ check_args(const cali::ConfigManager::Options& opts) {
 cali::ChannelController*
 make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
 
     if (format == "hatchet")
         format = "json-split";
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
-        format = "json-split";
-        Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format
-                        << "\". Using json-split."
+        format = "cali";
+        Log(0).stream() << "cuda-activity-profile: Unknown output format \"" << format
+                        << "\". Using cali."
                         << std::endl;
     }
 
     return new CudaActivityProfileController(name, initial_cfg, opts, format);
 }
 
-const char* controller_spec =
-    "{"
-    " \"name\"        : \"cuda-activity-profile\","
-    " \"description\" : \"Record CUDA activities and a write profile\","
-    " \"categories\"  : [ \"adiak\", \"metric\", \"cuptitrace.metric\", \"output\", \"region\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
-    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"   : \"false\","
-    "     \"CALI_CUPTITRACE_SNAPSHOT_DURATION\" : \"true\""
-    "   },"
-    " \"options\": "
-    " ["
-    "  { "
-    "    \"name\": \"output.format\","
-    "    \"type\": \"string\","
-    "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
-    "  },"
-    "  { "
-    "    \"name\": \"use.mpi\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Merge results into a single output stream in MPI programs\""
-    "  }"
-    " ]"
-    "}";
+const char* controller_spec = R"json(
+    {
+     "name"        : "cuda-activity-profile",
+     "description" : "Record CUDA activities and a write profile",
+     "categories"  : [ "adiak", "metric", "cuptitrace.metric", "output", "region", "event" ],
+     "services"    : [ "aggregate", "cupti", "cuptitrace", "event" ],
+     "config"      :
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
+         "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
+         "CALI_CUPTITRACE_SNAPSHOT_DURATION" : "true"
+       },
+     "defaults"    : { "node.order": "true" },
+     "options":
+     [
+      {
+        "name": "output.format",
+        "type": "string",
+        "description": "Output format ('hatchet', 'cali', 'json')"
+      },
+      {
+        "name": "use.mpi",
+        "type": "bool",
+        "description": "Merge results into a single output stream in MPI programs"
+      }
+     ]
+    };
+)json";
 
 } // namespace [anonymous]
 

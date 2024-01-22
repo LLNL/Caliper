@@ -90,7 +90,7 @@ std::string
 check_args(const cali::ConfigManager::Options& opts) {
     // Check if output.format is valid
 
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
     std::set<std::string> allowed_formats = { "cali", "json", "json-split", "hatchet" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
@@ -102,13 +102,13 @@ check_args(const cali::ConfigManager::Options& opts) {
 cali::ChannelController*
 make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string format = opts.get("output.format", "cali").to_string();
 
     if (format == "hatchet")
         format = "json-split";
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
-        format = "json-split";
+        format = "cali";
         Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format
                         << "\". Using json-split."
                         << std::endl;
@@ -130,6 +130,7 @@ const char* controller_spec = R"json(
          "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true",
          "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "false"
        },
+     "defaults"    : { "node.order": "true" },
      "options":
      [
       {
