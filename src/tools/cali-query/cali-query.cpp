@@ -302,10 +302,10 @@ int main(int argc, const char* argv[])
         else
             snap_proc = aggregate;
 
-        if (!spec.preprocess_ops.empty())
-            snap_proc = SnapshotFilterStep(Preprocessor(spec),   snap_proc);
         if (spec.filter.selection == QuerySpec::FilterSelection::List)
             snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
+        if (!spec.preprocess_ops.empty())
+            snap_proc = SnapshotFilterStep(Preprocessor(spec),   snap_proc);
 
         if (args.is_set("list-attributes")) {
             node_proc = AttributeExtract(snap_proc);

@@ -23,8 +23,8 @@ struct QueryProcessor::QueryProcessorImpl
 
     void
     process_record(CaliperMetadataAccessInterface& db, const EntryList& in_rec) {
-        if (filter.pass(db, in_rec)) {
-            auto rec = preprocessor.process(db, in_rec);
+        auto rec = preprocessor.process(db, in_rec);
+        if (filter.pass(db, rec)) {
 
             if (do_aggregate)
                 aggregator.add(db, rec);

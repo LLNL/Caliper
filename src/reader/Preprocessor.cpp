@@ -328,7 +328,7 @@ public:
                     return;
                 type  = m_tgt_attr.type();
                 prop |= m_tgt_attr.properties();
-                prop ~= CALI_ATTR_NESTED;
+                prop &= ~CALI_ATTR_NESTED;
             }
 
             m_res_attr = db.create_attribute(m_res_attr_name, type, prop);
