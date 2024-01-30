@@ -33,3 +33,25 @@ CaliperMetadataAccessInterface::find_attributes_with_prop(int prop) const
 
     return ret;
 }
+
+namespace cali
+{
+
+Entry
+get_path_entry(const CaliperMetadataAccessInterface& db, const Entry& e)
+{
+    Entry ret;
+
+    if (e.is_reference()) {
+        for (Node* node = e.node(); node; node = node->parent())
+            if (db.get_attribute(node->attribute()).is_nested()) {
+                ret = Entry(node);
+                break;
+            }
+    }
+
+    return ret;
+}
+
+}
+
