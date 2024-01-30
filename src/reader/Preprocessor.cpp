@@ -273,7 +273,7 @@ public:
 
             if (v_tgt.empty())
                 continue;
-            
+
             v_sum += v_tgt;
         }
 
@@ -293,12 +293,52 @@ public:
 
 };
 
+class LeafKernel : public Kernel
+{
+    std::string m_res_attr_name;
+    Attribute   m_res_attr;
+    std::string m_tgt_attr_name;
+    Attribute   m_tgt_attr;
+
+public:
+
+    LeafKernel(const std::string& def, const std::string& tgt)
+        : m_res_attr_name(def),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr_name(tgt),
+          m_tgt_attr(Attribute::invalid)
+        { }
+
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        if (m_tgt_attr == Attribute::invalid) {
+            m_tgt_attr = db.get_attribute(m_tgt_attr_name);
+            if (m_tgt_attr == Attribute::invalid)
+                return;
+            m_res_attr = db.create_attribute(m_res_attr_name, m_tgt_attr.type(),
+                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | m_tgt_attr.properties());
+        }
+
+        for (Entry& e : rec) {
+            Entry e_target = e.get(m_tgt_attr);
+            if (!e_target.empty()) {
+                rec.push_back(Entry(m_res_attr, e_target.value()));
+                return;
+            }
+        }
+    }
+
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+        return new LeafKernel(def, args.front());
+    }
+};
+
 enum KernelID {
     ScaledRatio,
     Scale,
     Truncate,
     First,
-    Sum
+    Sum,
+    Leaf
 };
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -315,6 +355,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
     { KernelID::First,         "first",         1, 8, first_args   },
     { KernelID::Sum,           "sum",           1, 8, first_args   },
+    { KernelID::Leaf,          "leaf",          1, 1, scale_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -326,10 +367,11 @@ const KernelCreateFn kernel_create_fn[] = {
     ScaleKernel::create,
     TruncateKernel::create,
     FirstKernel::create,
-    SumKernel::create
+    SumKernel::create,
+    LeafKernel::create
 };
 
-constexpr int MAX_KERNEL_ID = 4;
+constexpr int MAX_KERNEL_ID = 5;
 
 }
 

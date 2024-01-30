@@ -433,3 +433,33 @@ TEST(PreprocessorTest, SumKernel)
     EXPECT_EQ(a_it->second.value().to_int(), 42);
     EXPECT_EQ(s_it->second.value().to_int(), 66);
 }
+
+TEST(PreprocessorTest, LeafKernel)
+{
+    CaliperMetadataDB db;
+
+    Attribute ctx =
+        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
+    Attribute a[2] = { ctx, ctx };
+    Variant   v[2] = { Variant("foo"), Variant("bar") };
+
+    Node* n_1 = db.make_tree_entry(2, a, v);
+
+    EntryList rec;
+    rec.push_back(Entry(n_1));
+
+    QuerySpec spec;
+    spec.preprocess_ops.push_back(::make_spec("leaf", ::make_op("leaf", "ctx")));
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute leaf_attr = db.get_attribute("leaf");
+
+    ASSERT_NE(leaf_attr, Attribute::invalid);
+    ASSERT_EQ(out.size(), 2u);
+    EXPECT_EQ(out[1].attribute(), leaf_attr.id());
+    EXPECT_EQ(out[1].value(), n_1->data());
+    EXPECT_NE(out[1].node()->parent(), n_1->parent());
+}
