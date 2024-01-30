@@ -65,4 +65,6 @@ public:
     get_globals() = 0;
 };
 
+Entry get_path_entry(const CaliperMetadataAccessInterface& db, const Entry& e);
+
 }
