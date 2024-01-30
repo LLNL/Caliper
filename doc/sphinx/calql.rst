@@ -29,6 +29,7 @@ This table contains a quick reference of all CalQL statements:
     <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
     <a>=first(<a0>,<a1>, ...)  # <a> is the first of <a0>, <a1>, ... found in the input record
     <a>=sum(<a0>,<a1>,...)     # computes sum of <a0>, <a1>, ... in the input record
+    <a>=leaf(<b>)              # Takes the leaf of the region hierarchy <b>
     ... IF <condition>         # apply only if input record meets condition
 
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)

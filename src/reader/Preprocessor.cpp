@@ -336,7 +336,7 @@ public:
 
         for (const Entry& e : rec) {
             Entry e_target = m_use_path ? get_path_entry(db, e) : e.get(m_tgt_attr);
-            if (!e_target.empty()) {
+            if (!e_target.empty() && m_res_attr.type() == e_target.value().type()) {
                 rec.push_back(Entry(m_res_attr, e_target.value()));
                 return;
             }
