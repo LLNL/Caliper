@@ -18,5 +18,7 @@ set(CALIPER_MPIWRAP_SOURCES
 
 add_library(caliper-mpiwrap OBJECT ${CALIPER_MPIWRAP_SOURCES})
 target_compile_features(caliper-mpiwrap PUBLIC cxx_std_11)
+target_include_directories(caliper-mpiwrap PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_mpi_service_objlib(caliper-mpiwrap)
+add_service_objlib(caliper-mpiwrap)
+add_caliper_service("mpi CALIPER_HAVE_MPI")

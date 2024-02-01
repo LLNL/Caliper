@@ -13,7 +13,7 @@ set(CALIPER_TEST_SOURCES
 
 add_executable(test_caliper ${CALIPER_TEST_SOURCES})
 
-target_link_libraries(test_caliper caliper-serial gtest_main)
+target_link_libraries(test_caliper caliper gtest_main)
 
 set(CALIPER_TEST_JSON_FILES
   test_single_config.json
