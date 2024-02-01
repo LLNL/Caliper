@@ -28,7 +28,7 @@ variables:
 # Arguments for job level allocation
   POODLE_JOB_ALLOC: "--overlap --nodes=1"
 # Project specific variants for poodle
-  PROJECT_POODLE_VARIANTS: "+tests"
+  PROJECT_POODLE_VARIANTS: "+tests ~papi"
 # Project specific deps for poodle
   PROJECT_POODLE_DEPS: ""
 
