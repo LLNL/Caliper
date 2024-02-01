@@ -40,7 +40,6 @@ Variant get_value(const CaliperMetadataAccessInterface& db, const std::string& a
     return Variant();
 }
 
-
 class Kernel {
 public:
 
@@ -273,7 +272,7 @@ public:
 
             if (v_tgt.empty())
                 continue;
-            
+
             v_sum += v_tgt;
         }
 
@@ -293,12 +292,72 @@ public:
 
 };
 
+class LeafKernel : public Kernel
+{
+    bool        m_use_path;
+    std::string m_res_attr_name;
+    Attribute   m_res_attr;
+    std::string m_tgt_attr_name;
+    Attribute   m_tgt_attr;
+
+public:
+
+    LeafKernel(const std::string& def)
+        : m_use_path(true),
+          m_res_attr_name(def),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr(Attribute::invalid)
+        { }
+
+    LeafKernel(const std::string& def, const std::string& tgt)
+        : m_use_path(false),
+          m_res_attr_name(def),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr_name(tgt),
+          m_tgt_attr(Attribute::invalid)
+        { }
+
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        if (m_res_attr == Attribute::invalid) {
+            cali_attr_type type = CALI_TYPE_STRING;
+            int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+            if (!m_use_path) {
+                m_tgt_attr = db.get_attribute(m_tgt_attr_name);
+                if (m_tgt_attr == Attribute::invalid)
+                    return;
+                type  = m_tgt_attr.type();
+                prop |= m_tgt_attr.properties();
+                prop &= ~CALI_ATTR_NESTED;
+            }
+
+            m_res_attr = db.create_attribute(m_res_attr_name, type, prop);
+        }
+
+        for (const Entry& e : rec) {
+            Entry e_target = m_use_path ? get_path_entry(db, e) : e.get(m_tgt_attr);
+            if (!e_target.empty() && m_res_attr.type() == e_target.value().type()) {
+                rec.push_back(Entry(m_res_attr, e_target.value()));
+                return;
+            }
+        }
+    }
+
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+        if (args.empty())
+            return new LeafKernel(def);
+
+        return new LeafKernel(def, args.front());
+    }
+};
+
 enum KernelID {
     ScaledRatio,
     Scale,
     Truncate,
     First,
-    Sum
+    Sum,
+    Leaf
 };
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -315,6 +374,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
     { KernelID::First,         "first",         1, 8, first_args   },
     { KernelID::Sum,           "sum",           1, 8, first_args   },
+    { KernelID::Leaf,          "leaf",          0, 1, scale_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -326,10 +386,11 @@ const KernelCreateFn kernel_create_fn[] = {
     ScaleKernel::create,
     TruncateKernel::create,
     FirstKernel::create,
-    SumKernel::create
+    SumKernel::create,
+    LeafKernel::create
 };
 
-constexpr int MAX_KERNEL_ID = 4;
+constexpr int MAX_KERNEL_ID = 5;
 
 }
 

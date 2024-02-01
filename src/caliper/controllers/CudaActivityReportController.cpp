@@ -44,7 +44,7 @@ public:
                 ",max(iscale#cupti.activity.duration) as \"Max GPU Time\""
                 ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\"";
 
-            std::string groupby = "prop:nested";
+            std::string groupby = "path";
 
             if (opts.is_enabled("show_kernels")) {
                 groupby += ",cupti.kernel.name";
@@ -116,31 +116,33 @@ make_controller(const char* name, const config_map_t& initial_cfg, const cali::C
     return new CudaActivityReportController(use_mpi(opts), name, initial_cfg, opts);
 }
 
-const char* controller_spec =
-    "{"
-    " \"name\"        : \"cuda-activity-report\","
-    " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
-    " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\", \"treeformatter\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
-    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"   : \"false\","
-    "     \"CALI_CUPTITRACE_SNAPSHOT_DURATION\" : \"true\""
-    "   },"
-    " \"options\": "
-    " ["
-    "  {"
-    "   \"name\": \"aggregate_across_ranks\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Aggregate results across MPI ranks\""
-    "  },"
-    "  {"
-    "   \"name\": \"show_kernels\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Show kernel names\""
-    "  }"
-    " ]"
-    "}";
+const char* controller_spec = R"json(
+    {
+     "name"        : "cuda-activity-report",
+     "description" : "Record and print CUDA activities (kernel executions, memcopies, etc.)",
+     "categories"  : [ "output", "region", "cuptitrace.metric", "treeformatter", "event" ],
+     "services"    : [ "aggregate", "cupti", "cuptitrace", "event" ],
+     "config"      :
+       { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
+         "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
+         "CALI_CUPTITRACE_SNAPSHOT_DURATION" : "true"
+       },
+     "defaults"    : { "order_as_visited": "true" },
+     "options":
+     [
+      {
+       "name": "aggregate_across_ranks",
+       "type": "bool",
+       "description": "Aggregate results across MPI ranks"
+      },
+      {
+       "name": "show_kernels",
+       "type": "bool",
+       "description": "Show kernel names"
+      }
+     ]
+    }
+)json";
 
 } // namespace [anonymous]
 

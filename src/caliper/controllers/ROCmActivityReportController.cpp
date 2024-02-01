@@ -127,6 +127,7 @@ const char* controller_spec = R"json(
          "CALI_EVENT_ENABLE_SNAPSHOT_INFO"  : "false",
          "CALI_ROCTRACER_TRACE_ACTIVITIES"  : "true"
        },
+     "defaults"    : { "order_as_visited": "true" },
      "options":
      [
       {
