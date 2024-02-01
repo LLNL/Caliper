@@ -18,5 +18,5 @@ variables:
 ## Template for extra jobs defined by the project.
 master:
   variables:
-    SPEC: " +tests"
+    SPEC: " +tests ~papi"
   extends: .job_on_poodle
