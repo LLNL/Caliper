@@ -133,9 +133,6 @@ The CMake package defines the following variables and targets:
 +----------------------------+------------------------------------------+
 | caliper                    | The Caliper runtime library (target)     |
 +----------------------------+------------------------------------------+
-| caliper-serial             | Caliper runtime library without MPI      |
-|                            | dependencies (target)                    |
-+----------------------------+------------------------------------------+
 | caliper-tools-util         | Utilities for caliper tools (target)     |
 +----------------------------+------------------------------------------+
 
