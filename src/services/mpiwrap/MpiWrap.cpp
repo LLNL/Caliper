@@ -92,6 +92,6 @@ void mpi_register(Caliper* c, Channel* chn)
 namespace cali
 {
 
-CaliperService mpiwrap_service = { ::mpi_service_spec, ::mpi_register };
+CaliperService mpi_service = { ::mpi_service_spec, ::mpi_register };
 
 } // namespace cali

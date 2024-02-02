@@ -1,11 +1,10 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "MpiEvents.h"
-
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/MpiEvents.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/cali-mpi.h"
