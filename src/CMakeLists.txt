@@ -41,10 +41,11 @@ target_include_directories(
   INTERFACE
   "$<INSTALL_INTERFACE:include>")
 
-list(APPEND CALIPER_ALL_EXTERNAL_LIBS
-  ${CALIPER_EXTERNAL_LIBS})
+if (CALIPER_HAVE_MPI)
+  target_link_libraries(caliper PUBLIC MPI::MPI_CXX)
+endif()
 
-foreach (_extlib ${CALIPER_ALL_EXTERNAL_LIBS})
+foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper PRIVATE ${_extlib})
 endforeach()
 
