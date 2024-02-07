@@ -42,7 +42,7 @@ target_include_directories(
   "$<INSTALL_INTERFACE:include>")
 
 if (CALIPER_HAVE_MPI)
-  target_link_libraries(caliper PUBLIC MPI::MPI_C)
+  target_link_libraries(caliper PUBLIC ${MPI_CXX_LIBRARIES})
 endif()
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
