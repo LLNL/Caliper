@@ -36,7 +36,7 @@ BUILD_TESTING
 WITH_ADIAK
   Enable support for recording program metadata with the
   `Adiak <https://github.com/LLNL/Adiak>`_ library. Point CMake to adiak CMake
-  module, e.g. with ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
+  module, e.g. with ``-Dadiak_DIR=<path-to-adiak>/lib/cmake/adiak``.
 
 WITH_CUPTI
   Enable support for CUDA performance analysis (wrapping of driver/runtime API
