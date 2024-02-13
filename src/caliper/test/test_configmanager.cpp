@@ -466,8 +466,7 @@ TEST(ConfigManagerTest, LoadCmd_ConfigAndOptions) {
         "testcontroller"
         "\n A test controller"
         "\n  Options:"
-        "\n   testoption"
-        "\n    A test option";
+        "\n   testoption A test option";
 
     EXPECT_EQ(mgr.get_documentation_for_spec("testcontroller"), expect);
 }
