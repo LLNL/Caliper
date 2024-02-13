@@ -1187,44 +1187,36 @@ struct ConfigManager::ConfigManagerImpl
 
     std::string
     get_documentation_for_spec(const char* name) const {
-        std::string doc(name);
+        std::ostringstream out;
+        out << name;
 
         auto it = m_spec.find(name);
         if (it == m_spec.end()) {
-            doc.append(": Not available");
+            out << ": Not available";
         } else {
-            doc.append("\n ").append(it->second->description);
-
+            out << "\n " << it->second->description;
             auto optdescrmap = options_for_config(*it->second).get_option_descriptions();
 
             if (!optdescrmap.empty()) {
-                doc.append("\n  Options:");
+                size_t len = 0;
                 for (const auto &op : optdescrmap)
-                    doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+                    len = std::max<size_t>(len, op.first.size());
+
+                out << "\n  Options:";
+                for (const auto &op : optdescrmap)
+                    util::pad_right(out << "\n   ", op.first, len) << op.second;
             }
         }
 
-        return doc;
+        return out.str();
     }
 
     std::vector<std::string>
     get_docstrings() const {
         std::vector<std::string> ret;
 
-        for (const auto &p : m_spec) {
-            std::string doc = p.first;
-            doc.append("\n ").append(p.second->description);
-
-            auto optdescrmap = options_for_config(*p.second).get_option_descriptions();
-
-            if (!optdescrmap.empty()) {
-                doc.append("\n  Options:");
-                for (const auto &op : optdescrmap)
-                    doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
-            }
-
-            ret.push_back(doc);
-        }
+        for (const auto &p : m_spec)
+            ret.push_back(get_documentation_for_spec(p.first.c_str()));
 
         return ret;
     }
