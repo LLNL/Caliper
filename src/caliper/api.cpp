@@ -17,6 +17,7 @@ cali_id_t cali_subscription_event_attr_id  = CALI_INV_ID;
 
 cali_id_t cali_loop_attr_id   = CALI_INV_ID;
 cali_id_t cali_region_attr_id = CALI_INV_ID;
+cali_id_t cali_phase_attr_id  = CALI_INV_ID;
 
 cali_id_t cali_alloc_fn_attr_id                 = CALI_INV_ID;
 cali_id_t cali_alloc_label_attr_id              = CALI_INV_ID;
@@ -36,6 +37,7 @@ namespace cali
     Attribute subscription_event_attr;
 
     Attribute region_attr;
+    Attribute phase_attr;
     Attribute loop_attr;
 
     void init_attribute_classes(Caliper* c) {
@@ -61,8 +63,11 @@ namespace cali
             c->create_attribute("loop", CALI_TYPE_STRING, CALI_ATTR_NESTED);
         region_attr =
             c->create_attribute("region", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+        phase_attr =
+            c->create_attribute("phase", CALI_TYPE_STRING, CALI_ATTR_NESTED | CALI_ATTR_LEVEL_4);
 
         cali_region_attr_id = region_attr.id();
+        cali_phase_attr_id = phase_attr.id();
         cali_loop_attr_id = loop_attr.id();
     }
 }

@@ -43,7 +43,7 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'region': 'main', 'count': '16', 'inclusive#count': '77' }))
+            snapshots, { 'region': 'main', 'count': '19', 'inclusive#count': '81' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region': 'main/foo', 'count': '48', 'inclusive#count': '60' }))
 

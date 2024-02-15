@@ -24,11 +24,11 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
+            snapshots, {'iteration', 'myphase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
+            snapshots, {'event.end#myphase': 'initialization', 'myphase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
+            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'myphase': 'loop'}))
 
     def test_cali_config(self):
         # Test the builtin ConfigManager (CALI_CONFIG env var)
@@ -47,11 +47,11 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 10)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, {'iteration', 'phase', 'time.inclusive.duration.ns'}))
+            snapshots, {'iteration', 'myphase', 'time.inclusive.duration.ns'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
+            snapshots, {'event.end#myphase': 'initialization', 'myphase': 'initialization'}))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
+            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'myphase': 'loop'}))
 
     def test_ann_metadata(self):
         target_cmd = [ './ci_test_basic' ]
@@ -67,7 +67,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'phase',
+            snapshots, { 'cali.attribute.name': 'myphase',
                          'meta.int':            '42',
                          'cali.attribute.prop': '20' # default property: CALI_ATTR_SCOPE_THREAD
             }))
@@ -87,7 +87,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'cali.attribute.name': 'phase',
+            snapshots, { 'cali.attribute.name': 'myphase',
                          'meta.int':            '42',
                          'cali.attribute.prop': '12' # CALI_ATTR_SCOPE_PROCESS
             }))
@@ -279,6 +279,26 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, {
                 'region' : 'main/before_loop' }))
+
+    def test_region_level_filter(self):
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,level=phase,output=stdout' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, None)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertFalse(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'region' : 'main/foo',
+                'loop'   : 'main loop/fooloop' }))
+        self.assertFalse(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'region' : 'main/bar',
+                'phase'  : 'after_loop' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'region' : 'main',
+                'phase'  : 'after_loop' }))
 
 if __name__ == "__main__":
     unittest.main()

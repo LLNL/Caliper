@@ -264,6 +264,13 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "level",
+     "type"        : "string",
+     "description" : "Minimum region level that triggers snapshots",
+     "category"    : "event",
+     "config"      : { "CALI_EVENT_REGION_LEVEL": "{}" }
+    },
+    {
      "name"        : "include_regions",
      "type"        : "string",
      "description" : "Only take snapshots for the given region names/patterns.",

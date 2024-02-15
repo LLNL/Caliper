@@ -24,7 +24,7 @@ class CaliperTemplateServicesTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 1)
 
         self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, { 'phase',
+            snapshots, { 'myphase',
                          'measurement.val.ci_test',
                          'measurement.ci_test' }))
 

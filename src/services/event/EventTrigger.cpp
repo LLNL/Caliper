@@ -31,6 +31,7 @@ using namespace std;
 namespace cali
 {
     extern Attribute subscription_event_attr; // From api.cpp
+    extern Attribute phase_attr;
 }
 
 namespace
@@ -52,7 +53,8 @@ class EventTrigger
 
     std::vector<std::string> trigger_attr_names;
 
-    bool                     enable_snapshot_info;
+    bool                     enable_snapshot_info { true };
+    int                      region_level { 0 };
 
     Node                     event_root_node;
 
@@ -61,6 +63,26 @@ class EventTrigger
     //
     // --- Helpers / misc
     //
+
+    void parse_region_level(Channel* channel, const std::string& str) {
+        if (str == "phase") {
+            region_level = phase_attr.level();
+        } else {
+            bool ok = false;
+            int level = StringConverter(str).to_int(&ok);
+
+            if (!ok || level < 0 || level > 7) {
+                Log(0).stream() << channel->name()
+                    << ": event: Invalid region level \"" << str << "\"\n";
+                region_level = 0;
+            } else {
+                region_level = level;
+            }
+        }
+
+        Log(2).stream() << channel->name()
+            << ": event: Using region level " << region_level << "\n";
+    }
 
     void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
         cali_id_t evt_attr_ids[3] = { CALI_INV_ID };
@@ -101,6 +123,8 @@ class EventTrigger
         auto it = std::find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
 
         if (trigger_attr_names.size() > 0 && it == trigger_attr_names.end())
+            return;
+        if (attr.level() < region_level)
             return;
 
         mark_attribute(c, chn, attr);
@@ -251,6 +275,7 @@ class EventTrigger
 
             trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
             enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
+            parse_region_level(channel, cfg.get("region_level").to_string());
 
             {
                 std::string i_filter =
@@ -334,6 +359,11 @@ const char* EventTrigger::s_spec = R"json(
             { "name"        : "trigger",
               "type"        : "stringlist",
               "description" : "List of attributes that trigger measurements (optional)"
+            },
+            { "name"        : "region_level",
+              "type"        : "string",
+              "description" : "Minimum region level that triggers snapshots",
+              "value"       : "0"
             },
             { "name"        : "enable_snapshot_info",
               "type"        : "bool",

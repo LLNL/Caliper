@@ -203,6 +203,18 @@ extern cali_id_t cali_annotation_attr_id;
 #define CALI_MARK_END(name) \
     cali_end_region(name)
 
+/// \brief Mark begin of a phase region
+///
+/// A phase marks high-level, long(er)-running code regions. While regular
+/// regions use the "region" attribute with annotation level 0, phase regions
+/// use the "phase" attribute with annotation level 4. Otherwise phases behave
+/// identical to regular Caliper regions.
+#define CALI_MARK_PHASE_BEGIN(name) \
+    cali_begin_phase(name)
+
+/// \brief Mark end of a phase region
+#define CALI_MARK_PHASE_END(name) \
+    cali_end_phase(name)
 /**
  * \} (group)
  */
