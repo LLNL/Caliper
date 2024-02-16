@@ -300,5 +300,21 @@ class CaliperBasicTraceTest(unittest.TestCase):
                 'region' : 'main',
                 'phase'  : 'after_loop' }))
 
+    def test_branch_filter(self):
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,include_branches=after_loop,output=stdout' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, None)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertFalse(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'region' : 'main/foo',
+                'loop'   : 'main loop/fooloop' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'region' : 'main/bar',
+                'phase'  : 'after_loop' }))
+
 if __name__ == "__main__":
     unittest.main()

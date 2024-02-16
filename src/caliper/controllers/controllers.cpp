@@ -271,6 +271,13 @@ const char* builtin_option_specs = R"json(
      "config"      : { "CALI_EVENT_REGION_LEVEL": "{}" }
     },
     {
+     "name"        : "include_branches",
+     "type"        : "string",
+     "description" : "Only take snapshots for branches from the given region names.",
+     "category"    : "event",
+     "config"      : { "CALI_EVENT_INCLUDE_BRANCHES": "{}" }
+    },
+    {
      "name"        : "include_regions",
      "type"        : "string",
      "description" : "Only take snapshots for the given region names/patterns.",
