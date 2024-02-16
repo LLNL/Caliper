@@ -273,7 +273,7 @@ const char* builtin_option_specs = R"json(
     {
      "name"        : "include_branches",
      "type"        : "string",
-     "description" : "Only take snapshots for branches from the given region names.",
+     "description" : "Only take snapshots for branches with the given region names.",
      "category"    : "event",
      "config"      : { "CALI_EVENT_INCLUDE_BRANCHES": "{}" }
     },
