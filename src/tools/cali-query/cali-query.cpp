@@ -360,13 +360,15 @@ int main(int argc, const char* argv[])
                 std::cerr << "cali-query: Reading " << filename << std::endl;
             }
 
-            CaliReader reader(files[i]);
+            CaliReader reader;
+            reader.read(files[i], metadb, node_proc, snap_proc);
 
-            if (!reader.read(metadb, node_proc, snap_proc)) {
+            if (reader.error()) {
                 std::lock_guard<std::mutex>
                     g(msgmutex);
 
-                std::cerr << "cali-query: Error: Could not read file " << filename << std::endl;
+                std::cerr << "cali-query: Error reading " 
+                    << filename << ": " << reader.error_msg() << std::endl;
             }
         }
     };

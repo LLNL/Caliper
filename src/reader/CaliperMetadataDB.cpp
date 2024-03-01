@@ -253,6 +253,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                              const IdMap& idmap) const
     {
         EntryList list;
+        list.reserve(n_nodes + n_imm);
 
         for (size_t i = 0; i < n_nodes; ++i)
             list.push_back(Entry(node(::map_id(node_ids[i], idmap))));
