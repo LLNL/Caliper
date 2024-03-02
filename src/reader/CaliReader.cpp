@@ -20,76 +20,141 @@ using namespace std;
 namespace
 {
 
+class fast_istringstream {
+    std::string::iterator it_;
+    std::string::iterator end_;
+
+public:
+
+    fast_istringstream(std::string::iterator b, std::string::iterator e)
+        : it_ { b }, end_ { e }
+        { }
+
+    inline bool good() const { return it_ != end_; }
+    inline char get()   { return *it_++; }
+    inline void unget() { --it_; }
+
+    inline bool matches(char c) {
+        if (it_ != end_) {
+            if (c == *it_) {
+                ++it_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::string context() { return std::string { it_, end_ }; }
+};
+
 inline void
-read_word_inplace(std::istream& is, std::string& w)
+read_key_inplace(fast_istringstream& is, std::string& w)
 {
     w.clear();
+
+    while (is.good()) {
+        char c = is.get();
+        if (c == '=')
+            break;
+        w.push_back(c);
+    }
+}
+
+inline void
+read_element_inplace(fast_istringstream& is, std::string& w)
+{
+    w.clear();
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (c == '=' || c == ',') {
+            is.unget();
+            break;
+        }
+
+        w.push_back(c);
+    }
+}
+
+inline uint64_t
+read_uint64_element(fast_istringstream& is)
+{
+    uint64_t ret = 0;
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (c == '=' || c == ',') {
+            is.unget();
+            break;
+        }
+
+        ret = ret * 10 + static_cast<uint64_t>(c - '0');
+    }
+
+    return ret;
+}
+
+inline std::string
+read_escaped_word(fast_istringstream& is)
+{
+    std::string w;
+    w.reserve(32);
     bool escape = false;
 
     while (is.good()) {
         char c = is.get();
 
-        if (!escape && c == '\\') {
-            escape = true;
-        } else if (!escape && (c == '=' || c == ',' || c == '\n')) {
-            is.unget();
-            break;
-        } else if (escape && c == 'n') {
-            w.push_back('\n');
+        if (escape) {
+            w.push_back(c == 'n' ? '\n' : c);
             escape = false;
-        } else if (is.good()) {
-            w.push_back(c);
-            escape = false;
+        } else {
+            if (c == '=' || c == ',') {
+                is.unget();
+                break;
+            } else if (c == '\\') {
+                escape = true;
+            } else {
+                w.push_back(c);
+            }
         }
     }
+
+    return w;
 }
 
 inline std::string
-read_word(std::istream& is)
+read_key(fast_istringstream& is)
 {
     std::string w;
-    w.reserve(32);
-    read_word_inplace(is, w);
+    w.reserve(8);
+    read_key_inplace(is, w);
     return w;
 }
 
 inline std::vector<cali_id_t>
-read_id_list(std::istream& is)
+read_id_list(fast_istringstream& is)
 {
     std::vector<cali_id_t> ret;
     ret.reserve(8);
 
-    std::string w;
-    w.reserve(16);
-    char c = 0;
-
     do {
-        read_word_inplace(is, w);
-        ret.push_back(std::stoull(w, nullptr, 10));
-        c = is.get();
-    } while (is.good() && c == '=');
-
-    if (is.good())
-        is.unget();
+        ret.push_back(read_uint64_element(is));
+    } while (is.matches('='));
 
     return ret;
 }
 
 inline std::vector<std::string>
-read_string_list(std::istream& is)
+read_string_list(fast_istringstream& is)
 {
     std::vector<std::string> ret;
     ret.reserve(8);
 
-    char c = 0;
-
     do {
-        ret.emplace_back(read_word(is));
-        c = is.get();
-    } while (is.good() && c == '=');
-
-    if (is.good())
-        is.unget();
+        ret.emplace_back(read_escaped_word(is));
+    } while (is.matches('='));
 
     return ret;
 }
@@ -112,49 +177,35 @@ struct CaliReader::CaliReaderImpl
         std::cerr << msg << std::endl;
     }
 
-    void read_node(std::istream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
+    void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
     {
-        std::string attr_id_str;
-        std::string node_id_str;
-        std::string prnt_id_str;
+        cali_id_t attr_id = CALI_INV_ID;
+        cali_id_t node_id = CALI_INV_ID;
+        cali_id_t prnt_id = CALI_INV_ID;
         std::string data_str;
 
         std::string key;
         key.reserve(8);
-        char c = 0;
 
         do {
-            read_word_inplace(is, key);
-            c = is.get();
-
-            if (c != '=')
-                break;
+            read_key_inplace(is, key);
 
             if (key == "attr")
-                attr_id_str = read_word(is);
+                attr_id = read_uint64_element(is);
             else if (key == "data")
-                data_str = read_word(is);
+                data_str = read_escaped_word(is);
             else if (key == "id")
-                node_id_str = read_word(is);
+                node_id = read_uint64_element(is);
             else if (key == "parent")
-                prnt_id_str = read_word(is);
+                prnt_id = read_uint64_element(is);
             else
-                read_word(is); // unknown key
+                read_escaped_word(is); // unknown key
+        } while (is.matches(','));
 
-            c = is.get();
-        } while (is.good() && c == ',');
-
-        if (node_id_str.empty() || attr_id_str.empty()) {
+        if (node_id == CALI_INV_ID || attr_id == CALI_INV_ID) {
             set_error("Node or attribute ID missing in node record");
             return;
         }
-
-        cali_id_t attr_id = std::stoull(attr_id_str, nullptr, 10);
-        cali_id_t node_id = std::stoull(node_id_str, nullptr, 10);
-        cali_id_t prnt_id = CALI_INV_ID;
-
-        if (!prnt_id_str.empty())
-            prnt_id = std::stoull(prnt_id_str, nullptr, 10);
 
         const Node* node = db.merge_node(node_id, attr_id, prnt_id, data_str, idmap);
 
@@ -164,7 +215,7 @@ struct CaliReader::CaliReaderImpl
             set_error("Invalid node record");
     }
 
-    void read_snapshot(std::istream& is, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn snap_proc)
+    void read_snapshot(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn snap_proc)
     {
         std::vector<cali_id_t>   refs;
         std::vector<cali_id_t>   attr;
@@ -172,14 +223,9 @@ struct CaliReader::CaliReaderImpl
 
         std::string key;
         key.reserve(8);
-        char c = 0;
 
         do {
-            read_word_inplace(is, key);
-            c = is.get();
-
-            if (c != '=')
-                break;
+            read_key_inplace(is, key);
 
             if (key == "ref")
                 refs = read_id_list(is);
@@ -189,9 +235,7 @@ struct CaliReader::CaliReaderImpl
                 data = read_string_list(is);
             else
                 read_string_list(is);
-
-            c = is.get();
-        } while (is.good() && c == ',');
+        } while (is.matches(','));
 
         if (attr.size() != data.size())
             set_error("attr / data size mismatch");
@@ -207,20 +251,14 @@ struct CaliReader::CaliReaderImpl
         snap_proc(db, rec);
     }
 
-    void read_globals(std::istream& is, CaliperMetadataDB& db, IdMap& idmap)
+    void read_globals(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap)
     {
         std::vector<cali_id_t>   refs;
         std::vector<cali_id_t>   attr;
         std::vector<std::string> data;
 
-        char c = 0;
-
         do {
-            std::string key = read_word(is);
-            c = is.get();
-
-            if (c != '=')
-                break;
+            std::string key = read_key(is);
 
             if (key == "ref")
                 refs = read_id_list(is);
@@ -230,15 +268,10 @@ struct CaliReader::CaliReaderImpl
                 data = read_string_list(is);
             else
                 read_string_list(is);
-
-            c = is.get();
-        } while (is.good() && c == ',');
+        } while (is.matches(','));
 
         if (attr.size() != data.size())
             set_error("attr / data size mismatch");
-
-        std::vector<Entry> rec;
-        rec.reserve(refs.size() + std::min(attr.size(), data.size()));
 
         for (cali_id_t id : refs)
             db.merge_global(id, idmap);
@@ -246,20 +279,17 @@ struct CaliReader::CaliReaderImpl
             db.merge_global(attr[i], data[i], idmap);
     }
 
-    void read_record(std::istream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+    void read_record(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
     {
-        std::string w = ::read_word(is);
-        char c = is.get();
+        std::string w = ::read_key(is);
 
-        if (w != "__rec" || c != '=') {
-            set_error("Missing \"__rec=\" entry in input record");
+        if (w != "__rec") {
+            set_error("Missing \"__rec=\" entry in input record: " + is.context() + "\n");
             return;
         }
 
-        read_word_inplace(is, w);
-        c = is.get();
-
-        if (c != ',') {
+        read_element_inplace(is, w);
+        if (!is.matches(',')) {
             set_error("Expected ',' after __rec entry");
             return;
         }
@@ -279,8 +309,10 @@ struct CaliReader::CaliReaderImpl
         IdMap idmap;
 
         for (std::string line; std::getline(is, line); ) {
-            std::istringstream iss(line);
-            read_record(iss, db, idmap, node_proc, snap_proc);
+            if (line.empty())
+                continue;
+            fast_istringstream isstream { line.begin(), line.end() };
+            read_record(isstream, db, idmap, node_proc, snap_proc);
         }
     }
 };
