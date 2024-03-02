@@ -44,21 +44,18 @@ public:
         return false;
     }
 
+    inline bool matches(size_t N, const char* key) {
+        if (it_+N < end_) {
+            if (std::equal(it_, it_+N, key)) {
+                it_ += N;
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::string context() { return std::string { it_, end_ }; }
 };
-
-inline void
-read_key_inplace(fast_istringstream& is, std::string& w)
-{
-    w.clear();
-
-    while (is.good()) {
-        char c = is.get();
-        if (c == '=')
-            break;
-        w.push_back(c);
-    }
-}
 
 inline void
 read_element_inplace(fast_istringstream& is, std::string& w)
@@ -124,15 +121,6 @@ read_escaped_word(fast_istringstream& is)
     return w;
 }
 
-inline std::string
-read_key(fast_istringstream& is)
-{
-    std::string w;
-    w.reserve(8);
-    read_key_inplace(is, w);
-    return w;
-}
-
 inline std::vector<cali_id_t>
 read_id_list(fast_istringstream& is)
 {
@@ -184,22 +172,17 @@ struct CaliReader::CaliReaderImpl
         cali_id_t prnt_id = CALI_INV_ID;
         std::string data_str;
 
-        std::string key;
-        key.reserve(8);
-
         do {
-            read_key_inplace(is, key);
-
-            if (key == "attr")
+            if (is.matches(5, "attr="))
                 attr_id = read_uint64_element(is);
-            else if (key == "data")
+            else if (is.matches(5, "data="))
                 data_str = read_escaped_word(is);
-            else if (key == "id")
+            else if (is.matches(3, "id="))
                 node_id = read_uint64_element(is);
-            else if (key == "parent")
+            else if (is.matches(7, "parent="))
                 prnt_id = read_uint64_element(is);
             else
-                read_escaped_word(is); // unknown key
+                break; // unknown key
         } while (is.matches(','));
 
         if (node_id == CALI_INV_ID || attr_id == CALI_INV_ID) {
@@ -221,20 +204,15 @@ struct CaliReader::CaliReaderImpl
         std::vector<cali_id_t>   attr;
         std::vector<std::string> data;
 
-        std::string key;
-        key.reserve(8);
-
         do {
-            read_key_inplace(is, key);
-
-            if (key == "ref")
+            if (is.matches(4, "ref="))
                 refs = read_id_list(is);
-            else if (key == "attr")
+            else if (is.matches(5, "attr="))
                 attr = read_id_list(is);
-            else if (key == "data")
+            else if (is.matches(5, "data="))
                 data = read_string_list(is);
             else
-                read_string_list(is);
+                break;
         } while (is.matches(','));
 
         if (attr.size() != data.size())
@@ -258,16 +236,14 @@ struct CaliReader::CaliReaderImpl
         std::vector<std::string> data;
 
         do {
-            std::string key = read_key(is);
-
-            if (key == "ref")
+            if (is.matches(4, "ref="))
                 refs = read_id_list(is);
-            else if (key == "attr")
+            else if (is.matches(5, "attr="))
                 attr = read_id_list(is);
-            else if (key == "data")
+            else if (is.matches(5, "data="))
                 data = read_string_list(is);
             else
-                read_string_list(is);
+                break;
         } while (is.matches(','));
 
         if (attr.size() != data.size())
@@ -281,27 +257,14 @@ struct CaliReader::CaliReaderImpl
 
     void read_record(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
     {
-        std::string w = ::read_key(is);
-
-        if (w != "__rec") {
-            set_error("Missing \"__rec=\" entry in input record: " + is.context() + "\n");
-            return;
-        }
-
-        read_element_inplace(is, w);
-        if (!is.matches(',')) {
-            set_error("Expected ',' after __rec entry");
-            return;
-        }
-
-        if (w == "node") {
+        if (is.matches(11, "__rec=node,")) {
             read_node(is, db, idmap, node_proc);
-        } else if (w == "ctx") {
+        } else if (is.matches(10, "__rec=ctx,")) {
             read_snapshot(is, db, idmap, snap_proc);
-        } else if (w == "globals") {
+        } else if (is.matches(14, "__rec=globals,")) {
             read_globals(is, db, idmap);
         } else {
-            set_error(std::string("Unknown record type") + w);
+            set_error(std::string("Unknown/invalid record: ") + is.context());
         }
     }
 
