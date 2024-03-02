@@ -57,23 +57,6 @@ public:
     std::string context() { return std::string { it_, end_ }; }
 };
 
-inline void
-read_element_inplace(fast_istringstream& is, std::string& w)
-{
-    w.clear();
-
-    while (is.good()) {
-        char c = is.get();
-
-        if (c == '=' || c == ',') {
-            is.unget();
-            break;
-        }
-
-        w.push_back(c);
-    }
-}
-
 inline uint64_t
 read_uint64_element(fast_istringstream& is)
 {
@@ -162,7 +145,6 @@ struct CaliReader::CaliReaderImpl
     void set_error(const std::string& msg) {
         m_error = true;
         m_error_msg = msg;
-        std::cerr << msg << std::endl;
     }
 
     void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
