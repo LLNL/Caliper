@@ -53,11 +53,26 @@ TEST(CaliReader, BasicRead)
 
     std::istringstream is(cali_txt);
 
-    NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
-    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+    unsigned node_count = 0;
+    unsigned rec_count = 0;
+
+    NodeProcessFn     node_proc =
+        [&node_count](CaliperMetadataAccessInterface&,const Node*) {
+            ++node_count;
+        };
+    SnapshotProcessFn snap_proc =
+        [&rec_count](CaliperMetadataAccessInterface&,const EntryList&){
+            ++rec_count;
+        };
 
     reader.read(is, db, node_proc, snap_proc);
 
-    ASSERT_FALSE(reader.error()) << reader.error_msg();
+    EXPECT_FALSE(reader.error()) << reader.error_msg();
 
+    EXPECT_EQ(node_count, 29);
+    EXPECT_EQ(rec_count, 5);
+
+    auto globals = db.get_globals();
+
+    EXPECT_FALSE(globals.empty());
 }
