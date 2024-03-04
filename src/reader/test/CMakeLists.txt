@@ -1,5 +1,6 @@
 set(CALIPER_READER_TEST_SOURCES
   test_aggregator.cpp
+  test_calireader.cpp
   test_calqlparser.cpp
   test_filter.cpp
   test_flatexclusiveregionprofile.cpp
