@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 
 using namespace cali;
@@ -19,205 +20,287 @@ using namespace std;
 namespace
 {
 
-vector<string> split(const string& line, char sep, bool keep_escape = false) {
-    vector<string> vec;
-    vec.reserve(8);
+class fast_istringstream {
+    std::string::iterator it_;
+    std::string::iterator end_;
 
-    string str;
-    str.reserve(line.size());
+public:
 
-    bool   escaped = false;
+    fast_istringstream(std::string::iterator b, std::string::iterator e)
+        : it_ { b }, end_ { e }
+        { }
 
-    for (auto it = line.begin(); it != line.end(); ++it) {
-        if (!escaped && *it == '\\') {
-            escaped = true;
+    inline bool good() const { return it_ != end_; }
+    inline char get()   { return *it_++; }
+    inline void unget() { --it_; }
 
-            if (keep_escape)
-                str.push_back('\\');
-        } else if (!escaped && *it == sep) {
-            vec.emplace_back(std::move(str));
-            str.clear();
-            str.reserve(line.size());
-        } else if (escaped && !keep_escape && *it == 'n') {
-            str.push_back('\n');
-            escaped = false;
+    inline bool matches(char c) {
+        if (it_ != end_) {
+            if (c == *it_) {
+                ++it_;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline bool matches(size_t N, const char* key) {
+        if (it_+N < end_) {
+            if (std::equal(it_, it_+N, key)) {
+                it_ += N;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::string context() { return std::string { it_, end_ }; }
+};
+
+inline uint64_t
+read_uint64_element(fast_istringstream& is)
+{
+    uint64_t ret = 0;
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (c == '=' || c == ',') {
+            is.unget();
+            break;
+        }
+
+        ret = ret * 10 + static_cast<uint64_t>(c - '0');
+    }
+
+    return ret;
+}
+
+inline std::string
+read_escaped_word(fast_istringstream& is)
+{
+    std::string w;
+    w.reserve(32);
+    bool escape = false;
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (escape) {
+            w.push_back(c == 'n' ? '\n' : c);
+            escape = false;
         } else {
-            str.push_back(*it);
-            escaped = false;
-        }
-    }
-
-    vec.emplace_back(std::move(str));
-
-    return vec;
-}
-
-void process_node(const string& line, const vector<string>& entries, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
-{
-    cali_id_t node_id = CALI_INV_ID;
-    cali_id_t attr_id = CALI_INV_ID;
-    cali_id_t prnt_id = CALI_INV_ID;
-    string data;
-
-    for (const string& s : entries) {
-        vector<string> keyval = split(s, '=', false);
-
-        if (keyval.size() > 1) {
-            if      (keyval[0] == "id"    )
-                node_id = StringConverter(keyval[1]).to_uint();
-            else if (keyval[0] == "attr"  )
-                attr_id = StringConverter(keyval[1]).to_uint();
-            else if (keyval[0] == "parent")
-                prnt_id = StringConverter(keyval[1]).to_uint();
-            else if (keyval[0] == "data"  )
-                data    = std::move(keyval[1]);
-        }
-    }
-
-    const Node* node = db.merge_node(node_id, attr_id, prnt_id, data, idmap);
-
-    if (node)
-        node_proc(db, node);
-    else
-        Log(0).stream() << "CaliReader: Invalid node record: " << line << endl;
-}
-
-void process_snapshot(const string& line, const vector<string>& entries, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn snap_proc)
-{
-    vector<string> refs;
-    vector<string> attr;
-    vector<string> data;
-
-    for (const string& s : entries) {
-        vector<string> keyval = split(s, '=', false);
-
-        if (keyval.size() > 1) {
-            if        (keyval[0] == "ref" ) {
-                keyval.erase(keyval.begin());
-                refs.swap(keyval);
-            } else if (keyval[0] == "attr") {
-                keyval.erase(keyval.begin());
-                attr.swap(keyval);
-            } else if (keyval[0] == "data") {
-                keyval.erase(keyval.begin());
-                data.swap(keyval);
+            if (c == '=' || c == ',') {
+                is.unget();
+                break;
+            } else if (c == '\\') {
+                escape = true;
+            } else {
+                w.push_back(c);
             }
         }
     }
 
-    if (attr.size() != data.size())
-        Log(0).stream() << "CaliReader: attr/data length mismatch: " << line << endl;
-
-    EntryList rec;
-    rec.reserve(refs.size() + attr.size());
-
-    for (const string& s : refs)
-        rec.push_back(db.merge_entry(StringConverter(s).to_uint(), idmap));
-    for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
-        rec.push_back(db.merge_entry(StringConverter(attr[i]).to_uint(), data[i], idmap));
-
-    snap_proc(db, rec);
+    return w;
 }
 
-void process_globals(const string& line, const vector<string>& entries, CaliperMetadataDB& db, IdMap& idmap)
+inline std::vector<cali_id_t>
+read_id_list(fast_istringstream& is)
 {
-    vector<string> refs;
-    vector<string> attr;
-    vector<string> data;
+    std::vector<cali_id_t> ret;
+    ret.reserve(8);
 
-    for (const string& s : entries) {
-        vector<string> keyval = split(s, '=', false);
+    do {
+        ret.push_back(read_uint64_element(is));
+    } while (is.matches('='));
 
-        if (keyval.size() > 1) {
-            if        (keyval[0] == "ref" ) {
-                keyval.erase(keyval.begin());
-                refs.swap(keyval);
-            } else if (keyval[0] == "attr") {
-                keyval.erase(keyval.begin());
-                attr.swap(keyval);
-            } else if (keyval[0] == "data") {
-                keyval.erase(keyval.begin());
-                data.swap(keyval);
-            }
-        }
-    }
-
-    if (attr.size() != data.size())
-        Log(0).stream() << "CaliReader: attr/data length mismatch: " << line << endl;
-
-    for (const string& s : refs)
-        db.merge_global(StringConverter(s).to_uint(), idmap);
-    for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
-        db.merge_global(StringConverter(attr[i]).to_uint(), data[i], idmap);
+    return ret;
 }
 
-void read_record(const string& line, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+inline std::vector<std::string>
+read_string_list(fast_istringstream& is)
 {
-    vector<string> entries = split(line, ',', true /* keep escape */);
+    std::vector<std::string> ret;
+    ret.reserve(8);
 
-    auto it = find_if(entries.begin(), entries.end(),
-                           [](const string& s) {
-                          return s.compare(0, 6, "__rec=") == 0;
-                           });
+    do {
+        ret.emplace_back(read_escaped_word(is));
+    } while (is.matches('='));
 
-    if (it == entries.end()) {
-        Log(0).stream() << "Invalid CSV entry: " << line << endl;
-        return;
-    }
-
-    if      (it->compare(6, string::npos, "ctx"    ) == 0)
-        process_snapshot(line, entries, db, idmap, snap_proc);
-    else if (it->compare(6, string::npos, "node"   ) == 0)
-        process_node    (line, entries, db, idmap, node_proc);
-    else if (it->compare(6, string::npos, "globals") == 0)
-        process_globals (line, entries, db, idmap);
-    else
-        Log(0).stream() << "CaliReader: Invalid record: " << line << endl;
+    return ret;
 }
 
 } // namespace [anonymous]
 
 struct CaliReader::CaliReaderImpl
 {
-    string m_filename;
+    bool m_error;
+    std::string m_error_msg;
+    unsigned int m_num_read;
 
-    CaliReaderImpl(const string& filename)
-        : m_filename { filename }
+    CaliReaderImpl()
+        : m_error { false }
         { }
 
-    bool read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc) {
-        IdMap idmap;
+    void set_error(const std::string& msg) {
+        m_error = true;
+        m_error_msg = msg;
+    }
 
-        if (m_filename.empty()) {
-            // empty file: read from stdin
+    void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
+    {
+        cali_id_t attr_id = CALI_INV_ID;
+        cali_id_t node_id = CALI_INV_ID;
+        cali_id_t prnt_id = CALI_INV_ID;
+        std::string data_str;
 
-            for (string line ; getline(std::cin, line); )
-                ::read_record(line, db, idmap, node_proc, snap_proc);
-        } else {
-            // read from file
+        do {
+            if (is.matches(5, "attr="))
+                attr_id = read_uint64_element(is);
+            else if (is.matches(5, "data="))
+                data_str = read_escaped_word(is);
+            else if (is.matches(3, "id="))
+                node_id = read_uint64_element(is);
+            else if (is.matches(7, "parent="))
+                prnt_id = read_uint64_element(is);
+            else
+                break; // unknown key
+        } while (is.matches(','));
 
-            ifstream is(m_filename.c_str());
-
-            if (!is)
-                return false;
-
-            for (string line ; getline(is, line); )
-                ::read_record(line, db, idmap, node_proc, snap_proc);
+        if (node_id == CALI_INV_ID || attr_id == CALI_INV_ID) {
+            set_error("Node or attribute ID missing in node record");
+            return;
         }
 
-        return true;
+        const Node* node = db.merge_node(node_id, attr_id, prnt_id, data_str, idmap);
+
+        if (node)
+            node_proc(db, node);
+        else
+            set_error("Invalid node record");
+    }
+
+    void read_snapshot(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn snap_proc)
+    {
+        std::vector<cali_id_t>   refs;
+        std::vector<cali_id_t>   attr;
+        std::vector<std::string> data;
+
+        do {
+            if (is.matches(4, "ref="))
+                refs = read_id_list(is);
+            else if (is.matches(5, "attr="))
+                attr = read_id_list(is);
+            else if (is.matches(5, "data="))
+                data = read_string_list(is);
+            else
+                break;
+        } while (is.matches(','));
+
+        if (attr.size() != data.size())
+            set_error("attr / data size mismatch");
+
+        std::vector<Entry> rec;
+        rec.reserve(refs.size() + std::min(attr.size(), data.size()));
+
+        for (cali_id_t id : refs)
+            rec.push_back(db.merge_entry(id, idmap));
+        for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
+            rec.push_back(db.merge_entry(attr[i], data[i], idmap));
+
+        snap_proc(db, rec);
+    }
+
+    void read_globals(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap)
+    {
+        std::vector<cali_id_t>   refs;
+        std::vector<cali_id_t>   attr;
+        std::vector<std::string> data;
+
+        do {
+            if (is.matches(4, "ref="))
+                refs = read_id_list(is);
+            else if (is.matches(5, "attr="))
+                attr = read_id_list(is);
+            else if (is.matches(5, "data="))
+                data = read_string_list(is);
+            else
+                break;
+        } while (is.matches(','));
+
+        if (attr.size() != data.size())
+            set_error("attr / data size mismatch");
+
+        for (cali_id_t id : refs)
+            db.merge_global(id, idmap);
+        for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
+            db.merge_global(attr[i], data[i], idmap);
+    }
+
+    void read_record(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+    {
+        if (is.matches(11, "__rec=node,")) {
+            read_node(is, db, idmap, node_proc);
+        } else if (is.matches(10, "__rec=ctx,")) {
+            read_snapshot(is, db, idmap, snap_proc);
+        } else if (is.matches(14, "__rec=globals,")) {
+            read_globals(is, db, idmap);
+        } else {
+            set_error(std::string("Unknown/invalid record: ") + is.context());
+        }
+    }
+
+    void read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc) {
+        IdMap idmap;
+
+        for (std::string line; std::getline(is, line); ) {
+            if (line.empty())
+                continue;
+            fast_istringstream isstream { line.begin(), line.end() };
+            read_record(isstream, db, idmap, node_proc, snap_proc);
+        }
     }
 };
 
-CaliReader::CaliReader(const string& filename)
-    : mP { new CaliReaderImpl(filename) }
+CaliReader::CaliReader()
+    : mP { new CaliReaderImpl() }
 { }
 
 CaliReader::~CaliReader()
 { }
 
 bool
-CaliReader::read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+CaliReader::error() const
 {
-    return mP->read(db, node_proc, snap_proc);
+    return mP->m_error;
+}
+
+std::string
+CaliReader::error_msg() const
+{
+    return mP->m_error_msg;
+}
+
+void
+CaliReader::read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+{
+    mP->read(is, db, node_proc, snap_proc);
+}
+
+void
+CaliReader::read(const std::string& filename, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+{
+    if (filename.empty())
+        mP->read(std::cin, db, node_proc, snap_proc);
+    else {
+        std::ifstream is(filename.c_str());
+
+        if (!is) {
+            mP->m_error = true;
+            mP->m_error_msg = std::string("Cannot open file ") + filename;
+            return;
+        }
+
+        mP->read(is, db, node_proc, snap_proc);
+    }
 }

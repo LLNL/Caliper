@@ -130,8 +130,6 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
         if (!args.arguments().front().empty())
             filename = args.arguments().front() + "/" + filename;
 
-    CaliReader reader(filename);
-
     NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
     SnapshotProcessFn snap_proc = aggregate;
 
@@ -140,8 +138,12 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
         snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
 
-    if (!reader.read(db, node_proc, snap_proc))
-        std::cerr << "mpi-caliquery (" << rank << "): cannot read " << filename << std::endl;
+    CaliReader reader;
+    reader.read(filename, db, node_proc, snap_proc);
+
+    if (reader.error())
+        std::cerr << "mpi-caliquery (" << rank << "): error "
+          << filename << ": " << reader.error_msg() << std::endl;
 }
 
 void setup_caliper_config(const Args& args)
