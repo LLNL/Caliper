@@ -25,7 +25,7 @@ class CaliperCpuInfoTest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, { 'cpuinfo.cpu',
                          'cpuinfo.numa_node',
-                         'phase',
+                         'myphase',
                          'iteration' }))
 
 

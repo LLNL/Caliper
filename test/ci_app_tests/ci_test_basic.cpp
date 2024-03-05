@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
     if (argc > 1 && strcmp(argv[1], "newline") == 0)
         cali_set_string_byname("newline", "A newline:\n!");
 
-    cali::Annotation phase_ann("phase", metadata);
+    cali::Annotation phase_ann("myphase", metadata);
     std::size_t size = 8;
     cali::Annotation size_annot("dgs");
     size_annot.begin(size);

@@ -11,6 +11,9 @@ include_regions
 exclude_regions
     Skip measurements for regions with the given pattern.
 
+include_branches
+    Only take measurements for regions inside a given branch.
+
 The options take a list of region patterns. There are three pattern types:
 
 match
@@ -67,11 +70,26 @@ region - `mainloop` in this case - which is why we still see measurement values
 for the `mainloop` region here. However, these do not represent the actual time
 spent in `mainloop`.
 
+With the `include_branches` option, we can limit measurements to a specific
+branch and its sub-regions, e.g. the `mainloop` branch::
+
+    $ CALI_CONFIG="runtime-report,include_branches=mainloop" ./examples/apps/cxx-example
+    Path       Min time/rank Max time/rank Avg time/rank Time %
+    main            0.000457      0.000457      0.000457 37.527884
+      mainloop      0.000108      0.000108      0.000108  8.882529
+        foo         0.000653      0.000653      0.000653 53.589588
+
+This limits measurement to the `mainloop` region and all its sub-regions.
+Again, measurement values taken when entering the `mainloop` region are
+assigned to its enclosing region (`main` in this case), but don't necessarily
+reflect the actual time spent there.
+
 We can use a pattern like `startswith(main)` to include `main` and `mainloop`.
-Be careful to wrap the option values in quotes to prevent them from being 
+Be careful to wrap the option values in quotes to prevent them from being
 misinterpreted by the config parser::
 
     $ CALI_CONFIG="runtime-report,include_regions=\"startswith(main)\"" ./examples/apps/cxx-example
     Path       Min time/rank Max time/rank Avg time/rank Time %
     main            0.000112      0.000112      0.000112  5.177994
       mainloop      0.000773      0.000773      0.000773 35.737402
+

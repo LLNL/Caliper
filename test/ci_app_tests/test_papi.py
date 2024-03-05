@@ -24,7 +24,7 @@ class CaliperPAPITest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 1)
 
         self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, { 'papi.PAPI_TOT_CYC', 'phase', 'iteration' }))
+            snapshots, { 'papi.PAPI_TOT_CYC', 'myphase', 'iteration' }))
 
     def test_papi_aggr(self):
         # PAPI counters should be aggregated
@@ -33,7 +33,7 @@ class CaliperPAPITest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'aggregate:event:papi:recorder',
-            'CALI_AGGREGATE_KEY'     : 'phase',
+            'CALI_AGGREGATE_KEY'     : 'myphase',
             'CALI_PAPI_COUNTERS'     : 'PAPI_TOT_CYC',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
@@ -48,7 +48,7 @@ class CaliperPAPITest(unittest.TestCase):
             snapshots, { 'sum#papi.PAPI_TOT_CYC', 
                          'min#papi.PAPI_TOT_CYC', 
                          'max#papi.PAPI_TOT_CYC',
-                         'phase' }))
+                         'myphase' }))
 
 if __name__ == "__main__":
     unittest.main()

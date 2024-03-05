@@ -374,6 +374,23 @@ void
 cali_end_region(const char* name);
 
 /**
+ * \brief Begin phase region \a name
+ *
+ * A phase marks high-level, long(er)-running code regions. While regular
+ * regions use the "region" attribute with annotation level 0, phase regions
+ * use the "phase" attribute with annotation level 4. Otherwise phases behave
+ * identical to regular Caliper regions.
+ */
+void
+cali_begin_phase(const char* name);
+
+/**
+ * \brief End phase region \a name
+ */
+void
+cali_end_phase(const char* name);
+
+/**
  * \brief Begin region where the value for \a attr is `true` on the blackboard.
  */
 void

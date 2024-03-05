@@ -57,7 +57,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     std::vector<std::string> props;
     util::split(std::string(buf), ':',  std::back_inserter(props));
 
-    std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default" };
+    std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default", "level_0" };
 
     for (auto s : props) {
         auto it = std::find(props_exp.begin(), props_exp.end(), s);

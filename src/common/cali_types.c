@@ -45,7 +45,7 @@ cali_string2type(const char* str)
 }
 
 static const struct propmap_t {
-  const char* str; cali_attr_properties prop; int mask;
+  const char* str; int prop; int mask;
 } propmap[] = {
   { "default",       CALI_ATTR_DEFAULT,       CALI_ATTR_DEFAULT      },
   { "asvalue",       CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE      },
@@ -59,6 +59,14 @@ static const struct propmap_t {
   { "global",        CALI_ATTR_GLOBAL,        CALI_ATTR_GLOBAL       },
   { "unaligned",     CALI_ATTR_UNALIGNED,     CALI_ATTR_UNALIGNED    },
   { "aggregatable",  CALI_ATTR_AGGREGATABLE,  CALI_ATTR_AGGREGATABLE },
+  { "level_0",       CALI_ATTR_LEVEL_0,       CALI_ATTR_LEVEL_MASK   },
+  { "level_1",       CALI_ATTR_LEVEL_1,       CALI_ATTR_LEVEL_MASK   },
+  { "level_2",       CALI_ATTR_LEVEL_2,       CALI_ATTR_LEVEL_MASK   },
+  { "level_3",       CALI_ATTR_LEVEL_3,       CALI_ATTR_LEVEL_MASK   },
+  { "level_4",       CALI_ATTR_LEVEL_4,       CALI_ATTR_LEVEL_MASK   },
+  { "level_5",       CALI_ATTR_LEVEL_5,       CALI_ATTR_LEVEL_MASK   },
+  { "level_6",       CALI_ATTR_LEVEL_6,       CALI_ATTR_LEVEL_MASK   },
+  { "level_7",       CALI_ATTR_LEVEL_7,       CALI_ATTR_LEVEL_MASK   },
   { 0, CALI_ATTR_DEFAULT, CALI_ATTR_DEFAULT }
 };
 

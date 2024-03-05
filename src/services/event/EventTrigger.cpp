@@ -31,6 +31,7 @@ using namespace std;
 namespace cali
 {
     extern Attribute subscription_event_attr; // From api.cpp
+    extern Attribute phase_attr;
 }
 
 namespace
@@ -46,21 +47,45 @@ class EventTrigger
     Attribute                trigger_end_attr   { Attribute::invalid };
     Attribute                trigger_set_attr   { Attribute::invalid };
 
-    Attribute                exp_marker_attr    { Attribute::invalid };
+    Attribute                marker_attr        { Attribute::invalid };
 
     Attribute                region_count_attr  { Attribute::invalid };
 
     std::vector<std::string> trigger_attr_names;
 
-    bool                     enable_snapshot_info;
+    bool                     enable_snapshot_info { true };
+    int                      region_level { 0 };
 
     Node                     event_root_node;
 
     RegionFilter             region_filter;
+    RegionFilter             branch_filter;
+
+    std::vector<Variant>     branch_filter_stack;
 
     //
     // --- Helpers / misc
     //
+
+    void parse_region_level(Channel* channel, const std::string& str) {
+        if (str == "phase") {
+            region_level = phase_attr.level();
+        } else {
+            bool ok = false;
+            int level = StringConverter(str).to_int(&ok);
+
+            if (!ok || level < 0 || level > 7) {
+                Log(0).stream() << channel->name()
+                    << ": event: Invalid region level \"" << str << "\"\n";
+                region_level = 0;
+            } else {
+                region_level = level;
+            }
+        }
+
+        Log(2).stream() << channel->name()
+            << ": event: Using region level " << region_level << "\n";
+    }
 
     void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
         cali_id_t evt_attr_ids[3] = { CALI_INV_ID };
@@ -87,7 +112,7 @@ class EventTrigger
                 c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
         }
 
-        c->make_tree_entry(exp_marker_attr,
+        c->make_tree_entry(marker_attr,
                            Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)),
                            attr.node());
 
@@ -102,12 +127,14 @@ class EventTrigger
 
         if (trigger_attr_names.size() > 0 && it == trigger_attr_names.end())
             return;
+        if (attr.level() < region_level)
+            return;
 
         mark_attribute(c, chn, attr);
     }
 
-    const Node* find_exp_marker(const Attribute& attr) {
-        cali_id_t marker_id = exp_marker_attr.id();
+    const Node* find_marker(const Attribute& attr) {
+        cali_id_t marker_id = marker_attr.id();
 
         for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
             if (node->attribute() == marker_id)
@@ -125,12 +152,18 @@ class EventTrigger
     //
 
     void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-        const Node* marker_node = find_exp_marker(attr);
+        const Node* marker_node = find_marker(attr);
 
         if (!marker_node)
             return;
         if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
+        if (branch_filter.has_filters()) {
+            if (branch_filter.pass(value))
+                branch_filter_stack.push_back(value);
+            if (branch_filter_stack.empty())
+                return;
+        }
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
@@ -159,12 +192,18 @@ class EventTrigger
     }
 
     void pre_set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-        const Node* marker_node = find_exp_marker(attr);
+        const Node* marker_node = find_marker(attr);
 
         if (!marker_node)
             return;
         if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
+        if (branch_filter.has_filters()) {
+            if (branch_filter.pass(value))
+                branch_filter_stack.push_back(value);
+            if (branch_filter_stack.empty())
+                return;
+        }
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
@@ -193,12 +232,18 @@ class EventTrigger
     }
 
     void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-        const Node* marker_node = find_exp_marker(attr);
+        const Node* marker_node = find_marker(attr);
 
         if (!marker_node)
             return;
         if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(value))
             return;
+        if (branch_filter.has_filters()) {
+            if (branch_filter_stack.empty())
+                return;
+            if (value == branch_filter_stack.back())
+                branch_filter_stack.pop_back();
+        }
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
@@ -251,6 +296,7 @@ class EventTrigger
 
             trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
             enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
+            parse_region_level(channel, cfg.get("region_level").to_string());
 
             {
                 std::string i_filter =
@@ -262,10 +308,23 @@ class EventTrigger
 
                 if (!p.second.empty()) {
                     Log(0).stream() << channel->name() << ": event: filter parse error: "
-                                    << p.second
-                                    << std::endl;
+                        << p.second << std::endl;
                 } else {
                     region_filter = p.first;
+                }
+            }
+
+            {
+                std::string i_filter =
+                    cfg.get("include_branches").to_string();
+
+                auto p = RegionFilter::from_config(i_filter, "");
+
+                if (!p.second.empty()) {
+                    Log(0).stream() << channel->name() << ": event: branch filter parse error: "
+                        << p.second << std::endl;
+                } else {
+                    branch_filter = p.first;
                 }
             }
 
@@ -280,8 +339,8 @@ class EventTrigger
             trigger_end_attr =
                 c->create_attribute("cali.event.end",
                                     CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
-            exp_marker_attr =
-                c->create_attribute(std::string("event.exp#")+std::to_string(channel->id()),
+            marker_attr =
+                c->create_attribute(std::string("event.marker#")+std::to_string(channel->id()),
                                     CALI_TYPE_USR,
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
@@ -335,6 +394,11 @@ const char* EventTrigger::s_spec = R"json(
               "type"        : "stringlist",
               "description" : "List of attributes that trigger measurements (optional)"
             },
+            { "name"        : "region_level",
+              "type"        : "string",
+              "description" : "Minimum region level that triggers snapshots",
+              "value"       : "0"
+            },
             { "name"        : "enable_snapshot_info",
               "type"        : "bool",
               "description" : "If true, add begin/end attributes at each event. Increases overhead.",
@@ -347,6 +411,10 @@ const char* EventTrigger::s_spec = R"json(
             { "name"        : "exclude_regions",
               "type"        : "string",
               "description" : "Region filter to specify regions that won't trigger snapshots"
+            },
+            { "name"        : "include_branches",
+              "type"        : "string",
+              "description" : "Region filter to specify a branch"
             }
         ]
     }

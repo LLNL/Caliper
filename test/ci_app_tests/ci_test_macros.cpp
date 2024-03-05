@@ -30,6 +30,11 @@ void foo(int count, int sleep_usec)
     CALI_MARK_LOOP_END(fooloop);
 }
 
+void bar()
+{
+    CALI_CXX_MARK_FUNCTION;
+}
+
 int main(int argc, char* argv[])
 {
     int sleep_usec = 0;
@@ -62,14 +67,17 @@ int main(int argc, char* argv[])
     }
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
-
     for (int i = 0; i < count; ++i) {
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         foo(count, sleep_usec);
     }
-
     CALI_CXX_MARK_LOOP_END(mainloop);
+
+    CALI_MARK_PHASE_BEGIN("after_loop");
+    bar();
+    CALI_MARK_PHASE_END("after_loop");
+
     CALI_MARK_FUNCTION_END;
 
     mgr.flush();
