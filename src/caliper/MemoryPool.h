@@ -39,6 +39,14 @@ public:
 
     void* allocate(std::size_t bytes);
 
+    template<typename T>
+    T* aligned_alloc(std::size_t n = 1, std::size_t a = alignof(T)) {
+        std::size_t size = n * sizeof(T);
+        std::size_t space = n * sizeof(T) + a;
+        void* p = allocate(space);
+        return reinterpret_cast<T*>(std::align(a, size, p, space));
+    }
+
     /// \brief Move \a other's data into this mempool.
     ///
     /// \note Does not lock \a other: we assume only one thread accesses it.
