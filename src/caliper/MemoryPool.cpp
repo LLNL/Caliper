@@ -49,6 +49,7 @@ struct MemoryPool::MemoryPoolImpl
         size_t len = max(bytes, chunksize);
 
         unsigned char* ptr = new unsigned char[len];
+
         std::fill_n(ptr, len, 0);
 
         m_chunks.push_back( { ptr, 0, len } );

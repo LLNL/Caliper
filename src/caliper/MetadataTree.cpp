@@ -34,7 +34,7 @@ MetadataTree::GlobalData::GlobalData(MemoryPool& pool)
 
     node_blocks = new NodeBlock[num_blocks];
 
-    Node* chunk = static_cast<Node*>(pool.allocate(nodes_per_block * sizeof(Node)));
+    Node* chunk = pool.aligned_alloc<Node>(nodes_per_block);
 
     static const struct NodeInfo {
         cali_id_t id;
@@ -119,7 +119,7 @@ bool MetadataTree::have_free_nodeblock(size_t n)
 
         // allocate new node block
 
-        Node* chunk = static_cast<Node*>(m_mempool.allocate(g->nodes_per_block * sizeof(Node)));
+        Node* chunk = m_mempool.aligned_alloc<Node>(g->nodes_per_block);
 
         if (!chunk)
             return false;
