@@ -57,24 +57,26 @@ struct MemoryPool::MemoryPoolImpl
         m_total_reserved += len;
     }
 
-    void* allocate(size_t bytes, bool can_expand) {
-        size_t n = bytes + ((bytes+7)%8);
-
+    void* allocate(size_t bytes, size_t alignment, bool can_expand) {
         std::lock_guard<util::spinlock>
             g(m_lock);
 
-        if (m_chunks.empty() || m_chunks.back().wmark + n > m_chunks.back().size) {
+        if (m_chunks.empty() || m_chunks.back().wmark + bytes + alignment > m_chunks.back().size) {
             if (can_expand)
                 expand(bytes);
             else
                 return nullptr;
         }
 
-        void *ptr = static_cast<void*>(m_chunks.back().ptr + m_chunks.back().wmark);
-        m_chunks.back().wmark += n;
+        unsigned char *ptr = m_chunks.back().ptr + m_chunks.back().wmark;
+        std::uintptr_t pn = reinterpret_cast<std::uintptr_t>(ptr);
+        std::uintptr_t aligned = (pn + alignment-1) & - alignment;
+        std::size_t n = bytes + (aligned - pn);
 
+        m_chunks.back().wmark += n;
         m_total_used += n;
-        return ptr;
+
+        return reinterpret_cast<void*>(aligned);
     }
 
     void merge(MemoryPoolImpl& other) {
@@ -157,7 +159,12 @@ MemoryPool::~MemoryPool()
 
 void* MemoryPool::allocate(size_t bytes)
 {
-    return mP->allocate(bytes, mP->m_can_expand);
+    return mP->allocate(bytes, 1, mP->m_can_expand);
+}
+
+void* MemoryPool::allocate(size_t bytes, size_t alignment)
+{
+    return mP->allocate(bytes, alignment, mP->m_can_expand);
 }
 
 void MemoryPool::merge(MemoryPool& other)
