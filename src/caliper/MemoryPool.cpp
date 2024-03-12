@@ -27,29 +27,28 @@ struct MemoryPool::MemoryPoolImpl
 
     static const ConfigSet::Entry s_configdata[];
 
-    template<typename T>
     struct Chunk {
-        T*     ptr;
+        unsigned char* ptr;
         size_t wmark;
         size_t size;
     };
 
-    ConfigSet                 m_config;
+    ConfigSet      m_config;
 
-    util::spinlock            m_lock;
+    util::spinlock m_lock;
 
-    vector< Chunk<uint64_t> > m_chunks;
-    bool                      m_can_expand;
+    vector<Chunk>  m_chunks;
+    bool           m_can_expand;
 
-    size_t                    m_total_reserved;
-    size_t                    m_total_used;
+    size_t         m_total_reserved;
+    size_t         m_total_used;
 
     // --- interface
 
     void expand(size_t bytes) {
-        size_t len = max((bytes+sizeof(uint64_t)-1)/sizeof(uint64_t), chunksize);
+        size_t len = max(bytes, chunksize);
 
-        uint64_t* ptr = new uint64_t[len];
+        unsigned char* ptr = new unsigned char[len];
         std::fill_n(ptr, len, 0);
 
         m_chunks.push_back( { ptr, 0, len } );
@@ -58,7 +57,7 @@ struct MemoryPool::MemoryPoolImpl
     }
 
     void* allocate(size_t bytes, bool can_expand) {
-        size_t n = (bytes+sizeof(uint64_t)-1)/sizeof(uint64_t);
+        size_t n = bytes + ((bytes+7)%8);
 
         std::lock_guard<util::spinlock>
             g(m_lock);
@@ -126,7 +125,7 @@ struct MemoryPool::MemoryPoolImpl
 
 const ConfigSet::Entry MemoryPool::MemoryPoolImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "pool_size", CALI_TYPE_UINT, "2097152",
+    { "pool_size", CALI_TYPE_UINT, "1048576",
       "Initial size of the Caliper memory pool (in bytes)",
       "Initial size of the Caliper memory pool (in bytes)"
     },
