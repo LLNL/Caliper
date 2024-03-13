@@ -10,17 +10,20 @@ without even the IMPLIED WARRANTY OF MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE. See the terms and conditions of the GNU Lesser General Public License
 for more details.  You should have received a copy of the GNU Lesser General
 Public License along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "elf_ops.h"
-#include "libc_wrappers.h"
+
 #include <elf.h>
+
+#include "libc_wrappers.h"
 struct gnu_hash_header {
-   uint32_t nbuckets;   //!< The number of buckets to hash symbols into
-   uint32_t symndx;     //!< Index of the first symbol accessible via hashtable in the symbol table
-   uint32_t maskwords;  //!< Number of words in the hash table's bloom filter
-   uint32_t shift2;     //!< The bloom filter's shift count
+  uint32_t nbuckets;  //!< The number of buckets to hash symbols into
+  uint32_t symndx;    //!< Index of the first symbol accessible via hashtable in
+                      //!< the symbol table
+  uint32_t maskwords;  //!< Number of words in the hash table's bloom filter
+  uint32_t shift2;     //!< The bloom filter's shift count
 };
 
 static uint32_t gnu_hash_func(const char *str) {
@@ -43,15 +46,14 @@ static uint32_t gnu_hash_func(const char *str) {
  */
 
 signed long lookup_gnu_hash_symbol(const char *name, ElfW(Sym) * syms,
-                                   ElfW(Half) *versym,
-                                   char *symnames,
+                                   ElfW(Half) * versym, char *symnames,
                                    void *sheader) {
   uint32_t *buckets, *vals;
   uint32_t hash_val;
   uint32_t cur_sym, cur_sym_hashval;
   signed long latest_sym = -1;
   ElfW(Half) latest_sym_ver = 0;
-  struct gnu_hash_header *header = (struct gnu_hash_header *) (sheader);
+  struct gnu_hash_header *header = (struct gnu_hash_header *)(sheader);
 
   buckets = (uint32_t *)(((unsigned char *)(header + 1)) +
                          (header->maskwords * sizeof(ElfW(Addr))));
@@ -99,8 +101,8 @@ static unsigned long elf_hash(const unsigned char *name) {
 }
 
 signed long lookup_elf_hash_symbol(const char *name, ElfW(Sym) * syms,
-                                   ElfW(Half) *versym,
-                                   char *symnames, ElfW(Word) * header) {
+                                   ElfW(Half) * versym, char *symnames,
+                                   ElfW(Word) * header) {
   ElfW(Word) *nbucket = header + 0;
   ElfW(Word) *buckets = header + 2;
   ElfW(Word) *chains = buckets + *nbucket;
@@ -112,7 +114,8 @@ signed long lookup_elf_hash_symbol(const char *name, ElfW(Sym) * syms,
   while (y != STN_UNDEF) {
     if (gotcha_strcmp(name, symnames + syms[y].st_name) == 0) {
       if (!versym) {
-        return y;
+        // in general all libs would have version but it is a guard condition.
+        return y;  // GCOVR_EXCL_LINE
       }
 
       if ((versym[y] & 0x7fff) > latest_sym_ver) {
