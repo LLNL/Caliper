@@ -50,6 +50,7 @@ class EventTrigger
     Attribute                marker_attr        { Attribute::invalid };
 
     Attribute                region_count_attr  { Attribute::invalid };
+    Entry                    region_count_entry;
 
     std::vector<std::string> trigger_attr_names;
 
@@ -265,8 +266,7 @@ class EventTrigger
             c->make_record(3, attrs, vals, trigger_info.builder(), &event_root_node);
             c->push_snapshot(chn, trigger_info.view());
         } else {
-            Entry rcount { region_count_attr, cali_make_variant_from_uint(1) };
-            c->push_snapshot(chn, SnapshotView(1, &rcount));
+            c->push_snapshot(chn, SnapshotView(region_count_entry));
         }
     }
 
@@ -290,6 +290,7 @@ class EventTrigger
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_ASVALUE     |
                                     CALI_ATTR_AGGREGATABLE);
+            region_count_entry = Entry(region_count_attr, cali_make_variant_from_uint(1));
 
             ConfigSet cfg =
                 services::init_config_from_spec(channel->config(), s_spec);
