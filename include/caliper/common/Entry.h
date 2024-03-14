@@ -37,7 +37,7 @@ public:
 
     constexpr static size_t MAX_PACKED_SIZE = 30;
 
-    CONSTEXPR_UNLESS_PGI Entry()
+    constexpr Entry()
         : m_node(nullptr)
         { }
 

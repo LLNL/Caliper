@@ -473,13 +473,6 @@ if (WITH_LDMS)
    endif()
 endif()
 
-# PGI 17.x has issues with some constexpr constructors
-if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
-  set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
-else()
-  set(CALIPER_REDUCED_CONSTEXPR_USAGE FALSE)
-endif()
-
 if (BUILD_TESTING)
   set(CALIPER_BUILD_TESTING TRUE)
 endif()
