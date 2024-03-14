@@ -69,10 +69,10 @@ typedef enum {
    */
   CALI_ATTR_ASVALUE       =     1,
 
-  /** \brief Create a separate context tree root node for this attribute.
+  /** \brief Create a separate context tree root node for this attribute (deprecated).
    *
    * Useful for attributes that form overlapping hierarchies separate from
-   * the main region stack.
+   * the main region stack. No longer used.
    */
   CALI_ATTR_NOMERGE       =     2,
   /** \brief Process-scope attribute. Shared between all threads. */
