@@ -34,12 +34,6 @@
 
 #cmakedefine CALIPER_BUILD_TESTING
 
-#ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
-#define CONSTEXPR_UNLESS_PGI 
-#else
-#define CONSTEXPR_UNLESS_PGI constexpr
-#endif
-
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@
 #define CALIPER_MINOR_VERSION @CALIPER_MINOR_VERSION@

@@ -35,24 +35,22 @@ option(CALIPER_OPTION_PREFIX "Option names are prefixed with 'CALIPER_'" OFF)
 mark_as_advanced(CALIPER_OPTION_PREFIX)
 
 macro(ADD_CALIPER_OPTION NAME)
-    if(CALIPER_OPTION_PREFIX)
-        option(CALIPER_${NAME} ${ARGN})
-        # set the option locally for this project
-        set(${NAME} ${CALIPER_${NAME}})
-    else()
-        option(${NAME} ${ARGN})
-    endif()
+  if(CALIPER_OPTION_PREFIX)
+    option(CALIPER_${NAME} ${ARGN})
+      # set the option locally for this project
+      set(${NAME} ${CALIPER_${NAME}})
+  else()
+     option(${NAME} ${ARGN})
+  endif()
 endmacro()
-
-# Optional Fortran
-add_caliper_option(WITH_FORTRAN   "Install Fortran interface")
 
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
-
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
+# Optional Fortran
+add_caliper_option(WITH_FORTRAN   "Install Fortran interface" FALSE)
 add_caliper_option(WITH_TOOLS     "Build Caliper tools" TRUE)
 
 add_caliper_option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
@@ -69,7 +67,6 @@ add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX}
 add_caliper_option(WITH_ROCTX     "Enable AMD RocTX support" FALSE)
 add_caliper_option(WITH_ROCTRACER "Enable AMD RocTracer support" FALSE)
 add_caliper_option(WITH_ROCM      "Enable AMD RocTracer and RocTX support" FALSE)
-#add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
@@ -313,16 +310,6 @@ if (WITH_ADIAK)
   endif()
 endif()
 
-if (WITH_SOS)
-  include(FindSOSFlow)
-  if (SOSFlow_FOUND)
-    message(STATUS "Found sosflow in " ${SOSFlow_LIBRARY})
-    list(APPEND CALIPER_EXTERNAL_LIBS ${SOSFlow_LIBRARY})
-    set(CALIPER_HAVE_SOS TRUE)
-    set(CALIPER_SOSFlow_CMAKE_MSG "Yes, using ${SOSFlow_LIBRARY}")
-  endif()
-endif()
-
 if (WITH_KOKKOS)
   set(CALIPER_HAVE_KOKKOS TRUE)
   set(CALIPER_Kokkos_CMAKE_MSG "Yes")
@@ -333,8 +320,8 @@ set(THREADS_PREFER_PTHREAD_FLAG On)
 find_package(Threads REQUIRED)
 
 if (WITH_OMPT)
-    set(CALIPER_HAVE_OMPT TRUE)
-    set(CALIPER_OMPT_CMAKE_MSG "Yes")
+  set(CALIPER_HAVE_OMPT TRUE)
+  set(CALIPER_OMPT_CMAKE_MSG "Yes")
 endif()
 
 # Find MPI
@@ -473,13 +460,6 @@ if (WITH_LDMS)
    endif()
 endif()
 
-# PGI 17.x has issues with some constexpr constructors
-if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
-  set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
-else()
-  set(CALIPER_REDUCED_CONSTEXPR_USAGE FALSE)
-endif()
-
 if (BUILD_TESTING)
   set(CALIPER_BUILD_TESTING TRUE)
 endif()
@@ -579,10 +559,8 @@ set(CALIPER_MODULES
   Libpfm
   Libunwind
   Sampler
-  SOSFlow
   MPI
   MPIWRAP
-  MPIT
   OMPT
   Nvtx
   CUpti

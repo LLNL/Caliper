@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
     cali_make_variant_from_int(47);
 
   cali_id_t test_attr =
-      cali_create_attribute_with_metadata("test-attr-with-metadata", CALI_TYPE_STRING, CALI_ATTR_NOMERGE,
+      cali_create_attribute_with_metadata("test-attr-with-metadata", CALI_TYPE_STRING, CALI_ATTR_UNALIGNED,
                                           1, &meta_attr, &meta_val);
 
   cali_set_string(test_attr, "abracadabra");
