@@ -23,8 +23,8 @@ void ci_test_alloc()
     cali_create_attribute_with_metadata("ptr_out", CALI_TYPE_ADDR, CALI_ATTR_ASVALUE,
                                         1, &cali_class_memoryaddress_attr_id, &v_true);
 
-  int *A = 
-    cali_datatracker_allocate_dimensional("test_alloc_A", sizeof(int), (const size_t[]) { 42 }, 1);
+  int *A = (int*) malloc(42 * sizeof(int));
+  cali_datatracker_track_dimensional(A, "test_alloc_A", sizeof(int), (const size_t[]) { 42 }, 1);
 
   cali_id_t  attrs[2] = { ptr_in_attr,  ptr_out_attr };
   int        scope    = CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD;
@@ -52,7 +52,9 @@ void ci_test_alloc()
   cali_push_snapshot(scope, 2, attrs, (const cali_variant_t[]) { v_p_i, v_p_o });
   cali_end_byname("test_alloc.allocated.1");
 
-  cali_datatracker_free(A);
+  cali_datatracker_untrack(A);
+  free(A);
+  A = NULL;
 
   cali_begin_byname("test_alloc.freed");
   cali_push_snapshot(scope, 2, attrs, (const cali_variant_t[]) { v_p_i, v_p_o });
