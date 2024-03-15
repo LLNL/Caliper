@@ -35,24 +35,22 @@ option(CALIPER_OPTION_PREFIX "Option names are prefixed with 'CALIPER_'" OFF)
 mark_as_advanced(CALIPER_OPTION_PREFIX)
 
 macro(ADD_CALIPER_OPTION NAME)
-    if(CALIPER_OPTION_PREFIX)
-        option(CALIPER_${NAME} ${ARGN})
-        # set the option locally for this project
-        set(${NAME} ${CALIPER_${NAME}})
-    else()
-        option(${NAME} ${ARGN})
-    endif()
+  if(CALIPER_OPTION_PREFIX)
+    option(CALIPER_${NAME} ${ARGN})
+      # set the option locally for this project
+      set(${NAME} ${CALIPER_${NAME}})
+  else()
+     option(${NAME} ${ARGN})
+  endif()
 endmacro()
-
-# Optional Fortran
-add_caliper_option(WITH_FORTRAN   "Install Fortran interface")
 
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
-
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
+# Optional Fortran
+add_caliper_option(WITH_FORTRAN   "Install Fortran interface" FALSE)
 add_caliper_option(WITH_TOOLS     "Build Caliper tools" TRUE)
 
 add_caliper_option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
@@ -322,8 +320,8 @@ set(THREADS_PREFER_PTHREAD_FLAG On)
 find_package(Threads REQUIRED)
 
 if (WITH_OMPT)
-    set(CALIPER_HAVE_OMPT TRUE)
-    set(CALIPER_OMPT_CMAKE_MSG "Yes")
+  set(CALIPER_HAVE_OMPT TRUE)
+  set(CALIPER_OMPT_CMAKE_MSG "Yes")
 endif()
 
 # Find MPI
@@ -561,10 +559,8 @@ set(CALIPER_MODULES
   Libpfm
   Libunwind
   Sampler
-  SOSFlow
   MPI
   MPIWRAP
-  MPIT
   OMPT
   Nvtx
   CUpti
