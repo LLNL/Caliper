@@ -554,7 +554,11 @@ const char* spot_controller_spec = R"json(
          "CALI_TIMER_INCLUSIVE_DURATION"   : "false",
          "CALI_TIMER_UNIT"                 : "sec"
        },
-     "defaults"    : { "node.order": "true" },
+     "defaults"    :
+     {
+      "node.order"   : "true",
+      "region.count" : "true"
+     },
      "options":
      [
       {
