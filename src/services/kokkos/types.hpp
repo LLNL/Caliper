@@ -3,16 +3,13 @@
 
 #include <cstdint>
 #include <caliper/common/util/callback.hpp>
-
+#include <impl/Kokkos_Profiling_Interface.hpp>
 
 namespace cali {
 
 namespace kokkos {
-        struct SpaceHandle {
-            char name[64];
-        };
-
-        using init_callback = util::callback<void(const int, const uint64_t, const uint32_t, void *)>;
+        using Kokkos::Tools::SpaceHandle;
+        using init_callback = util::callback<void(const int, const uint64_t, const uint32_t, Kokkos::Profiling::KokkosPDeviceInfo *)>;
         using finalize_callback = util::callback<void()>;
 
         using begin_kernel_callback = util::callback<void(const char *, const uint32_t, uint64_t *)>;
