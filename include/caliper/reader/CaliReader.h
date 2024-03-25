@@ -8,6 +8,7 @@
 
 #include "RecordProcessor.h"
 
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -23,11 +24,14 @@ class CaliReader
 
 public:
 
-    CaliReader(const std::string& filename);
-
+    CaliReader();
     ~CaliReader();
 
-    bool read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);
+    bool error() const;
+    std::string error_msg() const;
+
+    void read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);
+    void read(const std::string& filename, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);
 };
 
 } // namespace cali

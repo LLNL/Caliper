@@ -78,6 +78,9 @@ public:
     bool is_global() const {
         return properties() & CALI_ATTR_GLOBAL;
     }
+    int  level() const {
+        return (properties() & CALI_ATTR_LEVEL_MASK) >> 16;
+    }
 
     static Attribute make_attribute(Node* node);
 

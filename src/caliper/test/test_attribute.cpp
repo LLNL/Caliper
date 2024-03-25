@@ -57,7 +57,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     std::vector<std::string> props;
     util::split(std::string(buf), ':',  std::back_inserter(props));
 
-    std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default" };
+    std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default", "level_0" };
 
     for (auto s : props) {
         auto it = std::find(props_exp.begin(), props_exp.end(), s);
@@ -111,16 +111,11 @@ TEST(AttributeAPITest, NestedAttribute) {
         c.create_attribute("test.attr.nested.a", CALI_TYPE_INT, CALI_ATTR_NESTED);
     Attribute nested_b =
         c.create_attribute("test.attr.nested.b", CALI_TYPE_INT, CALI_ATTR_NESTED);
-    Attribute nomerge  =
-        c.create_attribute("test.attr.nomerge",  CALI_TYPE_INT, CALI_ATTR_NESTED | CALI_ATTR_NOMERGE);
 
     EXPECT_TRUE(nested_a.is_nested());
     EXPECT_TRUE(nested_a.is_autocombineable());
-    EXPECT_TRUE(nomerge.is_nested());
-    EXPECT_FALSE(nomerge.is_autocombineable());
 
     c.begin(nested_a, Variant(16));
-    c.begin(nomerge,  Variant(25));
     c.begin(nested_b, Variant(36));
 
     const Node* node = c.get(nested_b).node();
@@ -133,18 +128,6 @@ TEST(AttributeAPITest, NestedAttribute) {
     EXPECT_EQ(node->attribute(), nested_a.id());
     EXPECT_EQ(node->data().to_int(), 16);
 
-    node = c.get(nomerge).node();
-
-    ASSERT_NE(node, nullptr);
-    EXPECT_EQ(node->attribute(), nomerge.id());
-    EXPECT_EQ(node->data().to_int(), 25);
-
-    // nomerge attribute should have hidden root node as parent even though it's nested
-    node = node->parent();
-    ASSERT_NE(node, nullptr);
-    EXPECT_EQ(node->attribute(), CALI_INV_ID);
-
     c.end(nested_b);
-    c.end(nomerge);
     c.end(nested_a);
 }

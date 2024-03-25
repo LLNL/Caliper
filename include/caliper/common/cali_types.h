@@ -69,10 +69,10 @@ typedef enum {
    */
   CALI_ATTR_ASVALUE       =     1,
 
-  /** \brief Create a separate context tree root node for this attribute.
+  /** \brief Create a separate context tree root node for this attribute (deprecated).
    *
    * Useful for attributes that form overlapping hierarchies separate from
-   * the main region stack.
+   * the main region stack. No longer used.
    */
   CALI_ATTR_NOMERGE       =     2,
   /** \brief Process-scope attribute. Shared between all threads. */
@@ -123,10 +123,33 @@ typedef enum {
    * \a aggregate service. This flag replaces the previous
    * \a class.aggregatable meta-attribute.
    */
-   CALI_ATTR_AGGREGATABLE =  2048
+   CALI_ATTR_AGGREGATABLE =  2048,
+
+   /**
+    * \brief Annotation level 1
+    *
+    * Annotation levels can be used to describe and set the granularity of
+    * region annotations. Level 0 is the finest level, level 7 is the
+    * coarsest.
+    */
+   CALI_ATTR_LEVEL_1      = 0x10000,
+   /** \brief Annotation level 2 */
+   CALI_ATTR_LEVEL_2      = 0x20000,
+   /** \brief Annotation level 3 */
+   CALI_ATTR_LEVEL_3      = 0x30000,
+   /** \brief Annotation level 4 */
+   CALI_ATTR_LEVEL_4      = 0x40000,
+   /** \brief Annotation level 5 */
+   CALI_ATTR_LEVEL_5      = 0x50000,
+   /** \brief Annotation level 6 */
+   CALI_ATTR_LEVEL_6      = 0x60000,
+   /** \brief Annotation level 7 */
+   CALI_ATTR_LEVEL_7      = 0x70000
 } cali_attr_properties;
 
+#define CALI_ATTR_LEVEL_0    0x0
 #define CALI_ATTR_SCOPE_MASK 60
+#define CALI_ATTR_LEVEL_MASK 0x70000
 
 /**
  * \brief  Provides descriptive string of given attribute property flags, separated with ':'

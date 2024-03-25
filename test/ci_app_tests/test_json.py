@@ -25,7 +25,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         self.assertTrue( { 'records', 'globals', 'attributes' }.issubset(set(obj.keys())) )
 
-        self.assertEqual(len(obj['records']), 7)
+        self.assertEqual(len(obj['records']), 9)
         self.assertTrue('path' in obj['records'][0].keys())
 
         self.assertTrue('cali.caliper.version' in obj['globals'].keys())
@@ -50,7 +50,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         self.assertTrue( { 'records', 'globals', 'attributes' }.issubset(set(obj.keys())) )
 
-        self.assertEqual(len(obj['records']), 7)
+        self.assertEqual(len(obj['records']), 9)
         self.assertTrue('path' in obj['records'][0].keys())
 
         self.assertTrue('cali.caliper.version' in obj['globals'].keys())
@@ -123,7 +123,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         data = obj['data']
 
-        self.assertEqual(len(data), 8)
+        self.assertEqual(len(data), 10)
         self.assertEqual(len(data[0]), 2)
 
         meta = obj['column_metadata']

@@ -253,6 +253,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                              const IdMap& idmap) const
     {
         EntryList list;
+        list.reserve(n_nodes + n_imm);
 
         for (size_t i = 0; i < n_nodes; ++i)
             list.push_back(Entry(node(::map_id(node_ids[i], idmap))));
@@ -575,15 +576,15 @@ CaliperMetadataDB::merge_snapshot(const CaliperMetadataAccessInterface& db,
 Entry
 CaliperMetadataDB::merge_entry(cali_id_t node_id, const IdMap& idmap)
 {
-    return mP->node(::map_id(node_id, idmap));
+    Node* node = mP->node(::map_id(node_id, idmap));
+    return node ? Entry(node) : Entry();
 }
 
 Entry
 CaliperMetadataDB::merge_entry(cali_id_t attr_id, const std::string& data, const IdMap& idmap)
 {
     Attribute attr = mP->attribute(::map_id(attr_id, idmap));
-
-    return Entry(attr, mP->make_variant(attr.type(), data));
+    return attr ? Entry(attr, mP->make_variant(attr.type(), data)) : Entry();
 }
 
 void
@@ -596,7 +597,8 @@ void
 CaliperMetadataDB::merge_global(cali_id_t attr_id, const std::string& data, const IdMap& idmap)
 {
     Attribute attr = mP->attribute(::map_id(attr_id, idmap));
-    mP->set_global(attr, mP->make_variant(attr.type(), data));
+    if (attr)
+        mP->set_global(attr, mP->make_variant(attr.type(), data));
 }
 
 Node*

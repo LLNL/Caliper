@@ -337,10 +337,11 @@ int main(int argc, const char* argv[])
         Annotation::Guard 
             g_s(Annotation("cali-stat.stream").set(file.c_str()));
             
-        CaliReader reader(file);
+        CaliReader reader;
+        reader.read(file, metadb, processor, processor);
 
-        if (!reader.read(metadb, processor, processor))
-            cerr << "Could not read file " << file << endl;
+        if (reader.error())
+            std::cerr << "Error reading " << file << ": " << reader.error_msg() << "\n";
     }
 
     processor.stream_stat.print_results(fs.is_open() ? fs : cout);

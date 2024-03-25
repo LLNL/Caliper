@@ -24,6 +24,7 @@
 #cmakedefine CALIPER_HAVE_ROCTRACER
 #cmakedefine CALIPER_HAVE_UMPIRE
 #cmakedefine CALIPER_HAVE_CRAYPAT
+#cmakedefine CALIPER_HAVE_LDMS
 
 #cmakedefine CALIPER_REDUCED_CONSTEXPR_USAGE
 
@@ -32,12 +33,6 @@
 #cmakedefine CALIPER_ENABLE_HISTOGRAMS
 
 #cmakedefine CALIPER_BUILD_TESTING
-
-#ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
-#define CONSTEXPR_UNLESS_PGI 
-#else
-#define CONSTEXPR_UNLESS_PGI constexpr
-#endif
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@

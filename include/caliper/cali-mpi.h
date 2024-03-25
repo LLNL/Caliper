@@ -23,7 +23,8 @@ class Caliper;
 class Channel;
 class CaliperMetadataDB;
 class OutputStream;
-class QuerySpec;
+
+struct QuerySpec;
 
 /**
  * \brief Perform cross-process aggregation over MPI

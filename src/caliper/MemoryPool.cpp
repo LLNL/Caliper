@@ -27,29 +27,29 @@ struct MemoryPool::MemoryPoolImpl
 
     static const ConfigSet::Entry s_configdata[];
 
-    template<typename T>
     struct Chunk {
-        T*     ptr;
+        unsigned char* ptr;
         size_t wmark;
         size_t size;
     };
 
-    ConfigSet                 m_config;
+    ConfigSet      m_config;
 
-    util::spinlock            m_lock;
+    util::spinlock m_lock;
 
-    vector< Chunk<uint64_t> > m_chunks;
-    bool                      m_can_expand;
+    vector<Chunk>  m_chunks;
+    bool           m_can_expand;
 
-    size_t                    m_total_reserved;
-    size_t                    m_total_used;
+    size_t         m_total_reserved;
+    size_t         m_total_used;
 
     // --- interface
 
     void expand(size_t bytes) {
-        size_t len = max((bytes+sizeof(uint64_t)-1)/sizeof(uint64_t), chunksize);
+        size_t len = max(bytes, chunksize);
 
-        uint64_t* ptr = new uint64_t[len];
+        unsigned char* ptr = new unsigned char[len];
+
         std::fill_n(ptr, len, 0);
 
         m_chunks.push_back( { ptr, 0, len } );
@@ -57,24 +57,26 @@ struct MemoryPool::MemoryPoolImpl
         m_total_reserved += len;
     }
 
-    void* allocate(size_t bytes, bool can_expand) {
-        size_t n = (bytes+sizeof(uint64_t)-1)/sizeof(uint64_t);
-
+    void* allocate(size_t bytes, size_t alignment, bool can_expand) {
         std::lock_guard<util::spinlock>
             g(m_lock);
 
-        if (m_chunks.empty() || m_chunks.back().wmark + n > m_chunks.back().size) {
+        if (m_chunks.empty() || m_chunks.back().wmark + bytes + alignment > m_chunks.back().size) {
             if (can_expand)
                 expand(bytes);
             else
                 return nullptr;
         }
 
-        void *ptr = static_cast<void*>(m_chunks.back().ptr + m_chunks.back().wmark);
-        m_chunks.back().wmark += n;
+        unsigned char *ptr = m_chunks.back().ptr + m_chunks.back().wmark;
+        std::uintptr_t pn = reinterpret_cast<std::uintptr_t>(ptr);
+        std::uintptr_t aligned = (pn + alignment-1) & - alignment;
+        std::size_t n = bytes + (aligned - pn);
 
+        m_chunks.back().wmark += n;
         m_total_used += n;
-        return ptr;
+
+        return reinterpret_cast<void*>(aligned);
     }
 
     void merge(MemoryPoolImpl& other) {
@@ -126,7 +128,7 @@ struct MemoryPool::MemoryPoolImpl
 
 const ConfigSet::Entry MemoryPool::MemoryPoolImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "pool_size", CALI_TYPE_UINT, "2097152",
+    { "pool_size", CALI_TYPE_UINT, "1048576",
       "Initial size of the Caliper memory pool (in bytes)",
       "Initial size of the Caliper memory pool (in bytes)"
     },
@@ -157,7 +159,12 @@ MemoryPool::~MemoryPool()
 
 void* MemoryPool::allocate(size_t bytes)
 {
-    return mP->allocate(bytes, mP->m_can_expand);
+    return mP->allocate(bytes, 1, mP->m_can_expand);
+}
+
+void* MemoryPool::allocate(size_t bytes, size_t alignment)
+{
+    return mP->allocate(bytes, alignment, mP->m_can_expand);
 }
 
 void MemoryPool::merge(MemoryPool& other)

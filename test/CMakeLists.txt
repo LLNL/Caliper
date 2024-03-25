@@ -18,7 +18,7 @@ foreach(app ${CALIPER_TEST_APPS})
   add_executable(${app}
     ${app}.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/build_metadata.cpp)
-  target_link_libraries(${app} caliper-serial)
+  target_link_libraries(${app} caliper)
 endforeach()
 
 if (CALIPER_HAVE_ADIAK)

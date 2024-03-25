@@ -34,7 +34,7 @@ MetadataTree::GlobalData::GlobalData(MemoryPool& pool)
 
     node_blocks = new NodeBlock[num_blocks];
 
-    Node* chunk = static_cast<Node*>(pool.allocate(nodes_per_block * sizeof(Node)));
+    Node* chunk = pool.aligned_alloc<Node>(nodes_per_block);
 
     static const struct NodeInfo {
         cali_id_t id;
@@ -119,7 +119,7 @@ bool MetadataTree::have_free_nodeblock(size_t n)
 
         // allocate new node block
 
-        Node* chunk = static_cast<Node*>(m_mempool.allocate(g->nodes_per_block * sizeof(Node)));
+        Node* chunk = m_mempool.aligned_alloc<Node>(g->nodes_per_block);
 
         if (!chunk)
             return false;
@@ -157,8 +157,9 @@ MetadataTree::create_path(const Attribute& attr, size_t n, const Variant* data, 
     const size_t align = 8;
     size_t data_size   = 0;
 
-    bool   copy = (attr.type() == CALI_TYPE_STRING || attr.type() == CALI_TYPE_USR);
-    char*  ptr  = nullptr;
+    cali_attr_type type = attr.type();
+    bool  copy = (type == CALI_TYPE_STRING || type == CALI_TYPE_USR);
+    char* ptr  = nullptr;
 
     if (copy) {
         for (size_t i = 0; i < n; ++i) {
@@ -190,7 +191,7 @@ MetadataTree::create_path(const Attribute& attr, size_t n, const Variant* data, 
         size_t index = m_nodeblock->index++;
 
         node = new(m_nodeblock->chunk + index)
-            Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr.id(), Variant(attr.type(), dptr, size));
+            Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr.id(), Variant(type, dptr, size));
 
         if (parent)
             parent->append(node);

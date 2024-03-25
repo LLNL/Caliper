@@ -25,7 +25,7 @@ class CaliperMemusageServiceTest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, { 'memstat.vmsize',
                          'memstat.data',
-                         'phase',
+                         'myphase',
                          'iteration' }))
 
 if __name__ == "__main__":

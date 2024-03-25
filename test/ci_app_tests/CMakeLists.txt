@@ -37,7 +37,7 @@ foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
   target_compile_features(${app} PRIVATE c_std_99)
-  target_link_libraries(${app} caliper-serial)
+  target_link_libraries(${app} caliper)
 endforeach()
 
 # add symlinks to the python test driver scripts
@@ -125,7 +125,7 @@ if (WITH_FORTRAN)
     add_executable(${app} ${app}.f)
     set_source_files_properties(${app}.f PROPERTIES Fortran_FORMAT FREE)
     target_include_directories(${app} PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
-    target_link_libraries(${app} caliper-serial)
+    target_link_libraries(${app} caliper)
   endforeach()
 
   list(APPEND PYTHON_SCRIPTS test_fortran_api.py)

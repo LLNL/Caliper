@@ -546,7 +546,7 @@ constexpr cali_id_t UNALIGNED_KEY { 2 };
 inline cali_id_t
 get_blackboard_key(cali_id_t attr_id, int prop)
 {
-    if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
+    if (prop & CALI_ATTR_ASVALUE)
         return attr_id;
     if (prop & CALI_ATTR_UNALIGNED)
         return UNALIGNED_KEY;
@@ -554,18 +554,22 @@ get_blackboard_key(cali_id_t attr_id, int prop)
     return REGION_KEY;
 }
 
+inline cali_id_t
+get_blackboard_key_for_reference_entry(int prop)
+{
+    return prop & CALI_ATTR_UNALIGNED ? UNALIGNED_KEY : REGION_KEY;
+}
+
 inline void
 handle_begin(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
 {
-    cali_id_t key = get_blackboard_key(attr.id(), prop);
-    Entry entry;
-
-    if (prop & CALI_ATTR_ASVALUE)
-        entry = Entry(attr, value);
-    else
-        entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
-
-    blackboard.set(key, entry, !(prop & CALI_ATTR_HIDDEN));
+    if (prop & CALI_ATTR_ASVALUE) {
+        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
+    } else {
+        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
+        Entry entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
+        blackboard.set(key, entry, !(prop & CALI_ATTR_HIDDEN));
+    }
 }
 
 inline void
@@ -586,11 +590,10 @@ handle_end(const Attribute& attr, int prop, Entry merged_entry, cali_id_t key, B
 inline void
 handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
 {
-    cali_id_t key = get_blackboard_key(attr.id(), prop);
-
     if (prop & CALI_ATTR_ASVALUE)
-        blackboard.set(key, Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
+        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
     else {
+        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
         Node* node = blackboard.get(key).node();
         blackboard.set(key, tree.replace_first_in_path(node, attr, value), !(prop & CALI_ATTR_HIDDEN));
     }

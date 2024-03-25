@@ -1,12 +1,12 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "MpiEvents.h"
-#include "services/mpiwrap/MpiTracing.h"
+#include "MpiTracing.h"
 
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/MpiEvents.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
