@@ -31,7 +31,7 @@ namespace cali
 extern Attribute mpifn_attr;
 extern Attribute mpirank_attr;
 extern Attribute mpisize_attr;
-extern Attribute mpi_call_id_attr;
+// extern Attribute mpi_call_id_attr;
 
 }
 
@@ -52,12 +52,12 @@ int  {{foo}}_wrap_count = 0;
 
 inline void push_mpifn(Caliper* c, bool enabled, const char* fname)
 {
-    static std::atomic<uint64_t> call_id { 0 };
+    // static std::atomic<uint64_t> call_id { 0 };
 
     if (!enabled)
         return;
 
-    c->begin(mpi_call_id_attr, Variant(cali_make_variant_from_uint(++call_id)));
+    // c->begin(mpi_call_id_attr, Variant(cali_make_variant_from_uint(++call_id)));
     c->begin(mpifn_attr, Variant(fname));
 }
 
@@ -67,7 +67,7 @@ inline void pop_mpifn(Caliper* c, bool enabled)
         return;
 
     c->end(mpifn_attr);
-    c->end(mpi_call_id_attr);
+    // c->end(mpi_call_id_attr);
 }
 
 
