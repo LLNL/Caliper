@@ -6,7 +6,7 @@
 ##############################################################################
 
 # Override reproducer section to define project specific variables.
-.tioga_reproducer_vars:
+.poodle_reproducer_vars:
   script:
     - |
       echo -e "export MODULE_LIST=\"${MODULE_LIST}\""
@@ -16,20 +16,8 @@
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-# The correct way is now to use rocmcc compiler directly as done in shared spec
-### Template for extra jobs defined by the project.
-#clang13.0.1-rocm5.4.1:
-#  variables:
-#    SPEC: "%clang@13.0.1 +rocm amdgpu_target=gfx90a ^hip@5.4.1"
-#  extends: .job_on_tioga
-
+## Template for extra jobs defined by the project.
 master:
   variables:
-    SPEC: " +tests %cce@16.0.1"
-  extends: .job_on_tioga
-
-rocmcc_5_7_1_hip:
-  variables:
-    ON_TIOGA: "OFF"
-    SPEC: "${PROJECT_TIOGA_VARIANTS} +rocm amdgpu_target=gfx90a %rocmcc@5.7.1 ^hip@5.7.1 ${PROJECT_TIOGA_DEPS}"
-  extends: .job_on_tioga
+    SPEC: " +tests ~papi"
+  extends: .job_on_poodle
