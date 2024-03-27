@@ -20,7 +20,6 @@ Attribute mpifn_attr       { Attribute::invalid };
 Attribute mpirank_attr     { Attribute::invalid };
 Attribute mpisize_attr     { Attribute::invalid };
 Attribute mpicall_attr     { Attribute::invalid };
-Attribute mpi_call_id_attr { Attribute::invalid };
 
 extern void mpiwrap_init(Caliper* c, Channel* chn, cali::ConfigSet& cfg);
 
@@ -71,12 +70,6 @@ void mpi_register(Caliper* c, Channel* chn)
         mpisize_attr =
             c->create_attribute("mpi.world.size", CALI_TYPE_INT,
                                 CALI_ATTR_GLOBAL        |
-                                CALI_ATTR_SKIP_EVENTS);
-    if (mpi_call_id_attr == Attribute::invalid)
-        mpi_call_id_attr =
-            c->create_attribute("mpi.call.id", CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD  |
-                                CALI_ATTR_ASVALUE       |
                                 CALI_ATTR_SKIP_EVENTS);
 
     ConfigSet cfg = services::init_config_from_spec(chn->config(), mpi_service_spec);
