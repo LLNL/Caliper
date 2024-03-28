@@ -93,7 +93,7 @@ class UmpireService
                     context.builder().append(ts_entry);
             }
 
-            c->pull_context(channel, context.builder());
+            c->pull_context(context.builder());
         }
 
         uint64_t total_size  = 0;
