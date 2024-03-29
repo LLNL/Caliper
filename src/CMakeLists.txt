@@ -3,7 +3,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 include(CheckCXXCompilerFlag)
 set(Wall_flag)
 check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
-if(Supports_Wall_Flag)
+if (Supports_Wall_Flag)
   set(Wall_flag "-Wall")
 endif()
 
@@ -17,7 +17,7 @@ add_subdirectory(reader)
 add_subdirectory(services)
 add_subdirectory(caliper)
 
-set(CALIPER_COMMON_OBJS
+set(CALIPER_ALL_OBJS
   $<TARGET_OBJECTS:caliper-common>
   $<TARGET_OBJECTS:caliper-interface>
   $<TARGET_OBJECTS:caliper-reader>
@@ -25,9 +25,6 @@ set(CALIPER_COMMON_OBJS
   $<TARGET_OBJECTS:caliper-runtime>
   ${CALIPER_SERVICES_LIBS}
   ${CALIPER_EXTERNAL_SOURCES})
-
-list(APPEND CALIPER_ALL_OBJS
-  ${CALIPER_COMMON_OBJS})
 
 add_library(caliper ${CALIPER_ALL_OBJS})
 
