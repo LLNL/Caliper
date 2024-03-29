@@ -4,6 +4,8 @@ include(CMakeFindDependencyMacro)
 
 include("${CMAKE_CURRENT_LIST_DIR}/caliper-targets.cmake")
 
+set_and_check(caliper_INCLUDE_DIR "@PACKAGE_caliper_INSTALL_INCLUDE_DIR@")
+
 if (@CALIPER_HAVE_ADIAK@)
   if (NOT TARGET adiak::adiak)
     set(CALIPER_ADIAK_DIR @adiak_DIR@)

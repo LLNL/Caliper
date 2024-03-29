@@ -306,8 +306,11 @@ if (WITH_ADIAK)
       list(APPEND CALIPER_EXTERNAL_LIBS ${CMAKE_DL_LIBS})
     endif()
   else()
+    set(CALIPER_HAVE_ADIAK FALSE)
     message(WARNING "Adiak support was requested but Adiak was not found")
   endif()
+else()
+  set(CALIPER_HAVE_ADIAK FALSE)
 endif()
 
 if (WITH_KOKKOS)
@@ -528,11 +531,15 @@ if (INSTALL_CONFIG)
       SameMajorVersion
   )
 
+  set(caliper_INSTALL_INCLUDE_DIR "include/")
+
   configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/caliper-config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/caliper-config.cmake"
     INSTALL_DESTINATION
       ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper
+    PATH_VARS
+      caliper_INSTALL_INCLUDE_DIR
   )
 
   install(
