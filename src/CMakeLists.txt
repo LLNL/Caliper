@@ -36,11 +36,6 @@ set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
 
 target_compile_features(caliper PUBLIC cxx_std_11)
 
-target_include_directories(
-  caliper
-  INTERFACE
-  "$<INSTALL_INTERFACE:include>")
-
 if (CALIPER_HAVE_MPI)
   target_link_libraries(caliper PUBLIC ${MPI_CXX_LIBRARIES})
 endif()
@@ -57,7 +52,15 @@ if (WITH_TOOLS)
   add_subdirectory(tools)
 endif()
 
-install(TARGETS caliper
-  EXPORT caliper-targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(
+  TARGETS
+    caliper
+  EXPORT
+    caliper-targets
+  ARCHIVE DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION
+    ${CMAKE_INSTALL_INCLUDEDIR}
+)
