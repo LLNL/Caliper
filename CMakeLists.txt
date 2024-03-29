@@ -114,6 +114,7 @@ if (WITH_FORTRAN)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/fortran")
   set(CALIPER_Fortran_CMAKE_MSG "Yes, using ${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}")
+  set(CALIPER_HAVE_FORTRAN TRUE)
 endif()
 
 if (BUILD_TESTING)

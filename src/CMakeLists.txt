@@ -36,6 +36,14 @@ set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
 
 target_compile_features(caliper PUBLIC cxx_std_11)
 
+if (CALIPER_HAVE_FORTRAN)
+  target_include_directories(
+      caliper
+    PUBLIC
+      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran>"
+  )
+endif()
+
 if (CALIPER_HAVE_MPI)
   target_link_libraries(caliper PUBLIC ${MPI_CXX_LIBRARIES})
 endif()
