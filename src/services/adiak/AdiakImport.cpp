@@ -72,44 +72,58 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
         break;
     case adiak_range:
     {
-        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
-        recursive_unpack(os, subvals+0, t->subtype[0]);
+        adiak_value_t subvals[2];
+        adiak_datatype_t* subtypes[2];
+
+        adiak_get_subval(t, val, 0, subtypes+0, subvals+0);
+        adiak_get_subval(t, val, 1, subtypes+1, subvals+1);
+
+        recursive_unpack(os, subvals+0, *(subtypes+0));
         os << '-';
-        recursive_unpack(os, subvals+1, t->subtype[0]);
+        recursive_unpack(os, subvals+1, *(subtypes+1));
     }
     break;
     case adiak_set:
     {
-        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
         os << '[';
-        for (int i = 0; i < t->num_elements; ++i) {
+        int n = adiak_num_subvals(t);
+        for (int i = 0; i < n; i++) {
+            adiak_value_t subval;
+            adiak_datatype_t* subtype;
+            adiak_get_subval(t, val, i, &subtype, &subval);
             if (i > 0)
                 os << ',';
-            recursive_unpack(os, subvals+i, t->subtype[0]);
+            recursive_unpack(os, &subval, subtype);
         }
         os << ']';
     }
     break;
     case adiak_list:
     {
-        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
         os << '{';
-        for (int i = 0; i < t->num_elements; ++i) {
+        int n = adiak_num_subvals(t);
+        for (int i = 0; i < n; i++) {
+            adiak_value_t subval;
+            adiak_datatype_t* subtype;
+            adiak_get_subval(t, val, i, &subtype, &subval);
             if (i > 0)
                 os << ',';
-            recursive_unpack(os, subvals+i, t->subtype[0]);
+            recursive_unpack(os, &subval, subtype);
         }
         os << '}';
     }
     break;
     case adiak_tuple:
     {
-        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
         os << '(';
-        for (int i = 0; i < t->num_elements; ++i) {
+        int n = adiak_num_subvals(t);
+        for (int i = 0; i < n; i++) {
+            adiak_value_t subval;
+            adiak_datatype_t* subtype;
+            adiak_get_subval(t, val, i, &subtype, &subval);
             if (i > 0)
                 os << ',';
-            recursive_unpack(os, subvals+i, t->subtype[i]);
+            recursive_unpack(os, &subval, subtype);
         }
         os << ')';
     }
