@@ -407,7 +407,8 @@ AggregationDB::num_kernels() const
 size_t
 AggregationDB::bytes_reserved() const
 {
-    return mP->m_hashmap.capacity() * sizeof(size_t) +
-        mP->m_kernels.capacity() * sizeof(AggregateKernel) +
-        mP->m_entries.capacity() * sizeof(AggregateEntry);
+    return mP->m_hashmap.capacity() * sizeof(size_t)
+        + mP->m_kernels.capacity() * sizeof(AggregateKernel)
+        + mP->m_keyents.capacity() * sizeof(Entry)
+        + mP->m_entries.capacity() * sizeof(AggregateEntry);
 }
