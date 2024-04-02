@@ -509,6 +509,23 @@ if (INSTALL_HEADERS)
       DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran
       FILES_MATCHING PATTERN "*.mod")
   endif()
+
+  install(
+    DIRECTORY
+      "python/caliper-reader/caliperreader"
+    DESTINATION
+      "${CMAKE_INSTALL_LIBDIR}/caliper"
+    FILES_MATCHING
+      PATTERN "*.py"
+  )
+
+  install(
+    PROGRAMS
+      "python/cali2traceevent.py"
+      "python/cali2traceevent"
+    DESTINATION
+      ${CMAKE_INSTALL_BINDIR}
+  )
 endif()
 
 if (INSTALL_CONFIG)
@@ -559,9 +576,9 @@ if (INSTALL_CONFIG)
   )
 
   install(
-    FILES 
+    FILES
       ${PROJECT_BINARY_DIR}/caliper.pc
-    DESTINATION 
+    DESTINATION
       ${CMAKE_INSTALL_LIBDIR}/pkgconfig
   )
 endif()
