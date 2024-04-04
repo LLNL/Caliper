@@ -116,8 +116,7 @@ vldec_u64(const unsigned char* buf, size_t* inc)
     val |= ((uint64_t) (buf[p] & 0x7F) << (7*p));
     ++p;
 
-    if (inc)
-        *inc += p;
+    *inc += p;
 
     return val;
 }
