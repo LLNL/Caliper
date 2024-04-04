@@ -3,6 +3,8 @@
  */
 
 #pragma once
+#ifndef CALI_CALI_MACROS_H
+#define CALI_CALI_MACROS_H
 
 /**
  * \file cali_macros.h
@@ -218,3 +220,5 @@ extern cali_id_t cali_annotation_attr_id;
 /**
  * \} (group)
  */
+
+#endif

@@ -9,7 +9,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/c-util/vlenc.h"
+#include "../../common/util/vlenc.h"
 
 using namespace trace;
 using namespace cali;

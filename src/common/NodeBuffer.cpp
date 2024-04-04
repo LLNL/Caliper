@@ -6,9 +6,9 @@
 
 #include "caliper/common/NodeBuffer.h"
 
-#include <caliper/common/Node.h>
+#include "util/vlenc.h"
 
-#include <caliper/common/c-util/vlenc.h>
+#include <caliper/common/Node.h>
 
 #include <cstring>
 

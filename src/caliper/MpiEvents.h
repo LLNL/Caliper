@@ -4,7 +4,7 @@
 /// \file  MpiEvents.h
 /// \brief Caliper-MPI internal callbacks
 
-#include "caliper/common/util/callback.hpp"
+#include "caliper/common/callback.hpp"
 
 namespace cali
 {

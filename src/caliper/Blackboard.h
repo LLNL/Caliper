@@ -12,7 +12,8 @@
 #include "caliper/common/Variant.h"
 
 #include "caliper/caliper-config.h"
-#include "caliper/common/util/spinlock.hpp"
+
+#include "../common/util/spinlock.hpp"
 
 #include <atomic>
 #include <cstdint>

@@ -8,6 +8,7 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
+#include "util/vlenc.h"
 
 using namespace cali;
 
@@ -56,6 +57,16 @@ Entry::get(const Attribute& attr) const
                 return Entry(node);
 
     return Entry();
+}
+
+size_t
+Entry::pack(unsigned char* buffer) const
+{
+    size_t pos = 0;
+    pos += vlenc_u64(m_node->id(), buffer);
+    if (m_node->attribute() == Attribute::NAME_ATTR_ID)
+        pos += m_value.pack(buffer+pos);
+    return pos;
 }
 
 Entry

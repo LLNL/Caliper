@@ -29,7 +29,7 @@
  *  \brief Scale values to human-readable size
  */
 
-#include "caliper/common/c-util/unitfmt.h"
+#include "unitfmt.h"
 
 const struct unitfmt_table unitfmt_bytes[] = {
     { 1,                  "Byte(s)" },

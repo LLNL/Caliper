@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "RecordProcessor.h"
+#include "caliper/reader/RecordProcessor.h"
 
-#include "caliper/common/util/lockfree-tree.hpp"
+#include "caliper/common/lockfree-tree.hpp"
 
 #include <functional>
 #include <map>

@@ -11,9 +11,9 @@
 #include "caliper/tools-util/Args.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/util/split.hpp"
 
 #include "../../common/util/parse_util.h"
+#include "../../common/util/split.hpp"
 
 #include "../../services/Services.h"
 
