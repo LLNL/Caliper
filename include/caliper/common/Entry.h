@@ -1,13 +1,12 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
+#pragma once
 #ifndef CALI_ENTRY_H
 #define CALI_ENTRY_H
 
 #include "Attribute.h"
 #include "Variant.h"
-
-#include "c-util/vlenc.h"
 
 #include "caliper/caliper-config.h"
 
@@ -95,13 +94,7 @@ public:
         return !empty() && !is_immediate();
     }
 
-    size_t    pack(unsigned char* buffer) const {
-        size_t pos = 0;
-        pos += vlenc_u64(m_node->id(), buffer);
-        if (m_node->attribute() == Attribute::NAME_ATTR_ID)
-            pos += m_value.pack(buffer+pos);
-        return pos;
-    }
+    size_t    pack(unsigned char* buffer) const;
 
     static Entry unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc);
 

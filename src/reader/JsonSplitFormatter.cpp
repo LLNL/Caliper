@@ -13,7 +13,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
-#include "caliper/common/util/lockfree-tree.hpp"
+#include "caliper/common/lockfree-tree.hpp"
 
 #include "../common/util/format_util.h"
 

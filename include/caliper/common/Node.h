@@ -11,9 +11,8 @@
 
 #include "cali_types.h"
 
+#include "lockfree-tree.hpp"
 #include "Variant.h"
-
-#include "util/lockfree-tree.hpp"
 
 #include <atomic>
 

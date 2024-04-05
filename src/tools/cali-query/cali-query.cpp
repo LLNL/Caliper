@@ -25,8 +25,6 @@
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/StringConverter.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <atomic>
 #include <fstream>
 #include <iostream>

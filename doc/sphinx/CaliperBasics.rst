@@ -142,7 +142,7 @@ of exclusive region times:
 
 Caliper provides many more performance measurement configurations in addition
 to `runtime-report` that make use of region annotations. For example,
-`hatchet-region-profile` writes a json file with region times for processing
+`hatchet-region-profile` writes a .cali file with region times for processing
 with `Hatchet <https://github.com/LLNL/hatchet>`_. See
 :ref:`more-on-configurations` below to learn more about different
 configurations and their options.
@@ -327,11 +327,10 @@ maximum amount of memory that was allocated in each region:
         foo         0.000778      0.000778      0.000778 8.930211     0.000016
       init          0.000020      0.000020      0.000020 0.229568     0.000000
 
-You can use the cali-query and mpi-caliquery programs to list available
-configs and their parameters (note that cali-query does not list MPI-dependent
-options and configs). For example, ``mpi-caliquery --help=configs`` lists all
-configs and their options. You can also query parameters for a specific config,
-e.g. ``mpi-caliquery --help=runtime-report``.
+You can use the cali-query program to list available configs and their parameters.
+For example, ``cali-query --help=configs`` lists all configs and their options. 
+You can also query parameters for a specific config, e.g. 
+``cali-query --help=runtime-report``.
 
 Some available performance measurement configs include:
 
@@ -528,7 +527,7 @@ high-water mark:
      2500       1382 2.502447  552.259448     0.000016
      3750       1085 2.634396  411.859113     0.000016
 
-See :doc:`BuiltinConfigurations` or run ``mpi-caliquery --help=loop-report``
+See :doc:`BuiltinConfigurations` or run ``cali-query --help=loop-report``
 to learn about all loop-report options. Loop profiling is also available
 with other configs, notably the `spot` config producing output for the Spot
 performance visualization web framework.

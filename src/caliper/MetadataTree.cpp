@@ -14,7 +14,7 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
-#include "caliper/common/util/spinlock.hpp"
+#include "../common/util/spinlock.hpp"
 
 #include <cstring>
 #include <utility>

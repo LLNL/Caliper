@@ -14,7 +14,7 @@
 #include "common/CaliperMetadataAccessInterface.h"
 #include "common/Entry.h"
 #include "common/Variant.h"
-#include "common/util/callback.hpp"
+#include "common/callback.hpp"
 
 #include <memory>
 #include <utility>
