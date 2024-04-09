@@ -1,4 +1,4 @@
-#include "caliper/common/NodeBuffer.h"
+#include "../../common/NodeBuffer.h"
 
 #include "caliper/reader/CaliperMetadataDB.h"
 

@@ -8,7 +8,6 @@
 #define CALI_EXPAND_H
 
 #include "Formatter.h"
-#include "RecordProcessor.h"
 
 #include <memory>
 

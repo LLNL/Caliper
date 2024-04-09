@@ -3,13 +3,14 @@
 
 #include "caliper/reader/FormatProcessor.h"
 
+#include "Expand.h"
+#include "JsonFormatter.h"
+#include "JsonSplitFormatter.h"
+#include "TableFormatter.h"
+#include "TreeFormatter.h"
+#include "UserFormatter.h"
+
 #include "caliper/reader/CaliWriter.h"
-#include "caliper/reader/Expand.h"
-#include "caliper/reader/JsonFormatter.h"
-#include "caliper/reader/JsonSplitFormatter.h"
-#include "caliper/reader/TableFormatter.h"
-#include "caliper/reader/TreeFormatter.h"
-#include "caliper/reader/UserFormatter.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/OutputStream.h"

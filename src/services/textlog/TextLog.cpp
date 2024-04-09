@@ -14,7 +14,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/SnapshotTextFormatter.h"
+
+#include "../../common/SnapshotTextFormatter.h"
 
 #include <algorithm>
 #include <iostream>

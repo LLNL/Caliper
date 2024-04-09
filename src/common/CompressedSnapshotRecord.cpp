@@ -4,7 +4,7 @@
 /// \file CompressedSnapshotRecord.cc
 /// Caliper compressed snapshot record representation
 
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "CompressedSnapshotRecord.h"
 
 #include "util/vlenc.h"
 

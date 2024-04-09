@@ -4,9 +4,9 @@
 /// \brief SnapshotBuffer.cc
 /// SnapshotBuffer class definition
 
-#include "caliper/common/SnapshotBuffer.h"
+#include "SnapshotBuffer.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "CompressedSnapshotRecord.h"
 
 #include <cstring>
 

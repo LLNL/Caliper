@@ -4,7 +4,7 @@
 /// \file  SnapshotTextFormatter.cpp
 /// \brief SnapshotTextFormatter implementation
 
-#include "caliper/common/SnapshotTextFormatter.h"
+#include "SnapshotTextFormatter.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"

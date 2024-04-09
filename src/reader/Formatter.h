@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "RecordProcessor.h"
+#include "caliper/reader/RecordProcessor.h"
 
 namespace cali
 {

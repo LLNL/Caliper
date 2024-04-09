@@ -3,7 +3,7 @@
 
 // Print human-readable table
 
-#include "caliper/reader/TableFormatter.h"
+#include "TableFormatter.h"
 
 #include "caliper/reader/QuerySpec.h"
 

@@ -1,14 +1,12 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/// \file Table.h
-/// \brief Table output formatter
+/// \file TreeFormatter.h
+/// \brief TreeFormatter output formatter
 
-#ifndef CALI_TABLE_H
-#define CALI_TABLE_H
+#pragma once
 
 #include "Formatter.h"
-#include "RecordProcessor.h"
 
 #include <iostream>
 #include <memory>
@@ -19,20 +17,19 @@ namespace cali
 class CaliperMetadataAccessInterface;
 struct QuerySpec;
 
-/// \brief Print a set of snapshot records in a human-readable table
+/// \brief Print a set of snapshot records in a tree 
 /// \ingroup ReaderAPI
     
-class TableFormatter : public Formatter
+class TreeFormatter : public Formatter
 {
-    struct TableImpl;
-    std::shared_ptr<TableImpl> mP;
+    struct TreeFormatterImpl;
+    std::shared_ptr<TreeFormatterImpl> mP;
 
 public:
 
-    TableFormatter(const std::string& fields, const std::string& sort_fields);
-    TableFormatter(const QuerySpec& spec);
+    TreeFormatter(const QuerySpec& spec);
 
-    ~TableFormatter();
+    ~TreeFormatter();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
@@ -41,4 +38,3 @@ public:
 
 } // namespace cali
 
-#endif

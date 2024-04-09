@@ -3,7 +3,7 @@
 
 // Pretty-print tree-organized snapshots
 
-#include "caliper/reader/TreeFormatter.h"
+#include "TreeFormatter.h"
 
 #include "SnapshotTableFormatter.h"
 #include "SnapshotTree.h"

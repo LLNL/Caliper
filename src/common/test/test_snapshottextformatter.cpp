@@ -1,4 +1,4 @@
-#include "caliper/common/SnapshotTextFormatter.h"
+#include "../SnapshotTextFormatter.h"
 
 #include "MockupMetadataDB.h"
 

@@ -4,7 +4,7 @@
 /// \brief NodeBuffer.cc
 /// NodeBuffer class definition
 
-#include "caliper/common/NodeBuffer.h"
+#include "NodeBuffer.h"
 
 #include "util/vlenc.h"
 

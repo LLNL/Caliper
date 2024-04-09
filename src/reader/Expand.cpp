@@ -3,7 +3,7 @@
 
 // Print expanded records
 
-#include "caliper/reader/Expand.h"
+#include "Expand.h"
 
 #include "caliper/reader/QuerySpec.h"
 
