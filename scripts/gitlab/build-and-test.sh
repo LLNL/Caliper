@@ -162,7 +162,7 @@ then
     then
         module unload rocm
     fi
-    if [[ "${truehostname}" == "lassen" ]]
+    if [[ "${truehostname}" == "lassen" || "${truehostname}" == "tioga" ]]
     then
         $cmake_exe \
           -C ${hostconfig_path} \
