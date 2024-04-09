@@ -3,8 +3,9 @@
 
 #include "caliper/common/OutputStream.h"
 
+#include "SnapshotTextFormatter.h"
+
 #include "caliper/common/Log.h"
-#include "caliper/common/SnapshotTextFormatter.h"
 
 #include <cstring>
 #include <fstream>

@@ -3,7 +3,7 @@
 
 // Print web-readable table in sparse format
 
-#include "caliper/reader/JsonSplitFormatter.h"
+#include "JsonSplitFormatter.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/QuerySpec.h"

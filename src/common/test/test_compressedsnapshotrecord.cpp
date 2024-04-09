@@ -1,4 +1,4 @@
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "../CompressedSnapshotRecord.h"
 
 #include "MockupMetadataDB.h"
 

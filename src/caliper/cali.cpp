@@ -10,7 +10,8 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "../common/CompressedSnapshotRecord.h"
+
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
