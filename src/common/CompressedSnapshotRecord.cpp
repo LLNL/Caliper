@@ -4,13 +4,13 @@
 /// \file CompressedSnapshotRecord.cc
 /// Caliper compressed snapshot record representation
 
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "CompressedSnapshotRecord.h"
+
+#include "util/vlenc.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Entry.h"
 #include "caliper/common/Node.h"
-
-#include "caliper/common/c-util/vlenc.h"
 
 #include <algorithm>
 #include <cstring>

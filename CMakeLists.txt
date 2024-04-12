@@ -114,6 +114,7 @@ if (WITH_FORTRAN)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/fortran")
   set(CALIPER_Fortran_CMAKE_MSG "Yes, using ${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}")
+  set(CALIPER_HAVE_FORTRAN TRUE)
 endif()
 
 if (BUILD_TESTING)
@@ -306,8 +307,11 @@ if (WITH_ADIAK)
       list(APPEND CALIPER_EXTERNAL_LIBS ${CMAKE_DL_LIBS})
     endif()
   else()
+    set(CALIPER_HAVE_ADIAK FALSE)
     message(WARNING "Adiak support was requested but Adiak was not found")
   endif()
+else()
+  set(CALIPER_HAVE_ADIAK FALSE)
 endif()
 
 if (WITH_KOKKOS)
@@ -452,7 +456,7 @@ endif()
 if (WITH_LDMS)
   include(FindLDMS)
   if (LDMS_FOUND)
-     set(CALIPER_HAVE_LDMS TRUE)     
+     set(CALIPER_HAVE_LDMS TRUE)
      set(CALIPER_LDMS_CMAKE_MSG "Yes, using ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM}")
      list(APPEND CALIPER_EXTERNAL_LIBS ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM})
      message("Include Directory: ${LDMS_INCLUDE_DIRS}")
@@ -473,7 +477,19 @@ configure_file(
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
 
-if(INSTALL_HEADERS)
+add_subdirectory(ext)
+add_subdirectory(src)
+
+add_subdirectory(examples/apps EXCLUDE_FROM_ALL)
+
+if (BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+if (BUILD_DOCS)
+  add_subdirectory(doc EXCLUDE_FROM_ALL)
+endif()
+
+if (INSTALL_HEADERS)
   install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h")
   install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -487,15 +503,32 @@ if(INSTALL_HEADERS)
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper
     FILES_MATCHING PATTERN "*.h")
 
-  if (WITH_FORTRAN)
+  if (CALIPER_HAVE_FORTRAN)
     install(
       DIRECTORY   ${CMAKE_Fortran_MODULE_DIRECTORY}/
       DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran
       FILES_MATCHING PATTERN "*.mod")
   endif()
+
+  install(
+    DIRECTORY
+      "python/caliper-reader/caliperreader"
+    DESTINATION
+      "${CMAKE_INSTALL_LIBDIR}/caliper"
+    FILES_MATCHING
+      PATTERN "*.py"
+  )
+
+  install(
+    PROGRAMS
+      "python/cali2traceevent.py"
+      "python/cali2traceevent"
+    DESTINATION
+      ${CMAKE_INSTALL_BINDIR}
+  )
 endif()
 
-if(INSTALL_CONFIG)
+if (INSTALL_CONFIG)
   # Create pkg-config .pc file
   set(PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
   set(PKG_CONFIG_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
@@ -506,31 +539,48 @@ if(INSTALL_CONFIG)
     ${PROJECT_SOURCE_DIR}/caliper.pc.in
     ${PROJECT_BINARY_DIR}/caliper.pc)
 
-  # Make caliper findable for cmake
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
-    ${PROJECT_BINARY_DIR}/caliper-config.cmake
-    @ONLY)
+  include(CMakePackageConfigHelpers)
 
-  install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
-  install(EXPORT caliper-targets
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
+  write_basic_package_version_file(
+      "${CMAKE_CURRENT_BINARY_DIR}/caliper-config-version.cmake"
+    VERSION
+      ${LIBTOOL_INTERFACE}.${LIBTOOL_REVISION}.${LIBTOOL_AGE}
+    COMPATIBILITY
+      SameMajorVersion
+  )
 
-  install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-endif()
+  set(caliper_INSTALL_INCLUDE_DIR "include/")
 
-add_subdirectory(ext)
-add_subdirectory(src)
+  configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/caliper-config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/caliper-config.cmake"
+    INSTALL_DESTINATION
+      ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper
+    PATH_VARS
+      caliper_INSTALL_INCLUDE_DIR
+  )
 
-add_subdirectory(examples/apps EXCLUDE_FROM_ALL)
+  install(
+    FILES
+      "${CMAKE_CURRENT_BINARY_DIR}/caliper-config-version.cmake"
+      "${CMAKE_CURRENT_BINARY_DIR}/caliper-config.cmake"
+    DESTINATION
+      "${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper"
+  )
 
-if (BUILD_TESTING)
-  add_subdirectory(test)
-endif()
-if (BUILD_DOCS)
-  add_subdirectory(doc EXCLUDE_FROM_ALL)
+  install(
+    EXPORT
+      caliper-targets
+    DESTINATION
+      "${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper"
+  )
+
+  install(
+    FILES
+      ${PROJECT_BINARY_DIR}/caliper.pc
+    DESTINATION
+      ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  )
 endif()
 
 #

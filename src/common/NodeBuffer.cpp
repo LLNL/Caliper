@@ -4,11 +4,11 @@
 /// \brief NodeBuffer.cc
 /// NodeBuffer class definition
 
-#include "caliper/common/NodeBuffer.h"
+#include "NodeBuffer.h"
+
+#include "util/vlenc.h"
 
 #include <caliper/common/Node.h>
-
-#include <caliper/common/c-util/vlenc.h>
 
 #include <cstring>
 

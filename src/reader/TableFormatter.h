@@ -1,16 +1,15 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/// \file Json.h
-/// Json output formatter
+/// \file Table.h
+/// \brief Table output formatter
 
-#pragma once
+#ifndef CALI_TABLE_H
+#define CALI_TABLE_H
 
 #include "Formatter.h"
-#include "RecordProcessor.h"
 
-#include "../common/OutputStream.h"
-
+#include <iostream>
 #include <memory>
 
 namespace cali
@@ -19,18 +18,20 @@ namespace cali
 class CaliperMetadataAccessInterface;
 struct QuerySpec;
 
-/// \brief Prints snapshot records as sparse JSON
+/// \brief Print a set of snapshot records in a human-readable table
 /// \ingroup ReaderAPI
-class JsonFormatter : public Formatter
+    
+class TableFormatter : public Formatter
 {
-    struct JsonFormatterImpl;
-    std::shared_ptr<JsonFormatterImpl> mP;
+    struct TableImpl;
+    std::shared_ptr<TableImpl> mP;
 
 public:
 
-    JsonFormatter(OutputStream& os, const QuerySpec& spec);
+    TableFormatter(const std::string& fields, const std::string& sort_fields);
+    TableFormatter(const QuerySpec& spec);
 
-    ~JsonFormatter();
+    ~TableFormatter();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
@@ -38,3 +39,5 @@ public:
 };
 
 } // namespace cali
+
+#endif

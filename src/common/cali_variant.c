@@ -8,7 +8,7 @@
 
 #include "caliper/common/cali_variant.h"
 
-#include "caliper/common/c-util/vlenc.h"
+#include "util/vlenc.h"
 
 #include <limits.h>
 #include <string.h>

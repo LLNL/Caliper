@@ -556,8 +556,9 @@ const char* spot_controller_spec = R"json(
        },
      "defaults"    :
      {
-      "node.order"   : "true",
-      "region.count" : "true"
+      "node.order"     : "true",
+      "region.count"   : "true",
+      "time.exclusive" : "true"
      },
      "options":
      [

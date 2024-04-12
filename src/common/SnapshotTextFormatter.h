@@ -7,8 +7,6 @@
 #ifndef CALI_SNAPSHOT_TEXT_FORMATTER_H
 #define CALI_SNAPSHOT_TEXT_FORMATTER_H
 
-#include "Entry.h"
-
 #include <iostream>
 #include <memory>
 #include <string>
@@ -18,11 +16,11 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class Entry;
 
 class SnapshotTextFormatter
 {
     struct SnapshotTextFormatterImpl;
-
     std::unique_ptr<SnapshotTextFormatterImpl> mP;
 
 public:
@@ -31,10 +29,10 @@ public:
 
     ~SnapshotTextFormatter();
 
-    void 
+    void
     reset(const std::string& format_str);
 
-    std::ostream& 
+    std::ostream&
     print(std::ostream&, const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
 };
 

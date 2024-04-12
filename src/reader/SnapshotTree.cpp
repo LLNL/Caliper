@@ -3,7 +3,7 @@
 
 // SnapshotTree class implementation
 
-#include "caliper/reader/SnapshotTree.h"
+#include "SnapshotTree.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"

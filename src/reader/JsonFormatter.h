@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Formatter.h"
-#include "RecordProcessor.h"
 
 #include <memory>
 
@@ -15,20 +14,22 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class OutputStream;
+
 struct QuerySpec;
 
 /// \brief Prints snapshot records as sparse JSON
 /// \ingroup ReaderAPI
-class JsonSplitFormatter : public Formatter
+class JsonFormatter : public Formatter
 {
-    struct JsonSplitFormatterImpl;
-    std::shared_ptr<JsonSplitFormatterImpl> mP;
+    struct JsonFormatterImpl;
+    std::shared_ptr<JsonFormatterImpl> mP;
 
 public:
 
-    JsonSplitFormatter(const QuerySpec& spec);
+    JsonFormatter(OutputStream& os, const QuerySpec& spec);
 
-    ~JsonSplitFormatter();
+    ~JsonFormatter();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 

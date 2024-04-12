@@ -3,7 +3,7 @@
 
 // Print human-readable table
 
-#include "caliper/reader/TableFormatter.h"
+#include "TableFormatter.h"
 
 #include "caliper/reader/QuerySpec.h"
 
@@ -14,9 +14,8 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/StringConverter.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include "../common/util/format_util.h"
+#include "../common/util/split.hpp"
 
 #include <algorithm>
 #include <iterator>

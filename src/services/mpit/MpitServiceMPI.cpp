@@ -40,7 +40,7 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
+#include "../../common/util/split.hpp"
 
 #include <mpi.h>
 

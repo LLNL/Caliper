@@ -14,7 +14,7 @@
 
 #include "caliper/common/cali_types.h"
 
-#include "caliper/common/c-util/vlenc.h"
+#include "../common/util/vlenc.h"
 
 #include <algorithm>
 #include <cassert>

@@ -13,7 +13,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
-#include "caliper/reader/Expand.h"
+#include "../../reader/Expand.h"
 
 #include <atomic>
 #include <iostream>

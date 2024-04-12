@@ -16,9 +16,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/c-util/unitfmt.h"
-
-#include "caliper/common/util/spinlock.hpp"
+#include "../../common/util/spinlock.hpp"
+#include "../../common/util/unitfmt.h"
 
 #include <atomic>
 #include <cstring>

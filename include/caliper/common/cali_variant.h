@@ -215,7 +215,7 @@ _cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs);
 inline bool
 cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs)
 {
-    return lhs.type_and_size == rhs.type_and_size ? _cali_variant_value_eq(lhs, rhs) : false;
+    return lhs.type_and_size == rhs.type_and_size && _cali_variant_value_eq(lhs, rhs);
 }
 
 /** \brief Pack variant into byte buffer

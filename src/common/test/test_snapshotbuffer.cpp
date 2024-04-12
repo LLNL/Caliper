@@ -1,6 +1,6 @@
-#include "caliper/common/SnapshotBuffer.h"
+#include "../SnapshotBuffer.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
+#include "../CompressedSnapshotRecord.h"
 #include "caliper/common/Node.h"
 
 #include <gtest/gtest.h>

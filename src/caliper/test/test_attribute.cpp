@@ -6,7 +6,7 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Node.h"
 
-#include "caliper/common/util/split.hpp"
+#include "../../common/util/split.hpp"
 
 #include <gtest/gtest.h>
 

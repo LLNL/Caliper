@@ -43,7 +43,7 @@ syntax. Lines starting with `#` are interpreted as comments.
 Example::
 
   # My configuration
-  CALI_SERVICES_ENABLE=event,recorder,timestamp:mpi
+  CALI_SERVICES_ENABLE=event,recorder,timer,mpi
   CALI_MPI_WHITELIST=MPI_Allreduce,MPI_Barrier
   CALI_TIMER_TIMESTAMP=true
 
@@ -70,12 +70,12 @@ Example::
 
   # [callstack-trace]
   # A trace with call-path info
-  CALI_SERVICES_ENABLE=callpath,event,recorder,timestamp
+  CALI_SERVICES_ENABLE=callpath,event,recorder,timer
   CALI_CALLPATH_USE_NAME=true
 
   # [hwc-trace]
   # A trace with PAPI hardware counters
-  CALI_SERVICES_ENABLE=event,papi,recorder,timestamp
+  CALI_SERVICES_ENABLE=event,papi,recorder,timer
   CALI_PAPI_COUNTERS=PAPI_FP_OPS
 
 This file defines two configuration profiles, *callstack-trace* and
@@ -150,3 +150,9 @@ CALI_CHANNEL_CONFIG_CHECK
    is enabled but no output service.
 
    Default: enabled (``true``)
+
+CALI_MEMORY_POOL_SIZE
+   Defines the size of the per-thread memory pool for region data in 
+   bytes. This pool stores region names and the Caliper context tree.
+
+   Default: 1048576 (1 MiB)

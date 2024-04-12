@@ -1,15 +1,13 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/// \file TreeFormatter.h
-/// \brief TreeFormatter output formatter
+/// \file Json.h
+/// Json output formatter
 
 #pragma once
 
 #include "Formatter.h"
-#include "RecordProcessor.h"
 
-#include <iostream>
 #include <memory>
 
 namespace cali
@@ -18,19 +16,18 @@ namespace cali
 class CaliperMetadataAccessInterface;
 struct QuerySpec;
 
-/// \brief Print a set of snapshot records in a tree 
+/// \brief Prints snapshot records as sparse JSON
 /// \ingroup ReaderAPI
-    
-class TreeFormatter : public Formatter
+class JsonSplitFormatter : public Formatter
 {
-    struct TreeFormatterImpl;
-    std::shared_ptr<TreeFormatterImpl> mP;
+    struct JsonSplitFormatterImpl;
+    std::shared_ptr<JsonSplitFormatterImpl> mP;
 
 public:
 
-    TreeFormatter(const QuerySpec& spec);
+    JsonSplitFormatter(const QuerySpec& spec);
 
-    ~TreeFormatter();
+    ~JsonSplitFormatter();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
@@ -38,4 +35,3 @@ public:
 };
 
 } // namespace cali
-

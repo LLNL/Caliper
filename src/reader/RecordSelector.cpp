@@ -10,7 +10,7 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
-#include "caliper/common/util/split.hpp"
+#include "../common/util/split.hpp"
 
 #include <iostream>
 #include <iterator>

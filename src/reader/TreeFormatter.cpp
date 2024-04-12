@@ -3,12 +3,12 @@
 
 // Pretty-print tree-organized snapshots
 
-#include "caliper/reader/TreeFormatter.h"
+#include "TreeFormatter.h"
 
 #include "SnapshotTableFormatter.h"
+#include "SnapshotTree.h"
 
 #include "caliper/reader/QuerySpec.h"
-#include "caliper/reader/SnapshotTree.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
@@ -17,9 +17,8 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/StringConverter.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include "../common/util/format_util.h"
+#include "../common/util/split.hpp"
 
 #include <algorithm>
 #include <cassert>

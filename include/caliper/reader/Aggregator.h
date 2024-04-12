@@ -20,8 +20,8 @@ class CaliperMetadataAccessInterface;
 
 /// \brief Perform aggregation operations on Caliper data
 /// \ingroup ReaderAPI
-    
-class Aggregator 
+
+class Aggregator
 {
     struct AggregatorImpl;
     std::shared_ptr<AggregatorImpl> mP;

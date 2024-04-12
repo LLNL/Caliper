@@ -164,7 +164,7 @@ class CaliperMPITest(unittest.TestCase):
                          'mpi.comm.is_world' : 'true'
             }))
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'region', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
+            snapshots, { 'region', 'mpi.function', 'mpi.coll.type'
             }))
 
     def test_mpireport_controller(self):

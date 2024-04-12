@@ -1,12 +1,12 @@
-// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 /// \file ChannelController.h
 /// ChannelController class
 
 #pragma once
-
-#include "cali_definitions.h"
+#ifndef CALI_CHANNELCONTROLLER_H
+#define CALI_CHANNELCONTROLLER_H
 
 #include <map>
 #include <memory>
@@ -19,7 +19,6 @@ class Caliper;
 class Channel;
 
 typedef std::map<std::string, std::string> config_map_t;
-
 typedef std::map<std::string, std::string> info_map_t;
 
 /// \class ChannelController
@@ -33,7 +32,7 @@ typedef std::map<std::string, std::string> info_map_t;
 ///
 /// ChannelController objects can be copied and moved. The underlying
 /// %Caliper channel will be deleted when the last ChannelController
-/// object referencing is destroyed. 
+/// object referencing is destroyed.
 
 class ChannelController
 {
@@ -96,3 +95,5 @@ public:
 };
 
 } // namespace cali;
+
+#endif

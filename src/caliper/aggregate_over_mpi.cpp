@@ -6,10 +6,11 @@
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/NodeBuffer.h"
-#include "caliper/common/SnapshotBuffer.h"
+
+#include "../common/CompressedSnapshotRecord.h"
+#include "../common/NodeBuffer.h"
+#include "../common/SnapshotBuffer.h"
 
 #include <set>
 

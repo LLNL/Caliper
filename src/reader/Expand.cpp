@@ -3,7 +3,7 @@
 
 // Print expanded records
 
-#include "caliper/reader/Expand.h"
+#include "Expand.h"
 
 #include "caliper/reader/QuerySpec.h"
 
@@ -12,7 +12,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
-#include "caliper/common/util/split.hpp"
+#include "../common/util/split.hpp"
 
 #include <algorithm>
 #include <functional>
