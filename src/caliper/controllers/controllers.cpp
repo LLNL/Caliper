@@ -49,6 +49,11 @@ const char* event_trace_spec = R"json(
         "type"        : "bool",
         "services"    : [ "ompt" ]
       },
+      { "name"        : "trace.kokkos",
+        "description" : "Trace Kokkos kernels",
+        "type"        : "bool",
+        "services"    : [ "kokkostime" ]
+      },
       { "name"        : "event.timestamps",
         "description" : "Record event timestamps [deprecated; always-on]",
         "type"        : "bool"
