@@ -24,9 +24,9 @@ class OutputStream
 {
     struct OutputStreamImpl;
     std::shared_ptr<OutputStreamImpl> mP;
-    
+
 public:
-    
+
     enum StreamType {
         None,
         StdOut,
@@ -35,9 +35,14 @@ public:
         User
     };
 
+    enum Mode {
+        Truncate,
+        Append
+    };
+
     /// \brief Returns \a true if the stream is initialized, otherwise
     ///   returns \a false
-    operator bool() const; 
+    operator bool() const;
 
     StreamType    type() const;
 
@@ -61,6 +66,13 @@ public:
     void
     set_filename(const char* filename);
 
+    /// \brief Set stream's output mode for files
+    ///
+    /// Sets the open mode. \a Truncate resets the file, \a Append
+    /// appends to it. Only applies to file streams.
+    void
+    set_mode(Mode mode);
+
     /// \brief Create stream's filename from the given format string pattern and
     ///   entry list.
     ///
@@ -79,5 +91,5 @@ public:
                  const CaliperMetadataAccessInterface& db,
                  const std::vector<Entry>& rec);
 };
-    
+
 }
