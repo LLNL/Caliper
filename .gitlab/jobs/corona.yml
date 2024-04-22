@@ -1,9 +1,16 @@
 ##############################################################################
-# Copyright (c) 2022, Lawrence Livermore National Security, LLC and RADIUSS
+# Copyright (c) 2022-23, Lawrence Livermore National Security, LLC and RADIUSS
 # project contributors. See the COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (MIT)
 ##############################################################################
+
+# Override reproducer section to define project specific variables.
+.corona_reproducer_vars:
+  script:
+    - |
+      echo -e "export MODULE_LIST=\"${MODULE_LIST}\""
+      echo -e "export SPEC=\"${SPEC//\"/\\\"}\""
 
 # With GitLab CI, included files cannot be empty.
 variables:
