@@ -16,7 +16,28 @@
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-## Template for extra jobs defined by the project.
+########################
+# Overridden shared jobs
+########################
+# We duplicate the shared jobs description and add necessary changes for RAJA.
+# We keep ${PROJECT_<MACHINE>_VARIANTS} and ${PROJECT_<MACHINE>_DEPS} So that
+# the comparison with the original job is easier.
+
+# Allow failure due to weird error only with XL on Lassen. Passes in debug mode.
+xl_2022_08_19_gcc_8_3_1_cuda_11_2_0:
+  variables:
+    SPEC: "${PROJECT_LASSEN_VARIANTS} +cuda %xl@=16.1.1.12.gcc.8.3.1 ^cuda@11.2.0+allow-unsupported-compilers ${PROJECT_LASSEN_DEPS}"
+    MODULE_LIST: "cuda/11.2.0"
+  extends: .job_on_lassen
+  allow_failure: true
+
+############
+# Extra jobs
+############
+# We do not recommend using ${PROJECT_<MACHINE>_VARIANTS} and
+# ${PROJECT_<MACHINE>_DEPS} in the extra jobs. There is not reason not to fully
+# describe the spec here.
+
 master:
   variables:
     SPEC: " +tests"
