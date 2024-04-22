@@ -25,7 +25,7 @@ class FormatProcessor
 {
     struct FormatProcessorImpl;
     std::shared_ptr<FormatProcessorImpl> mP;
-    
+
 public:
 
     /// \brief Create formatter for given query spec and output stream.
@@ -33,7 +33,7 @@ public:
 
     ~FormatProcessor();
 
-    /// \brief Add snapshot record to formatter. 
+    /// \brief Add snapshot record to formatter.
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
     /// \brief Flush formatter contents.

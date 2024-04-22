@@ -9,6 +9,7 @@
 
 #include <cstring>
 #include <fstream>
+#include <iostream>
 #include <mutex>
 #include <sstream>
 
@@ -85,6 +86,7 @@ bool check_and_create_directory(const std::string& filepath)
 struct OutputStream::OutputStreamImpl
 {
     StreamType    type;
+    Mode          mode;
 
     bool          is_initialized;
     std::mutex    init_mutex;
@@ -109,7 +111,7 @@ struct OutputStream::OutputStreamImpl
 
         if (type == StreamType::File) {
             check_and_create_directory(filename);
-            fs.open(filename);
+            fs.open(filename, mode == Mode::Append ? std::ios::app : std::ios::trunc);
 
             if (!fs.is_open()) {
                 type = StreamType::None;
@@ -147,11 +149,11 @@ struct OutputStream::OutputStreamImpl
     }
 
     OutputStreamImpl()
-        : type(StreamType::None), is_initialized(false), user_os(nullptr)
+        : type(StreamType::None), mode(Truncate), is_initialized(false), user_os(nullptr)
     { }
 
     OutputStreamImpl(const char* name)
-        : type(StreamType::None), is_initialized(false), filename(name), user_os(nullptr)
+        : type(StreamType::None), mode(Truncate), is_initialized(false), filename(name), user_os(nullptr)
     { }
 };
 
@@ -179,6 +181,12 @@ std::ostream*
 OutputStream::stream()
 {
     return mP->stream();
+}
+
+void
+OutputStream::set_mode(OutputStream::Mode mode)
+{
+    mP->mode = mode;
 }
 
 void

@@ -59,6 +59,7 @@ public:
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
+                config()["CALI_MPIREPORT_APPEND"  ] = opts.get("output.append").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
@@ -74,6 +75,7 @@ public:
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
+                config()["CALI_REPORT_APPEND"     ] = opts.get("output.append").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",   serial_select },
@@ -127,7 +129,7 @@ const char* controller_spec = R"json(
          "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
          "CALI_CUPTITRACE_SNAPSHOT_DURATION" : "true"
        },
-     "defaults"    : { "order_as_visited": "true" },
+     "defaults"    : { "order_as_visited": "true", "output.append": "true" },
      "options":
      [
       {
@@ -139,6 +141,11 @@ const char* controller_spec = R"json(
        "name": "show_kernels",
        "type": "bool",
        "description": "Show kernel names"
+      },
+      {
+       "name": "output.append",
+       "type": "bool",
+       "description": "Use append mode when writing to files"
       }
      ]
     }

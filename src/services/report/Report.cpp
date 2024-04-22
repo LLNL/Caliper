@@ -57,6 +57,8 @@ class Report {
 
         if (!filename.empty())
             stream.set_filename(filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
+        if (config.get("append").to_bool() == true)
+            stream.set_mode(OutputStream::Mode::Append);
 
         CaliperMetadataDB db;
         QueryProcessor queryP(spec, stream);
@@ -104,6 +106,11 @@ const char* Report::s_spec = R"json(
             "description": "File name for report stream",
             "type": "string",
             "value": "stdout"
+        },
+        {   "name": "append",
+            "description": "Append to file instead of overwriting",
+            "type": "bool",
+            "value": "false"
         },
         {   "name": "config",
             "description": "CalQL query to generate report",

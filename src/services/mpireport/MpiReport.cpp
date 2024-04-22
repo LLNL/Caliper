@@ -3,6 +3,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/MpiEvents.h"
 #include "caliper/SnapshotRecord.h"
@@ -29,11 +31,10 @@ namespace
 
 class MpiReport
 {
-    static const ConfigSet::Entry s_configdata[];
-
     QuerySpec   m_cross_spec;
     QuerySpec   m_local_spec;
     std::string m_filename;
+    bool        m_append_to_file;
 
     void write_output_cb(Caliper* c, Channel* channel, SnapshotView flush_info) {
         // check if we can use MPI
@@ -64,6 +65,8 @@ class MpiReport
         if (rank == 0) {
             stream.set_stream(OutputStream::StdOut);
 
+            if (m_append_to_file)
+                stream.set_mode(OutputStream::Mode::Append);
             if (!m_filename.empty())
                 stream.set_filename(m_filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
         }
@@ -88,19 +91,23 @@ class MpiReport
             });
     }
 
-    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename)
+    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename, bool append)
         : m_cross_spec(cross_spec),
           m_local_spec(local_spec),
-          m_filename(filename)
+          m_filename(filename),
+          m_append_to_file(append)
         { }
 
 public:
 
+    static const char* s_spec;
+
     static void init(Caliper* c, Channel* chn) {
-        ConfigSet   config = chn->config().init("mpireport", s_configdata);
+        ConfigSet   config = services::init_config_from_spec(chn->config(), s_spec);
 
         std::string cross_cfg = config.get("config").to_string();
         std::string local_cfg = config.get("local_config").to_string();
+
 
         CalQLParser cross_parser(cross_cfg.c_str());
         CalQLParser local_parser(local_cfg.empty() ? cross_cfg.c_str() : local_cfg.c_str());
@@ -114,7 +121,8 @@ public:
             }
 
         MpiReport* instance =
-            new MpiReport(cross_parser.spec(), local_parser.spec(), config.get("filename").to_string());
+            new MpiReport(cross_parser.spec(), local_parser.spec(),
+                    config.get("filename").to_string(), config.get("append").to_bool());
 
         chn->events().write_output_evt.connect(
             [instance](Caliper* c, Channel* chn, SnapshotView info){
@@ -136,34 +144,42 @@ public:
     }
 };
 
-const ConfigSet::Entry     MpiReport::s_configdata[] = {
-    { "filename", CALI_TYPE_STRING, "stdout",
-      "File name for report stream. Default: stdout.",
-      "File name for report stream. Either one of\n"
-      "   stdout: Standard output stream,\n"
-      "   stderr: Standard error stream,\n"
-      " or a file name.\n"
-    },
-    { "config", CALI_TYPE_STRING, "",
-      "Cross-process aggregation and report configuration/query specification in CalQL",
-      "Cross-process aggregation and report configuration/query specification in CalQL"
-    },
-    { "local_config", CALI_TYPE_STRING, "",
-      "CalQL config for process-local aggregation step",
-      "CalQL config for a process-local aggregation step applied before cross-process aggregation"
-    },
-    { "write_on_finalize", CALI_TYPE_BOOL, "true",
-      "Flush Caliper buffers on MPI_Finalize",
-      "Flush Caliper buffers on MPI_Finalize"
-    },
-    ConfigSet::Terminator
-};
+const char* MpiReport::s_spec = R"json(
+{   "name": "mpireport",
+    "description": "Aggregate data across MPI ranks and write output using CalQL query",
+    "config": [
+        {   "name": "filename",
+            "description": "File name for report stream",
+            "type": "string",
+            "value": "stdout"
+        },
+        {   "name": "append",
+            "description": "Append to file instead of overwriting",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "config",
+            "description": "CalQL query for cross-process aggregation and formatting",
+            "type": "string"
+        },
+        {   "name": "local_config",
+            "description": "CalQL query for process-local aggregation step",
+            "type": "string"
+        },
+        {   "name": "write_on_finalize",
+            "description": "Write output at MPI_Finalize",
+            "type": "bool",
+            "value": "true"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
 
 namespace cali
 {
 
-CaliperService mpireport_service = { "mpireport", ::MpiReport::init };
+CaliperService mpireport_service = { ::MpiReport::s_spec, ::MpiReport::init };
 
 }
