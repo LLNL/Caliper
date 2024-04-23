@@ -24,6 +24,8 @@ class CaliperFortranAPITest(unittest.TestCase):
             snapshots, { 'region': 'main/work' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region': 'main/foo' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'region': 'main', 'phase': 'bar' }))
 
     def test_f_ann_custom_spec(self):
         target_cmd = [ './ci_test_f_ann', 'custom-trace-spec,output=stdout' ]

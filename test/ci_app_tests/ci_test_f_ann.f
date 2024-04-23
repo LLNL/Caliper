@@ -53,6 +53,9 @@ program fortran_example
     call cali_begin_region('foo')
     call cali_end_region('foo')
 
+    call cali_begin_phase('bar')
+    call cali_end_phase('bar')
+
     call ScopeAnnotation_end(f_ann)
 
     call mgr%flush

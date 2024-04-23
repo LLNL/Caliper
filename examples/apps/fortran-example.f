@@ -35,7 +35,9 @@ program fortran_example
     ! A scope annotation. Start region 'main'
     call cali_begin_region('main')
 
+    call cali_begin_phase('init')
     count = 4
+    call cali_end_phase('init')
 
     !   Annotate a loop. We'll have to find Caliper's built-in "loop"
     ! attribute first and create a loop iteration attribute, using the region
@@ -45,7 +47,6 @@ program fortran_example
     iter_attribute = cali_make_loop_iteration_attribute('mainloop')
 
     call cali_begin_string(loop_attribute, 'mainloop')
-
     do i = 1, count
         call cali_begin_int(iter_attribute, i)
 
@@ -53,8 +54,8 @@ program fortran_example
 
         call cali_end(iter_attribute)
     end do
-
     call cali_end(loop_attribute)
+
 
     ! End 'main'
     call cali_end_region('main')
