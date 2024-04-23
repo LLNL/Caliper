@@ -40,7 +40,7 @@ if (CALIPER_HAVE_MPI)
     target_link_libraries(${app} caliper ${MPI_CXX_LIBRARIES})
   endforeach()
 endif()
-  
+
 if (WITH_FORTRAN)
   foreach(app ${CALIPER_Fortran_EXAMPLE_APPS})
     add_executable(${app} ${app}.f)

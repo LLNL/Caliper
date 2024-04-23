@@ -5,6 +5,7 @@ namespace: cali
 
 options:
   F_module_per_class: false
+  F_API_case: lower
 
 format:
   C_prefix: cali_
@@ -23,7 +24,8 @@ declarations:
         CALI_ATTR_HIDDEN        =   128,
         CALI_ATTR_NESTED        =   256,
         CALI_ATTR_GLOBAL        =   512,
-        CALI_ATTR_UNALIGNED     =  1024
+        CALI_ATTR_UNALIGNED     =  1024,
+        CALI_ATTR_AGGREGATABLE  =  2048
       }
     options:
       wrap_c: false
@@ -97,6 +99,12 @@ declarations:
     options:
       C_extern_C: true
   - decl: void cali_end_region(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_phase(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_end_phase(const char* name)
     options:
       C_extern_C: true
   - decl: cali_id_t cali_make_loop_iteration_attribute(const char* name)

@@ -37,6 +37,7 @@ if (CALIPER_HAVE_FORTRAN)
   target_include_directories(
       caliper
     PUBLIC
+      "$<BUILD_INTERFACE:${CMAKE_Fortran_MODULE_DIRECTORY}>"
       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran>"
   )
 endif()
