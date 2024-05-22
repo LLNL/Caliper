@@ -85,11 +85,7 @@ void on_prof(int sig, siginfo_t *info, void *context)
     unw_context_t unw_ctx;
     unw_cursor_t  unw_cursor;
 
-#ifdef __aarch64__
-    unw_getcontext(unw_ctx);
-#else
     unw_getcontext(&unw_ctx);
-#endif
 
     if (unw_init_local(&unw_cursor, &unw_ctx) >= 0) {
         unw_step(&unw_cursor); // get us out of the sample handler frame
