@@ -63,6 +63,7 @@ This section lists how-to articles for various use cases.
    RegionFiltering
    EventTracing
    SampleProfiling
+   ThirdPartyTools
 
 Reference documentation
 -------------------------------
@@ -77,7 +78,6 @@ aspects in detail:
    AnnotationAPI
    ConfigManagerAPI
    FortranSupport
-   ThirdPartyTools
    BuiltinConfigurations
    configuration
    workflow

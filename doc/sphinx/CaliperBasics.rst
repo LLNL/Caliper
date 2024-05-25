@@ -147,6 +147,29 @@ with `Hatchet <https://github.com/LLNL/hatchet>`_. See
 :ref:`more-on-configurations` below to learn more about different
 configurations and their options.
 
+Region levels and filtering
+................................
+
+Caliper supports region levels to allow collection of profiling data at different
+granularities. The default regions have region level 0 (the finest level).
+Caliper also provides "phase" region macros to mark larger program phases, such
+as a physics package in a multi-physics code. Phase regions have region level 4.
+
+.. code-block:: c++
+
+    #include <caliper/cali.h>
+
+    // ...
+    CALI_MARK_PHASE_BEGIN("hydrodynamics");
+    // ...
+    CALI_MARK_PHASE_END("hydrodynamics");
+
+Use the `level` option for the built-in configurations to select the desired
+measurement granularity level. For example `runtime-report,level=phase`
+will only measure regions that have at least "phase" level.
+
+One can also include/exclude regions or entire branches by name. See
+:doc:`RegionFiltering` to learn more.
 
 .. _notes_on_threading:
 
@@ -328,8 +351,8 @@ maximum amount of memory that was allocated in each region:
       init          0.000020      0.000020      0.000020 0.229568     0.000000
 
 You can use the cali-query program to list available configs and their parameters.
-For example, ``cali-query --help=configs`` lists all configs and their options. 
-You can also query parameters for a specific config, e.g. 
+For example, ``cali-query --help=configs`` lists all configs and their options.
+You can also query parameters for a specific config, e.g.
 ``cali-query --help=runtime-report``.
 
 Some available performance measurement configs include:
