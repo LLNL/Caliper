@@ -57,7 +57,7 @@ event-trace
       Trace I/O events
 
 hatchet-region-profile
-   Record a region time profile for processing with hatchet. Options:
+   Record a region time profile for processing with hatchet or cali-query. Options:
 
    adiak.import_categories
       Adiak import categories. Comma-separated list of integers.
@@ -71,6 +71,8 @@ hatchet-region-profile
       Report I/O read bandwidth
    io.write.bandwidth
       Report I/O write bandwidth
+   level
+      Minimum region level that triggers snapshots
    mem.highwatermark
       Record memory high-water mark for regions
    output
@@ -192,6 +194,8 @@ runtime-report
       Report I/O read bandwidth
    io.write.bandwidth
       Report I/O write bandwidth
+   level
+      Minimum region level that triggers snapshots
    max_column_width
       Maximum column width in the tree display
    mem.highwatermark
@@ -232,6 +236,8 @@ spot
       Report I/O read bandwidth
    io.write.bandwidth
       Report I/O write bandwidth
+   level
+      Minimum region level that triggers snapshots
    mem.highwatermark
       Record memory high-water mark for regions
    output

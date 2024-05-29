@@ -48,22 +48,6 @@ CALI_AGGREGATE_KEY
    Default: Empty (all attributes without the ``ASVALUE`` storage
    property are key attributes).
 
-CALI_AGGREGATE_ATTRIBUTES
-   Colon-separated list of aggregation attributes. The `aggregate`
-   service aggregates values of aggregation attributes from all input
-   snapshots with similar aggregation keys. Note that only attributes
-   with the ``ASVALUE`` storage property can be aggregation
-   attributes.
-
-   By default, the aggregation service determines aggregatable
-   attributes automatically. With this configuration variable,
-   the aggregation attributes can be set specifically (e.g., to
-   select a subset). When set to `none`, the `aggregate` service
-   will not aggregate any attributes, and only count the number of
-   snapshots with similar keys.
-
-   Default: Empty (determine aggregation attributes automatically).
-
 Aggregation key
 ................................
 
@@ -607,6 +591,9 @@ CALI_EVENT_ENABLE_SNAPSHOT_INFO
 
    Default: true
 
+CALI_EVENT_REGION_LEVEL
+   Minimum region level that triggers snapshots. Default: 0
+
 CALI_EVENT_INCLUDE_REGIONS
    Specify a value filter to only trigger snapshots for the provided
    patterns. See above for the different pattern options.
@@ -618,6 +605,9 @@ CALI_EVENT_EXCLUDE_REGIONS
    the provided patterns.
 
    Default: empty (no filter)
+
+CALI_EVENT_INCLUDE_BRANCHES
+   Specifies branches by name (using a pattern) to measure.
 
 Debug
 --------------------------------
@@ -1409,25 +1399,6 @@ The timer service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 
-CALI_TIMER_SNAPSHOT_DURATION
-   Measure duration (in microseconds) of the context epoch (i.e., the
-   time between two consecutive context snapshots). The value will be
-   saved in the snapshot record as attribute ``time.duration``.
-
-   Default: true
-
-CALI_TIMER_OFFSET
-   Include the time offset (time since program start, in microseconds)
-   with each context snapshot. The value will be saved in the snapshot
-   record as attribute ``time.offset``.
-
-   Default: false
-
-CALI_TIMER_TIMESTAMP
-   Include absolute timestamp (time since UNIX epoch, in seconds) with
-   each context snapshot. The value will be saved in the snapshot record
-   as attribute ``time.timestamp``.
-
 CALI_TIMER_INCLUSIVE_DURATION
    Calulates inclusive times for nested regions. The value will be saved
    in the snapshot record as attribute ``time.inclusive.duration``.
@@ -1436,11 +1407,6 @@ CALI_TIMER_INCLUSIVE_DURATION
    to be enabled for this feature.
 
    Default: true
-
-CALI_TIMER_UNIT=(sec|usec)
-   The unit for time duration values (seconds or microseconds).
-
-   Default: sec
 
 .. _trace-service:
 
