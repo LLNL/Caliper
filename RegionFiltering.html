@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Region filtering &#8212; Caliper 2.10.0 documentation</title>
+    <title>Region filtering &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="OpenMP.html" title="OpenMP profiling"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Region filtering</a></li> 
       </ul>
     </div>  
@@ -52,6 +52,8 @@ to certain regions using two ConfigManager options:</p>
 <dt>include_regions</dt><dd><p>Only take measurements for regions with the given pattern.</p>
 </dd>
 <dt>exclude_regions</dt><dd><p>Skip measurements for regions with the given pattern.</p>
+</dd>
+<dt>include_branches</dt><dd><p>Only take measurements for regions inside a given branch.</p>
 </dd>
 </dl>
 <p>The options take a list of region patterns. There are three pattern types:</p>
@@ -106,6 +108,19 @@ main
 region - <cite>mainloop</cite> in this case - which is why we still see measurement values
 for the <cite>mainloop</cite> region here. However, these do not represent the actual time
 spent in <cite>mainloop</cite>.</p>
+<p>With the <cite>include_branches</cite> option, we can limit measurements to a specific
+branch and its sub-regions, e.g. the <cite>mainloop</cite> branch:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=&quot;runtime-report,include_branches=mainloop&quot; ./examples/apps/cxx-example
+Path       Min time/rank Max time/rank Avg time/rank Time %
+main            0.000457      0.000457      0.000457 37.527884
+  mainloop      0.000108      0.000108      0.000108  8.882529
+    foo         0.000653      0.000653      0.000653 53.589588
+</pre></div>
+</div>
+<p>This limits measurement to the <cite>mainloop</cite> region and all its sub-regions.
+Again, measurement values taken when entering the <cite>mainloop</cite> region are
+assigned to its enclosing region (<cite>main</cite> in this case), but don’t necessarily
+reflect the actual time spent there.</p>
 <p>We can use a pattern like <cite>startswith(main)</cite> to include <cite>main</cite> and <cite>mainloop</cite>.
 Be careful to wrap the option values in quotes to prevent them from being
 misinterpreted by the config parser:</p>
@@ -184,7 +199,7 @@ main            0.000112      0.000112      0.000112  5.177994
         <li class="right" >
           <a href="OpenMP.html" title="OpenMP profiling"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Region filtering</a></li> 
       </ul>
     </div>

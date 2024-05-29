@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Annotation API reference &#8212; Caliper 2.10.0 documentation</title>
+    <title>Annotation API reference &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>  
@@ -218,8 +218,8 @@ associated attributes.</p>
 <dl class="cpp enumerator">
 <dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_NOMERGEE">
 <span id="_CPPv3N20cali_attr_properties17CALI_ATTR_NOMERGEE"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_NOMERGEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa6750ad25cdd1deb8f9e41fdfcba3bc1d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_NOMERGE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_NOMERGEE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Create a separate context tree root node for this attribute. </p>
-<p>Useful for attributes that form overlapping hierarchies separate from the main region stack. </p>
+<dd><p>Create a separate context tree root node for this attribute (deprecated). </p>
+<p>Useful for attributes that form overlapping hierarchies separate from the main region stack. No longer used. </p>
 </dd></dl>
 
 <dl class="cpp enumerator">
@@ -278,6 +278,49 @@ associated attributes.</p>
 <span id="_CPPv3N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span id="_CPPv2N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa478c211b1beb8b4a6e0bd67305451da1"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_AGGREGATABLE</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties22CALI_ATTR_AGGREGATABLEE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>This attribute is aggregatable (i.e., a metric). </p>
 <p>Attributes with this flag will automatically be aggregated by the <em>aggregate</em> service. This flag replaces the previous <em>class.aggregatable</em> meta-attribute. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_1E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_1E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_1E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa7155d8b89783effc03d28b94264bbc32"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_1</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_1E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 1. </p>
+<p>Annotation levels can be used to describe and set the granularity of region annotations. Level 0 is the finest level, level 7 is the coarsest. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_2E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_2E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_2E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa7445a83d0a5300e90679f3bfc3f14338"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_2</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_2E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 2. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_3E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_3E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_3E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa0f7c2f49c8b778bfdf8b9d05480ed1f9"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_3</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_3E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 3. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_4E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_4E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_4E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa124ae4d1d7f2b624b244a244baab5ba4"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_4</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_4E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 4. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_5E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_5E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_5E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caae1002c6941665be73f533becd4ffd118"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_5</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_5E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 5. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_6E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_6E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_6E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa023668f76cc1a7ac1997f4361b816841"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_6</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_6E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 6. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_7E">
+<span id="_CPPv3N20cali_attr_properties17CALI_ATTR_LEVEL_7E"></span><span id="_CPPv2N20cali_attr_properties17CALI_ATTR_LEVEL_7E"></span><span class="target" id="cali__types_8h_1ad496a3cf9ac87b91770747b187b5c5caa9c136e610bd6b447fd97e3a97be260a3"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CALI_ATTR_LEVEL_7</span></span></span><a class="headerlink" href="#_CPPv4N20cali_attr_properties17CALI_ATTR_LEVEL_7E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Annotation level 7. </p>
 </dd></dl>
 
 </dd></dl>
@@ -414,6 +457,19 @@ following example shows both:</p>
 <p><a class="reference internal" href="#group__AnnotationAPI_1ga75b0a3869ec4d9e692a347e0cf925637"><span class="std std-ref">cali_begin_region()</span></a></p>
 </div>
 </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv416cali_begin_phasePKc">
+<span id="_CPPv316cali_begin_phasePKc"></span><span id="_CPPv216cali_begin_phasePKc"></span><span id="cali_begin_phase__cCP"></span><span class="target" id="group__AnnotationAPI_1ga33f7b726548da8f84d0c510b8ea7b7f5"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_begin_phase</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv416cali_begin_phasePKc" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Begin phase region <em>name</em>. </p>
+<p>A phase marks high-level, long(er)-running code regions. While regular regions use the “region” attribute with annotation level 0, phase regions use the “phase” attribute with annotation level 4. Otherwise phases behave identical to regular Caliper regions. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv414cali_end_phasePKc">
+<span id="_CPPv314cali_end_phasePKc"></span><span id="_CPPv214cali_end_phasePKc"></span><span id="cali_end_phase__cCP"></span><span class="target" id="group__AnnotationAPI_1ga8613616a059e9f16421b0a5144f54a55"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_end_phase</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv414cali_end_phasePKc" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>End phase region <em>name</em>. </p>
 </dd></dl>
 
 <dl class="cpp function">
@@ -804,109 +860,17 @@ following example shows both:</p>
 </dl>
 </dd></dl>
 
-</div>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric" id="breathe-section-title-functions">Functions</p>
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv425cali_datatracker_allocatePKc6size_t">
-<span id="_CPPv325cali_datatracker_allocatePKc6size_t"></span><span id="_CPPv225cali_datatracker_allocatePKc6size_t"></span><span id="cali_datatracker_allocate__cCP.s"></span><span class="target" id="group__AnnotationAPI_1ga8d1ec6ad5b89ec370b809bb4bce63c14"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_allocate</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv425cali_datatracker_allocatePKc6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Allocate and track the resulting allocation in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Tracking information will be automatically removed if the allocation is freed</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>label</strong> – The unique label with which to track the allocation requested </p></li>
-<li><p><strong>size</strong> – The total size of the allocation requested </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A new allocation of size <code class="docutils literal notranslate"><span class="pre">size</span></code></p>
-</dd>
-</dl>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.CALI_MARK_PHASE_BEGIN">
+<span class="target" id="group__AnnotationAPI_1gac1324649b82c42feeba5000c21975031"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_PHASE_BEGIN</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_PHASE_BEGIN" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Mark begin of a phase region. </p>
+<p>A phase marks high-level, long(er)-running code regions. While regular regions use the “region” attribute with annotation level 0, phase regions use the “phase” attribute with annotation level 4. Otherwise phases behave identical to regular Caliper regions. </p>
 </dd></dl>
 
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv437cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t">
-<span id="_CPPv337cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t"></span><span id="_CPPv237cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t"></span><span id="cali_datatracker_allocate_dimensional__cCP.s.sCP.s"></span><span class="target" id="group__AnnotationAPI_1gab539209211ba9006aac3db8013b3f53d"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_allocate_dimensional</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">elem_size</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dimensions</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_dimensions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv437cali_datatracker_allocate_dimensionalPKc6size_tPK6size_t6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Allocate and track the resulting allocation, with dimensions, in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Tracking information will be automatically removed if the allocation is freed</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>label</strong> – The unique label with which to track the allocation requested </p></li>
-<li><p><strong>elem_size</strong> – The size of an individual element in the allocation requested </p></li>
-<li><p><strong>dimensions</strong> – An array of the dimensions of the allocation requested </p></li>
-<li><p><strong>num_dimensions</strong> – The number of dimensions in <code class="docutils literal notranslate"><span class="pre">dimensions</span></code></p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A new allocation of size <code class="docutils literal notranslate"><span class="pre">product(dimensions)*elem_size</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv421cali_datatracker_freePv">
-<span id="_CPPv321cali_datatracker_freePv"></span><span id="_CPPv221cali_datatracker_freePv"></span><span id="cali_datatracker_free__voidP"></span><span class="target" id="group__AnnotationAPI_1ga85420669a100cd7f4deb53f9eb5de95f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_free</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv421cali_datatracker_freePv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Free and untrack an allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ptr</strong> – The pointer to the beginning of the allocation to free/untrack </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv422cali_datatracker_trackPKvPKc6size_t">
-<span id="_CPPv322cali_datatracker_trackPKvPKc6size_t"></span><span id="_CPPv222cali_datatracker_trackPKvPKc6size_t"></span><span id="cali_datatracker_track__voidCP.cCP.s"></span><span class="target" id="group__AnnotationAPI_1gaca7d5eaad1e2ac74da2e106bf1aa8ee3"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_track</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv422cali_datatracker_trackPKvPKc6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Track an existing allocation in Caliper.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This will track the entire allocation pointed to by ptr. To track a subset of a larger allocation, use <code class="docutils literal notranslate"><span class="pre">cali_datatracker_track_dimensional</span></code>.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ptr</strong> – The pointer to the beginning of the allocation to track </p></li>
-<li><p><strong>label</strong> – The unique label with which to track the allocation </p></li>
-<li><p><strong>size</strong> – Size of the allocation </p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv434cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t">
-<span id="_CPPv334cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t"></span><span id="_CPPv234cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t"></span><span id="cali_datatracker_track_dimensional__voidCP.cCP.s.sCP.s"></span><span class="target" id="group__AnnotationAPI_1gab96e1b5f408d10601d0c74b6f13d7d6b"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_track_dimensional</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">label</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">elem_size</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">dimensions</span></span>, <span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">num_dimensions</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv434cali_datatracker_track_dimensionalPKvPKc6size_tPK6size_t6size_t" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Track an existing allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ptr</strong> – The pointer to the beginning of the allocation to track </p></li>
-<li><p><strong>label</strong> – The unique label with which to track the allocation </p></li>
-<li><p><strong>elem_size</strong> – The size of an individual element in the allocation </p></li>
-<li><p><strong>dimensions</strong> – An array of the dimensions of the allocation </p></li>
-<li><p><strong>num_dimensions</strong> – The number of dimensions in <code class="docutils literal notranslate"><span class="pre">dimensions</span></code></p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv424cali_datatracker_untrackPKv">
-<span id="_CPPv324cali_datatracker_untrackPKv"></span><span id="_CPPv224cali_datatracker_untrackPKv"></span><span id="cali_datatracker_untrack__voidCP"></span><span class="target" id="group__AnnotationAPI_1gaea9b6341c9553bdd2040506bb8fd4e29"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cali_datatracker_untrack</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv424cali_datatracker_untrackPKv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Untrack a previously tracked allocation in Caliper.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ptr</strong> – The pointer to the beginning of the allocation to untrack </p>
-</dd>
-</dl>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.CALI_MARK_PHASE_END">
+<span class="target" id="group__AnnotationAPI_1gafd087e75e972b4b7fef4fc115b06f68b"></span><span class="sig-name descname"><span class="n"><span class="pre">CALI_MARK_PHASE_END</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">name</span></span><span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_PHASE_END" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Mark end of a phase region. </p>
 </dd></dl>
 
 </div>
@@ -1182,7 +1146,7 @@ following example shows both:</p>
         <li class="right" >
           <a href="build.html" title="Building Caliper"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Annotation API reference</a></li> 
       </ul>
     </div>

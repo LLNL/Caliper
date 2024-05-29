@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper Basics &#8212; Caliper 2.10.0 documentation</title>
+    <title>Caliper Basics &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>  
@@ -164,10 +164,30 @@ main<span class="w">            </span><span class="m">0</span>.000658<span clas
 </div>
 <p>Caliper provides many more performance measurement configurations in addition
 to <cite>runtime-report</cite> that make use of region annotations. For example,
-<cite>hatchet-region-profile</cite> writes a json file with region times for processing
+<cite>hatchet-region-profile</cite> writes a .cali file with region times for processing
 with <a class="reference external" href="https://github.com/LLNL/hatchet">Hatchet</a>. See
 <a class="reference internal" href="#more-on-configurations"><span class="std std-ref">More on configurations</span></a> below to learn more about different
 configurations and their options.</p>
+<section id="region-levels-and-filtering">
+<h3>Region levels and filtering<a class="headerlink" href="#region-levels-and-filtering" title="Permalink to this heading">¶</a></h3>
+<p>Caliper supports region levels to allow collection of profiling data at different
+granularities. The default regions have region level 0 (the finest level).
+Caliper also provides “phase” region macros to mark larger program phases, such
+as a physics package in a multi-physics code. Phase regions have region level 4.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span>
+
+<span class="c1">// ...</span>
+<span class="n">CALI_MARK_PHASE_BEGIN</span><span class="p">(</span><span class="s">&quot;hydrodynamics&quot;</span><span class="p">);</span>
+<span class="c1">// ...</span>
+<span class="n">CALI_MARK_PHASE_END</span><span class="p">(</span><span class="s">&quot;hydrodynamics&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Use the <cite>level</cite> option for the built-in configurations to select the desired
+measurement granularity level. For example <cite>runtime-report,level=phase</cite>
+will only measure regions that have at least “phase” level.</p>
+<p>One can also include/exclude regions or entire branches by name. See
+<a class="reference internal" href="RegionFiltering.html"><span class="doc">Region filtering</span></a> to learn more.</p>
+</section>
 <section id="notes-on-multi-threading">
 <span id="notes-on-threading"></span><h3>Notes on multi-threading<a class="headerlink" href="#notes-on-multi-threading" title="Permalink to this heading">¶</a></h3>
 <p>Some care must be taken when annotating multi-threaded programs. Regions are
@@ -322,11 +342,10 @@ main<span class="w">            </span><span class="m">0</span>.000179<span clas
 <span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w"> </span><span class="m">0</span>.229568<span class="w">     </span><span class="m">0</span>.000000
 </pre></div>
 </div>
-<p>You can use the cali-query and mpi-caliquery programs to list available
-configs and their parameters (note that cali-query does not list MPI-dependent
-options and configs). For example, <code class="docutils literal notranslate"><span class="pre">mpi-caliquery</span> <span class="pre">--help=configs</span></code> lists all
-configs and their options. You can also query parameters for a specific config,
-e.g. <code class="docutils literal notranslate"><span class="pre">mpi-caliquery</span> <span class="pre">--help=runtime-report</span></code>.</p>
+<p>You can use the cali-query program to list available configs and their parameters.
+For example, <code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=configs</span></code> lists all configs and their options.
+You can also query parameters for a specific config, e.g.
+<code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=runtime-report</span></code>.</p>
 <p>Some available performance measurement configs include:</p>
 <dl class="simple">
 <dt>runtime-report</dt><dd><p>Print a time profile for annotated regions.</p>
@@ -493,7 +512,7 @@ Block<span class="w"> </span>Iterations<span class="w"> </span>Time<span class="
 <span class="w"> </span><span class="m">3750</span><span class="w">       </span><span class="m">1085</span><span class="w"> </span><span class="m">2</span>.634396<span class="w">  </span><span class="m">411</span>.859113<span class="w">     </span><span class="m">0</span>.000016
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a> or run <code class="docutils literal notranslate"><span class="pre">mpi-caliquery</span> <span class="pre">--help=loop-report</span></code>
+<p>See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a> or run <code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=loop-report</span></code>
 to learn about all loop-report options. Loop profiling is also available
 with other configs, notably the <cite>spot</cite> config producing output for the Spot
 performance visualization web framework.</p>
@@ -717,6 +736,7 @@ analysis views.</p>
 <li><a class="reference internal" href="#">Caliper Basics</a><ul>
 <li><a class="reference internal" href="#build-and-install">Build and install</a></li>
 <li><a class="reference internal" href="#region-profiling">Region profiling</a><ul>
+<li><a class="reference internal" href="#region-levels-and-filtering">Region levels and filtering</a></li>
 <li><a class="reference internal" href="#notes-on-multi-threading">Notes on multi-threading</a></li>
 </ul>
 </li>
@@ -777,7 +797,7 @@ analysis views.</p>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>

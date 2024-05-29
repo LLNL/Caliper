@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>ConfigManager API reference &#8212; Caliper 2.10.0 documentation</title>
+    <title>ConfigManager API reference &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="AnnotationAPI.html" title="Annotation API reference"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ConfigManager API reference</a></li> 
       </ul>
     </div>  
@@ -462,11 +462,11 @@ If there was an error parsing the config spec, the <a class="reference internal"
   <span class="s2">&quot; </span><span class="se">\&quot;</span><span class="s2">query</span><span class="se">\&quot;</span><span class="s2">       : &quot;</span>
   <span class="s2">&quot; [&quot;</span>
   <span class="s2">&quot;  { </span><span class="se">\&quot;</span><span class="s2">level</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">local</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">select</span><span class="se">\&quot;</span><span class="s2">:&quot;</span>
-  <span class="s2">&quot;   [ { </span><span class="se">\&quot;</span><span class="s2">expr</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">sum(sum#papi.PAPI_TOT_INS)</span><span class="se">\&quot;</span><span class="s2"> } ]&quot;</span>
+  <span class="s2">&quot;   [ </span><span class="se">\&quot;</span><span class="s2">sum(sum#papi.PAPI_TOT_INS)</span><span class="se">\&quot;</span><span class="s2"> ]&quot;</span>
   <span class="s2">&quot;  },&quot;</span>
   <span class="s2">&quot;  { </span><span class="se">\&quot;</span><span class="s2">level</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">cross</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">select</span><span class="se">\&quot;</span><span class="s2">:&quot;</span>
-  <span class="s2">&quot;   [ { </span><span class="se">\&quot;</span><span class="s2">expr</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">avg(sum#sum#papi.PAPI_TOT_INS)</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">as</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">Avg instr./rank</span><span class="se">\&quot;</span><span class="s2"> },&quot;</span>
-  <span class="s2">&quot;     { </span><span class="se">\&quot;</span><span class="s2">expr</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">max(sum#sum#papi.PAPI_TOT_INS)</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">as</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">Max instr./rank</span><span class="se">\&quot;</span><span class="s2"> }&quot;</span>
+  <span class="s2">&quot;   [ </span><span class="se">\&quot;</span><span class="s2">avg(sum#sum#papi.PAPI_TOT_INS) as </span><span class="se">\\\&quot;</span><span class="s2">Avg instr./rank</span><span class="se">\\\&quot;</span><span class="s2">,</span><span class="se">\&quot;</span>
+  <span class="s2">&quot;     </span><span class="se">\&quot;</span><span class="s2">max(sum#sum#papi.PAPI_TOT_INS) as </span><span class="se">\\\&quot;</span><span class="s2">Max instr./rank</span><span class="se">\\\&quot;\&quot;</span>
   <span class="s2">&quot;   ]&quot;</span>
   <span class="s2">&quot;  }&quot;</span>
   <span class="s2">&quot; ]&quot;</span>
@@ -488,7 +488,7 @@ If there was an error parsing the config spec, the <a class="reference internal"
 <li><p><em>description:</em> A short one-line description. Included in the documentation string generated by <a class="reference internal" href="#classcali_1_1ConfigManager_1ac927cd656e656197b5b98bc58f9bbba5"><span class="std std-ref">get_documentation_for_spec()</span></a>. </p></li>
 <li><p><em>services:</em> List of Caliper services this option requires. Note that the option will only be available if all required services are present in Caliper. </p></li>
 <li><p><em>config:</em> A dictionary with Caliper configuration variables required for this option. Note that services will be added automatically based on the <em>services</em> entry. </p></li>
-<li><p><em>query:</em> Defines aggregation operations to compute performance metrics. Specific to “metric” options. There are two aggregation levels: <em>local</em> computes process-local metrics, and <em>cross</em> computes cross-process metrics in MPI programs. For each level, specify metrics using a list of “select” definitions, where <em>expr</em> defines an aggregation using a CalQL expression, and <em>as</em> provides a human-readable name for the metric. Metrics on the <em>serial</em> and <em>local</em> levels use runtime aggregation results from the “aggregate” service as input, metrics on the <em>cross</em> level use “local” metrics as input. </p></li>
+<li><p><em>query:</em> Defines aggregation operations to compute performance metrics. Specific to “metric” options. There are two aggregation levels: <em>local</em> computes process-local metrics, and <em>cross</em> computes cross-process metrics in MPI programs. For each level, specify metrics as a list of “select” definitions and aggregations using CalQL expressions. Metrics on the <em>serial</em> and <em>local</em> levels use runtime aggregation results from the “aggregate” service as input, metrics on the <em>cross</em> level use “local” metrics as input. </p></li>
 </ul>
 </p>
 </dd>
@@ -786,8 +786,14 @@ If there was an error parsing the config spec, the <a class="reference internal"
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEEb">
-<span id="_CPPv3NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEEb"></span><span id="_CPPv2NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEEb"></span><span id="cali::ConfigManager::Options::build_query__cCP.std::map:ss.ss:CR.bC"></span><span class="target" id="classcali_1_1ConfigManager_1_1Options_1a06f8b3bedf1f3bfee2791b3b6a4cefd7"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">build_query</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">level</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">in</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">use_alias</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">true</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEEb" title="Permalink to this definition">¶</a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK4cali13ConfigManager7Options23update_channel_metadataER10info_map_t">
+<span id="_CPPv3NK4cali13ConfigManager7Options23update_channel_metadataER10info_map_t"></span><span id="_CPPv2NK4cali13ConfigManager7Options23update_channel_metadataER10info_map_t"></span><span id="cali::ConfigManager::Options::update_channel_metadata__info_map_tRC"></span><span class="target" id="classcali_1_1ConfigManager_1_1Options_1accd9ee01e115cc5a4b0b08d894045261"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">update_channel_metadata</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">info_map_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">metadata</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cali13ConfigManager7Options23update_channel_metadataER10info_map_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Update the config controller’s metadata according to the selected options. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEE">
+<span id="_CPPv3NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEE"></span><span id="_CPPv2NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEE"></span><span id="cali::ConfigManager::Options::build_query__cCP.std::map:ss.ss:CRC"></span><span class="target" id="classcali_1_1ConfigManager_1_1Options_1a21e24a65f1a26aa919de822e610a1de5"></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">build_query</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">level</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">in</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK4cali13ConfigManager7Options11build_queryEPKcRKNSt3mapINSt6stringENSt6stringEEE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Returns a CalQL query based on the fields in <em>input</em> and option list. </p>
 <p>Construct a CalQL query for the option list. Example: <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">auto</span> <span class="n">query</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">build_query</span><span class="p">(</span><span class="s2">&quot;cross&quot;</span><span class="p">,</span> <span class="p">{</span>
         <span class="p">{</span> <span class="s2">&quot;select&quot;</span><span class="p">,</span>   <span class="s2">&quot;sum(inclusive#sum#time.duration) as Total unit sec&quot;</span> <span class="p">},</span>
@@ -973,7 +979,7 @@ If there was an error parsing the config spec, the <a class="reference internal"
         <li class="right" >
           <a href="AnnotationAPI.html" title="Annotation API reference"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ConfigManager API reference</a></li> 
       </ul>
     </div>

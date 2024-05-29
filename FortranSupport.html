@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Fortran support &#8212; Caliper 2.10.0 documentation</title>
+    <title>Fortran support &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="ConfigManagerAPI.html" title="ConfigManager API reference"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Fortran support</a></li> 
       </ul>
     </div>  
@@ -105,7 +105,9 @@ ConfigManager APIs for Fortran:</p>
 <span class="w">    </span><span class="c">! A scope annotation. Start region &#39;main&#39;</span>
 <span class="w">    </span><span class="k">call </span><span class="n">cali_begin_region</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">)</span>
 
+<span class="w">    </span><span class="k">call </span><span class="n">cali_begin_phase</span><span class="p">(</span><span class="s1">&#39;init&#39;</span><span class="p">)</span>
 <span class="w">    </span><span class="nb">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+<span class="w">    </span><span class="k">call </span><span class="n">cali_end_phase</span><span class="p">(</span><span class="s1">&#39;init&#39;</span><span class="p">)</span>
 
 <span class="w">    </span><span class="c">!   Annotate a loop. We&#39;ll have to find Caliper&#39;s built-in &quot;loop&quot;</span>
 <span class="w">    </span><span class="c">! attribute first and create a loop iteration attribute, using the region</span>
@@ -115,7 +117,6 @@ ConfigManager APIs for Fortran:</p>
 <span class="w">    </span><span class="n">iter_attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cali_make_loop_iteration_attribute</span><span class="p">(</span><span class="s1">&#39;mainloop&#39;</span><span class="p">)</span>
 
 <span class="w">    </span><span class="k">call </span><span class="n">cali_begin_string</span><span class="p">(</span><span class="n">loop_attribute</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;mainloop&#39;</span><span class="p">)</span>
-
 <span class="w">    </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nb">count</span>
 <span class="nb">        </span><span class="k">call </span><span class="n">cali_begin_int</span><span class="p">(</span><span class="n">iter_attribute</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
 
@@ -123,8 +124,8 @@ ConfigManager APIs for Fortran:</p>
 
 <span class="w">        </span><span class="k">call </span><span class="n">cali_end</span><span class="p">(</span><span class="n">iter_attribute</span><span class="p">)</span>
 <span class="w">    </span><span class="k">end do</span>
-
 <span class="k">    call </span><span class="n">cali_end</span><span class="p">(</span><span class="n">loop_attribute</span><span class="p">)</span>
+
 
 <span class="w">    </span><span class="c">! End &#39;main&#39;</span>
 <span class="w">    </span><span class="k">call </span><span class="n">cali_end_region</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">)</span>
@@ -205,7 +206,7 @@ ConfigManager APIs for Fortran:</p>
         <li class="right" >
           <a href="ConfigManagerAPI.html" title="ConfigManager API reference"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Fortran support</a></li> 
       </ul>
     </div>

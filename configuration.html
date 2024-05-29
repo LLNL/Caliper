@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Manual configuration &#8212; Caliper 2.10.0 documentation</title>
+    <title>Manual configuration &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Manual configuration</a></li> 
       </ul>
     </div>  
@@ -79,7 +79,7 @@ CALI_CONFIG_FILE can only be set through an environment variable.</p>
 syntax. Lines starting with <cite>#</cite> are interpreted as comments.
 Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># My configuration</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span><span class="p">:</span><span class="n">mpi</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timer</span><span class="p">,</span><span class="n">mpi</span>
 <span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span><span class="p">,</span><span class="n">MPI_Barrier</span>
 <span class="n">CALI_TIMER_TIMESTAMP</span><span class="o">=</span><span class="n">true</span>
 </pre></div>
@@ -104,12 +104,12 @@ the default profile if none is set.</p>
 
 <span class="c1"># [callstack-trace]</span>
 <span class="c1"># A trace with call-path info</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">callpath</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">callpath</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timer</span>
 <span class="n">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="n">true</span>
 
 <span class="c1"># [hwc-trace]</span>
 <span class="c1"># A trace with PAPI hardware counters</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">papi</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">papi</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timer</span>
 <span class="n">CALI_PAPI_COUNTERS</span><span class="o">=</span><span class="n">PAPI_FP_OPS</span>
 </pre></div>
 </div>
@@ -180,6 +180,10 @@ standard error, respectively. Default: stderr</p>
 for incomplete configurations, e.g., if a snapshot trigger service
 is enabled but no output service.</p>
 <p>Default: enabled (<code class="docutils literal notranslate"><span class="pre">true</span></code>)</p>
+</dd>
+<dt>CALI_MEMORY_POOL_SIZE</dt><dd><p>Defines the size of the per-thread memory pool for region data in
+bytes. This pool stores region names and the Caliper context tree.</p>
+<p>Default: 1048576 (1 MiB)</p>
 </dd>
 </dl>
 </section>
@@ -258,7 +262,7 @@ is enabled but no output service.</p>
         <li class="right" >
           <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Manual configuration</a></li> 
       </ul>
     </div>

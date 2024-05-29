@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The CalQL query language &#8212; Caliper 2.10.0 documentation</title>
+    <title>The CalQL query language &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="services.html" title="Caliper services"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>  
@@ -51,11 +51,11 @@ create reports from Caliper data in Caliper’s data processing tools
 <p>For example, filtering and aggregating a trace into a function time
 profile for an application’s main loop and printing results in a
 table, sorted by time, is accomplished with the following statement:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">(),</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">(),</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span>
 <span class="n">WHERE</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span>
 <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span>
 <span class="n">FORMAT</span> <span class="n">table</span>
-<span class="n">ORDER</span> <span class="n">BY</span> <span class="n">time</span><span class="o">.</span><span class="n">duration</span>
+<span class="n">ORDER</span> <span class="n">BY</span> <span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span>
 </pre></div>
 </div>
 <section id="quick-reference">
@@ -67,6 +67,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">truncate</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>      <span class="c1"># computes &lt;a&gt; = &lt;b&gt; - mod(&lt;b&gt;, S)</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">first</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># &lt;a&gt; is the first of &lt;a0&gt;, &lt;a1&gt;, ... found in the input record</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="nb">sum</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span><span class="o">...</span><span class="p">)</span>     <span class="c1"># computes sum of &lt;a0&gt;, &lt;a1&gt;, ... in the input record</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">leaf</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">)</span>              <span class="c1"># Takes the leaf of the region hierarchy &lt;b&gt;</span>
   <span class="o">...</span> <span class="n">IF</span> <span class="o">&lt;</span><span class="n">condition</span><span class="o">&gt;</span>         <span class="c1"># apply only if input record meets condition</span>
 
 <span class="n">SELECT</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                <span class="c1"># Select attributes and define aggregations (i.e., select columns)</span>
@@ -89,6 +90,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="n">inclusive_ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># computes inclusive_sum(&lt;a&gt;)/inclusive_sum(&lt;b&gt;)*&lt;S&gt;</span>
   <span class="n">inclusive_min</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># compute inclusive min of &lt;a&gt;</span>
   <span class="n">inclusive_max</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># compute inclusive max of &lt;a&gt;</span>
+  <span class="n">variance</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>              <span class="c1"># compute population variance (sum(a^2)/N - avg(a)^2) of &lt;a&gt;</span>
   <span class="o">...</span> <span class="n">AS</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>              <span class="c1"># use &lt;name&gt; as column header in tree or table formatter</span>
   <span class="o">...</span> <span class="n">UNIT</span> <span class="o">&lt;</span><span class="n">unit</span><span class="o">&gt;</span>            <span class="c1"># use &lt;unit&gt; as unit name</span>
 
@@ -128,7 +130,7 @@ can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
 For example, we can use the scale() operator to scale a value before
 subsequent aggregations:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
-  <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span>
+  <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">,</span><span class="mf">1e-9</span><span class="p">)</span>
 <span class="n">SELECT</span>
   <span class="n">path</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
 </pre></div>
@@ -138,7 +140,7 @@ aggregate blocks of 10 iterations in a time-series profile:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
   <span class="n">block</span><span class="o">=</span><span class="n">truncate</span><span class="p">(</span><span class="n">iteration</span><span class="c1">#mainloop,10)</span>
 <span class="n">SELECT</span>
-  <span class="n">block</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+  <span class="n">block</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span>
 <span class="n">GROUP</span> <span class="n">BY</span>
   <span class="n">block</span>
 </pre></div>
@@ -146,7 +148,7 @@ aggregate blocks of 10 iterations in a time-series profile:</p>
 <p>The first() operator returns the first attribute out of a list of attribute
 names found in an input record. It can also be used to rename attributes:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
-  <span class="n">time</span><span class="o">=</span><span class="n">first</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="nb">sum</span><span class="c1">#time.duration)</span>
+  <span class="n">time</span><span class="o">=</span><span class="n">first</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">,</span><span class="nb">sum</span><span class="c1">#time.duration.ns)</span>
 <span class="n">SELECT</span>
   <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
 <span class="n">GROUP</span> <span class="n">BY</span>
@@ -169,11 +171,11 @@ records that contain “omp.work” regions, and then uses that to compute
 efficiency from the total and “work” time:</p>
 <blockquote>
 <div><dl class="simple">
-<dt>LET</dt><dd><p>work=first(time.duration) IF omp.work</p>
+<dt>LET</dt><dd><p>work=first(time.duration.ns) IF omp.work</p>
 </dd>
-<dt>SELECT</dt><dd><p>sum(time.duration)        AS Total,
-sum(work)                 AS Work,
-ratio(work,time.duration) AS Efficiency</p>
+<dt>SELECT</dt><dd><p>sum(time.duration.ns)        AS Total,
+sum(work)                    AS Work,
+ratio(work,time.duration.ns) AS Efficiency</p>
 </dd>
 <dt>GROUP BY</dt><dd><p>path</p>
 </dd>
@@ -198,11 +200,11 @@ arguments must come from the input data; recursive
 aggregations (e.g., <code class="docutils literal notranslate"><span class="pre">min(count())</span></code>) within a query are not supported.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">AS</span></code> keyword assigns a user-defined name to a selected attribute
 or aggregation result. Example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time (usec)&quot;</span> <span class="n">FORMAT</span> <span class="n">table</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time (nsec)&quot;</span> <span class="n">FORMAT</span> <span class="n">table</span>
 </pre></div>
 </div>
-<p>Here, the <cite>table</cite> formatter uses “Time (usec)” instead of “sum#time.duration” as
-column name for the <code class="docutils literal notranslate"><span class="pre">sum(time.duration)</span></code> column. Only some
+<p>Here, the <cite>table</cite> formatter uses “Time (nsec)” instead of “sum#time.duration.ns” as
+column name for the <code class="docutils literal notranslate"><span class="pre">sum(time.duration.ns)</span></code> column. Only some
 formatters (table, tree, json, and json-split) support <code class="docutils literal notranslate"><span class="pre">AS</span></code>.</p>
 <p>Inclusive aggregation operations (<cite>inclusive_sum</cite>, <cite>inclusive_scale</cite>, and
 <cite>inclusive_percent_total</cite>) compute inclusive values (value for a tree node
@@ -213,16 +215,16 @@ applies to the hierarchy defined by attributes with the
 <p>A more complex example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span>
   <span class="o">*</span><span class="p">,</span>
-  <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span>
-  <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span>
+  <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">,</span><span class="mf">1e-9</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span>
+  <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span>
 <span class="n">GROUP</span> <span class="n">BY</span>
   <span class="n">path</span>
 <span class="n">FORMAT</span>
   <span class="n">tree</span>
 </pre></div>
 </div>
-<p>The computes the (exclusive) sum of <cite>time.duration</cite> divided by 100000 and the inclusive
-percent-of-total for <cite>time.duration</cite>. Example output:</p>
+<p>The computes the (exclusive) sum of <cite>time.duration.ns</cite> divided by 100000000 and
+the inclusive percent-of-total for <cite>time.duration.ns</cite>. Example output:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Path</span>      <span class="n">Time</span>  <span class="n">Time</span> <span class="o">%</span>
 <span class="n">main</span>         <span class="mi">5</span>     <span class="mi">100</span>
   <span class="n">foo</span>       <span class="mi">35</span>      <span class="mi">90</span>
@@ -306,11 +308,11 @@ time and iteration number. Note that one must use the original
 attribute name and not an alias assigned with <code class="docutils literal notranslate"><span class="pre">AS</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span>
   <span class="o">*</span><span class="p">,</span>
-  <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
+  <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">ns</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
 <span class="n">FORMAT</span>
   <span class="n">table</span>
 <span class="n">ORDER</span> <span class="n">BY</span>
-  <span class="nb">sum</span><span class="c1">#time.inclusive.duration DESC,</span>
+  <span class="nb">sum</span><span class="c1">#time.inclusive.duration.ns DESC,</span>
   <span class="n">iteration</span><span class="c1">#mainloop</span>
 
 <span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span><span class="c1">#mainloop     Time</span>
@@ -400,7 +402,7 @@ attribute name and not an alias assigned with <code class="docutils literal notr
         <li class="right" >
           <a href="services.html" title="Caliper services"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>

@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper services &#8212; Caliper 2.10.0 documentation</title>
+    <title>Caliper services &#8212; Caliper 2.11.0-dev documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
     <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=1fb7b942"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=4825356b"></script>
     
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>  
@@ -83,19 +83,6 @@ durations) of snapshots with a similar <cite>key</cite>, creating a profile.</p>
 (see below).</p>
 <p>Default: Empty (all attributes without the <code class="docutils literal notranslate"><span class="pre">ASVALUE</span></code> storage
 property are key attributes).</p>
-</dd>
-<dt>CALI_AGGREGATE_ATTRIBUTES</dt><dd><p>Colon-separated list of aggregation attributes. The <cite>aggregate</cite>
-service aggregates values of aggregation attributes from all input
-snapshots with similar aggregation keys. Note that only attributes
-with the <code class="docutils literal notranslate"><span class="pre">ASVALUE</span></code> storage property can be aggregation
-attributes.</p>
-<p>By default, the aggregation service determines aggregatable
-attributes automatically. With this configuration variable,
-the aggregation attributes can be set specifically (e.g., to
-select a subset). When set to <cite>none</cite>, the <cite>aggregate</cite> service
-will not aggregate any attributes, and only count the number of
-snapshots with similar keys.</p>
-<p>Default: Empty (determine aggregation attributes automatically).</p>
 </dd>
 </dl>
 <section id="aggregation-key">
@@ -611,6 +598,8 @@ If empty, all user attributes trigger snapshots.</p>
 Turning this off can decrease runtime overheads.</p>
 <p>Default: true</p>
 </dd>
+<dt>CALI_EVENT_REGION_LEVEL</dt><dd><p>Minimum region level that triggers snapshots. Default: 0</p>
+</dd>
 <dt>CALI_EVENT_INCLUDE_REGIONS</dt><dd><p>Specify a value filter to only trigger snapshots for the provided
 patterns. See above for the different pattern options.</p>
 <p>Default: empty (no filter)</p>
@@ -618,6 +607,8 @@ patterns. See above for the different pattern options.</p>
 <dt>CALI_EVENT_EXCLUDE_REGIONS</dt><dd><p>Like above, but defines a value filter to skip snapshots for
 the provided patterns.</p>
 <p>Default: empty (no filter)</p>
+</dd>
+<dt>CALI_EVENT_INCLUDE_BRANCHES</dt><dd><p>Specifies branches by name (using a pattern) to measure.</p>
 </dd>
 </dl>
 </section>
@@ -1337,28 +1328,11 @@ to print to the standard output or error streams, respectively.</p>
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
 <dl>
-<dt>CALI_TIMER_SNAPSHOT_DURATION</dt><dd><p>Measure duration (in microseconds) of the context epoch (i.e., the
-time between two consecutive context snapshots). The value will be
-saved in the snapshot record as attribute <code class="docutils literal notranslate"><span class="pre">time.duration</span></code>.</p>
-<p>Default: true</p>
-</dd>
-<dt>CALI_TIMER_OFFSET</dt><dd><p>Include the time offset (time since program start, in microseconds)
-with each context snapshot. The value will be saved in the snapshot
-record as attribute <code class="docutils literal notranslate"><span class="pre">time.offset</span></code>.</p>
-<p>Default: false</p>
-</dd>
-<dt>CALI_TIMER_TIMESTAMP</dt><dd><p>Include absolute timestamp (time since UNIX epoch, in seconds) with
-each context snapshot. The value will be saved in the snapshot record
-as attribute <code class="docutils literal notranslate"><span class="pre">time.timestamp</span></code>.</p>
-</dd>
 <dt>CALI_TIMER_INCLUSIVE_DURATION</dt><dd><p>Calulates inclusive times for nested regions. The value will be saved
 in the snapshot record as attribute <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code>.</p>
 <p>The event service with event trigger information generation needs
 to be enabled for this feature.</p>
 <p>Default: true</p>
-</dd>
-<dt>CALI_TIMER_UNIT=(sec|usec)</dt><dd><p>The unit for time duration values (seconds or microseconds).</p>
-<p>Default: sec</p>
 </dd>
 </dl>
 </section>
@@ -1536,7 +1510,7 @@ otherwise it will create separate records for each Umpire allocator.</p>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.10.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>

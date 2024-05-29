@@ -10,11 +10,11 @@ profile for an application's main loop and printing results in a
 table, sorted by time, is accomplished with the following statement:
 ::
 
-  SELECT *, count(), sum(time.duration)
+  SELECT *, count(), sum(time.duration.ns)
   WHERE loop=mainloop
   GROUP BY function
   FORMAT table
-  ORDER BY time.duration
+  ORDER BY time.duration.ns
 
 Quick reference
 --------------------------------
@@ -29,6 +29,7 @@ This table contains a quick reference of all CalQL statements:
     <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
     <a>=first(<a0>,<a1>, ...)  # <a> is the first of <a0>, <a1>, ... found in the input record
     <a>=sum(<a0>,<a1>,...)     # computes sum of <a0>, <a1>, ... in the input record
+    <a>=leaf(<b>)              # Takes the leaf of the region hierarchy <b>
     ... IF <condition>         # apply only if input record meets condition
 
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
@@ -51,6 +52,7 @@ This table contains a quick reference of all CalQL statements:
     inclusive_ratio(<a>,<b>,<S>) # computes inclusive_sum(<a>)/inclusive_sum(<b>)*<S>
     inclusive_min(<a>)         # compute inclusive min of <a>
     inclusive_max(<a>)         # compute inclusive max of <a>
+    variance(<a>)              # compute population variance (sum(a^2)/N - avg(a)^2) of <a>
     ... AS <name>              # use <name> as column header in tree or table formatter
     ... UNIT <unit>            # use <unit> as unit name
 
@@ -90,7 +92,7 @@ For example, we can use the scale() operator to scale a value before
 subsequent aggregations::
 
   LET
-    sec=scale(time.duration,1e-6)
+    sec=scale(time.duration.ns,1e-9)
   SELECT
     path,sum(sec)
 
@@ -100,7 +102,7 @@ aggregate blocks of 10 iterations in a time-series profile::
   LET
     block=truncate(iteration#mainloop,10)
   SELECT
-    block,sum(time.duration)
+    block,sum(time.duration.ns)
   GROUP BY
     block
 
@@ -108,7 +110,7 @@ The first() operator returns the first attribute out of a list of attribute
 names found in an input record. It can also be used to rename attributes::
 
   LET
-    time=first(time.duration,sum#time.duration)
+    time=first(time.duration.ns,sum#time.duration.ns)
   SELECT
     sum(time) AS Time
   GROUP BY
@@ -131,11 +133,11 @@ records that contain "omp.work" regions, and then uses that to compute
 efficiency from the total and "work" time:
 
   LET
-    work=first(time.duration) IF omp.work
+    work=first(time.duration.ns) IF omp.work
   SELECT
-    sum(time.duration)        AS Total,
-    sum(work)                 AS Work,
-    ratio(work,time.duration) AS Efficiency
+    sum(time.duration.ns)        AS Total,
+    sum(work)                    AS Work,
+    ratio(work,time.duration.ns) AS Efficiency
   GROUP BY
     path
 
@@ -161,10 +163,10 @@ aggregations (e.g., ``min(count())``) within a query are not supported.
 The ``AS`` keyword assigns a user-defined name to a selected attribute
 or aggregation result. Example::
 
-  SELECT sum(time.duration) AS "Time (usec)" FORMAT table
+  SELECT sum(time.duration.ns) AS "Time (nsec)" FORMAT table
 
-Here, the `table` formatter uses "Time (usec)" instead of "sum#time.duration" as
-column name for the ``sum(time.duration)`` column. Only some
+Here, the `table` formatter uses "Time (nsec)" instead of "sum#time.duration.ns" as
+column name for the ``sum(time.duration.ns)`` column. Only some
 formatters (table, tree, json, and json-split) support ``AS``.
 
 Inclusive aggregation operations (`inclusive_sum`, `inclusive_scale`, and
@@ -178,15 +180,15 @@ A more complex example::
 
   SELECT
     *,
-    scale(time.duration,1e-6) AS Time,
-    inclusive_percent_total(time.duration) AS "Time %"
+    scale(time.duration.ns,1e-9) AS Time,
+    inclusive_percent_total(time.duration.ns) AS "Time %"
   GROUP BY
     path
   FORMAT
     tree
 
-The computes the (exclusive) sum of `time.duration` divided by 100000 and the inclusive
-percent-of-total for `time.duration`. Example output::
+The computes the (exclusive) sum of `time.duration.ns` divided by 100000000 and
+the inclusive percent-of-total for `time.duration.ns`. Example output::
 
   Path      Time  Time %
   main         5     100
@@ -278,11 +280,11 @@ attribute name and not an alias assigned with ``AS``: ::
 
   SELECT
     *,
-    sum(time.inclusive.duration) AS Time
+    sum(time.inclusive.duration.ns) AS Time
   FORMAT
     table
   ORDER BY
-    sum#time.inclusive.duration DESC,
+    sum#time.inclusive.duration.ns DESC,
     iteration#mainloop
 
   function loop     iteration#mainloop     Time

@@ -59,10 +59,13 @@ This section lists how-to articles for various use cases.
    :maxdepth: 1
 
    GPUProfiling
+   MPIProfiling
    OpenMP
    RegionFiltering
    EventTracing
    SampleProfiling
+   ThirdPartyTools
+   FortranSupport
 
 Reference documentation
 -------------------------------
@@ -76,8 +79,6 @@ aspects in detail:
    build
    AnnotationAPI
    ConfigManagerAPI
-   FortranSupport
-   ThirdPartyTools
    BuiltinConfigurations
    configuration
    workflow
