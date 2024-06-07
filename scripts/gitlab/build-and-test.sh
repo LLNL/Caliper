@@ -7,7 +7,7 @@ then
 fi
 
 ###############################################################################
-# Copyright (c) 2016-23, Lawrence Livermore National Security, LLC and Caliper
+# Copyright (c) 2016-24, Lawrence Livermore National Security, LLC and Caliper
 # project contributors. See the Caliper/LICENSE file for details.
 #
 # SPDX-License-Identifier: (BSD-3-Clause)
@@ -26,6 +26,27 @@ spec=${SPEC:-""}
 module_list=${MODULE_LIST:-""}
 job_unique_id=${CI_JOB_ID:-""}
 use_dev_shm=${USE_DEV_SHM:-true}
+spack_debug=${SPACK_DEBUG:-false}
+debug_mode=${DEBUG_MODE:-false}
+
+if [[ ${debug_mode} == true ]]
+then
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Debug mode:"
+    echo "~~~~~ - Spack debug mode."
+    echo "~~~~~ - Deactivated shared memory."
+    echo "~~~~~ - Do not push to buildcache."
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    use_dev_shm=false
+    spack_debug=true
+fi
+
+# REGISTRY_TOKEN allows you to provide your own personal access token to the CI
+# registry. Be sure to set the token with at least read access to the registry.
+registry_token=${REGISTRY_TOKEN:-""}
+ci_registry_user=${CI_REGISTRY_USER:-"${USER}"}
+ci_registry_image=${CI_REGISTRY_IMAGE:-"czregistry.llnl.gov:5050/radiuss/raja"}
+ci_registry_token=${CI_JOB_TOKEN:-"${registry_token}"}
 
 if [[ -n ${module_list} ]]
 then
@@ -63,6 +84,15 @@ echo "project_dir: ${project_dir}"
 
 mkdir -p ${prefix}
 
+spack_cmd="${prefix}/spack/bin/spack"
+spack_env_path="${prefix}/spack_env"
+uberenv_cmd="./scripts/uberenv/uberenv.py"
+if [[ ${spack_debug} == true ]]
+then
+    spack_cmd="${spack_cmd} --debug --stacktrace"
+    uberenv_cmd="${uberenv_cmd} --spack-debug"
+fi
+
 # Dependencies
 if [[ "${option}" != "--build-only" && "${option}" != "--test-only" ]]
 then
@@ -72,7 +102,7 @@ then
 
     if [[ -z ${spec} ]]
     then
-        echo "SPEC is undefined, aborting..."
+        echo "[Error]: SPEC is undefined, aborting..."
         exit 1
     fi
 
@@ -87,14 +117,38 @@ then
     mkdir -p ${spack_user_cache}
 
     # generate cmake cache file with uberenv and radiuss spack package
-    ./scripts/uberenv/uberenv.py --spec="${spec}" ${prefix_opt}
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Spack setup and environment "
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    ${uberenv_cmd} --setup-and-env-only --spec="${spec}" ${prefix_opt}
+
+    if [[ -n ${ci_registry_token} ]]
+    then
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        echo "~~~~~ GitLab registry as Spack Build Cache "
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        ${spack_cmd} -D ${spack_env_path} mirror add --unsigned --oci-username ${ci_registry_user} --oci-password ${ci_registry_token} gitlab_ci oci://${ci_registry_image}
+    fi
+
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Spack build of dependencies "
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    ${uberenv_cmd} --skip-setup-and-env --spec="${spec}" ${prefix_opt}
+
+    if [[ -n ${ci_registry_token} && ${debug_mode} == false ]]
+    then
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        echo "~~~~~ Push dependencies to Build Cache "
+        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        ${spack_cmd} -D ${spack_env_path} buildcache push --only dependencies gitlab_ci
+    fi
 
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo "~~~~~ Dependencies built $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 fi
 
-# find cmake cache file (hostconfig)
+# Find cmake cache file (hostconfig)
 if [[ -z ${hostconfig} ]]
 then
     # If no host config file was provided, we assume it was generated.
@@ -121,7 +175,7 @@ else
 fi
 
 hostconfig=$(basename ${hostconfig_path})
-echo "Found hostconfig: ${hostconfig}"
+echo "[Information]: Found hostconfig: ${hostconfig}"
 
 # Build Directory
 # When using /dev/shm, we use prefix for both spack builds and source build, unless BUILD_ROOT was defined
@@ -187,7 +241,7 @@ then
     fi
 
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper Built $(date)"
+    echo "~~~~~ Caliper built $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 fi
 
@@ -222,10 +276,10 @@ then
 
     if grep -q "Errors while running CTest" ./tests_output.txt
     then
-        echo "[Error]: failure(s) while running CTest" && exit 1
+        echo "[Error]: Failure(s) while running CTest" && exit 1
     fi
 
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper Tests Complete $(date)"
+    echo "~~~~~ Caliper tests complete $(date)"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 fi
