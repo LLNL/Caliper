@@ -29,6 +29,20 @@ use_dev_shm=${USE_DEV_SHM:-true}
 spack_debug=${SPACK_DEBUG:-false}
 debug_mode=${DEBUG_MODE:-false}
 
+# REGISTRY_TOKEN allows you to provide your own personal access token to the CI
+# registry. Be sure to set the token with at least read access to the registry.
+registry_token=${REGISTRY_TOKEN:-""}
+ci_registry_user=${CI_REGISTRY_USER:-"${USER}"}
+ci_registry_image=${CI_REGISTRY_IMAGE:-"czregistry.llnl.gov:5050/radiuss/caliper"}
+ci_registry_token=${CI_JOB_TOKEN:-"${registry_token}"}
+
+timed_message ()
+{
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~ $(date --rfc-3339=seconds) ~ ${1}"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+}
+
 if [[ ${debug_mode} == true ]]
 then
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -40,13 +54,6 @@ then
     use_dev_shm=false
     spack_debug=true
 fi
-
-# REGISTRY_TOKEN allows you to provide your own personal access token to the CI
-# registry. Be sure to set the token with at least read access to the registry.
-registry_token=${REGISTRY_TOKEN:-""}
-ci_registry_user=${CI_REGISTRY_USER:-"${USER}"}
-ci_registry_image=${CI_REGISTRY_IMAGE:-"czregistry.llnl.gov:5050/radiuss/raja"}
-ci_registry_token=${CI_JOB_TOKEN:-"${registry_token}"}
 
 if [[ -n ${module_list} ]]
 then
@@ -96,9 +103,7 @@ fi
 # Dependencies
 if [[ "${option}" != "--build-only" && "${option}" != "--test-only" ]]
 then
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Building dependencies $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Building dependencies"
 
     if [[ -z ${spec} ]]
     then
@@ -117,35 +122,25 @@ then
     mkdir -p ${spack_user_cache}
 
     # generate cmake cache file with uberenv and radiuss spack package
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Spack setup and environment "
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Spack setup and environment"
     ${uberenv_cmd} --setup-and-env-only --spec="${spec}" ${prefix_opt}
 
     if [[ -n ${ci_registry_token} ]]
     then
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        echo "~~~~~ GitLab registry as Spack Build Cache "
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        timed_message "GitLab registry as Spack Buildcache"
         ${spack_cmd} -D ${spack_env_path} mirror add --unsigned --oci-username ${ci_registry_user} --oci-password ${ci_registry_token} gitlab_ci oci://${ci_registry_image}
     fi
 
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Spack build of dependencies "
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Spack build of dependencies"
     ${uberenv_cmd} --skip-setup-and-env --spec="${spec}" ${prefix_opt}
 
     if [[ -n ${ci_registry_token} && ${debug_mode} == false ]]
     then
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        echo "~~~~~ Push dependencies to Build Cache "
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        timed_message "Push dependencies to buildcache"
         ${spack_cmd} -D ${spack_env_path} buildcache push --only dependencies gitlab_ci
     fi
 
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Dependencies built $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Dependencies built"
 fi
 
 # Find cmake cache file (hostconfig)
@@ -157,16 +152,15 @@ then
     if [[ ${#hostconfigs[@]} == 1 ]]
     then
         hostconfig_path=${hostconfigs[0]}
-        echo "Found host config file: ${hostconfig_path}"
     elif [[ ${#hostconfigs[@]} == 0 ]]
     then
-        echo "No result for: ${project_dir}/*.cmake"
-        echo "Spack generated host-config not found."
+        echo "[Error]: No result for: ${project_dir}/*.cmake"
+        echo "[Error]: Spack generated host-config not found."
         exit 1
     else
-        echo "More than one result for: ${project_dir}/*.cmake"
-        echo "${hostconfigs[@]}"
-        echo "Please specify one with HOST_CONFIG variable"
+        echo "[Error]: More than one result for: ${project_dir}/*.cmake"
+        echo "[Error]: ${hostconfigs[@]}"
+        echo "[Error]: Please specify one with HOST_CONFIG variable"
         exit 1
     fi
 else
@@ -175,7 +169,7 @@ else
 fi
 
 hostconfig=$(basename ${hostconfig_path})
-echo "[Information]: Found hostconfig: ${hostconfig}"
+echo "[Information]: Found hostconfig ${hostconfig_path}"
 
 # Build Directory
 # When using /dev/shm, we use prefix for both spack builds and source build, unless BUILD_ROOT was defined
@@ -197,9 +191,7 @@ then
     echo "~~~~~ Install Dir: ${install_dir}"
     echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     echo ""
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Building Caliper $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Cleaning working directory"
 
     # Map CPU core allocations
     declare -A core_counts=(["lassen"]=40 ["ruby"]=28 ["poodle"]=28 ["corona"]=32 ["rzansel"]=48 ["tioga"]=32)
@@ -211,7 +203,7 @@ then
     rm -rf ${build_dir} 2>/dev/null
     mkdir -p ${build_dir} && cd ${build_dir}
 
-    date
+    timed_message "Building RAJA"
     if [[ "${truehostname}" == "corona" || "${truehostname}" == "tioga" ]]
     then
         module unload rocm
@@ -231,26 +223,20 @@ then
     fi
     if ! $cmake_exe --build . -j ${core_counts[$truehostname]}
     then
-        echo "[Error]: compilation failed, building with verbose output..."
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        echo "~~~~~ Running make VERBOSE=1 $(date)"
-        echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        echo "[Error]: Compilation failed, building with verbose output..."
+        timed_message "Re-building with --verbose"
         $cmake_exe --build . --verbose -j 1
     else
+        timed_message "Installing"
         $cmake_exe --install .
     fi
 
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper built $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Caliper built and installed"
 fi
 
 # Test
 if [[ "${option}" != "--build-only" ]]
 then
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Testing Caliper $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 
     if [[ ! -d ${build_dir} ]]
     then
@@ -259,9 +245,8 @@ then
 
     cd ${build_dir}
 
-    date
+    timed_message "Testing RAJA"
     ctest --output-on-failure -T test 2>&1 | tee tests_output.txt
-    date
 
     no_test_str="No tests were found!!!"
     if [[ "$(tail -n 1 tests_output.txt)" == "${no_test_str}" ]]
@@ -269,7 +254,7 @@ then
         echo "[Error]: No tests were found" && exit 1
     fi
 
-    echo "Copying Testing xml reports for export"
+    timed_message "Preparing tests xml reports for export"
     tree Testing
     xsltproc -o junit.xml ${project_dir}/scripts/ctest-to-junit.xsl Testing/*/Test.xml
     mv junit.xml ${project_dir}/junit.xml
@@ -279,7 +264,7 @@ then
         echo "[Error]: Failure(s) while running CTest" && exit 1
     fi
 
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-    echo "~~~~~ Caliper tests complete $(date)"
-    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    timed_message "Caliper tests completed"
 fi
+
+timed_message "Build and test completed"
