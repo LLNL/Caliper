@@ -39,6 +39,7 @@ namespace cali
     Attribute region_attr;
     Attribute phase_attr;
     Attribute loop_attr;
+    Attribute comm_region_attr;
 
     void init_attribute_classes(Caliper* c) {
         class_aggregatable_attr =
@@ -65,6 +66,8 @@ namespace cali
             c->create_attribute("region", CALI_TYPE_STRING, CALI_ATTR_NESTED);
         phase_attr =
             c->create_attribute("phase", CALI_TYPE_STRING, CALI_ATTR_NESTED | CALI_ATTR_LEVEL_4);
+        comm_region_attr =
+            c->create_attribute("comm.region", CALI_TYPE_STRING, CALI_ATTR_NESTED | CALI_ATTR_LEVEL_1);
 
         cali_region_attr_id = region_attr.id();
         cali_phase_attr_id = phase_attr.id();

@@ -217,6 +217,17 @@ extern cali_id_t cali_annotation_attr_id;
 /// \brief Mark end of a phase region
 #define CALI_MARK_PHASE_END(name) \
     cali_end_phase(name)
+
+/// \brief Mark begin of a communication region
+///
+/// A communication region marks communication operations (e.g., MPI calls)
+/// that belong to a single communication pattern.
+#define CALI_MARK_COMM_REGION_BEGIN(name) \
+    cali_begin_comm_region(name)
+
+/// \brief Mark end of a communication region
+#define CALI_MARK_COMM_REGION_END(name) \
+    cali_end_comm_region(name)
 /**
  * \} (group)
  */

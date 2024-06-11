@@ -391,6 +391,23 @@ void
 cali_end_phase(const char* name);
 
 /**
+ * \brief Begin communication region \a name
+ *
+ * A communication region can be used to mark communication operations (e.g.,
+ * MPI calls) that belong to a single communication pattern. They can be used
+ * to summarize communication pattern statistics. Otherwise they behave
+ * identical to regular Caliper regions.
+ */
+void
+cali_begin_comm_region(const char* name);
+
+/**
+ * \brief End phase region \a name
+ */
+void
+cali_end_comm_region(const char* name);
+
+/**
  * \brief Begin region where the value for \a attr is `true` on the blackboard.
  */
 void

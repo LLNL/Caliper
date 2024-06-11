@@ -32,6 +32,7 @@ namespace cali
 
 extern Attribute region_attr;
 extern Attribute phase_attr;
+extern Attribute comm_region_attr;
 
 }
 
@@ -402,6 +403,20 @@ cali_end_phase(const char* name)
 {
     Caliper c;
     c.end_with_value_check(cali::phase_attr, Variant(name));
+}
+
+void
+cali_begin_comm_region(const char* name)
+{
+    Caliper c;
+    c.begin(cali::comm_region_attr, Variant(name));
+}
+
+void
+cali_end_comm_region(const char* name)
+{
+    Caliper c;
+    c.end_with_value_check(cali::comm_region_attr, Variant(name));
 }
 
 void
