@@ -1,6 +1,6 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
-
+//This is the ex-wrapper.w file
 #include "MpiTracing.h"
 
 #include "caliper/caliper-config.h"
@@ -134,6 +134,9 @@ struct MpiWrapperConfig
         {
             setup_filter(cfg.get("whitelist").to_string(), cfg.get("blacklist").to_string());
             enable_msg_tracing = cfg.get("msg_tracing").to_bool();
+
+            //Added enable_msg_pattern to the constructor
+            enable_msg_pattern = cfg.get("msg_pattern").to_bool()
         }
 
     ~MpiWrapperConfig()
@@ -148,6 +151,9 @@ struct MpiWrapperConfig
 
     bool        enable_msg_tracing;
     MpiTracing  tracing;
+
+    bool        enable_msg_pattern;//bool env varible to turn on msg tracing
+    MpiPattern  pattern;
 
     MpiWrapperConfig* next;
     MpiWrapperConfig* prev;
@@ -294,9 +300,16 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next){
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing)
                     mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
+
+           //go through the cofig files, enable msg patterns and capture those atribbutes 
+           if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern)
+                    mwc->pattern.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
+
+        }
+
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
