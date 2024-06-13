@@ -355,6 +355,17 @@ Available formatters:
 
 )helpstr";
 
+std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s)
+{
+    os << "  " << s.name << "(";
+    for (int i = 0; i < s.min_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i];
+    for (int i = s.min_args; i < s.max_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i] << "*";
+    os << ")";
+    return os;
+}
+
 void print_caliquery_help(const Args& args, const char* usage, const ConfigManager& mgr)
 {
     std::string helpopt = args.get("help");
@@ -375,40 +386,24 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
     } else if (helpopt == "let") {
         std::cout << s_calql_let_helpstr;
         const QuerySpec::FunctionSignature* ops = Preprocessor::preprocess_defs();
-        for (const auto* p = ops; p && p->name; ++p) {
-            std::cout << "  " << p->name << "(";
-            for (int i = 0; i < p->min_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i];
-            for (int i = p->min_args; i < p->max_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i] << "*";
-            std::cout << ")\n";
-        }
+        for (const auto* p = ops; p && p->name; ++p)
+            print_function_signature(std::cout, *p) << "\n";
     } else if (helpopt == "select") {
         std::cout << s_calql_select_helpstr;
         const QuerySpec::FunctionSignature* ops = Aggregator::aggregation_defs();
         for (const auto* p = ops; p && p->name; ++p) {
-            std::cout << "  " << p->name << "(";
-            for (int i = 0; i < p->min_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i];
-            for (int i = p->min_args; i < p->max_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i] << "*";
+            print_function_signature(std::cout, *p) << " -> ";
             std::vector<std::string> args(p->args, p->args+p->max_args);
             const QuerySpec::AggregationOp op(*p, args);
-            std::cout << ") -> " << Aggregator::get_aggregation_attribute_name(op) << "\n";
+            std::cout << Aggregator::get_aggregation_attribute_name(op) << "\n";
         }
     } else if (helpopt == "where") {
         std::cout << s_calql_where_helpstr;
     } else if (helpopt == "format") {
         std::cout << s_calql_format_helpstr;
         const QuerySpec::FunctionSignature* ops = FormatProcessor::formatter_defs();
-        for (const auto* p = ops; p && p->name; ++p) {
-            std::cout << "  " << p->name << (p->max_args > 0 ? "(" : "");
-            for (int i = 0; i < p->min_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i];
-            for (int i = p->min_args; i < p->max_args; ++i)
-                std::cout << (i > 0 ? ", " : "") << p->args[i] << "*";
-            std::cout << (p->max_args > 0 ? ")" : "") << "\n";
-        }
+        for (const auto* p = ops; p && p->name; ++p)
+            print_function_signature(std::cout, *p) << "\n";
     } else if (!helpopt.empty()) {
         {
             auto cfgs = mgr.available_config_specs();
