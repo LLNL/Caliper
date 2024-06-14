@@ -99,6 +99,113 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
     return std::make_pair(retid, std::move(args));
 }
 
+const char* s_calql_helpstr = R"helpstr(
+The Caliper Query Language (CalQL) is used to to filter, aggregate, and create
+reports from Caliper .cali data with cali-query.
+
+The general structure of a query is:
+
+LET
+    <list of pre-processing operations>
+SELECT
+    <list of output attributes and aggregations>
+GROUP BY
+    <list of aggregation key attributes>
+WHERE
+    <list of conditions>
+FORMAT
+    <report/output formatter>
+ORDER BY
+    <list of sort attributes>
+
+All of the clauses are optional; by default cali-query will pass the input
+records through as-is, without any aggregations, and output .cali data.
+Clauses are case-insensitive and can be provided in any order.
+
+Run "--help [let, select, groupby, where, format]" for more information about
+each CalQL clause.
+)helpstr";
+
+const char* s_calql_let_helpstr = R"helpstr(
+The LET clause defines operations to be applied on input records before further
+processing. The general structure of the LET clause is
+
+    LET result = op(arguments) [ IF condition ] [, ... ]
+
+This adds a new attribute "result" with the result of operation "op" to
+the record. Results are only added if the operation was successful
+(e.g., all required input operands were present in the record). If an
+optional IF condition is given, the operation is only applied if the
+condition is true.
+
+Available LET operators:
+
+)helpstr";
+
+const char* s_calql_select_helpstr = R"helpstr(
+The SELECT clause selects the attributes and aggregations in the output.
+The general structure is
+
+    SELECT attribute | op(arguments) [ AS alias ] [ UNIT unit ] [, ...]
+
+The aggregations in the SELECT clause specify how attributes are
+aggregated. Use the GROUP BY clause to specify the output set. Use AS
+to specify an optional custom label/header.
+
+Available aggregation operations:
+
+)helpstr";
+
+const char* s_calql_groupby_helpstr = R"helpstr(
+The GROUP BY clause selects the attributes that define the output set. For
+example, when grouping by "mpi.rank", the output set has one record for each
+mpi.rank value encountered in the input. Input records with the same mpi.rank
+value will be aggregated as specified by the SELECT clause. The general
+structure is
+
+    GROUP BY path | attribute name [, ...]
+
+The "path" value selects all region name attributes for grouping.
+)helpstr";
+
+const char* s_calql_where_helpstr = R"helpstr(
+Use the WHERE clause to filter input records. The filter is applied after
+pre-processing (see LET) and before aggregating. The general structure is
+
+    WHERE [NOT] condition [, ...]
+
+NOT negates the condition. Available conditions are:
+
+  attribute         (matches if any entry for "attribute" is in the record)
+  attribute = value
+  attribute > value
+  attribute < value
+)helpstr";
+
+const char* s_calql_format_helpstr = R"helpstr(
+The FORMAT clause selects and configures the output formatter. The general
+structure is
+
+    FORMAT formatter [(arguments)] [ORDER BY attribute [ASC | DESC] [,...]]
+
+The ORDER BY clause specifies a list of attributes to sort the output records
+by. It can be used with the "table" and "tree" formatters.
+
+Available formatters:
+
+)helpstr";
+
+std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s)
+{
+    os << "  " << s.name << "(";
+    for (int i = 0; i < s.min_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i];
+    for (int i = s.min_args; i < s.max_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i] << "*";
+    os << ")";
+    return os;
+}
+
 }
 
 namespace cali
@@ -257,113 +364,6 @@ QueryArgsParser::parse_args(const Args& args)
     }
 
     return true;
-}
-
-const char* s_calql_helpstr = R"helpstr(
-The Caliper Query Language (CalQL) is used to to filter, aggregate, and create
-reports from Caliper .cali data with cali-query.
-
-The general structure of a query is:
-
-LET
-    <list of pre-processing operations>
-SELECT
-    <list of output attributes and aggregations>
-GROUP BY
-    <list of aggregation key attributes>
-WHERE
-    <list of conditions>
-FORMAT
-    <report/output formatter>
-ORDER BY
-    <list of sort attributes>
-
-All of the clauses are optional; by default cali-query will pass the input
-records through as-is, without any aggregations, and output .cali data.
-Clauses are case-insensitive and can be provided in any order.
-
-Run "--help [let, select, groupby, where, format]" for more information about
-each CalQL clause.
-)helpstr";
-
-const char* s_calql_let_helpstr = R"helpstr(
-The LET clause defines operations to be applied on input records before further
-processing. The general structure of the LET clause is
-
-    LET result = op(arguments) [ IF condition ] [, ... ]
-
-This adds a new attribute "result" with the result of operation "op" to
-the record. Results are only added if the operation was successful
-(e.g., all required input operands were present in the record). If an
-optional IF condition is given, the operation is only applied if the
-condition is true.
-
-Available LET operators:
-
-)helpstr";
-
-const char* s_calql_select_helpstr = R"helpstr(
-The SELECT clause selects the attributes and aggregations in the output.
-The general structure is
-
-    SELECT attribute | op(arguments) [ AS alias ] [ UNIT unit ] [, ...]
-
-The aggregations in the SELECT clause specify how attributes are
-aggregated. Use the GROUP BY clause to specify the output set. Use AS
-to specify an optional custom label/header.
-
-Available aggregation operations:
-
-)helpstr";
-
-const char* s_calql_groupby_helpstr = R"helpstr(
-The GROUP BY clause selects the attributes that define the output set. For
-example, when grouping by "mpi.rank", the output set has one record for each
-mpi.rank value encountered in the input. Input records with the same mpi.rank
-value will be aggregated as specified by the SELECT clause. The general
-structure is
-
-    GROUP BY path | attribute name [, ...]
-
-The "path" value selects all region name attributes for grouping.
-)helpstr";
-
-const char* s_calql_where_helpstr = R"helpstr(
-Use the WHERE clause to filter input records. The filter is applied after
-pre-processing (see LET) and before aggregating. The general structure is
-
-    WHERE [NOT] condition [, ...]
-
-NOT negates the condition. Available conditions are:
-
-  attribute         (matches if any entry for "attribute" is in the record)
-  attribute = value
-  attribute > value
-  attribute < value
-)helpstr";
-
-const char* s_calql_format_helpstr = R"helpstr(
-The FORMAT clause selects and configures the output formatter. The general
-structure is
-
-    FORMAT formatter [(arguments)] [ORDER BY attribute [ASC | DESC] [,...]]
-
-The ORDER BY clause specifies a list of attributes to sort the output records
-by. It can be used with the "table" and "tree" formatters.
-
-Available formatters:
-
-)helpstr";
-
-std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s)
-{
-    os << "  " << s.name << "(";
-    for (int i = 0; i < s.min_args; ++i)
-        os << (i > 0 ? ", " : "") << s.args[i];
-    for (int i = s.min_args; i < s.max_args; ++i)
-        os << (i > 0 ? ", " : "") << s.args[i] << "*";
-    os << ")";
-    return os;
 }
 
 void print_caliquery_help(const Args& args, const char* usage, const ConfigManager& mgr)
