@@ -12,6 +12,8 @@
 
 //replaced MpiTracing with MpiPattern
 
+using namespace cali;
+
 struct MpiPattern::MpiPatternImpl
 {
     // --- The attributes
