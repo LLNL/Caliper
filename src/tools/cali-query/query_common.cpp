@@ -14,6 +14,7 @@
 #include "caliper/common/Log.h"
 
 #include "../../common/util/parse_util.h"
+#include "../../common/util/format_util.h"
 #include "../../common/util/split.hpp"
 
 #include "../../services/Services.h"
@@ -118,17 +119,17 @@ FORMAT
 ORDER BY
     <list of sort attributes>
 
-All of the clauses are optional; by default cali-query will pass the input
+All of the statements are optional; by default cali-query will pass the input
 records through as-is, without any aggregations, and output .cali data.
-Clauses are case-insensitive and can be provided in any order.
+statements are case-insensitive and can be provided in any order.
 
 Run "--help [let, select, groupby, where, format]" for more information about
-each CalQL clause.
+each CalQL statement.
 )helpstr";
 
 const char* s_calql_let_helpstr = R"helpstr(
-The LET clause defines operations to be applied on input records before further
-processing. The general structure of the LET clause is
+The LET statement defines operations to be applied on input records before
+further processing. The general structure of the LET statement is
 
     LET result = op(arguments) [ IF condition ] [, ... ]
 
@@ -143,13 +144,13 @@ Available LET operators:
 )helpstr";
 
 const char* s_calql_select_helpstr = R"helpstr(
-The SELECT clause selects the attributes and aggregations in the output.
+The SELECT statement selects the attributes and aggregations in the output.
 The general structure is
 
     SELECT attribute | op(arguments) [ AS alias ] [ UNIT unit ] [, ...]
 
-The aggregations in the SELECT clause specify how attributes are
-aggregated. Use the GROUP BY clause to specify the output set. Use AS
+The aggregations in the SELECT statement specify how attributes are
+aggregated. Use the GROUP BY statement to specify the output set. Use AS
 to specify an optional custom label/header.
 
 Available aggregation operations:
@@ -157,10 +158,10 @@ Available aggregation operations:
 )helpstr";
 
 const char* s_calql_groupby_helpstr = R"helpstr(
-The GROUP BY clause selects the attributes that define the output set. For
+The GROUP BY statement selects the attributes that define the output set. For
 example, when grouping by "mpi.rank", the output set has one record for each
 mpi.rank value encountered in the input. Input records with the same mpi.rank
-value will be aggregated as specified by the SELECT clause. The general
+value will be aggregated as specified by the SELECT statement. The general
 structure is
 
     GROUP BY path | attribute name [, ...]
@@ -169,7 +170,7 @@ The "path" value selects all region name attributes for grouping.
 )helpstr";
 
 const char* s_calql_where_helpstr = R"helpstr(
-Use the WHERE clause to filter input records. The filter is applied after
+Use the WHERE statement to filter input records. The filter is applied after
 pre-processing (see LET) and before aggregating. The general structure is
 
     WHERE [NOT] condition [, ...]
@@ -183,13 +184,13 @@ NOT negates the condition. Available conditions are:
 )helpstr";
 
 const char* s_calql_format_helpstr = R"helpstr(
-The FORMAT clause selects and configures the output formatter. The general
+The FORMAT statement selects and configures the output formatter. The general
 structure is
 
     FORMAT formatter [(arguments)] [ORDER BY attribute [ASC | DESC] [,...]]
 
-The ORDER BY clause specifies a list of attributes to sort the output records
-by. It can be used with the "table" and "tree" formatters.
+The ORDER BY statement specifies a list of attributes to sort the output
+records by. It can be used with the "table" and "tree" formatters.
 
 Available formatters:
 
@@ -370,17 +371,27 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
 {
     std::string helpopt = args.get("help");
 
-    if (helpopt == "configs") {
+    if (helpopt == "configs" || helpopt == "recipes") {
+        std::cout << "Available config recipes:\n";
         auto list = mgr.available_config_specs();
+        size_t len = 0;
         for (const auto &s : list)
-            std::cout << mgr.get_documentation_for_spec(s.c_str()) << "\n";
+            len = std::max(len, s.size());
+        for (const auto &s : list) {
+            std::string descr = mgr.get_description_for_spec(s.c_str());
+            util::pad_right(std::cout << " ", s, len) << descr << "\n";
+        }
     } else if (helpopt == "services") {
+        std::cout << "Available services:\n";
         services::add_default_service_specs();
-
-        int i = 0;
-        for (const auto& s : services::get_available_services())
-            std::cout << (i++ > 0 ? "," : "") << s;
-        std::cout << std::endl;
+        auto list = services::get_available_services();
+        size_t len = 0;
+        for (const auto &s : list)
+            len = std::max(len, s.size());
+        for (const auto &s : list) {
+            std::string descr = services::get_service_description(s);
+            util::pad_right(std::cout << " ", s, len) << descr << "\n";
+        }
     } else if (helpopt == "calql") {
         std::cout << s_calql_helpstr;
     } else if (helpopt == "let") {
@@ -419,7 +430,7 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
             auto srvs = services::get_available_services();
             auto it = std::find(srvs.begin(), srvs.end(), helpopt);
             if (it != srvs.end()) {
-                services::print_service_description(std::cout << *it << " service:\n", helpopt.c_str());
+                services::print_service_documentation(std::cout << *it << " service:\n", helpopt);
                 return;
             }
         }
@@ -439,7 +450,7 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
             "\n Use \"--help [recipe name]\" to get help for a config recipe."
             "\n Use \"--help [service name]\" to get help for a service."
             "\n Use \"--help calql\" to get help for the CalQL query language."
-            "\n Use \"--help [let,select,where,groupby,format]\" to get help for CalQL clauses.\n";
+            "\n Use \"--help [let,select,where,groupby,format]\" to get help for CalQL statements.\n";
     }
 }
 

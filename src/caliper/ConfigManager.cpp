@@ -1186,6 +1186,12 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     std::string
+    get_description_for_spec(const char* name) const {
+        auto it = m_spec.find(name);
+        return it != m_spec.end() ? it->second->description : std::string();
+    }
+
+    std::string
     get_documentation_for_spec(const char* name) const {
         std::ostringstream out;
         out << name;
@@ -1394,10 +1400,16 @@ ConfigManager::available_config_specs() const
 }
 
 std::string
+ConfigManager::get_description_for_spec(const char* name) const
+{
+    mP->import_builtin_config_specs();
+    return mP->get_description_for_spec(name);
+}
+
+std::string
 ConfigManager::get_documentation_for_spec(const char* name) const
 {
     mP->import_builtin_config_specs();
-
     return mP->get_documentation_for_spec(name);
 }
 
