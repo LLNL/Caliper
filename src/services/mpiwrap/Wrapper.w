@@ -847,21 +847,24 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Status*  tmp_statuses = nullptr;
 
         bool any_msg_tracing = false;
-        //bool any_msg_pattern = false;
+        bool any_msg_pattern = false;
         
 
         for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
         {
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
-                break;
+                break; }
 
-           // if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern) {
-           //     any_msg_pattern = true;
-           //     break;
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern) {
+                any_msg_pattern = true;
+               break;
 
             }
-        }    
+        }
+
+       
+    
 
         if (any_msg_tracing) {
             tmp_req      = new MPI_Request[nreq];
@@ -890,10 +893,11 @@ post_init_cb(Caliper* c, Channel* channel)
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing) {
+        if (any_msg_tracing  ) {
             delete[] tmp_statuses;
             delete[] tmp_req;
         }
+
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
         {{callfn}}
@@ -913,7 +917,7 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Status   tmp_status;
 
         bool any_msg_tracing = false;
-        //bool any_msg_pattern = false;
+        bool any_msg_pattern = false;
         
 
         for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
@@ -921,10 +925,11 @@ post_init_cb(Caliper* c, Channel* channel)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
+            }
 
-            //if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern) {
-          //      any_msg_pattern = true;
-             //   break;
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern) {
+                any_msg_pattern = true;
+                break;
 
 
             }
