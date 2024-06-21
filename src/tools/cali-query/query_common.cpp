@@ -6,6 +6,7 @@
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/Preprocessor.h"
 #include "caliper/reader/RecordSelector.h"
 
 #include "caliper/tools-util/Args.h"
@@ -13,6 +14,7 @@
 #include "caliper/common/Log.h"
 
 #include "../../common/util/parse_util.h"
+#include "../../common/util/format_util.h"
 #include "../../common/util/split.hpp"
 
 #include "../../services/Services.h"
@@ -96,6 +98,113 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
     }
 
     return std::make_pair(retid, std::move(args));
+}
+
+const char* s_calql_helpstr = R"helpstr(
+The Caliper Query Language (CalQL) is used to to filter, aggregate, and create
+reports from Caliper .cali data with cali-query.
+
+The general structure of a query is:
+
+LET
+    <list of pre-processing operations>
+SELECT
+    <list of output attributes and aggregations>
+GROUP BY
+    <list of aggregation key attributes>
+WHERE
+    <list of conditions>
+FORMAT
+    <report/output formatter>
+ORDER BY
+    <list of sort attributes>
+
+All of the statements are optional; by default cali-query will pass the input
+records through as-is, without any aggregations, and output .cali data.
+statements are case-insensitive and can be provided in any order.
+
+Run "--help [let, select, groupby, where, format]" for more information about
+each CalQL statement.
+)helpstr";
+
+const char* s_calql_let_helpstr = R"helpstr(
+The LET statement defines operations to be applied on input records before
+further processing. The general structure of the LET statement is
+
+    LET result = op(arguments) [ IF condition ] [, ... ]
+
+This adds a new attribute "result" with the result of operation "op" to
+the record. Results are only added if the operation was successful
+(e.g., all required input operands were present in the record). If an
+optional IF condition is given, the operation is only applied if the
+condition is true.
+
+Available LET operators:
+
+)helpstr";
+
+const char* s_calql_select_helpstr = R"helpstr(
+The SELECT statement selects the attributes and aggregations in the output.
+The general structure is
+
+    SELECT attribute | op(arguments) [ AS alias ] [ UNIT unit ] [, ...]
+
+The aggregations in the SELECT statement specify how attributes are
+aggregated. Use the GROUP BY statement to specify the output set. Use AS
+to specify an optional custom label/header.
+
+Available aggregation operations:
+
+)helpstr";
+
+const char* s_calql_groupby_helpstr = R"helpstr(
+The GROUP BY statement selects the attributes that define the output set. For
+example, when grouping by "mpi.rank", the output set has one record for each
+mpi.rank value encountered in the input. Input records with the same mpi.rank
+value will be aggregated as specified by the SELECT statement. The general
+structure is
+
+    GROUP BY path | attribute name [, ...]
+
+The "path" value selects all region name attributes for grouping.
+)helpstr";
+
+const char* s_calql_where_helpstr = R"helpstr(
+Use the WHERE statement to filter input records. The filter is applied after
+pre-processing (see LET) and before aggregating. The general structure is
+
+    WHERE [NOT] condition [, ...]
+
+NOT negates the condition. Available conditions are:
+
+  attribute         (matches if any entry for "attribute" is in the record)
+  attribute = value
+  attribute > value
+  attribute < value
+)helpstr";
+
+const char* s_calql_format_helpstr = R"helpstr(
+The FORMAT statement selects and configures the output formatter. The general
+structure is
+
+    FORMAT formatter [(arguments)] [ORDER BY attribute [ASC | DESC] [,...]]
+
+The ORDER BY statement specifies a list of attributes to sort the output
+records by. It can be used with the "table" and "tree" formatters.
+
+Available formatters:
+
+)helpstr";
+
+std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s)
+{
+    os << "  " << s.name << "(";
+    for (int i = 0; i < s.min_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i];
+    for (int i = s.min_args; i < s.max_args; ++i)
+        os << (i > 0 ? ", " : "") << s.args[i] << "*";
+    os << ")";
+    return os;
 }
 
 }
@@ -262,17 +371,50 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
 {
     std::string helpopt = args.get("help");
 
-    if (helpopt == "configs") {
+    if (helpopt == "configs" || helpopt == "recipes") {
+        std::cout << "Available config recipes:\n";
         auto list = mgr.available_config_specs();
+        size_t len = 0;
         for (const auto &s : list)
-            std::cout << mgr.get_documentation_for_spec(s.c_str()) << "\n";
+            len = std::max(len, s.size());
+        for (const auto &s : list) {
+            std::string descr = mgr.get_description_for_spec(s.c_str());
+            util::pad_right(std::cout << " ", s, len) << descr << "\n";
+        }
     } else if (helpopt == "services") {
+        std::cout << "Available services:\n";
         services::add_default_service_specs();
-
-        int i = 0;
-        for (const auto& s : services::get_available_services())
-            std::cout << (i++ > 0 ? "," : "") << s;
-        std::cout << std::endl;
+        auto list = services::get_available_services();
+        size_t len = 0;
+        for (const auto &s : list)
+            len = std::max(len, s.size());
+        for (const auto &s : list) {
+            std::string descr = services::get_service_description(s);
+            util::pad_right(std::cout << " ", s, len) << descr << "\n";
+        }
+    } else if (helpopt == "calql") {
+        std::cout << s_calql_helpstr;
+    } else if (helpopt == "let") {
+        std::cout << s_calql_let_helpstr;
+        const QuerySpec::FunctionSignature* ops = Preprocessor::preprocess_defs();
+        for (const auto* p = ops; p && p->name; ++p)
+            print_function_signature(std::cout, *p) << "\n";
+    } else if (helpopt == "select") {
+        std::cout << s_calql_select_helpstr;
+        const QuerySpec::FunctionSignature* ops = Aggregator::aggregation_defs();
+        for (const auto* p = ops; p && p->name; ++p) {
+            print_function_signature(std::cout, *p) << " -> ";
+            std::vector<std::string> args(p->args, p->args+p->max_args);
+            const QuerySpec::AggregationOp op(*p, args);
+            std::cout << Aggregator::get_aggregation_attribute_name(op) << "\n";
+        }
+    } else if (helpopt == "where") {
+        std::cout << s_calql_where_helpstr;
+    } else if (helpopt == "format") {
+        std::cout << s_calql_format_helpstr;
+        const QuerySpec::FunctionSignature* ops = FormatProcessor::formatter_defs();
+        for (const auto* p = ops; p && p->name; ++p)
+            print_function_signature(std::cout, *p) << "\n";
     } else if (!helpopt.empty()) {
         {
             auto cfgs = mgr.available_config_specs();
@@ -288,7 +430,7 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
             auto srvs = services::get_available_services();
             auto it = std::find(srvs.begin(), srvs.end(), helpopt);
             if (it != srvs.end()) {
-                services::print_service_description(std::cout << *it << " service:\n", helpopt.c_str());
+                services::print_service_documentation(std::cout << *it << " service:\n", helpopt);
                 return;
             }
         }
@@ -302,6 +444,13 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
     } else {
         std::cout << usage << "\n\n";
         args.print_available_options(std::cout);
+        std::cout <<
+            "\n Use \"--help configs\" to list all config recipes."
+            "\n Use \"--help services\" to list all available services."
+            "\n Use \"--help [recipe name]\" to get help for a config recipe."
+            "\n Use \"--help [service name]\" to get help for a service."
+            "\n Use \"--help calql\" to get help for the CalQL query language."
+            "\n Use \"--help [let,select,where,groupby,format]\" to get help for CalQL statements.\n";
     }
 }
 

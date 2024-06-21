@@ -495,6 +495,10 @@ public:
     std::vector<std::string>
     available_config_specs() const;
 
+    /// \brief Return short description for the given config spec.
+    std::string
+    get_description_for_spec(const char* name) const;
+
     /// \brief Return description and options for the given config spec.
     std::string
     get_documentation_for_spec(const char* name) const;

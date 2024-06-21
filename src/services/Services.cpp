@@ -71,7 +71,16 @@ public:
             m_services[get_name_from_spec(s->name_or_spec)] = *s;
     }
 
-    std::ostream& print_service_description(std::ostream& os, const std::string& name) {
+    std::string get_service_description(const std::string& name) {
+        auto service_itr = m_services.find(name);
+        if (service_itr == m_services.end())
+            return std::string();
+        auto dict = StringConverter(service_itr->second.name_or_spec).rec_dict();
+        auto spec_itr = dict.find("description");
+        return spec_itr != dict.end() ? spec_itr->second.to_string() : std::string();
+    }
+
+    std::ostream& print_service_documentation(std::ostream& os, const std::string& name) {
         auto service_itr = m_services.find(name);
         if (service_itr == m_services.end())
             return os;
@@ -171,9 +180,14 @@ std::vector<std::string> get_available_services()
     return ServicesManager::instance()->get_available_services();
 }
 
-std::ostream& print_service_description(std::ostream& os, const char* name)
+std::ostream& print_service_documentation(std::ostream& os, const std::string& name)
 {
-    return ServicesManager::instance()->print_service_description(os, name);
+    return ServicesManager::instance()->print_service_documentation(os, name);
+}
+
+std::string get_service_description(const std::string& name)
+{
+    return ServicesManager::instance()->get_service_description(name);
 }
 
 ConfigSet init_config_from_spec(RuntimeConfig config, const char* spec)

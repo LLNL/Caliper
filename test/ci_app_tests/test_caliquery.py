@@ -36,7 +36,7 @@ class CaliperCaliQueryTest(unittest.TestCase):
         ]
 
         report_out,_ = cat.run_test(target_cmd, env)
-        res = report_out.decode().split(',')
+        res = report_out.decode().split()
 
         for target in service_targets:
             if not target in res:

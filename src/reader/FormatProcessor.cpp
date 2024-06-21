@@ -37,7 +37,6 @@ enum FormatterID {
 
 const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Cali,      "cali",       0, 0, nullptr },
-    { FormatterID::Cali,      "csv",        0, 0, nullptr }, // keep old "csv" name for backwards compatibility
     { FormatterID::Json,      "json",       0, 6, json_kernel_args },
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
