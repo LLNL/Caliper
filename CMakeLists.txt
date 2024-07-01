@@ -350,28 +350,35 @@ if (WITH_MPI)
   endif()
 endif()
 
-if (WITH_ROCTX OR WITH_ROCM)
-  include(FindRocTX)
-  if (ROCTX_FOUND)
-    set(CALIPER_HAVE_ROCTX TRUE)
-    set(CALIPER_RocTX_CMAKE_MSG "Yes, using ${ROCTX_LIBRARIES}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTX_LIBRARIES})
-  else()
-    message(WARNING "RocTX support requested but ROCm was not found!\n"
-      "Set ROCM_PREFIX to installation path and re-run cmake.")
-  endif()
-endif()
+# if (WITH_ROCTX OR WITH_ROCM)
+#   include(FindRocTX)
+#   if (ROCTX_FOUND)
+#     set(CALIPER_HAVE_ROCTX TRUE)
+#     set(CALIPER_RocTX_CMAKE_MSG "Yes, using ${ROCTX_LIBRARIES}")
+#     list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTX_LIBRARIES})
+#   else()
+#     message(WARNING "RocTX support requested but ROCm was not found!\n"
+#       "Set ROCM_PREFIX to installation path and re-run cmake.")
+#   endif()
+# endif()
 
-if (WITH_ROCTRACER OR WITH_ROCM)
-  include(FindRoctracer)
-  if (ROCTRACER_FOUND)
-    set(CALIPER_HAVE_ROCTRACER TRUE)
-    set(CALIPER_RocTracer_CMAKE_MSG "Yes, using ${ROCTRACER_LIBRARIES}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTRACER_LIBRARIES})
-  else()
-    message(WARNING "RocTracer support requested but ROCm was not found!\n"
-      "Set ROCM_PREFIX to installation path and re-run cmake.")
-  endif()
+# if (WITH_ROCTRACER OR WITH_ROCM)
+#   include(FindRoctracer)
+#   if (ROCTRACER_FOUND)
+#    set(CALIPER_HAVE_ROCTRACER TRUE)
+#    set(CALIPER_RocTracer_CMAKE_MSG "Yes, using ${ROCTRACER_LIBRARIES}")
+#    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTRACER_LIBRARIES})
+#  else()
+#    message(WARNING "RocTracer support requested but ROCm was not found!\n"
+#      "Set ROCM_PREFIX to installation path and re-run cmake.")
+#  endif()
+#endif()
+
+if (WITH_ROCM)
+  find_package(rocprofiler-sdk REQUIRED)
+  set(CALIPER_HAVE_ROCM TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS rocprofiler-sdk::rocprofiler-sdk)
+  list(APPEND CALIPER_ROCm_CMAKE_MSG "Yes")
 endif()
 
 if (WITH_CRAYPAT)
@@ -615,8 +622,7 @@ set(CALIPER_MODULES
   Nvtx
   CUpti
   Kokkos
-  RocTracer
-  RocTX
+  ROCm
   TAU
   VTune
   PCP
