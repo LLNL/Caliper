@@ -8,6 +8,8 @@
 
 #include "caliper/common/StringConverter.h"
 
+#include "util/format_util.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -52,10 +54,10 @@ Variant::to_string() const
     }
         break;
     case CALI_TYPE_INT:
-        ret = std::to_string(to_int64());
+        ret = std::to_string(m_v.value.v_int);
         break;
     case CALI_TYPE_UINT:
-        ret = std::to_string(to_uint());
+        ret = std::to_string(m_v.value.v_uint);
         break;
     case CALI_TYPE_STRING:
     {
@@ -76,7 +78,7 @@ Variant::to_string() const
     }
         break;
     case CALI_TYPE_DOUBLE:
-        ret = std::to_string(to_double());
+        ret = std::to_string(m_v.value.v_double);
         break;
     case CALI_TYPE_BOOL:
         ret = to_bool() ? "true" : "false";
@@ -166,6 +168,36 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
         *okptr = ok;
 
     return ret;
+}
+
+std::ostream&
+Variant::write_cali(std::ostream& os)
+{
+    cali_attr_type type = this->type();
+
+    switch (type) {
+    case CALI_TYPE_INV:
+        break;
+    case CALI_TYPE_INT:
+        os << m_v.value.v_int;
+        break;
+    case CALI_TYPE_DOUBLE:
+        os << m_v.value.v_double;
+        break;
+    case CALI_TYPE_UINT:
+        util::write_uint64(os, m_v.value.v_uint);
+        break;
+    case CALI_TYPE_STRING:
+        util::write_cali_esc_string(os, static_cast<const char*>(m_v.value.unmanaged_const_ptr), size());
+        break;
+    case CALI_TYPE_TYPE:
+        os << cali_type2string(m_v.value.v_type);
+        break;
+    default:
+        util::write_cali_esc_string(os, to_string());
+    }
+
+    return os;
 }
 
 std::ostream& cali::operator << (std::ostream& os, const Variant& v)
