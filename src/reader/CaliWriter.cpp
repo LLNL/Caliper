@@ -19,49 +19,49 @@ using namespace cali;
 namespace
 {
 
+enum RecordKind {
+    Snapshot, Globals
+};
+
 void write_node_content(std::ostream& os, const cali::Node* node)
 {
-    os << "__rec=node,id=" << node->id()
-       << ",attr="         << node->attribute();
+    util::write_uint64(os.write("__rec=node,id=", 14), node->id());
+    util::write_uint64(os.write(",attr=", 6), node->attribute());
 
-    util::write_cali_esc_string(os << ",data=", node->data().to_string());
+    node->data().write_cali(os.write(",data=", 6));
 
     if (node->parent() && node->parent()->id() != CALI_INV_ID)
-        os << ",parent=" << node->parent()->id();
+        util::write_uint64(os.write(",parent=", 8), node->parent()->id());
 
-    os << '\n';
+    os.put('\n');
 }
 
-void write_record_content(std::ostream& os, const char* record_type, int nr, int ni, const std::vector<Entry>& rec) {
-    os << "__rec=" << record_type;
+void write_record_content(std::ostream& os, RecordKind kind, const std::vector<Entry>& ref_entries, const std::vector<Entry>& imm_entries)
+{
+    if (kind == RecordKind::Snapshot)
+        os.write("__rec=ctx", 9);
+    else if (kind == RecordKind::Globals)
+        os.write("__rec=globals", 13);
 
     // write reference entries
-
-    if (nr > 0) {
-        os << ",ref";
-
-        for (const Entry& e : rec)
-            if (e.is_reference())
-                os << '=' << e.node()->id();
+    if (!ref_entries.empty()) {
+        os.write(",ref", 4);
+        for (const Entry& e : ref_entries)
+            util::write_uint64(os.put('='), e.node()->id());
     }
 
     // write immediate entries
+    if (!imm_entries.empty()) {
+        os.write(",attr", 5);
+        for (const Entry& e : imm_entries)
+            util::write_uint64(os.put('='), e.attribute());
 
-    if (ni > 0) {
-        os << ",attr";
-
-        for (const Entry& e : rec)
-            if (e.is_immediate())
-                os << '=' << e.attribute();
-
-        os << ",data";
-
-        for (const Entry& e : rec)
-            if (e.is_immediate())
-                util::write_cali_esc_string(os << '=', e.value().to_string());
+        os.write(",data", 5);
+        for (const Entry& e : imm_entries)
+            e.value().write_cali(os.put('='));
     }
 
-    os << '\n';
+    os.put('\n');
 }
 
 } // namespace [anonymous]
@@ -121,29 +121,28 @@ struct CaliWriter::CaliWriterImpl
             std::lock_guard<std::mutex>
                 g(m_written_nodes_lock);
 
-            if (m_written_nodes.count(id) > 0)
-                return;
-
             m_written_nodes.insert(id);
         }
     }
 
     void write_entrylist(const CaliperMetadataAccessInterface& db,
-                         const char* record_type,
+                         RecordKind kind,
                          const std::vector<Entry>& rec)
     {
-        // write node entries; count the number of ref and immediate entries
+        // write node entries
 
-        int nr = 0;
-        int ni = 0;
+        std::vector<Entry> ref_entries;
+        std::vector<Entry> imm_entries;
+        ref_entries.reserve(rec.size());
+        imm_entries.reserve(rec.size());
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
                 recursive_write_node(db, e.node()->id());
-                ++nr;
+                ref_entries.push_back(e);
             } else if (e.is_immediate()) {
                 recursive_write_node(db, e.attribute());
-                ++ni;
+                imm_entries.push_back(e);
             }
         }
 
@@ -155,7 +154,7 @@ struct CaliWriter::CaliWriterImpl
 
             std::ostream* real_os = m_os.stream();
 
-            ::write_record_content(*real_os, record_type, nr, ni, rec);
+            ::write_record_content(*real_os, kind, ref_entries, imm_entries);
             ++m_num_written;
         }
     }
@@ -178,10 +177,10 @@ size_t CaliWriter::num_written() const
 
 void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
-    mP->write_entrylist(db, "ctx", list);
+    mP->write_entrylist(db, ::RecordKind::Snapshot, list);
 }
 
 void CaliWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
-    mP->write_entrylist(db, "globals", list);
+    mP->write_entrylist(db, ::RecordKind::Globals, list);
 }
