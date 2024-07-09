@@ -315,8 +315,6 @@ struct Caliper::GlobalData
 
     // --- data
 
-    bool                               allow_region_overlap;
-
     mutable std::mutex                 attribute_lock;
     map<string, Attribute>             attribute_map;
 
@@ -399,8 +397,6 @@ struct Caliper::GlobalData
             attribute_default_scope = CALI_ATTR_SCOPE_THREAD;
         else
             log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
-
-        allow_region_overlap = config.get("allow_region_overlap").to_bool();
     }
 
     void init() {
@@ -522,10 +518,6 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "Default scope for attributes. Possible values are\n"
       "  process:   Process scope\n"
       "  thread:    Thread scope"
-    },
-    { "allow_region_overlap", CALI_TYPE_BOOL, "false",
-      "Allow overlapping regions for all attributes",
-      "Allow overlapping begin/end regions for all attributes."
     },
 
     ConfigSet::Terminator
@@ -658,7 +650,7 @@ struct BlackboardEntry
 };
 
 inline BlackboardEntry
-load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard, bool allow_overlap)
+load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard)
 {
     Entry merged_entry = blackboard.get(key);
     Entry entry = merged_entry.get(attr);
@@ -668,7 +660,7 @@ load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard,
             log_stack_error(nullptr, attr);
             return { Entry(), Entry() };
         }
-        if (key != UNALIGNED_KEY && !allow_overlap) {
+        if (key != UNALIGNED_KEY) {
             log_stack_error(merged_entry.node(), attr);
             return { Entry(), Entry() };
         }
@@ -1028,7 +1020,7 @@ Caliper::end(const Attribute& attr)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    auto current = load_current_entry(attr, key, *blackboard, sG->allow_region_overlap);
+    auto current = load_current_entry(attr, key, *blackboard);
 
     if (current.entry.empty()) {
         sT->stack_error = true;
@@ -1068,7 +1060,7 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    auto current = load_current_entry(attr, key, *blackboard, sG->allow_region_overlap);
+    auto current = load_current_entry(attr, key, *blackboard);
 
     if (current.entry.empty() || data != current.entry.value()) {
         log_stack_value_error(current.entry, attr, data);
@@ -1143,7 +1135,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
         g(sT->lock);
 
     BlackboardEntry current =
-        load_current_entry(attr, key, channel->mP->channel_blackboard, sG->allow_region_overlap);
+        load_current_entry(attr, key, channel->mP->channel_blackboard);
 
     if (current.entry.empty()) {
         sT->stack_error = true;

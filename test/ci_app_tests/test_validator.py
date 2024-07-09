@@ -6,31 +6,6 @@ import calipertest as cat
 class CaliperValidatorTest(unittest.TestCase):
     """ Caliper validator service test cases """
 
-    def test_validator_nesting_error(self):
-        target_cmd = [ '../cali-test', 'nesting-error' ]
-
-        env = {
-            'CALI_LOG_VERBOSITY'   : '1',
-            'CALI_LOG_LOGFILE'     : 'stdout',
-            'CALI_SERVICES_ENABLE' : 'validator',
-            'CALI_CALIPER_ALLOW_REGION_OVERLAP' : 'true'
-        }
-
-        log_targets = [
-            'validator: incorrect nesting: trying to end "test.nesting-error.a"="11" but current attribute is "test.nesting-error.b"',
-            'validator: Annotation nesting errors found'
-        ]
-
-        report_out,_ = cat.run_test(target_cmd, env)
-        lines = report_out.decode().splitlines()
-
-        for target in log_targets:
-            for line in lines:
-                if target in line:
-                    break
-            else:
-                self.fail('%s not found in log' % target)
-
     def test_validator_unclosed_region(self):
         target_cmd = [ '../cali-test', 'unclosed-region' ]
 
