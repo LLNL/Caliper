@@ -9,6 +9,10 @@
 #include <mutex>
 #include <numeric>
 #include <unordered_map>
+#include <sstream>
+#include <set>
+
+
 
 //replaced MpiTracing with MpiPattern
 
@@ -25,6 +29,11 @@ struct MpiPattern::MpiPatternImpl
     Attribute msg_tag_attr;
     Attribute send_count_attr;
     Attribute recv_count_attr;
+
+    Attribute total_send_count_attr;
+    Attribute total_recv_count_attr;
+    Attribute total_dest_ranks_attr;
+    Attribute total_src_ranks_attr;
 
     Attribute coll_type_attr;
     Attribute coll_root_attr;
@@ -99,11 +108,21 @@ struct MpiPattern::MpiPatternImpl
               &send_count_attr },
             { "mpi.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &recv_count_attr },
+            { "total.send.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_send_count_attr },
+            { "total.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_recv_count_attr },
+            { "total.dest.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_dest_ranks_attr },  
+            { "total.src.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_src_ranks_attr }, 
+
             { "mpi.coll.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &coll_count_attr },
 
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
+        
 
         for (const struct attr_info_t* a = attr_info_tbl; a && a->name; a++)
             *(a->ptr) = c->create_attribute(a->name, a->type, a->prop);
@@ -175,7 +194,36 @@ struct MpiPattern::MpiPatternImpl
     // --- point-to-point
     //
 
+    
+    int total_send_count = 0;
+   
+    int total_recv_ranks=0;
+
+   // int total_dest_ranks;
+
+    int total_recv_count = 0;
+
+    //int total_src_ranks;
+
+   
+    /* adding the send and recv rank sets, these will total dest and recv ranks*/
+    std::set<int>unique_src_ranks;//store dest
+    std::set<int>unique_dest_ranks;//store src
+
     void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
+        // Increasing the total send count
+         total_send_count++;
+
+         unique_dest_ranks.insert(dest);//insert the dest
+
+        //total_dest_ranks = unique_send_ranks.size();//this is the totalnum of destination ranks
+        // or we make another eventfor   total_dest_ranks?
+     
+          
+    
+   } 
+
+   /* void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
         const Entry data[] = {
             { comm_node },
             { msg_dst_attr,    Variant(dest) },
@@ -185,7 +233,7 @@ struct MpiPattern::MpiPatternImpl
         };
 
         c->push_snapshot(channel, SnapshotView(5, data));
-    }
+    }*/
 
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
@@ -206,7 +254,7 @@ struct MpiPattern::MpiPatternImpl
 
         req_map[*req] = info;
     }
-
+/*
     void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
         const Entry data[] = {
             { comm_node },
@@ -218,6 +266,22 @@ struct MpiPattern::MpiPatternImpl
 
         c->push_snapshot(channel, SnapshotView(5, data));
     }
+*/
+    
+
+    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
+
+        total_recv_count++;
+
+        unique_src_ranks.insert(src);//insert the src
+
+       //total_src_ranks = unique_recv_ranks.size();//this is the totalnum of src ranks
+    
+
+     
+    } 
+    
+    
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
         int size  = 0;
@@ -225,6 +289,7 @@ struct MpiPattern::MpiPatternImpl
         int count = 0;
         PMPI_Get_count(status, type, &count);
 
+        //we want to know how many recvs they are?
         push_recv_event(c, chn, status->MPI_SOURCE, size*count, status->MPI_TAG, lookup_comm(c, comm));
     }
 
@@ -334,6 +399,35 @@ struct MpiPattern::MpiPatternImpl
             ne = 3;
 
         c->push_snapshot(channel, SnapshotView(ne, data));
+    }
+
+
+
+    void handle_comm_begin(Caliper* c, Channel* chn){
+
+      total_send_count=0;
+      total_recv_count=0;
+      unique_dest_ranks.clear();
+      unique_src_ranks.clear();
+
+    }
+    void handle_comm_end(Caliper* c, Channel* chn){
+
+
+     const Entry data[] = {
+       
+       
+        { total_send_count_attr, Variant(total_send_count) },
+        { total_recv_count_attr, Variant(total_recv_count) },
+        { total_dest_ranks_attr, Variant(unique_dest_ranks.size()) },
+        { total_src_ranks_attr, Variant(unique_src_ranks.size()) }
+
+         
+    };
+
+    c->push_snapshot(chn, SnapshotView(4, data));
+
+
     }
 
     // --- constructor
@@ -465,4 +559,16 @@ void
 MpiPattern::handle_finalize(Caliper* c, Channel* chn)
 {
     mP->push_coll_event(c, chn, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+    
+}
+void
+MpiPattern::handle_comm_begin(Caliper* c, Channel* chn)
+{
+    mP->handle_comm_begin(c, chn);
+}
+
+void
+MpiPattern::handle_comm_end(Caliper* c, Channel* chn)
+{
+    mP->handle_comm_end(c, chn);
 }

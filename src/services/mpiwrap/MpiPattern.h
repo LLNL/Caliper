@@ -47,6 +47,9 @@ public:
     void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs);
     void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses);
 
+    void handle_comm_begin(Caliper* c, Channel* chn);//region_begin
+    void handle_comm_end(Caliper* c, Channel* chn);//region_end
+    
     void request_free(Caliper* c, Channel* chn, MPI_Request* req);
 
     // --- collectives
