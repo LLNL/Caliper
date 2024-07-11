@@ -199,16 +199,14 @@ struct MpiPattern::MpiPatternImpl
    
     int total_recv_ranks=0;
 
-   // int total_dest_ranks;
-
     int total_recv_count = 0;
 
     //int total_src_ranks;
 
    
     /* adding the send and recv rank sets, these will total dest and recv ranks*/
-    std::set<int>unique_src_ranks;//store dest
-    std::set<int>unique_dest_ranks;//store src
+    std::set<int>unique_src_ranks;//store srcs
+    std::set<int>unique_dest_ranks;//store dests
 
     void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
         // Increasing the total send count
@@ -216,25 +214,11 @@ struct MpiPattern::MpiPatternImpl
 
          unique_dest_ranks.insert(dest);//insert the dest
 
-        //total_dest_ranks = unique_send_ranks.size();//this is the totalnum of destination ranks
-        // or we make another eventfor   total_dest_ranks?
-     
-          
+                 
     
    } 
 
-   /* void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
-        const Entry data[] = {
-            { comm_node },
-            { msg_dst_attr,    Variant(dest) },
-            { msg_tag_attr,    Variant(tag)  },
-            { msg_size_attr,   Variant(size) },
-            { send_count_attr, Variant(1)    }
-        };
-
-        c->push_snapshot(channel, SnapshotView(5, data));
-    }*/
-
+  
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
@@ -254,19 +238,7 @@ struct MpiPattern::MpiPatternImpl
 
         req_map[*req] = info;
     }
-/*
-    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
-        const Entry data[] = {
-            { comm_node },
-            { msg_src_attr,    Variant(src)  },
-            { msg_tag_attr,    Variant(tag)  },
-            { msg_size_attr,   Variant(size) },
-            { recv_count_attr, Variant(1)    }
-        };
 
-        c->push_snapshot(channel, SnapshotView(5, data));
-    }
-*/
     
 
     void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
