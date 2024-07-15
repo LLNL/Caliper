@@ -552,44 +552,6 @@ get_blackboard_key_for_reference_entry(int prop)
     return prop & CALI_ATTR_UNALIGNED ? UNALIGNED_KEY : REGION_KEY;
 }
 
-inline void
-handle_begin(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
-{
-    if (prop & CALI_ATTR_ASVALUE) {
-        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
-    } else {
-        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
-        Entry entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
-        blackboard.set(key, entry, !(prop & CALI_ATTR_HIDDEN));
-    }
-}
-
-inline void
-handle_end(const Attribute& attr, int prop, Entry merged_entry, cali_id_t key, Blackboard& blackboard, MetadataTree& tree)
-{
-    if (prop & CALI_ATTR_ASVALUE)
-        blackboard.del(key);
-    else {
-        Node* node = tree.remove_first_in_path(merged_entry.node(), attr);
-
-        if (node == tree.root())
-            blackboard.del(key);
-        else
-            blackboard.set(key, Entry(node), !(prop & CALI_ATTR_HIDDEN));
-    }
-}
-
-inline void
-handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
-{
-    if (prop & CALI_ATTR_ASVALUE)
-        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
-    else {
-        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
-        Node* node = blackboard.get(key).node();
-        blackboard.set(key, tree.replace_first_in_path(node, attr, value), !(prop & CALI_ATTR_HIDDEN));
-    }
-}
 
 void
 log_stack_error(const Node* stack, const Attribute& attr)
@@ -667,6 +629,49 @@ load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard)
     }
 
     return { merged_entry, entry };
+}
+
+inline void
+handle_begin(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
+{
+    if (prop & CALI_ATTR_ASVALUE) {
+        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
+    } else {
+        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
+        Entry entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
+        blackboard.set(key, entry, !(prop & CALI_ATTR_HIDDEN));
+    }
+}
+
+inline void
+handle_end(const Attribute& attr, int prop, const BlackboardEntry& current, cali_id_t key, Blackboard& blackboard, MetadataTree& tree)
+{
+    if (prop & CALI_ATTR_ASVALUE)
+        blackboard.del(key);
+    else {
+        Node* node = current.merged_entry.node()->parent();
+
+        if (node == tree.root())
+            blackboard.del(key);
+        else {
+            if (current.merged_entry.node() != current.entry.node())
+                node = tree.remove_first_in_path(current.merged_entry.node(), attr);
+
+            blackboard.set(key, Entry(node), !(prop & CALI_ATTR_HIDDEN));
+        }
+    }
+}
+
+inline void
+handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
+{
+    if (prop & CALI_ATTR_ASVALUE)
+        blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
+    else {
+        cali_id_t key = get_blackboard_key_for_reference_entry(prop);
+        Node* node = blackboard.get(key).node();
+        blackboard.set(key, tree.replace_first_in_path(node, attr, value), !(prop & CALI_ATTR_HIDDEN));
+    }
 }
 
 } // namespace [anonymous]
@@ -1033,7 +1038,7 @@ Caliper::end(const Attribute& attr)
             if (channel && channel->is_active())
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
-    handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
+    handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
 
 void
@@ -1074,7 +1079,7 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
             if (channel && channel->is_active())
                 channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
 
-    handle_end(attr, prop, current.merged_entry, key, *blackboard, sT->tree);
+    handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
 
 void
@@ -1146,7 +1151,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     if (run_events && channel->is_active())
         channel->mP->events.pre_end_evt(this, channel, attr, current.entry.value());
 
-    handle_end(attr, prop, current.merged_entry, key, channel->mP->channel_blackboard, sT->tree);
+    handle_end(attr, prop, current, key, channel->mP->channel_blackboard, sT->tree);
 }
 
 void
