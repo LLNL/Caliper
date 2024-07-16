@@ -7,8 +7,10 @@ namespace cali {
 
 class PythonAttribute {
 public:
+  PythonAttribute(const char *name, cali_attr_type type);
+
   PythonAttribute(const char *name, cali_attr_type type,
-                  cali_attr_properties opt = CALI_ATTR_DEFAULT);
+                  cali_attr_properties opt);
 
   static PythonAttribute find_attribute(const char *name);
 

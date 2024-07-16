@@ -3,6 +3,13 @@
 
 namespace cali {
 
+PythonAttribute::PythonAttribute(const char *name, cali_attr_type type)
+    : m_attr_id(cali_create_attribute(name, type, CALI_ATTR_DEFAULT)) {
+  if (m_attr_id == CALI_INV_ID) {
+    throw std::runtime_error("Failed to create attribute");
+  }
+}
+
 PythonAttribute::PythonAttribute(const char *name, cali_attr_type type,
                                  cali_attr_properties opt)
     : m_attr_id(cali_create_attribute(name, type, opt)) {
@@ -60,8 +67,11 @@ void create_caliper_instrumentation_mod(
   py::class_<PythonAttribute> cali_attribute_type(caliper_instrumentation_mod,
                                                   "Attribute");
   cali_attribute_type.def(
+      py::init<const char *, cali_attr_type>(), "",
+      py::arg(), py::arg());
+  cali_attribute_type.def(
       py::init<const char *, cali_attr_type, cali_attr_properties>(), "",
-      py::arg(), py::arg(), py::arg("opt") = CALI_ATTR_DEFAULT);
+      py::arg(), py::arg(), py::arg("opt"));
   cali_attribute_type.def_static("find_attribute",
                                  &PythonAttribute::find_attribute);
   cali_attribute_type.def_property_readonly("name", &PythonAttribute::name);

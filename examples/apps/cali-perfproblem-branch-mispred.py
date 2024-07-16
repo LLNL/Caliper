@@ -17,7 +17,7 @@ def init(arraySize: int, sort: bool) -> np.array:
 @annotate_function()
 def work(data: np.array):
     data_sum = 0
-    for _ in range(100000):
+    for _ in range(100):
         for val in np.nditer(data):
             if val >= 128:
                 data_sum += val
@@ -33,6 +33,7 @@ def benchmark(arraySize: int, sort: bool):
     print("Calculating sum of values >= 128")
     work(data)
     print("Done!")
+    sorted_ann.end()
     
 
 @annotate_function()
