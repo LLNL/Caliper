@@ -11,12 +11,17 @@ bool pycaliper_is_initialized() { return cali_is_initialized() != 0; }
 PYBIND11_MODULE(__pycaliper_impl, m) {
   m.attr("__version__") = cali_caliper_version();
 
+  m.def("config_preset", [](std::map<const char *, const char *> &preset_map) {
+    for (auto kv : preset_map) {
+      cali_config_preset(kv.first, kv.second);
+    }
+  });
   m.def("init", &cali_init);
   m.def("is_initialized", &pycaliper_is_initialized);
 
   auto types_mod = m.def_submodule("types");
 
-  py::enum_<cali_attr_type> c_attr_type(types_mod, "AttrTypeEnum");
+  py::enum_<cali_attr_type> c_attr_type(types_mod, "AttrType");
   c_attr_type.value("CALI_TYPE_INV", CALI_TYPE_INV);
   c_attr_type.value("CALI_TYPE_USR", CALI_TYPE_USR);
   c_attr_type.value("CALI_TYPE_INT", CALI_TYPE_INT);
@@ -30,7 +35,7 @@ PYBIND11_MODULE(__pycaliper_impl, m) {
   c_attr_type.export_values();
 
   py::enum_<cali_attr_properties> c_attr_properties(types_mod,
-                                                    "AttrPropertiesEnum");
+                                                    "AttrProperties");
   c_attr_properties.value("CALI_ATTR_DEFAULT", CALI_ATTR_DEFAULT);
   c_attr_properties.value("CALI_ATTR_ASVALUE", CALI_ATTR_ASVALUE);
   c_attr_properties.value("CALI_ATTR_NOMERGE", CALI_ATTR_NOMERGE);

@@ -1,5 +1,6 @@
 from pycaliper.__pycaliper_impl import (
     __version__,
+    config_preset,
     init,
     is_initialized,
 )

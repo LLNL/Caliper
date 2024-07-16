@@ -24,6 +24,9 @@ set(CALIPER_CI_MPI_TEST_APPS
   ci_test_mpi_channel_manager)
 set(CALIPER_CI_Fortran_TEST_APPS
   ci_test_f_ann)
+set(CALIPER_CI_Python_TEST_APPS
+  ci_test_py_ann.py
+)
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
@@ -128,6 +131,28 @@ if (WITH_FORTRAN)
   endforeach()
 
   list(APPEND PYTHON_SCRIPTS test_fortran_api.py)
+endif()
+
+if (WITH_PYTHON_BINDINGS)
+  foreach(file ${CALIPER_CI_Python_TEST_APPS})
+    add_custom_target(${file} ALL
+      COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+        ${CMAKE_CURRENT_BINARY_DIR}/${file})
+  endforeach()
+
+  list(APPEND PYTHON_SCRIPTS test_python_api.py)
+endif()
+
+if (WITH_PYTHON_BINDINGS)
+  foreach(file ${CALIPER_CI_Python_TEST_APPS})
+    add_custom_target(${file} ALL
+      COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+        ${CMAKE_CURRENT_BINARY_DIR}/${file})
+  endforeach()
+
+  list(APPEND PYTHON_SCRIPTS test_python_api.py)
 endif()
 
 set(DATA_FILES
