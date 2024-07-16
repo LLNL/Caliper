@@ -66,7 +66,7 @@ void create_caliper_annotation_mod(py::module_ &caliper_annotation_mod) {
   py::class_<PythonAnnotation> annotation_type(caliper_annotation_mod,
                                                "Annotation");
   annotation_type.def(py::init<const char *, cali_attr_properties>(), "",
-                      py::arg(), py::arg("opt") = 0);
+                      py::arg(), py::arg("opt") = CALI_ATTR_DEFAULT);
   annotation_type.def("end", &PythonAnnotation::end, "");
   annotation_type.def("begin",
                       static_cast<PythonAnnotation &(PythonAnnotation::*)()>(

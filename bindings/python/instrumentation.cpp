@@ -61,7 +61,7 @@ void create_caliper_instrumentation_mod(
                                                   "Attribute");
   cali_attribute_type.def(
       py::init<const char *, cali_attr_type, cali_attr_properties>(), "",
-      py::arg(), py::arg(), py::arg("opt") = 0);
+      py::arg(), py::arg(), py::arg("opt") = CALI_ATTR_DEFAULT);
   cali_attribute_type.def_static("find_attribute",
                                  &PythonAttribute::find_attribute);
   cali_attribute_type.def_property_readonly("name", &PythonAttribute::name);
