@@ -40,8 +40,8 @@ const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Json,      "json",       0, 6, json_kernel_args },
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
-    { FormatterID::Table,     "table",      0, 1, table_kernel_args  },
-    { FormatterID::Tree,      "tree",       0, 2, tree_kernel_args   },
+    { FormatterID::Table,     "table",      0, 2, table_kernel_args  },
+    { FormatterID::Tree,      "tree",       0, 3, tree_kernel_args   },
     { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
 
     QuerySpec::FunctionSignatureTerminator
