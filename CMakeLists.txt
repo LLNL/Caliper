@@ -77,6 +77,12 @@ add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
 add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" FALSE)
 
+set(WITH_ARCH "" CACHE STRING "Enable features specific to the provided archspec CPU architecture name")
+if (NOT WITH_ARCH STREQUAL "")
+  string(TOLOWER ${WITH_ARCH} LOWER_WITH_ARCH)
+  set(CALIPER_HAVE_ARCH "${LOWER_WITH_ARCH}")
+endif ()
+
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
 add_caliper_option(ENABLE_HISTOGRAMS "Enable histogram aggregation (experimental)" FALSE)

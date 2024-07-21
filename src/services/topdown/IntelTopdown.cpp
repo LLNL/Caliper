@@ -788,8 +788,17 @@ public:
       return;
     }
 
-    // TODO Add logic to select correct TopdownCalculator
-    TopdownCalculator *calculator = new HaswellTopdown(level);
+    TopdownCalculator *calculator;
+
+#if defined(CALIPER_HAVE_ARCH)
+    if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
+      calculator = new SapphireRapidsTopdown(level);
+    } else {
+#endif
+      calculator = new HaswellTopdown(level); // Default type of calculation
+#if defined(CALIPER_HAVE_ARCH)
+    }
+#endif
 
     channel->config().set("CALI_PAPI_COUNTERS", calculator->get_counters());
 

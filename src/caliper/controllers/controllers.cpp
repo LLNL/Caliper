@@ -995,9 +995,162 @@ const char *get_builtin_option_specs() {
     }
     ]
   )json";
-  // TODO add logic to change the topdown options based on system arch
   const char *topdown_opts = "";
-  topdown_opts = R"json(
+#if defined(CALIPER_HAVE_ARCH)
+  if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
+    topdown_opts = R"json(
+    ,{
+     "name"        : "topdown.toplevel",
+     "description" : "Top-down analysis for Intel CPUs (top level)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\""
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown.all",
+     "description" : "Top-down analysis for Intel CPUs (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\"",
+        "any(topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(topdown.machine_clears) as \"Machine clears\"",
+        "any(topdown.frontend_latency) as \"Frontend latency\"",
+        "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(topdown.memory_bound) as \"Memory bound\"",
+        "any(topdown.core_bound) as \"Core bound\"",
+        "any(topdown.light_ops) as \"Light Operations\"",
+        "any(topdown.heavy_ops) as \"Heavy Operations\""
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\"",
+        "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(any#topdown.machine_clears) as \"Machine clears\"",
+        "any(any#topdown.frontend_latency) as \"Frontend latency\"",
+        "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(any#topdown.memory_bound) as \"Memory bound\"",
+        "any(any#topdown.core_bound) as \"Core bound\"",
+        "any(any#topdown.light_ops) as \"Light Operations\"",
+        "any(any#topdown.heavy_ops) as \"Heavy Operations\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.toplevel",
+     "description" : "Raw counter values for Intel top-down analysis (top level)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.all",
+     "description" : "Raw counter values for Intel top-down analysis (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
+        "inclusive_sum(sum#papi.perf_raw::r8400) as topdown_heavy_ops",
+        "inclusive_sum(sum#papi.perf_raw::r8500) as topdown_br_mispredict",
+        "inclusive_sum(sum#papi.perf_raw::r8600) as topdown_fetch_lat",
+        "inclusive_sum(sum#papi.perf_raw::r8700) as topdown_mem_bound"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
+        "sum(inclusive#sum#papi.perf_raw::r8400) as topdown_heavy_ops",
+        "sum(inclusive#sum#papi.perf_raw::r8500) as topdown_br_mispredict",
+        "sum(inclusive#sum#papi.perf_raw::r8600) as topdown_fetch_lat",
+        "sum(inclusive#sum#papi.perf_raw::r8700) as topdown_mem_bound"
+       ]
+      }
+     ]
+    }
+  )json";
+  } else {
+#endif
+    topdown_opts = R"json(
     ,{
      "name"        : "topdown.toplevel",
      "description" : "Top-down analysis for Intel CPUs (top level)",
@@ -1174,8 +1327,11 @@ const char *get_builtin_option_specs() {
        ]
       }
      ]
-    },
+    }
   )json";
+#if defined(CALIPER_HAVE_ARCH)
+  }
+#endif
   char *full_builtin_option_specs =
       new char[strlen(base_builtin_option_specs) + strlen(topdown_opts) +
                strlen(terminal) + 1];
