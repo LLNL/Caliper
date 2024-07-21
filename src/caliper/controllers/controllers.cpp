@@ -4,6 +4,7 @@
 #include "caliper/caliper-config.h"
 
 #include "caliper/ConfigManager.h"
+#include <cstring>
 
 namespace
 {
