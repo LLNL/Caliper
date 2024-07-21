@@ -26,28 +26,24 @@ using namespace cali;
 namespace
 {
 
-class IntelTopdown
+enum IntelTopdownLevel { All = 1, Top = 2 };
+
+class TopdownCalculator
 {
-    static const char* s_top_counters;
-    static const char* s_all_counters;
+protected:
 
-    std::map<std::string, Attribute> counter_attrs;
-    std::map<std::string, Attribute> result_attrs;
+    IntelTopdownLevel m_level;
 
-    std::map<std::string, int> counters_not_found;
+    const char* m_top_counters;
+    const char* m_all_counters;
 
-    unsigned num_top_computed;
-    unsigned num_top_skipped;
-    unsigned num_be_computed;
-    unsigned num_be_skipped;
-    unsigned num_fe_computed;
-    unsigned num_fe_skipped;
-    unsigned num_bsp_computed;
-    unsigned num_bsp_skipped;
+    const char* s_res_top[];
+    const char* s_res_all[];
 
-    enum Level { All = 1, Top = 2 };
+    std::map<std::string, Attribute> m_counter_attrs;
+    std::map<std::string, Attribute> m_result_attrs;
 
-    Level level;
+    std::map<std::string, int> m_counters_not_found;
 
     Variant get_val_from_rec(const std::vector<Entry>& rec, const char* name)
     {
@@ -64,14 +60,38 @@ class IntelTopdown
         if (it != rec.end())
             ret = it->value();
         else
-            ++counters_not_found[std::string(name)];
+            ++m_counters_not_found[std::string(name)];
 
         return ret;
     }
 
+public:
+
+    TopdownCalculator(IntelTopdownLevel level) : m_level(level) {}
+
+    virtual std::vector<Entry> compute_toplevel(const std::vector<Entry>& rec) = 0;
+
+    virtual std::size_t get_num_expected_toplevel() const = 0;
+
+    virtual std::vector<Entry> compute_retiring(const std::vector<Entry>& rec) = 0;
+
+    virtual std::size_t get_num_expected_retiring() const = 0;
+
+    virtual std::vector<Entry> compute_backend_bound(const std::vector<Entry>& rec) = 0;
+
+    virtual std::size_t get_num_expected_backend_bound() const = 0;
+
+    virtual std::vector<Entry> compute_frontend_bound(const std::vector<Entry>& rec) = 0;
+
+    virtual std::size_t get_num_expected_frontend_bound() const = 0;
+
+    virtual std::vector<Entry> compute_bad_speculation(const std::vector<Entry>& rec) = 0;
+
+    virtual std::size_t get_num_expected_bad_speculation() const = 0;
+
     bool find_counter_attrs(CaliperMetadataAccessInterface& db)
     {
-        const char* list     = (level == All ? s_all_counters : s_top_counters);
+        const char* list     = (m_level == All ? m_all_counters : m_top_counters);
         auto        counters = StringConverter(list).to_stringlist();
 
         for (const auto& s : counters) {
@@ -84,7 +104,7 @@ class IntelTopdown
                 return false;
             }
 
-            counter_attrs[s] = attr;
+            m_counter_attrs[s] = attr;
         }
 
         return true;
@@ -92,24 +112,80 @@ class IntelTopdown
 
     void make_result_attrs(CaliperMetadataAccessInterface& db)
     {
-        const char* res_top[] = { "retiring", "backend_bound", "frontend_bound", "bad_speculation", nullptr };
-        const char* res_all[] = { "retiring",         "backend_bound",      "frontend_bound",
-                                  "bad_speculation",  "branch_mispredict",  "machine_clears",
-                                  "frontend_latency", "frontend_bandwidth", "memory_bound",
-                                  "core_bound",       "ext_mem_bound",      "l1_bound",
-                                  "l2_bound",         "l3_bound",           nullptr };
-
-        const char** res = (level == Top ? res_top : res_all);
+        const char** res = (m_level == Top ? m_res_top : m_res_all);
 
         for (const char** s = res; s && *s; ++s)
-            result_attrs[std::string(*s)] = db.create_attribute(
+            m_result_attrs[std::string(*s)] = db.create_attribute(
                 std::string("topdown.") + (*s),
                 CALI_TYPE_DOUBLE,
                 CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS
             );
     }
 
-    std::vector<Entry> compute_toplevel(const std::vector<Entry>& rec)
+    const std::map<std::string, int>& get_counters_not_found() const { return m_counters_not_found; }
+
+    const char* get_counters() const
+    {
+        if (m_level == All) {
+            return m_all_counters;
+        } else {
+            return m_top_counters;
+        }
+    }
+
+    IntelTopdownLevel get_level() const { return m_level; }
+};
+
+class HaswellTopdown
+{
+public:
+
+    HaswellTopdown(IntelTopdownLevel level)
+        : TopdownCalculator(level),
+          m_top_counters(
+              "CPU_CLK_THREAD_UNHALTED:THREAD_P"
+              ",IDQ_UOPS_NOT_DELIVERED:CORE"
+              ",INT_MISC:RECOVERY_CYCLES"
+              ",UOPS_ISSUED:ANY"
+              ",UOPS_RETIRED:RETIRE_SLOTS"
+          ),
+          m_all_counters(
+              "BR_MISP_RETIRED:ALL_BRANCHES"
+              ",CPU_CLK_THREAD_UNHALTED:THREAD_P"
+              ",CYCLE_ACTIVITY:CYCLES_NO_EXECUTE"
+              ",CYCLE_ACTIVITY:STALLS_L1D_PENDING"
+              ",CYCLE_ACTIVITY:STALLS_L2_PENDING"
+              ",CYCLE_ACTIVITY:STALLS_LDM_PENDING"
+              ",IDQ_UOPS_NOT_DELIVERED:CORE"
+              ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
+              ",INT_MISC:RECOVERY_CYCLES"
+              ",MACHINE_CLEARS:COUNT"
+              ",MEM_LOAD_UOPS_RETIRED:L3_HIT"
+              ",MEM_LOAD_UOPS_RETIRED:L3_MISS"
+              ",UOPS_EXECUTED:CORE_CYCLES_GE_1"
+              ",UOPS_EXECUTED:CORE_CYCLES_GE_2"
+              ",UOPS_ISSUED:ANY"
+              ",UOPS_RETIRED:RETIRE_SLOTS"
+          ),
+          m_res_top({ "retiring", "backend_bound", "frontend_bound", "bad_speculation", nullptr }),
+          m_res_all({ "retiring",
+                      "backend_bound",
+                      "frontend_bound",
+                      "bad_speculation",
+                      "branch_mispredict",
+                      "machine_clears",
+                      "frontend_latency",
+                      "frontend_bandwidth",
+                      "memory_bound",
+                      "core_bound",
+                      "ext_mem_bound",
+                      "l1_bound",
+                      "l2_bound",
+                      "l3_bound",
+                      nullptr })
+    {}
+
+    virtual std::vector<Entry> compute_toplevel(const std::vector<Entry>& rec) override
     {
         std::vector<Entry> ret;
 
@@ -139,15 +215,21 @@ class IntelTopdown
         double backend_bound  = 1.0 - (retiring + bad_speculation + frontend_bound);
 
         ret.reserve(4);
-        ret.push_back(Entry(result_attrs["retiring"], Variant(std::max(retiring, 0.0))));
-        ret.push_back(Entry(result_attrs["backend_bound"], Variant(std::max(backend_bound, 0.0))));
-        ret.push_back(Entry(result_attrs["frontend_bound"], Variant(std::max(frontend_bound, 0.0))));
-        ret.push_back(Entry(result_attrs["bad_speculation"], Variant(std::max(bad_speculation, 0.0))));
+        ret.push_back(Entry(m_result_attrs["retiring"], Variant(std::max(retiring, 0.0))));
+        ret.push_back(Entry(m_result_attrs["backend_bound"], Variant(std::max(backend_bound, 0.0))));
+        ret.push_back(Entry(m_result_attrs["frontend_bound"], Variant(std::max(frontend_bound, 0.0))));
+        ret.push_back(Entry(m_result_attrs["bad_speculation"], Variant(std::max(bad_speculation, 0.0))));
 
         return ret;
     }
 
-    std::vector<Entry> compute_backend_bound(const std::vector<Entry>& rec)
+    virtual std::size_t get_num_expected_toplevel() const override { return 4; }
+
+    virtual std::vector<Entry> compute_retiring(const std::vector<Entry>& rec) override { return {}; }
+
+    virtual std::size_t get_num_expected_retiring() const override { return 0; }
+
+    virtual std::vector<Entry> compute_backend_bound(const std::vector<Entry>& rec) override
     {
         std::vector<Entry> ret;
 
@@ -203,7 +285,9 @@ class IntelTopdown
         return ret;
     }
 
-    std::vector<Entry> compute_frontend_bound(const std::vector<Entry>& rec)
+    virtual std::size_t get_num_expected_backend_bound() const override { return 6; }
+
+    virtual std::vector<Entry> compute_frontend_bound(const std::vector<Entry>& rec) override
     {
         std::vector<Entry> ret;
 
@@ -227,7 +311,9 @@ class IntelTopdown
         return ret;
     }
 
-    std::vector<Entry> compute_bad_speculation(const std::vector<Entry>& rec)
+    virtual std::size_t get_num_expected_frontend_bound() const override { return 2; }
+
+    virtual std::vector<Entry> compute_bad_speculation(const std::vector<Entry>& rec) override
     {
         std::vector<Entry> ret;
 
@@ -251,11 +337,285 @@ class IntelTopdown
         return ret;
     }
 
+    virtual std::size_t get_num_expected_bad_speculation() const override { return 2; }
+};
+
+class SapphireRapidsTopdown
+{
+public:
+
+    SapphireRapidsTopdown(IntelTopdownLevel level)
+        : TopdownCalculator(level),
+          m_top_counters(
+              "perf::slots"
+              ",perf::topdown-retiring"
+              ",perf::topdown-bad-spec"
+              ",perf::topdown-fe-bound"
+              ",perf::topdown-be-bound"
+              ",INT_MISC:UOP_DROPPING"
+          ),
+          m_all_counters(
+              "perf::slots"
+              ",perf::topdown-retiring"
+              ",perf::topdown-bad-spec"
+              ",perf::topdown-fe-bound"
+              ",perf::topdown-be-bound"
+              ",INT_MISC:UOP_DROPPING"
+              ",perf_raw::r8400" // topdown-heavy-ops
+              ",perf_raw::r8500" // topdown-br-mispredict
+              ",perf_raw::r8600" // topdown-fetch-lat
+              ",perf_raw::r8700"
+          ), // topdown-mem-bound
+          m_res_top({ "retiring", "backend_bound", "frontend_bound", "bad_speculation", nullptr }),
+          m_res_all({ "retiring",
+                      "backend_bound",
+                      "frontend_bound",
+                      "bad_speculation",
+                      "branch_mispredict",
+                      "machine_clears",
+                      "frontend_latency",
+                      "frontend_bandwidth",
+                      "memory_bound",
+                      "core_bound",
+                      "light_ops",
+                      "heavy_ops",
+                      nullptr })
+    {}
+
+    virtual std::vector<Entry> compute_toplevel(const std::vector<Entry>& rec) override
+    {
+        std::vector<Entry> ret;
+
+        // Get PAPI metrics for toplevel calculations
+        Variant v_retiring                   = get_val_from_rec(rec, "perf::topdown-retiring");
+        Variant v_bad_spec                   = get_val_from_rec(rec, "perf::topdown-bad-spec");
+        Variant v_fe_bound                   = get_val_from_rec(rec, "perf::topdown-fe-bound");
+        Variant v_be_bound                   = get_val_from_rec(rec, "perf::topdown-be-bound");
+        Variant v_int_misc_uop_dropping      = get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
+        Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+
+        // Check if any Variant is empty (use .empty())
+        bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() || v_retiring.empty()
+                             || v_int_misc_uop_dropping.empty() || v_slots_or_info_thread_slots.empty();
+        // Check if all Variants are greater than 0 when casted to doubles (use
+        // .to_double())
+        bool is_nonzero = v_fe_bound.to_double() > 0.0 && v_be_bound.to_double() > 0.0 && v_bad_spec.to_double() > 0.0
+                          && v_retiring.to_double() > 0.0 && v_int_misc_uop_dropping.to_double() > 0.0
+                          && v_slots_or_info_thread_slots.to_double() > 0.0;
+
+        // Check if bad values were obtained
+        if (is_incomplete || !is_nonzero)
+            return ret;
+
+        // Perform toplevel calcs
+        double toplevel_sum =
+            (v_retiring.to_double() + v_bad_spec.to_double() + v_fe_bound.to_double() + v_be_bound.to_double());
+
+        double retiring = (v_retiring.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double frontend_bound =
+            (v_fe_bound.to_double() / toplevel_sum) - (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+        double backend_bound   = (v_be_bound.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double bad_speculation = std::max(1.0 - (frontend_bound + backend_bound + retiring), 0.0);
+
+        // Add toplevel metrics to vector of Entry
+        ret.reserve(4);
+        ret.push_back(Entry(m_result_attrs["retiring"], Variant(std::max(retiring, 0.0))));
+        ret.push_back(Entry(m_result_attrs["backend_bound"], Variant(std::max(backend_bound, 0.0))));
+        ret.push_back(Entry(m_result_attrs["frontend_bound"], Variant(std::max(frontend_bound, 0.0))));
+        ret.push_back(Entry(m_result_attrs["bad_speculation"], Variant(std::max(bad_speculation, 0.0))));
+
+        return ret;
+    }
+
+    virtual std::size_t get_num_expected_toplevel() const override { return 4; }
+
+    virtual std::vector<Entry> compute_retiring(const std::vector<Entry>& rec) override
+    {
+        std::vector<Entry> ret;
+
+        // Get PAPI metrics for toplevel calculations
+        Variant v_retiring                   = get_val_from_rec(rec, "perf::topdown-retiring");
+        Variant v_bad_spec                   = get_val_from_rec(rec, "perf::topdown-bad-spec");
+        Variant v_fe_bound                   = get_val_from_rec(rec, "perf::topdown-fe-bound");
+        Variant v_be_bound                   = get_val_from_rec(rec, "perf::topdown-be-bound");
+        Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        Variant v_heavy_ops                  = get_val_from_rec(rec, "perf_raw::r8400");
+
+        // Check if any Variant is empty (use .empty())
+        bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() || v_retiring.empty()
+                             || v_slots_or_info_thread_slots.empty() || v_heavy_ops.empty();
+
+        // Check if bad values were obtained
+        if (is_incomplete)
+            return ret;
+
+        double toplevel_sum =
+            (v_retiring.to_double() + v_bad_spec.to_double() + v_fe_bound.to_double() + v_be_bound.to_double());
+        // Copied from compute_toplevel
+        double retiring = (v_retiring.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+
+        double heavy_ops = (v_heavy_ops.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double light_ops = std::max(0.0, retiring - heavy_ops);
+
+        // Add toplevel metrics to vector of Entry
+        ret.reserve(2);
+        ret.push_back(Entry(m_result_attrs["heavy_ops"], Variant(std::max(heavy_ops, 0.0))));
+        ret.push_back(Entry(m_result_attrs["light_ops"], Variant(std::max(light_ops, 0.0))));
+
+        return ret;
+    }
+
+    virtual std::size_t get_num_expected_retiring() const override { return 2; }
+
+    virtual std::vector<Entry> compute_backend_bound(const std::vector<Entry>& rec) override
+    {
+        std::vector<Entry> ret;
+
+        // Get PAPI metrics for toplevel calculations
+        Variant v_retiring                   = get_val_from_rec(rec, "perf::topdown-retiring");
+        Variant v_bad_spec                   = get_val_from_rec(rec, "perf::topdown-bad-spec");
+        Variant v_fe_bound                   = get_val_from_rec(rec, "perf::topdown-fe-bound");
+        Variant v_be_bound                   = get_val_from_rec(rec, "perf::topdown-be-bound");
+        Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        Variant v_memory_bound               = get_val_from_rec(rec, "perf_raw::r8700");
+
+        // Check if any Variant is empty (use .empty())
+        bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() || v_retiring.empty()
+                             || v_slots_or_info_thread_slots.empty() || v_memory_bound.empty();
+
+        // Check if bad values were obtained
+        if (is_incomplete)
+            return ret;
+
+        double toplevel_sum =
+            (v_retiring.to_double() + v_bad_spec.to_double() + v_fe_bound.to_double() + v_be_bound.to_double());
+        // Copied from compute_toplevel
+        double backend_bound = (v_be_bound.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+
+        double memory_bound = (v_memory_bound.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double core_bound   = std::max(0.0, backend_bound - memory_bound);
+
+        // Add toplevel metrics to vector of Entry
+        ret.reserve(2);
+        ret.push_back(Entry(m_result_attrs["backend_bound"], Variant(std::max(backend_bound, 0.0))));
+        ret.push_back(Entry(m_result_attrs["memory_bound"], Variant(std::max(memory_bound, 0.0))));
+
+        return ret;
+    }
+
+    virtual std::size_t get_num_expected_backend_bound() const override { return 2; }
+
+    virtual std::vector<Entry> compute_frontend_bound(const std::vector<Entry>& rec) override
+    {
+        std::vector<Entry> ret;
+
+        // Get PAPI metrics for toplevel calculations
+        Variant v_retiring                   = get_val_from_rec(rec, "perf::topdown-retiring");
+        Variant v_bad_spec                   = get_val_from_rec(rec, "perf::topdown-bad-spec");
+        Variant v_fe_bound                   = get_val_from_rec(rec, "perf::topdown-fe-bound");
+        Variant v_be_bound                   = get_val_from_rec(rec, "perf::topdown-be-bound");
+        Variant v_int_misc_uop_dropping      = get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
+        Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        Variant v_fetch_latency              = get_val_from_rec(rec, "perf_raw::r8600");
+
+        // Check if any Variant is empty (use .empty())
+        bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() || v_retiring.empty()
+                             || v_int_misc_uop_dropping.empty() || v_slots_or_info_thread_slots.empty()
+                             || v_memory_bound.empty();
+
+        // Check if bad values were obtained
+        if (is_incomplete)
+            return ret;
+
+        double toplevel_sum =
+            (v_retiring.to_double() + v_bad_spec.to_double() + v_fe_bound.to_double() + v_be_bound.to_double());
+        // Copied from compute_toplevel
+        double frontend_bound =
+            (v_fe_bound.to_double() / toplevel_sum) - (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+
+        double fetch_latency =
+            (v_fetch_latency.to_double() / toplevel_sum) - (v_int_misc_uop_dropping * v_slots_or_info_thread_slots);
+        double fetch_bandwidth = std::max(0.0, frontend_bound - fetch_latency);
+
+        // Add toplevel metrics to vector of Entry
+        ret.reserve(2);
+        ret.push_back(Entry(m_result_attrs["frontend_latency"], Variant(std::max(fetch_latency, 0.0))));
+        ret.push_back(Entry(m_result_attrs["frontend_bandwidth"], Variant(std::max(fetch_bandwidth, 0.0))));
+
+        return ret;
+    }
+
+    virtual std::size_t get_num_expected_frontend_bound() const override { return 2; }
+
+    virtual std::vector<Entry> compute_bad_speculation(const std::vector<Entry>& rec) override
+    {
+        std::vector<Entry> ret;
+
+        // Get PAPI metrics for toplevel calculations
+        Variant v_retiring                   = get_val_from_rec(rec, "perf::topdown-retiring");
+        Variant v_bad_spec                   = get_val_from_rec(rec, "perf::topdown-bad-spec");
+        Variant v_fe_bound                   = get_val_from_rec(rec, "perf::topdown-fe-bound");
+        Variant v_be_bound                   = get_val_from_rec(rec, "perf::topdown-be-bound");
+        Variant v_int_misc_uop_dropping      = get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
+        Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        Variant v_branch_mispredict          = get_val_from_rec(rec, "perf_raw::r8500");
+
+        // Check if any Variant is empty (use .empty())
+        bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() || v_retiring.empty()
+                             || v_int_misc_uop_dropping.empty() || v_slots_or_info_thread_slots.empty()
+                             || v_branch_mispredict.empty();
+
+        // Check if bad values were obtained
+        if (is_incomplete)
+            return ret;
+
+        // Perform toplevel calcs
+        double toplevel_sum =
+            (v_retiring.to_double() + v_bad_spec.to_double() + v_fe_bound.to_double() + v_be_bound.to_double());
+
+        double retiring = (v_retiring.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double frontend_bound =
+            (v_fe_bound.to_double() / toplevel_sum) - (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+        double backend_bound   = (v_be_bound.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double bad_speculation = std::max(1.0 - (frontend_bound + backend_bound + retiring), 0.0);
+
+        double branch_mispredict =
+            (v_branch_mispredict.to_double() / toplevel_sum) + (0 * v_slots_or_info_thread_slots);
+        double machine_clears = std::max(0.0, bad_speculation - branch_mispredict);
+
+        // Add toplevel metrics to vector of Entry
+        ret.reserve(2);
+        ret.push_back(Entry(m_result_attrs["branch_mispredict"], Variant(std::max(branch_mispredict, 0.0))));
+        ret.push_back(Entry(m_result_attrs["machine_clears"], Variant(std::max(machine_clears, 0.0))));
+
+        return ret;
+    }
+
+    virtual std::size_t get_num_expected_bad_speculation() const override { return 2; }
+};
+
+class IntelTopdown
+{
+    unsigned num_top_computed;
+    unsigned num_top_skipped;
+    unsigned num_be_computed;
+    unsigned num_be_skipped;
+    unsigned num_fe_computed;
+    unsigned num_fe_skipped;
+    unsigned num_bsp_computed;
+    unsigned num_bsp_skipped;
+    unsigned num_ret_computed;
+    unsigned num_ret_skipped;
+
+    IntelTopdownLevel level;
+
+    TopdownCalculator* m_calculator;
+
     void postprocess_snapshot_cb(std::vector<Entry>& rec)
     {
-        std::vector<Entry> result = compute_toplevel(rec);
+        std::vector<Entry> result = m_calculator->compute_toplevel(rec);
 
-        if (result.empty())
+        if (result.size() != m_calculator->get_num_expected_toplevel())
             ++num_top_skipped;
         else {
             rec.insert(rec.end(), result.begin(), result.end());
@@ -263,144 +623,141 @@ class IntelTopdown
         }
 
         if (level == All) {
-            result = compute_backend_bound(rec);
+            result = m_calculator->compute_backend_bound(rec);
 
-            if (result.empty())
+            if (result.size() != m_calculator->get_num_expected_backend_bound())
                 ++num_be_skipped;
             else {
                 rec.insert(rec.end(), result.begin(), result.end());
                 ++num_be_computed;
             }
 
-            result = compute_frontend_bound(rec);
+            result = m_calculator->compute_frontend_bound(rec);
 
-            if (result.empty())
+            if (result.size() != m_calculator->get_num_expected_frontend_bound())
                 ++num_fe_skipped;
             else {
                 rec.insert(rec.end(), result.begin(), result.end());
                 ++num_fe_computed;
             }
 
-            result = compute_bad_speculation(rec);
+            result = m_calculator->compute_bad_speculation(rec);
 
-            if (result.empty())
+            if (result.size() != m_calculator->get_num_expected_bad_speculation())
                 ++num_bsp_skipped;
             else {
                 rec.insert(rec.end(), result.begin(), result.end());
                 ++num_bsp_computed;
             }
-        }
-    }
 
-    void finish_cb(Caliper* c, Channel* channel)
-    {
-        Log(1).stream() << channel->name() << ": topdown: Computed topdown metrics for " << num_top_computed
-                        << " records, skipped " << num_top_skipped << std::endl;
+            result = m_calculator->compute_retiring(rec);
 
-        if (Log::verbosity() >= 2) {
-            Log(2).stream() << channel->name() << ": topdown: Records processed per topdown level: "
-                            << "\n  top:      " << num_top_computed << " computed, " << num_top_skipped << " skipped,"
-                            << "\n  bad spec: " << num_bsp_computed << " computed, " << num_bsp_skipped << " skipped,"
-                            << "\n  frontend: " << num_bsp_computed << " computed, " << num_bsp_skipped << " skipped,"
-                            << "\n  backend:  " << num_bsp_computed << " computed, " << num_bsp_skipped << " skipped."
-                            << std::endl;
-
-            if (!counters_not_found.empty()) {
-                std::ostringstream os;
-                for (auto& p : counters_not_found)
-                    os << "\n  " << p.first << ": " << p.second;
-                Log(2).stream() << channel->name() << ": topdown: Counters not found:" << os.str() << std::endl;
+            if (result.size() != m_calculator->get_num_expected_retiring())
+                ++num_ret_skipped;
+            else {
+                rec.insert(rec.end(), result.begin(), result.end());
+                ++num_ret_computed;
             }
         }
-    }
 
-    explicit IntelTopdown(Level lvl)
-        : num_top_computed(0),
-          num_top_skipped(0),
-          num_be_computed(0),
-          num_be_skipped(0),
-          num_fe_computed(0),
-          num_fe_skipped(0),
-          num_bsp_computed(0),
-          num_bsp_skipped(0),
-          level(lvl)
-    {}
+        void finish_cb(Caliper * c, Channel * channel)
+        {
+            Log(1).stream() << channel->name() << ": topdown: Computed topdown metrics for " << num_top_computed
+                            << " records, skipped " << num_top_skipped << std::endl;
 
-public:
+            if (Log::verbosity() >= 2) {
+                Log(2).stream() << channel->name() << ": topdown: Records processed per topdown level: "
+                                << "\n  top:      " << num_top_computed << " computed, " << num_top_skipped
+                                << " skipped,"
+                                << "\n  bad spec: " << num_bsp_computed << " computed, " << num_bsp_skipped
+                                << " skipped,"
+                                << "\n  frontend: " << num_bsp_computed << " computed, " << num_bsp_skipped
+                                << " skipped,"
+                                << "\n  backend:  " << num_bsp_computed << " computed, " << num_bsp_skipped
+                                << " skipped." << std::endl;
 
-    static const char* s_spec;
+                const std::map<std::string, int>& counters_not_found = m_calculator->get_counters_not_found();
 
-    static void intel_topdown_register(Caliper* c, Channel* channel)
-    {
-        Level       level    = Top;
-        const char* counters = s_top_counters;
-
-        auto        config = services::init_config_from_spec(channel->config(), s_spec);
-        std::string lvlcfg = config.get("level").to_string();
-
-        if (lvlcfg == "all") {
-            level    = All;
-            counters = s_all_counters;
-        } else if (lvlcfg != "top") {
-            Log(0).stream() << channel->name() << ": topdown: Unknown level \"" << lvlcfg << "\", skipping topdown"
-                            << std::endl;
-            return;
+                if (!counters_not_found.empty()) {
+                    std::ostringstream os;
+                    for (auto& p : counters_not_found)
+                        os << "\n  " << p.first << ": " << p.second;
+                    Log(2).stream() << channel->name() << ": topdown: Counters not found:" << os.str() << std::endl;
+                }
+            }
         }
 
-        channel->config().set("CALI_PAPI_COUNTERS", counters);
+        explicit IntelTopdown(TopdownCalculator * calculator)
+            : num_top_computed(0),
+              num_top_skipped(0),
+              num_be_computed(0),
+              num_be_skipped(0),
+              num_fe_computed(0),
+              num_fe_skipped(0),
+              num_bsp_computed(0),
+              num_bsp_skipped(0),
+              level(calculator->get_level()),
+              m_calculator(calculator)
+        {}
 
-        if (!cali::services::register_service(c, channel, "papi")) {
-            Log(0).stream() << channel->name() << ": topdown: Unable to register papi service, skipping topdown"
-                            << std::endl;
-            return;
+        ~IntelTopdown()
+        {
+            if (m_calculator != nullptr) {
+                delete m_calculator;
+            }
         }
 
-        IntelTopdown* instance = new IntelTopdown(level);
+    public:
 
-        channel->events().pre_flush_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView) {
-            if (instance->find_counter_attrs(*c))
-                instance->make_result_attrs(*c);
-            else
-                Log(0).stream() << channel->name() << ": topdown: Could not find counter attributes!" << std::endl;
-        });
-        channel->events().postprocess_snapshot.connect([instance](Caliper*, Channel*, std::vector<Entry>& rec) {
-            instance->postprocess_snapshot_cb(rec);
-        });
-        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
-            instance->finish_cb(c, channel);
-            delete instance;
-        });
+        static const char* s_spec;
 
-        Log(1).stream() << channel->name() << ": Registered topdown service. Level: " << lvlcfg << "." << std::endl;
-    }
-};
+        static void intel_topdown_register(Caliper * c, Channel * channel)
+        {
+            Level level = Top;
 
-const char* IntelTopdown::s_top_counters =
-    "CPU_CLK_THREAD_UNHALTED:THREAD_P"
-    ",IDQ_UOPS_NOT_DELIVERED:CORE"
-    ",INT_MISC:RECOVERY_CYCLES"
-    ",UOPS_ISSUED:ANY"
-    ",UOPS_RETIRED:RETIRE_SLOTS";
+            auto        config = services::init_config_from_spec(channel->config(), s_spec);
+            std::string lvlcfg = config.get("level").to_string();
 
-const char* IntelTopdown::s_all_counters =
-    "BR_MISP_RETIRED:ALL_BRANCHES"
-    ",CPU_CLK_THREAD_UNHALTED:THREAD_P"
-    ",CYCLE_ACTIVITY:CYCLES_NO_EXECUTE"
-    ",CYCLE_ACTIVITY:STALLS_L1D_PENDING"
-    ",CYCLE_ACTIVITY:STALLS_L2_PENDING"
-    ",CYCLE_ACTIVITY:STALLS_LDM_PENDING"
-    ",IDQ_UOPS_NOT_DELIVERED:CORE"
-    ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
-    ",INT_MISC:RECOVERY_CYCLES"
-    ",MACHINE_CLEARS:COUNT"
-    ",MEM_LOAD_UOPS_RETIRED:L3_HIT"
-    ",MEM_LOAD_UOPS_RETIRED:L3_MISS"
-    ",UOPS_EXECUTED:CORE_CYCLES_GE_1"
-    ",UOPS_EXECUTED:CORE_CYCLES_GE_2"
-    ",UOPS_ISSUED:ANY"
-    ",UOPS_RETIRED:RETIRE_SLOTS";
+            if (lvlcfg == "all") {
+                level = All;
+            } else if (lvlcfg != "top") {
+                Log(0).stream() << channel->name() << ": topdown: Unknown level \"" << lvlcfg << "\", skipping topdown"
+                                << std::endl;
+                return;
+            }
 
-const char* IntelTopdown::s_spec = R"json(
+            // TODO Add logic to select correct TopdownCalculator
+            TopdownCalculator* calculator = new HaswellTopdown(level);
+
+            channel->config().set("CALI_PAPI_COUNTERS", calculator->get_counters());
+
+            if (!cali::services::register_service(c, channel, "papi")) {
+                Log(0).stream() << channel->name() << ": topdown: Unable to register papi service, skipping topdown"
+                                << std::endl;
+                return;
+            }
+
+            IntelTopdown* instance = new IntelTopdown(calculator);
+
+            channel->events().pre_flush_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView) {
+                if (instance->find_counter_attrs(*c))
+                    instance->make_result_attrs(*c);
+                else
+                    Log(0).stream() << channel->name() << ": topdown: Could not find counter attributes!" << std::endl;
+            });
+            channel->events().postprocess_snapshot.connect([instance](Caliper*, Channel*, std::vector<Entry>& rec) {
+                instance->postprocess_snapshot_cb(rec);
+            });
+            channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+                instance->finish_cb(c, channel);
+                delete instance;
+            });
+
+            Log(1).stream() << channel->name() << ": Registered topdown service. Level: " << lvlcfg << "." << std::endl;
+        }
+    };
+
+    const char* IntelTopdown::s_spec = R"json(
 {   "name": "topdown",
     "description": "Record PAPI counters and compute top-down analysis for Intel CPUs",
     "config": [
@@ -416,8 +773,8 @@ const char* IntelTopdown::s_spec = R"json(
 } // namespace
 
 namespace cali
+
 {
 
-CaliperService topdown_service { ::IntelTopdown::s_spec, ::IntelTopdown::intel_topdown_register };
-
+    CaliperService topdown_service { ::IntelTopdown::s_spec, ::IntelTopdown::intel_topdown_register };
 }
