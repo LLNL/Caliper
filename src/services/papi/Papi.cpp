@@ -11,8 +11,8 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/spinlock.hpp"
 
@@ -73,7 +73,8 @@ class PapiService
     unsigned m_num_failed_start;
     unsigned m_num_threads;
 
-    // PAPI component id -> event group info map for constructing the per-thread PAPI EventSets
+    // PAPI component id -> event group info map for constructing the per-thread
+    // PAPI EventSets
     eventset_map_t m_event_groups;
 
     ThreadInfo*    m_thread_list;
@@ -168,18 +169,21 @@ class PapiService
 
             int num = static_cast<int>(p.second->codes.size());
 
-            if (cpi && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
-                if (Log::verbosity() >= 2)
-                    Log(2).stream() << "papi: Initializing multiplex support for component " << p.first << " ("
-                                    << cpi->name << ")" << std::endl;
+            // if (cpi && (num > 4 /* magic number for Intel counter support :-( */ ||
+            // m_enable_multiplex)) {
+            //     if (Log::verbosity() >= 2)
+            //         Log(2).stream() << "papi: Initializing multiplex support for
+            //         component "
+            //                         << p.first << " (" << cpi->name << ")"
+            //                         << std::endl;
 
-                ret = PAPI_assign_eventset_component(eventset, p.first);
-                if (ret != PAPI_OK)
-                    print_papi_error("PAPI_assign_eventset_component", ret);
-                ret = PAPI_set_multiplex(eventset);
-                if (ret != PAPI_OK)
-                    print_papi_error("PAPI_set_multiplex", ret);
-            }
+            //     ret = PAPI_assign_eventset_component(eventset, p.first);
+            //     if (ret != PAPI_OK)
+            //         print_papi_error("PAPI_assign_eventset_component", ret);
+            //     ret = PAPI_set_multiplex(eventset);
+            //     if (ret != PAPI_OK)
+            //         print_papi_error("PAPI_set_multiplex", ret);
+            // }
 
             ret = PAPI_add_events(eventset, p.second->codes.data(), num);
             if (ret < 0) {
