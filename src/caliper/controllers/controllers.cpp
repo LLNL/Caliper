@@ -987,19 +987,19 @@ const char *base_builtin_option_specs = R"json(
         "aggregate": [ "min(min#o_a_v.slot)" ],
         "order by":  [ "min#min#o_a_v.slot"  ]
       }
+     ]
+    },
 )json";
 
 const char *get_builtin_option_specs() {
   const char *terminal = R"json(
-     ]
-    }
     ]
   )json";
   const char *topdown_opts = "";
 #if defined(CALIPER_HAVE_ARCH)
   if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
     topdown_opts = R"json(
-    ,{
+    {
      "name"        : "topdown.toplevel",
      "description" : "Top-down analysis for Intel CPUs (top level)",
      "type"        : "bool",
@@ -1151,7 +1151,7 @@ const char *get_builtin_option_specs() {
   } else {
 #endif
     topdown_opts = R"json(
-    ,{
+    {
      "name"        : "topdown.toplevel",
      "description" : "Top-down analysis for Intel CPUs (top level)",
      "type"        : "bool",

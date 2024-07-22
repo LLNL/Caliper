@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
+#include <vector>
 
 using namespace cali;
 
@@ -34,8 +35,8 @@ protected:
   const char *m_top_counters;
   const char *m_all_counters;
 
-  const char *s_res_top[];
-  const char *s_res_all[];
+  std::vector<const char *> m_res_top;
+  std::vector<const char *> m_res_all;
 
   std::map<std::string, Attribute> m_counter_attrs;
   std::map<std::string, Attribute> m_result_attrs;
@@ -45,8 +46,8 @@ protected:
   Variant get_val_from_rec(const std::vector<Entry> &rec, const char *name) {
     Variant ret;
 
-    auto c_it = counter_attrs.find(name);
-    if (c_it == counter_attrs.end())
+    auto c_it = m_counter_attrs.find(name);
+    if (c_it == m_counter_attrs.end())
       return ret;
 
     cali_id_t attr_id = c_it->second.id();
@@ -63,8 +64,17 @@ protected:
     return ret;
   }
 
+  TopdownCalculator(IntelTopdownLevel level, const char *top_counters,
+                    const char *all_counters,
+                    std::vector<const char *> &&res_top,
+                    std::vector<const char *> &&res_all)
+      : m_level(level), m_top_counters(top_counters),
+        m_all_counters(all_counters), m_res_top(res_top), m_res_all(res_all) {}
+
 public:
   TopdownCalculator(IntelTopdownLevel level) : m_level(level) {}
+
+  virtual ~TopdownCalculator() = default;
 
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) = 0;
@@ -113,12 +123,13 @@ public:
   }
 
   void make_result_attrs(CaliperMetadataAccessInterface &db) {
-    const char **res = (m_level == Top ? m_res_top : m_res_all);
+    std::vector<const char *> &res = (m_level == Top ? m_res_top : m_res_all);
 
-    for (const char **s = res; s && *s; ++s)
-      m_result_attrs[std::string(*s)] =
-          db.create_attribute(std::string("topdown.") + (*s), CALI_TYPE_DOUBLE,
+    for (const char *s : res) {
+      m_result_attrs[std::string(s)] =
+          db.create_attribute(std::string("topdown.") + s, CALI_TYPE_DOUBLE,
                               CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+    }
   }
 
   const std::map<std::string, int> &get_counters_not_found() const {
@@ -136,38 +147,43 @@ public:
   IntelTopdownLevel get_level() const { return m_level; }
 };
 
-class HaswellTopdown {
+class HaswellTopdown : public TopdownCalculator {
 public:
   HaswellTopdown(IntelTopdownLevel level)
-      : TopdownCalculator(level),
-        m_top_counters("CPU_CLK_THREAD_UNHALTED:THREAD_P"
-                       ",IDQ_UOPS_NOT_DELIVERED:CORE"
-                       ",INT_MISC:RECOVERY_CYCLES"
-                       ",UOPS_ISSUED:ANY"
-                       ",UOPS_RETIRED:RETIRE_SLOTS"),
-        m_all_counters("BR_MISP_RETIRED:ALL_BRANCHES"
-                       ",CPU_CLK_THREAD_UNHALTED:THREAD_P"
-                       ",CYCLE_ACTIVITY:CYCLES_NO_EXECUTE"
-                       ",CYCLE_ACTIVITY:STALLS_L1D_PENDING"
-                       ",CYCLE_ACTIVITY:STALLS_L2_PENDING"
-                       ",CYCLE_ACTIVITY:STALLS_LDM_PENDING"
-                       ",IDQ_UOPS_NOT_DELIVERED:CORE"
-                       ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
-                       ",INT_MISC:RECOVERY_CYCLES"
-                       ",MACHINE_CLEARS:COUNT"
-                       ",MEM_LOAD_UOPS_RETIRED:L3_HIT"
-                       ",MEM_LOAD_UOPS_RETIRED:L3_MISS"
-                       ",UOPS_EXECUTED:CORE_CYCLES_GE_1"
-                       ",UOPS_EXECUTED:CORE_CYCLES_GE_2"
-                       ",UOPS_ISSUED:ANY"
-                       ",UOPS_RETIRED:RETIRE_SLOTS"),
-        m_res_top({"retiring", "backend_bound", "frontend_bound",
-                   "bad_speculation", nullptr}),
-        m_res_all({"retiring", "backend_bound", "frontend_bound",
-                   "bad_speculation", "branch_mispredict", "machine_clears",
-                   "frontend_latency", "frontend_bandwidth", "memory_bound",
-                   "core_bound", "ext_mem_bound", "l1_bound", "l2_bound",
-                   "l3_bound", nullptr}) {}
+      : TopdownCalculator(
+            level,
+            // top_counters
+            "CPU_CLK_THREAD_UNHALTED:THREAD_P"
+            ",IDQ_UOPS_NOT_DELIVERED:CORE"
+            ",INT_MISC:RECOVERY_CYCLES"
+            ",UOPS_ISSUED:ANY"
+            ",UOPS_RETIRED:RETIRE_SLOTS",
+            // all_counters
+            "BR_MISP_RETIRED:ALL_BRANCHES"
+            ",CPU_CLK_THREAD_UNHALTED:THREAD_P"
+            ",CYCLE_ACTIVITY:CYCLES_NO_EXECUTE"
+            ",CYCLE_ACTIVITY:STALLS_L1D_PENDING"
+            ",CYCLE_ACTIVITY:STALLS_L2_PENDING"
+            ",CYCLE_ACTIVITY:STALLS_LDM_PENDING"
+            ",IDQ_UOPS_NOT_DELIVERED:CORE"
+            ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
+            ",INT_MISC:RECOVERY_CYCLES"
+            ",MACHINE_CLEARS:COUNT"
+            ",MEM_LOAD_UOPS_RETIRED:L3_HIT"
+            ",MEM_LOAD_UOPS_RETIRED:L3_MISS"
+            ",UOPS_EXECUTED:CORE_CYCLES_GE_1"
+            ",UOPS_EXECUTED:CORE_CYCLES_GE_2"
+            ",UOPS_ISSUED:ANY"
+            ",UOPS_RETIRED:RETIRE_SLOTS",
+            // res_top
+            {"retiring", "backend_bound", "frontend_bound", "bad_speculation"},
+            // res_all
+            {"retiring", "backend_bound", "frontend_bound", "bad_speculation",
+             "branch_mispredict", "machine_clears", "frontend_latency",
+             "frontend_bandwidth", "memory_bound", "core_bound",
+             "ext_mem_bound", "l1_bound", "l2_bound", "l3_bound"}) {}
+
+  virtual ~HaswellTopdown() = default;
 
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) override {
@@ -293,13 +309,14 @@ public:
                       l3_hit_fraction / clocks;
 
     ret.reserve(6);
-    ret.push_back(Entry(result_attrs["memory_bound"], Variant(memory_bound)));
-    ret.push_back(Entry(result_attrs["core_bound"],
+    ret.push_back(Entry(m_result_attrs["memory_bound"], Variant(memory_bound)));
+    ret.push_back(Entry(m_result_attrs["core_bound"],
                         Variant(be_bound_at_exe - memory_bound)));
-    ret.push_back(Entry(result_attrs["ext_mem_bound"], Variant(ext_mem_bound)));
-    ret.push_back(Entry(result_attrs["l1_bound"], Variant(l1_bound)));
-    ret.push_back(Entry(result_attrs["l2_bound"], Variant(l2_bound)));
-    ret.push_back(Entry(result_attrs["l3_bound"], Variant(l3_bound)));
+    ret.push_back(
+        Entry(m_result_attrs["ext_mem_bound"], Variant(ext_mem_bound)));
+    ret.push_back(Entry(m_result_attrs["l1_bound"], Variant(l1_bound)));
+    ret.push_back(Entry(m_result_attrs["l2_bound"], Variant(l2_bound)));
+    ret.push_back(Entry(m_result_attrs["l3_bound"], Variant(l3_bound)));
 
     return ret;
   }
@@ -329,9 +346,10 @@ public:
     double fe_latency = uops / clocks;
 
     ret.reserve(2);
-    ret.push_back(Entry(result_attrs["frontend_latency"], Variant(fe_latency)));
     ret.push_back(
-        Entry(result_attrs["frontend_bandwidth"], Variant(1.0 - fe_latency)));
+        Entry(m_result_attrs["frontend_latency"], Variant(fe_latency)));
+    ret.push_back(
+        Entry(m_result_attrs["frontend_bandwidth"], Variant(1.0 - fe_latency)));
 
     return ret;
   }
@@ -366,8 +384,8 @@ public:
 
     ret.reserve(2);
     ret.push_back(
-        Entry(result_attrs["branch_mispredict"], Variant(branch_mispredict)));
-    ret.push_back(Entry(result_attrs["machine_clears"],
+        Entry(m_result_attrs["branch_mispredict"], Variant(branch_mispredict)));
+    ret.push_back(Entry(m_result_attrs["machine_clears"],
                         Variant(1.0 - branch_mispredict)));
 
     return ret;
@@ -378,31 +396,38 @@ public:
   }
 };
 
-class SapphireRapidsTopdown {
+class SapphireRapidsTopdown : public TopdownCalculator {
 public:
   SapphireRapidsTopdown(IntelTopdownLevel level)
-      : TopdownCalculator(level), m_top_counters("perf::slots"
-                                                 ",perf::topdown-retiring"
-                                                 ",perf::topdown-bad-spec"
-                                                 ",perf::topdown-fe-bound"
-                                                 ",perf::topdown-be-bound"
-                                                 ",INT_MISC:UOP_DROPPING"),
-        m_all_counters("perf::slots"
-                       ",perf::topdown-retiring"
-                       ",perf::topdown-bad-spec"
-                       ",perf::topdown-fe-bound"
-                       ",perf::topdown-be-bound"
-                       ",INT_MISC:UOP_DROPPING"
-                       ",perf_raw::r8400"   // topdown-heavy-ops
-                       ",perf_raw::r8500"   // topdown-br-mispredict
-                       ",perf_raw::r8600"   // topdown-fetch-lat
-                       ",perf_raw::r8700"), // topdown-mem-bound
-        m_res_top({"retiring", "backend_bound", "frontend_bound",
-                   "bad_speculation", nullptr}),
-        m_res_all({"retiring", "backend_bound", "frontend_bound",
-                   "bad_speculation", "branch_mispredict", "machine_clears",
-                   "frontend_latency", "frontend_bandwidth", "memory_bound",
-                   "core_bound", "light_ops", "heavy_ops", nullptr}) {}
+      : TopdownCalculator(
+            level,
+            // top_counters
+            "perf::slots"
+            ",perf::topdown-retiring"
+            ",perf::topdown-bad-spec"
+            ",perf::topdown-fe-bound"
+            ",perf::topdown-be-bound"
+            ",INT_MISC:UOP_DROPPING",
+            // all_counters
+            "perf::slots"
+            ",perf::topdown-retiring"
+            ",perf::topdown-bad-spec"
+            ",perf::topdown-fe-bound"
+            ",perf::topdown-be-bound"
+            ",INT_MISC:UOP_DROPPING"
+            ",perf_raw::r8400"  // topdown-heavy-ops
+            ",perf_raw::r8500"  // topdown-br-mispredict
+            ",perf_raw::r8600"  // topdown-fetch-lat
+            ",perf_raw::r8700", // topdown-mem-bound
+            // res_top
+            {"retiring", "backend_bound", "frontend_bound", "bad_speculation"},
+            // res_all
+            {"retiring", "backend_bound", "frontend_bound", "bad_speculation",
+             "branch_mispredict", "machine_clears", "frontend_latency",
+             "frontend_bandwidth", "memory_bound", "core_bound", "light_ops",
+             "heavy_ops"}) {}
+
+  virtual ~SapphireRapidsTopdown() = default;
 
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) override {
@@ -418,7 +443,7 @@ public:
     Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
 
     // Check if any Variant is empty (use .empty())
-    bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() ||
+    bool is_incomplete = v_fe_bound.empty() || v_be_bound.empty() ||
                          v_bad_spec.empty() || v_retiring.empty() ||
                          v_int_misc_uop_dropping.empty() ||
                          v_slots_or_info_thread_slots.empty();
@@ -477,7 +502,7 @@ public:
     Variant v_heavy_ops = get_val_from_rec(rec, "perf_raw::r8400");
 
     // Check if any Variant is empty (use .empty())
-    bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() ||
+    bool is_incomplete = v_fe_bound.empty() || v_be_bound.empty() ||
                          v_bad_spec.empty() || v_retiring.empty() ||
                          v_slots_or_info_thread_slots.empty() ||
                          v_heavy_ops.empty();
@@ -521,7 +546,7 @@ public:
     Variant v_memory_bound = get_val_from_rec(rec, "perf_raw::r8700");
 
     // Check if any Variant is empty (use .empty())
-    bool is_incomplete = v_fe_bound.empty() || v_be_bound.emtpy() ||
+    bool is_incomplete = v_fe_bound.empty() || v_be_bound.empty() ||
                          v_bad_spec.empty() || v_retiring.empty() ||
                          v_slots_or_info_thread_slots.empty() ||
                          v_memory_bound.empty();
@@ -542,10 +567,10 @@ public:
 
     // Add toplevel metrics to vector of Entry
     ret.reserve(2);
-    ret.push_back(Entry(m_result_attrs["backend_bound"],
-                        Variant(std::max(backend_bound, 0.0))));
     ret.push_back(Entry(m_result_attrs["memory_bound"],
                         Variant(std::max(memory_bound, 0.0))));
+    ret.push_back(Entry(m_result_attrs["core_bound"],
+                        Variant(std::max(core_bound, 0.0))));
 
     return ret;
   }
@@ -570,9 +595,9 @@ public:
 
     // Check if any Variant is empty (use .empty())
     bool is_incomplete =
-        v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() ||
+        v_fe_bound.empty() || v_be_bound.empty() || v_bad_spec.empty() ||
         v_retiring.empty() || v_int_misc_uop_dropping.empty() ||
-        v_slots_or_info_thread_slots.empty() || v_memory_bound.empty();
+        v_slots_or_info_thread_slots.empty() || v_fetch_latency.empty();
 
     // Check if bad values were obtained
     if (is_incomplete)
@@ -620,7 +645,7 @@ public:
 
     // Check if any Variant is empty (use .empty())
     bool is_incomplete =
-        v_fe_bound.empty() || v_be_bound.emtpy() || v_bad_spec.empty() ||
+        v_fe_bound.empty() || v_be_bound.empty() || v_bad_spec.empty() ||
         v_retiring.empty() || v_int_misc_uop_dropping.empty() ||
         v_slots_or_info_thread_slots.empty() || v_branch_mispredict.empty();
 
@@ -674,13 +699,22 @@ class IntelTopdown {
   unsigned num_ret_computed;
   unsigned num_ret_skipped;
 
-  IntelTopdownLevel level;
+  IntelTopdownLevel m_level;
 
   TopdownCalculator *m_calculator;
+
+  bool find_counter_attrs(CaliperMetadataAccessInterface &db) {
+    return m_calculator->find_counter_attrs(db);
+  }
+
+  void make_result_attrs(CaliperMetadataAccessInterface &db) {
+    m_calculator->make_result_attrs(db);
+  }
 
   void postprocess_snapshot_cb(std::vector<Entry> &rec) {
     std::vector<Entry> result = m_calculator->compute_toplevel(rec);
 
+    Log(0).stream() << "Topdown: Toplevel obtained = " << result.size();
     if (result.size() != m_calculator->get_num_expected_toplevel())
       ++num_top_skipped;
     else {
@@ -688,8 +722,10 @@ class IntelTopdown {
       ++num_top_computed;
     }
 
-    if (level == All) {
+    if (m_level == All) {
       result = m_calculator->compute_backend_bound(rec);
+
+      Log(0).stream() << "Topdown: BE obtained = " << result.size();
 
       if (result.size() != m_calculator->get_num_expected_backend_bound())
         ++num_be_skipped;
@@ -700,6 +736,8 @@ class IntelTopdown {
 
       result = m_calculator->compute_frontend_bound(rec);
 
+      Log(0).stream() << "Topdown: FE obtained = " << result.size();
+
       if (result.size() != m_calculator->get_num_expected_frontend_bound())
         ++num_fe_skipped;
       else {
@@ -709,6 +747,8 @@ class IntelTopdown {
 
       result = m_calculator->compute_bad_speculation(rec);
 
+      Log(0).stream() << "Topdown: BS obtained = " << result.size();
+
       if (result.size() != m_calculator->get_num_expected_bad_speculation())
         ++num_bsp_skipped;
       else {
@@ -717,6 +757,8 @@ class IntelTopdown {
       }
 
       result = m_calculator->compute_retiring(rec);
+
+      Log(0).stream() << "Topdown: Retiring obtained = " << result.size();
 
       if (result.size() != m_calculator->get_num_expected_retiring())
         ++num_ret_skipped;
@@ -762,8 +804,8 @@ class IntelTopdown {
   explicit IntelTopdown(TopdownCalculator *calculator)
       : num_top_computed(0), num_top_skipped(0), num_be_computed(0),
         num_be_skipped(0), num_fe_computed(0), num_fe_skipped(0),
-        num_bsp_computed(0), num_bsp_skipped(0), level(calculator->get_level()),
-        m_calculator(calculator) {}
+        num_bsp_computed(0), num_bsp_skipped(0),
+        m_level(calculator->get_level()), m_calculator(calculator) {}
 
   ~IntelTopdown() {
     if (m_calculator != nullptr) {
@@ -775,7 +817,7 @@ public:
   static const char *s_spec;
 
   static void intel_topdown_register(Caliper *c, Channel *channel) {
-    Level level = Top;
+    IntelTopdownLevel level = Top;
 
     auto config = services::init_config_from_spec(channel->config(), s_spec);
     std::string lvlcfg = config.get("level").to_string();
