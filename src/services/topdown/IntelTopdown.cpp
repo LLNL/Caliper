@@ -434,13 +434,13 @@ public:
     std::vector<Entry> ret;
 
     // Get PAPI metrics for toplevel calculations
+    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_retiring = get_val_from_rec(rec, "perf::topdown-retiring");
     Variant v_bad_spec = get_val_from_rec(rec, "perf::topdown-bad-spec");
     Variant v_fe_bound = get_val_from_rec(rec, "perf::topdown-fe-bound");
     Variant v_be_bound = get_val_from_rec(rec, "perf::topdown-be-bound");
     Variant v_int_misc_uop_dropping =
-        get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
-    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        get_val_from_rec(rec, "INT_MISC:UOP_DROPPING");
 
     // Check if any Variant is empty (use .empty())
     bool is_incomplete = v_fe_bound.empty() || v_be_bound.empty() ||
@@ -464,12 +464,12 @@ public:
                            v_fe_bound.to_double() + v_be_bound.to_double());
 
     double retiring = (v_retiring.to_double() / toplevel_sum) +
-                      (0 * v_slots_or_info_thread_slots);
-    double frontend_bound =
-        (v_fe_bound.to_double() / toplevel_sum) -
-        (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+                      (0 * v_slots_or_info_thread_slots.to_double());
+    double frontend_bound = (v_fe_bound.to_double() / toplevel_sum) -
+                            (v_int_misc_uop_dropping.to_double() /
+                             v_slots_or_info_thread_slots.to_double());
     double backend_bound = (v_be_bound.to_double() / toplevel_sum) +
-                           (0 * v_slots_or_info_thread_slots);
+                           (0 * v_slots_or_info_thread_slots.to_double());
     double bad_speculation =
         std::max(1.0 - (frontend_bound + backend_bound + retiring), 0.0);
 
@@ -494,11 +494,11 @@ public:
     std::vector<Entry> ret;
 
     // Get PAPI metrics for toplevel calculations
+    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_retiring = get_val_from_rec(rec, "perf::topdown-retiring");
     Variant v_bad_spec = get_val_from_rec(rec, "perf::topdown-bad-spec");
     Variant v_fe_bound = get_val_from_rec(rec, "perf::topdown-fe-bound");
     Variant v_be_bound = get_val_from_rec(rec, "perf::topdown-be-bound");
-    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_heavy_ops = get_val_from_rec(rec, "perf_raw::r8400");
 
     // Check if any Variant is empty (use .empty())
@@ -515,10 +515,10 @@ public:
                            v_fe_bound.to_double() + v_be_bound.to_double());
     // Copied from compute_toplevel
     double retiring = (v_retiring.to_double() / toplevel_sum) +
-                      (0 * v_slots_or_info_thread_slots);
+                      (0 * v_slots_or_info_thread_slots.to_double());
 
     double heavy_ops = (v_heavy_ops.to_double() / toplevel_sum) +
-                       (0 * v_slots_or_info_thread_slots);
+                       (0 * v_slots_or_info_thread_slots.to_double());
     double light_ops = std::max(0.0, retiring - heavy_ops);
 
     // Add toplevel metrics to vector of Entry
@@ -538,11 +538,11 @@ public:
     std::vector<Entry> ret;
 
     // Get PAPI metrics for toplevel calculations
+    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_retiring = get_val_from_rec(rec, "perf::topdown-retiring");
     Variant v_bad_spec = get_val_from_rec(rec, "perf::topdown-bad-spec");
     Variant v_fe_bound = get_val_from_rec(rec, "perf::topdown-fe-bound");
     Variant v_be_bound = get_val_from_rec(rec, "perf::topdown-be-bound");
-    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_memory_bound = get_val_from_rec(rec, "perf_raw::r8700");
 
     // Check if any Variant is empty (use .empty())
@@ -559,10 +559,10 @@ public:
                            v_fe_bound.to_double() + v_be_bound.to_double());
     // Copied from compute_toplevel
     double backend_bound = (v_be_bound.to_double() / toplevel_sum) +
-                           (0 * v_slots_or_info_thread_slots);
+                           (0 * v_slots_or_info_thread_slots.to_double());
 
     double memory_bound = (v_memory_bound.to_double() / toplevel_sum) +
-                          (0 * v_slots_or_info_thread_slots);
+                          (0 * v_slots_or_info_thread_slots.to_double());
     double core_bound = std::max(0.0, backend_bound - memory_bound);
 
     // Add toplevel metrics to vector of Entry
@@ -584,13 +584,13 @@ public:
     std::vector<Entry> ret;
 
     // Get PAPI metrics for toplevel calculations
+    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_retiring = get_val_from_rec(rec, "perf::topdown-retiring");
     Variant v_bad_spec = get_val_from_rec(rec, "perf::topdown-bad-spec");
     Variant v_fe_bound = get_val_from_rec(rec, "perf::topdown-fe-bound");
     Variant v_be_bound = get_val_from_rec(rec, "perf::topdown-be-bound");
     Variant v_int_misc_uop_dropping =
-        get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
-    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        get_val_from_rec(rec, "INT_MISC:UOP_DROPPING");
     Variant v_fetch_latency = get_val_from_rec(rec, "perf_raw::r8600");
 
     // Check if any Variant is empty (use .empty())
@@ -606,13 +606,14 @@ public:
     double toplevel_sum = (v_retiring.to_double() + v_bad_spec.to_double() +
                            v_fe_bound.to_double() + v_be_bound.to_double());
     // Copied from compute_toplevel
-    double frontend_bound =
-        (v_fe_bound.to_double() / toplevel_sum) -
-        (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+    double frontend_bound = (v_fe_bound.to_double() / toplevel_sum) -
+                            (v_int_misc_uop_dropping.to_double() /
+                             v_slots_or_info_thread_slots.to_double());
 
-    double fetch_latency =
-        (v_fetch_latency.to_double() / toplevel_sum) -
-        (v_int_misc_uop_dropping * v_slots_or_info_thread_slots);
+    double fetch_latency = (v_fetch_latency.to_double() / toplevel_sum) -
+                           (v_int_misc_uop_dropping.to_double() /
+                            v_slots_or_info_thread_slots.to_double());
+
     double fetch_bandwidth = std::max(0.0, frontend_bound - fetch_latency);
 
     // Add toplevel metrics to vector of Entry
@@ -634,13 +635,13 @@ public:
     std::vector<Entry> ret;
 
     // Get PAPI metrics for toplevel calculations
+    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
     Variant v_retiring = get_val_from_rec(rec, "perf::topdown-retiring");
     Variant v_bad_spec = get_val_from_rec(rec, "perf::topdown-bad-spec");
     Variant v_fe_bound = get_val_from_rec(rec, "perf::topdown-fe-bound");
     Variant v_be_bound = get_val_from_rec(rec, "perf::topdown-be-bound");
     Variant v_int_misc_uop_dropping =
-        get_val_from_rec(rec, "INT_MSC:UOP_DROPPING");
-    Variant v_slots_or_info_thread_slots = get_val_from_rec(rec, "perf::slots");
+        get_val_from_rec(rec, "INT_MISC:UOP_DROPPING");
     Variant v_branch_mispredict = get_val_from_rec(rec, "perf_raw::r8500");
 
     // Check if any Variant is empty (use .empty())
@@ -658,18 +659,18 @@ public:
                            v_fe_bound.to_double() + v_be_bound.to_double());
 
     double retiring = (v_retiring.to_double() / toplevel_sum) +
-                      (0 * v_slots_or_info_thread_slots);
-    double frontend_bound =
-        (v_fe_bound.to_double() / toplevel_sum) -
-        (v_int_misc_uop_dropping / v_slots_or_info_thread_slots);
+                      (0 * v_slots_or_info_thread_slots.to_double());
+    double frontend_bound = (v_fe_bound.to_double() / toplevel_sum) -
+                            (v_int_misc_uop_dropping.to_double() /
+                             v_slots_or_info_thread_slots.to_double());
     double backend_bound = (v_be_bound.to_double() / toplevel_sum) +
-                           (0 * v_slots_or_info_thread_slots);
+                           (0 * v_slots_or_info_thread_slots.to_double());
     double bad_speculation =
         std::max(1.0 - (frontend_bound + backend_bound + retiring), 0.0);
 
     double branch_mispredict =
         (v_branch_mispredict.to_double() / toplevel_sum) +
-        (0 * v_slots_or_info_thread_slots);
+        (0 * v_slots_or_info_thread_slots.to_double());
     double machine_clears = std::max(0.0, bad_speculation - branch_mispredict);
 
     // Add toplevel metrics to vector of Entry
@@ -714,10 +715,9 @@ class IntelTopdown {
   void postprocess_snapshot_cb(std::vector<Entry> &rec) {
     std::vector<Entry> result = m_calculator->compute_toplevel(rec);
 
-    Log(0).stream() << "Topdown: Toplevel obtained = " << result.size();
-    if (result.size() != m_calculator->get_num_expected_toplevel())
+    if (result.size() != m_calculator->get_num_expected_toplevel()) {
       ++num_top_skipped;
-    else {
+    } else {
       rec.insert(rec.end(), result.begin(), result.end());
       ++num_top_computed;
     }
@@ -725,44 +725,36 @@ class IntelTopdown {
     if (m_level == All) {
       result = m_calculator->compute_backend_bound(rec);
 
-      Log(0).stream() << "Topdown: BE obtained = " << result.size();
-
-      if (result.size() != m_calculator->get_num_expected_backend_bound())
+      if (result.size() != m_calculator->get_num_expected_backend_bound()) {
         ++num_be_skipped;
-      else {
+      } else {
         rec.insert(rec.end(), result.begin(), result.end());
         ++num_be_computed;
       }
 
       result = m_calculator->compute_frontend_bound(rec);
 
-      Log(0).stream() << "Topdown: FE obtained = " << result.size();
-
-      if (result.size() != m_calculator->get_num_expected_frontend_bound())
+      if (result.size() != m_calculator->get_num_expected_frontend_bound()) {
         ++num_fe_skipped;
-      else {
+      } else {
         rec.insert(rec.end(), result.begin(), result.end());
         ++num_fe_computed;
       }
 
       result = m_calculator->compute_bad_speculation(rec);
 
-      Log(0).stream() << "Topdown: BS obtained = " << result.size();
-
-      if (result.size() != m_calculator->get_num_expected_bad_speculation())
+      if (result.size() != m_calculator->get_num_expected_bad_speculation()) {
         ++num_bsp_skipped;
-      else {
+      } else {
         rec.insert(rec.end(), result.begin(), result.end());
         ++num_bsp_computed;
       }
 
       result = m_calculator->compute_retiring(rec);
 
-      Log(0).stream() << "Topdown: Retiring obtained = " << result.size();
-
-      if (result.size() != m_calculator->get_num_expected_retiring())
+      if (result.size() != m_calculator->get_num_expected_retiring()) {
         ++num_ret_skipped;
-      else {
+      } else {
         rec.insert(rec.end(), result.begin(), result.end());
         ++num_ret_computed;
       }
