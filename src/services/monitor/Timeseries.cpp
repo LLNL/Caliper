@@ -7,6 +7,7 @@
 
 #include "caliper/Caliper.h"
 #include "caliper/ChannelController.h"
+#include "caliper/ConfigManager.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
@@ -33,9 +34,11 @@ class TimeseriesService
     Attribute m_snapshot_attr;
     Attribute m_duration_attr;
 
-    ChannelController m_timeprofile;
+    ConfigManager::ChannelPtr m_timeprofile;
 
     unsigned  m_snapshots;
+
+    static const char* s_profile_spec;
 
     void snapshot_cb(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& srec) {
         double ts_now = get_timestamp();
@@ -46,7 +49,7 @@ class TimeseriesService
             Entry(m_snapshot_attr, cali_make_variant_from_uint(m_snapshots))
         };
 
-        Channel* prof_chn = m_timeprofile.channel();
+        Channel* prof_chn = m_timeprofile->channel();
 
         c->flush(prof_chn, info, [c,channel,info,ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
                 std::vector<Entry> rec;
@@ -68,7 +71,7 @@ class TimeseriesService
 
     void post_init_cb(Caliper* c, Channel*) {
         c->set(m_timestamp_attr, Variant(get_timestamp()));
-        m_timeprofile.start();
+        m_timeprofile->start();
     }
 
     void finish_cb(Caliper*, Channel* channel) {
@@ -76,15 +79,8 @@ class TimeseriesService
             << m_snapshots << " snapshots\n";
     }
 
-    TimeseriesService(Caliper* c, Channel* channel)
-        : m_timeprofile("timeseries.timeprofile", CALI_CHANNEL_LEAVE_INACTIVE,
-            {   { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
-                { "CALI_CHANNEL_CONFIG_CHECK",       "false" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-                { "CALI_SERVICES_ENABLE", "aggregate,event,timer" },
-                { "CALI_AGGREGATE_KEY",   "*,mpi.rank" }
-            }),
-            m_snapshots(0)
+    TimeseriesService(Caliper* c, Channel* channel, ConfigManager::ChannelPtr prof)
+        : m_timeprofile { prof }
     {
         m_timestamp_attr =
             c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE,
@@ -106,7 +102,31 @@ public:
     static const char* s_spec;
 
     static void create(Caliper* c, Channel* channel) {
-        TimeseriesService* instance = new TimeseriesService(c, channel);
+        std::string profile_cfg_str = "timeseries.profile";
+
+        ConfigSet cfg = services::init_config_from_spec(channel->config(), s_spec);
+        std::string profile_opts = cfg.get("profile.options").to_string();
+        if (profile_opts.size() > 0)
+            profile_cfg_str.append("(").append(profile_opts).append(")");
+
+        ConfigManager mgr;
+        mgr.add_config_spec(s_profile_spec);
+        mgr.add(profile_cfg_str.c_str());
+
+        if (mgr.error()) {
+            Log(0).stream() << channel->name() << ": timeseries: Profile config error: "
+                << mgr.error_msg() << "\n";
+            return;
+        }
+
+        auto profile = mgr.get_channel("timeseries.profile");
+        if (!profile) {
+            Log(0).stream() << channel->name()
+                << ": timeseries: Cannot create profile channel\n";
+            return;
+        }
+
+        TimeseriesService* instance = new TimeseriesService(c, channel, profile);
 
         channel->events().snapshot.connect(
             [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec){
@@ -126,10 +146,32 @@ public:
     }
 };
 
+const char* TimeseriesService::s_profile_spec = R"json(
+{
+ "name"        : "timeseries.profile",
+ "description" : "Runtime profile for timeseries service",
+ "categories"  : [ "region", "metric", "event" ],
+ "services"    : [ "aggregate", "event", "timer" ],
+ "config":
+ {
+   "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
+   "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
+   "CALI_AGGREGATE_KEY"              : "*,mpi.rank"
+ }
+}
+)json";
+
 const char* TimeseriesService::s_spec = R"json(
 {
-    "name"        : "timeseries",
-    "description" : "Run a sub-profile for time series profiling"
+ "name"        : "timeseries",
+ "description" : "Run a sub-profile for time series profiling",
+ "config"      :
+ [
+  { "name"        : "profile_options",
+    "type"        : "string",
+    "description" : "Extra config options for the iteration sub-profiles"
+  }
+ ]
 }
 )json";
 
