@@ -34,6 +34,7 @@ namespace
 std::tuple<bool, uint64_t> measure(const std::string& name)
 {
 	double energy_joules;
+	json_t *node_obj = NULL;
 	json_t *energy_obj = NULL;
 	char *s = NULL;
 
@@ -49,7 +50,20 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 
 	//Extract and print values from JSON object
 	energy_obj = json_loads(s, JSON_DECODE_ANY, NULL);
-	energy_joules = json_real_value(json_object_get(energy_obj, name.c_str()));
+	void *iter = json_object_iter(energy_obj);
+	while (iter)
+    	{
+        	//hostname = json_object_iter_key(iter);
+        	node_obj = json_object_iter_value(iter);
+        if (node_obj == NULL)
+		{
+		    printf("JSON object not found");
+		    exit(0);
+		}
+		/* The following should return NULL after the first call per our object. */
+		iter = json_object_iter_next(energy_obj, iter);
+	    }
+	energy_joules = json_real_value(json_object_get(node_obj, name.c_str()));
 
 	uint64_t val = (uint64_t)energy_joules;
 
@@ -318,7 +332,7 @@ const ConfigSet::Entry VariorumService::s_configdata[] = {
       "List of domains to record", // short description
       // long description
       "List of domains to record (separated by ',')\n"
-      "Example: power_node_watts, power_socket_watts, power_gpu_watts, power_mem_watts"
+      "Example: energy_node_joules"
     },
     ConfigSet::Terminator
 };
