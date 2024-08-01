@@ -38,11 +38,6 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 	json_t *energy_obj = NULL;
 	char *s = NULL;
 
-	s = (char *) malloc(10000 * sizeof(char));
-
-    if (s==NULL)
-     printf("\n Something wrong with malloc.\n");
-
 	int ret = variorum_get_energy_json(&s);
 	if (ret != 0)
 	{
