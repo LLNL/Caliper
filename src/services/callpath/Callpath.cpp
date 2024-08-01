@@ -63,7 +63,7 @@ class Callpath
         unw_cursor_t  unw_cursor;
 
         Entry e;
-        if (ucursor_attr != Attribute::invalid)
+        if (ucursor_attr)
             e = info.get(ucursor_attr);
         if (!e.empty()) {
             unw_cursor = *static_cast<unw_cursor_t*>(e.value().get_ptr());

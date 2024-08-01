@@ -148,7 +148,7 @@ class KokkosLookup
             for (const std::string& s : m_addr_attr_names) {
                 Attribute attr = c->get_attribute(s);
 
-                if (attr != Attribute::invalid)
+                if (attr)
                     vec.push_back(attr);
                 else
                     Log(0).stream() << "Kokkoslookup: Address attribute \""
