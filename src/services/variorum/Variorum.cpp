@@ -33,12 +33,15 @@ namespace
 // Energy measurement function
 std::tuple<bool, uint64_t> measure(const std::string& name)
 {
-	double energy_joules;
+	uint64_t energy_joules;
 	json_t *node_obj = NULL;
 	json_t *energy_obj = NULL;
 	char *s = NULL;
 
-	s = (char *) malloc(800 * sizeof(char));
+	s = (char *) malloc(10000 * sizeof(char));
+
+    if (s==NULL)
+     printf("\n Something wrong with malloc.\n");
 
 	int ret = variorum_get_energy_json(&s);
 	if (ret != 0)
@@ -63,9 +66,17 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 		/* The following should return NULL after the first call per our object. */
 		iter = json_object_iter_next(energy_obj, iter);
 	    }
-	energy_joules = json_real_value(json_object_get(node_obj, name.c_str()));
 
-	uint64_t val = (uint64_t)energy_joules;
+    /*Patki dump values to screen */
+    if (json_object_get(node_obj, "energy_node_watts") != NULL)
+    {
+        energy_joules = json_integer_value(json_object_get(node_obj, name.c_str()));
+        printf("Node Energy: %lu Joules\n", energy_joules);
+    }
+    else
+     {
+        energy_joules = 0;
+     }
 
 	//Deallocate the string
 	free(s);
@@ -73,7 +84,7 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 	//Deallocate JSON object
 	json_decref(energy_obj);
 
-	return std::make_tuple(true, val);
+	return std::make_tuple(true, energy_joules);
 }
 
 // The VariorumService class reads a list of domains from the
