@@ -787,7 +787,7 @@ Caliper::get_attribute(const std::string& name) const
 
     auto it = sG->attribute_map.find(name);
 
-    return it != sG->attribute_map.end() ? it->second : Attribute::invalid;
+    return it != sG->attribute_map.end() ? it->second : Attribute();
 }
 
 Attribute

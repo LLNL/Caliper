@@ -34,7 +34,7 @@ struct FlatExclusiveRegionProfile::FlatExclusiveRegionProfileImpl
 
         auto region_entry_it = rec.end();
 
-        if (region_attr == Attribute::invalid)
+        if (!region_attr)
             region_entry_it = std::find_if(rec.begin(), rec.end(), [&db](const Entry& e){
                     return db.get_attribute(e.attribute()).is_nested();
                 });

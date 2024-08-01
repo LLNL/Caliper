@@ -283,7 +283,7 @@ class ValidatorService
 public:
 
     static void validator_register(Caliper* c, Channel* chn) {
-        if (s_class_nested_attr == Attribute::invalid)
+        if (!s_class_nested_attr)
             s_class_nested_attr =
                 c->create_attribute("validator.nested", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
@@ -308,7 +308,7 @@ public:
 
 };
 
-Attribute ValidatorService::s_class_nested_attr { Attribute::invalid };
+Attribute ValidatorService::s_class_nested_attr { Attribute() };
 
 } // namespace [anonymous]
 

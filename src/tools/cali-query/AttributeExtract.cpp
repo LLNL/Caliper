@@ -19,7 +19,7 @@ struct AttributeExtract::AttributeExtractImpl
         if (node->attribute() != s_attr_id)
             return;
 
-        if (m_id_attr == Attribute::invalid)
+        if (!m_id_attr)
             m_id_attr = db.create_attribute("attribute.id", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
         EntryList rec { Entry(m_id_attr, node->id()) };
@@ -31,8 +31,7 @@ struct AttributeExtract::AttributeExtractImpl
     }
 
     AttributeExtractImpl(SnapshotProcessFn snap_fn)
-        : m_snap_fn(snap_fn),
-          m_id_attr(Attribute::invalid)
+        : m_snap_fn(snap_fn)
         { }
 };
 

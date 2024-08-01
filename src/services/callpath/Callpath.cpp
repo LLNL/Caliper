@@ -38,9 +38,9 @@ namespace
 
 class Callpath
 {
-    Attribute callpath_name_attr { Attribute::invalid };
-    Attribute callpath_addr_attr { Attribute::invalid };
-    Attribute ucursor_attr       { Attribute::invalid };
+    Attribute callpath_name_attr;
+    Attribute callpath_addr_attr;
+    Attribute ucursor_attr;
 
     bool      use_name { false };
     bool      use_addr { false };

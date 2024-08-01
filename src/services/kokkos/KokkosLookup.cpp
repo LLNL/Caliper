@@ -96,10 +96,10 @@ class KokkosLookup
     unsigned   m_num_spaces = 0;
     unsigned   m_num_copies = 0;
 
-    Attribute  m_space_attr { Attribute::invalid };
-    Attribute  m_size_attr  { Attribute::invalid };
-    Attribute  m_dst_attr   { Attribute::invalid };
-    Attribute  m_src_attr   { Attribute::invalid };
+    Attribute  m_space_attr;
+    Attribute  m_size_attr;
+    Attribute  m_dst_attr;
+    Attribute  m_src_attr;
 
     Channel*   m_channel;
 

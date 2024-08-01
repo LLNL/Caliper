@@ -84,7 +84,7 @@ class TextLogService
     }
 
     bool is_triggering_event(const Attribute& event_attr, SnapshotView trigger_info) {
-        if (event_attr == Attribute::invalid)
+        if (!event_attr)
             return false;
 
         Entry event = trigger_info.get(event_attr);
@@ -159,8 +159,6 @@ class TextLogService
     }
 
     TextLogService(Caliper* c, Channel* chn)
-        : set_event_attr(Attribute::invalid),
-          end_event_attr(Attribute::invalid)
         {
             ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 

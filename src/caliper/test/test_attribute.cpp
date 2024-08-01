@@ -22,7 +22,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     Attribute meta_attr =
         c.create_attribute("test.attribute.api.meta", CALI_TYPE_INT, CALI_ATTR_HIDDEN);
 
-    ASSERT_NE(meta_attr, Attribute::invalid);
+    ASSERT_TRUE(meta_attr);
 
     EXPECT_TRUE(meta_attr.is_hidden());
 
@@ -82,7 +82,7 @@ TEST(AttributeAPITest, GlobalAttributes) {
     Attribute global_attr =
         c.create_attribute("test.attribute.global", CALI_TYPE_INT, CALI_ATTR_GLOBAL);
 
-    ASSERT_NE(global_attr, Attribute::invalid);
+    ASSERT_TRUE(global_attr);
 
     // global attributes should always have process scope
     EXPECT_EQ(global_attr.properties() & CALI_ATTR_SCOPE_MASK, CALI_ATTR_SCOPE_PROCESS);

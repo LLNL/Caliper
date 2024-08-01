@@ -77,7 +77,7 @@ cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int p
     for (int i = 0; i < n; ++i) {
         meta_attr[i] = c.get_attribute(meta_attr_list[i]);
 
-        if (meta_attr[i] == Attribute::invalid)
+        if (!meta_attr[i])
             continue;
 
         meta_data[i] = Variant(meta_val_list[i]);

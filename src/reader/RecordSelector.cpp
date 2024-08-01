@@ -110,11 +110,9 @@ struct RecordSelector::RecordSelectorImpl
     }
 
     Clause make_clause(const CaliperMetadataAccessInterface& db, const QuerySpec::Condition& f) {
-        Clause clause { f.op, Attribute::invalid, Variant() };
+        Clause clause { f.op, db.get_attribute(f.attr_name), Variant() };
 
-        clause.attr = db.get_attribute(f.attr_name);
-
-        if (clause.attr != Attribute::invalid)
+        if (clause.attr)
             clause.value = Variant::from_string(clause.attr.type(), f.value.c_str(), nullptr);
 
         return clause;

@@ -39,9 +39,9 @@ using namespace std;
 namespace
 {
 
-Attribute   timer_attr   { Attribute::invalid };
-Attribute   sampler_attr { Attribute::invalid };
-Attribute   ucursor_attr { Attribute::invalid };
+Attribute   timer_attr;
+Attribute   sampler_attr;
+Attribute   ucursor_attr;
 
 int         nsec_interval       = 0;
 

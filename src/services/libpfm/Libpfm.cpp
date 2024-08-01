@@ -63,7 +63,7 @@ namespace {
 
 class LibpfmService
 {
-    Attribute libpfm_attributes[MAX_ATTRIBUTES] = { Attribute::invalid };
+    Attribute libpfm_attributes[MAX_ATTRIBUTES] = { Attribute() };
     Attribute libpfm_event_name_attr;
     cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
     std::vector<Attribute> libpfm_event_counter_attrs;

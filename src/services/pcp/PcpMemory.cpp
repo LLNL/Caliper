@@ -42,9 +42,9 @@ find_counter_attributes(const CaliperMetadataAccessInterface& db, const char* me
     for (const auto &s : counters) {
         Attribute attr = db.get_attribute(std::string("sum#pcp.")+s);
 
-        if (attr == Attribute::invalid)
+        if (!attr)
             attr = db.get_attribute(std::string("pcp.")+s);
-        if (attr == Attribute::invalid)
+        if (!attr)
             continue;
 
         res.push_back(attr);

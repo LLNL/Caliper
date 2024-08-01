@@ -36,7 +36,7 @@ class EventSampling
     
     CUpti_EventID m_event_id;
 
-    Attribute     m_event_attr    = Attribute::invalid;
+    Attribute     m_event_attr;
 
     unsigned      m_num_snapshots = 0;
     unsigned      m_num_reads     = 0;

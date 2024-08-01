@@ -180,7 +180,7 @@ nameval_cb(const char *name, adiak_category_t category, const char *subcategory,
     {
         Attribute attr = c.get_attribute(name);
 
-        if (attr != Attribute::invalid && attr.is_global())
+        if (attr && attr.is_global())
             c.end(attr);
         else
             Log(0).stream() << "adiak: unset invoked for unknown key " << name << std::endl;

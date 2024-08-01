@@ -102,9 +102,6 @@ public:
 
         // Set the color flag
         Variant v_color(static_cast<uint64_t>(s_colors[m_color_id++ % s_num_colors]));
-
-        assert(m_color_attr != Attribute::invalid);
-
         c->make_tree_entry(m_color_attr, v_color, attr.node());
     }
 
