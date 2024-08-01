@@ -51,27 +51,16 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 	void *iter = json_object_iter(energy_obj);
 	while (iter)
     	{
-        	//hostname = json_object_iter_key(iter);
         	node_obj = json_object_iter_value(iter);
         if (node_obj == NULL)
 		{
 		    printf("JSON object not found");
 		    exit(0);
 		}
+        
 		/* The following should return NULL after the first call per our object. */
 		iter = json_object_iter_next(energy_obj, iter);
 	    }
-
-    /*Patki dump values to screen */
-    if (json_object_get(node_obj, "energy_node_watts") != NULL)
-    {
-        energy_joules = json_integer_value(json_object_get(node_obj, name.c_str()));
-        printf("Node Energy: %lu Joules\n", energy_joules);
-    }
-    else
-     {
-        energy_joules = 0;
-     }
 
 	//Deallocate the string
 	free(s);
@@ -325,7 +314,7 @@ public:
                 delete instance;
             });
 
-        Log(1).stream() << channel->name() << ": Registered variorum service"
+        Log(1).stream() << channel->name() << ": Registered variorum service."
                         << std::endl;
     }
 };
@@ -335,7 +324,7 @@ const ConfigSet::Entry VariorumService::s_configdata[] = {
       "domains",                           // config variable name
       CALI_TYPE_STRING,                    // datatype
       "",                                  // default value
-      "List of domains to record", // short description
+      "List of domains to record.", // short description
       // long description
       "List of domains to record (separated by ',')\n"
       "Example: energy_node_joules"
