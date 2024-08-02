@@ -121,7 +121,7 @@ namespace
           "List global run metadata. Use with -j, -t, etc. to select output format.",
           nullptr
         },
-        Args::Table::Terminator
+        Args::Terminator
     };
 
     /// A node record filter that filters redundant identical node records.
