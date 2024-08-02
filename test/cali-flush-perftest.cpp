@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
         { "help", "help", 'h', false, "Print help", nullptr },
 
-        util::Args::Table::Terminator
+        util::Args::Terminator
     };
 
     // --- Initialization

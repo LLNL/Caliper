@@ -32,10 +32,10 @@ public:
         bool        has_argument;
 
         const char* info;
-        const char* argument_info;
-      
-        static const Table Terminator;
+        const char* argument_info;      
     };
+
+    static constexpr Table Terminator = { nullptr, nullptr, 0, false, nullptr, nullptr };
 
     Args();
 

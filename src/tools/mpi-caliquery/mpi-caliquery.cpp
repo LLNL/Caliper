@@ -99,7 +99,7 @@ const Args::Table option_table[] = {
     { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
     { "help",    "help",    'h', true,  "Print help message",       nullptr },
     { "output", "output",   'o', true,  "Set the output file name", "FILE"  },
-    Args::Table::Terminator
+    Args::Terminator
 };
 
 
