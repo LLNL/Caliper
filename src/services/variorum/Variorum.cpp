@@ -46,21 +46,24 @@ std::tuple<bool, uint64_t> measure(const std::string& name)
 		return std::make_tuple(false, val);
 	}
 
-	//Extract and print values from JSON object
+	//Extract the values from JSON object
 	energy_obj = json_loads(s, JSON_DECODE_ANY, NULL);
 	void *iter = json_object_iter(energy_obj);
 	while (iter)
     	{
-        	node_obj = json_object_iter_value(iter);
-        if (node_obj == NULL)
-		{
-		    printf("JSON object not found");
-		    exit(0);
-		}
+            node_obj = json_object_iter_value(iter);
+            if (node_obj == NULL)
+		    {
+		        printf("JSON object not found.");
+		        exit(0);
+		    }
         
 		/* The following should return NULL after the first call per our object. */
 		iter = json_object_iter_next(energy_obj, iter);
-	    }
+	
+       }
+  
+     energy_joules = json_integer_value(json_object_get(node_obj, name.c_str()));
 
 	//Deallocate the string
 	free(s);
