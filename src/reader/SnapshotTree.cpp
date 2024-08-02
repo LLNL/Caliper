@@ -115,7 +115,7 @@ struct SnapshotTree::SnapshotTreeImpl
         auto push_entry = [&](cali_id_t attr_id, const Variant& val){
             Attribute attr = db.get_attribute(attr_id);
 
-            if (attr == Attribute::invalid)
+            if (!attr)
                 return;
 
             if (is_path(attr, val))
@@ -188,7 +188,7 @@ struct SnapshotTree::SnapshotTreeImpl
 
 
 SnapshotTree::SnapshotTree()
-    : mP(new SnapshotTreeImpl(Attribute::invalid, Variant()))
+    : mP(new SnapshotTreeImpl(Attribute(), Variant()))
 { }
 
 SnapshotTree::SnapshotTree(const Attribute& attr, const Variant& value)

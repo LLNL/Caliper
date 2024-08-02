@@ -120,7 +120,7 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
 
     Attribute count_attr = db.get_attribute("count");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_TRUE(count_attr);
 
     // check results
 
@@ -228,8 +228,8 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
-    ASSERT_NE(sum_attr, Attribute::invalid);
+    ASSERT_TRUE(count_attr);
+    ASSERT_TRUE(sum_attr);
 
     // check results
 
@@ -344,7 +344,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_TRUE(count_attr);
 
     // check results
 
@@ -455,10 +455,10 @@ TEST(AggregatorTest, InclusiveSumOp) {
     Attribute isum_attr   = db.get_attribute("inclusive#val");
     Attribute iscale_attr = db.get_attribute("iscale#val");
 
-    ASSERT_NE(count_attr,  Attribute::invalid);
-    ASSERT_NE(sum_attr,    Attribute::invalid);
-    ASSERT_NE(isum_attr,   Attribute::invalid);
-    ASSERT_NE(iscale_attr, Attribute::invalid);
+    ASSERT_TRUE(count_attr);
+    ASSERT_TRUE(sum_attr);
+    ASSERT_TRUE(isum_attr);
+    ASSERT_TRUE(iscale_attr);
 
     // check results
 
@@ -564,7 +564,7 @@ TEST(AggregatorTest, InclusiveRatio) {
 
     Attribute iratio_attr = db.get_attribute("iratio#num/den");
 
-    ASSERT_NE(iratio_attr, Attribute::invalid);
+    ASSERT_TRUE(iratio_attr);
 
     // check results
 
@@ -669,8 +669,8 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
-    ASSERT_NE(sum_attr, Attribute::invalid);
+    ASSERT_TRUE(count_attr);
+    ASSERT_TRUE(sum_attr);
 
     // check results
 
@@ -747,10 +747,10 @@ TEST(AggregatorTest, StatisticsKernels) {
     Attribute attr_avg = db.get_attribute("avg#val");
     Attribute attr_var = db.get_attribute("variance#val");
 
-    ASSERT_NE(attr_min, Attribute::invalid);
-    ASSERT_NE(attr_max, Attribute::invalid);
-    ASSERT_NE(attr_avg, Attribute::invalid);
-    ASSERT_NE(attr_var, Attribute::invalid);
+    ASSERT_TRUE(attr_min);
+    ASSERT_TRUE(attr_max);
+    ASSERT_TRUE(attr_avg);
+    ASSERT_TRUE(attr_var);
 
     std::vector<EntryList> resdb;
 
@@ -804,7 +804,7 @@ TEST(AggregatorTest, ScaledRatioKernel) {
 
     Attribute attr_ratio = db.get_attribute("ratio#x/y");
 
-    ASSERT_NE(attr_ratio, Attribute::invalid);
+    ASSERT_TRUE(attr_ratio);
 
     auto dict = make_dict_from_entrylist(resdb.front());
 
@@ -843,7 +843,7 @@ TEST(AggregatorTest, ScaledSumKernel) {
 
     Attribute attr_scale = db.get_attribute("scale#x");
 
-    ASSERT_NE(attr_scale, Attribute::invalid);
+    ASSERT_TRUE(attr_scale);
 
     auto dict = make_dict_from_entrylist(resdb.front());
 
@@ -883,7 +883,7 @@ TEST(AggregatorTest, ScaledCountKernel) {
 
     Attribute attr_scale = db.get_attribute("scount");
 
-    ASSERT_NE(attr_scale, Attribute::invalid);
+    ASSERT_TRUE(attr_scale);
 
     auto dict = make_dict_from_entrylist(resdb.front());
 
@@ -922,7 +922,7 @@ TEST(AggregatorTest, AnyKernel) {
 
     Attribute attr_scale = db.get_attribute("any#x");
 
-    ASSERT_NE(attr_scale, Attribute::invalid);
+    ASSERT_TRUE(attr_scale);
 
     auto dict = make_dict_from_entrylist(resdb.front());
 
@@ -989,8 +989,8 @@ TEST(AggregatorTest, PercentTotalKernel) {
     Attribute attr_pct  = db.get_attribute("percent_total#val");
     Attribute attr_ipct = db.get_attribute("ipercent_total#val");
 
-    ASSERT_NE(attr_pct , Attribute::invalid);
-    ASSERT_NE(attr_ipct, Attribute::invalid);
+    ASSERT_TRUE(attr_pct);
+    ASSERT_TRUE(attr_ipct);
 
     std::vector<EntryList> resdb;
 

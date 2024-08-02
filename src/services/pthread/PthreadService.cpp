@@ -25,8 +25,8 @@ namespace
 
 gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 
-Attribute id_attr = Attribute::invalid;
-Attribute master_attr = Attribute::invalid;
+Attribute id_attr;
+Attribute master_attr;
 
 struct wrapper_args {
     void* (*fn)(void*);

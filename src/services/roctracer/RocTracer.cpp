@@ -523,8 +523,7 @@ class RocTracerService {
     }
 
     RocTracerService(Caliper* c, Channel* channel)
-        : m_api_attr       { Attribute::invalid },
-          m_num_records    { 0 },
+        : m_num_records    { 0 },
           m_num_flushed    { 0 },
           m_num_flushes    { 0 },
           m_num_correlations_stored { 0 },

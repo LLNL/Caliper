@@ -80,9 +80,9 @@ class IntelTopdown
         for (const auto &s : counters) {
             Attribute attr = db.get_attribute(std::string("sum#papi.")+s);
 
-            if (attr == Attribute::invalid)
+            if (!attr)
                 attr = db.get_attribute(std::string("papi.")+s);
-            if (attr == Attribute::invalid) {
+            if (!attr) {
                 Log(0).stream() << "topdown: " << s << " counter attribute not found!" << std::endl;
                 return false;
             }

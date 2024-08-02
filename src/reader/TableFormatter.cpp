@@ -69,7 +69,7 @@ struct TableFormatter::TableImpl
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s, s.size(), Attribute::invalid, false);
+                m_cols.emplace_back(s, s, s.size(), Attribute(), false);
 
         fields.clear();
 
@@ -85,7 +85,7 @@ struct TableFormatter::TableImpl
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s, s.size(), Attribute::invalid, true);
+                m_cols.emplace_back(s, s, s.size(), Attribute(), true);
     }
 
     void configure(const QuerySpec& spec) {
@@ -125,7 +125,7 @@ struct TableFormatter::TableImpl
             break;
         case QuerySpec::SortSelection::List:
             for (const QuerySpec::SortSpec& s : spec.sort.list)
-                m_cols.emplace_back(s.attribute, s.attribute, s.attribute.size(), Attribute::invalid, false, s.order);
+                m_cols.emplace_back(s.attribute, s.attribute, s.attribute.size(), Attribute(), false, s.order);
             break;
         }
 
@@ -144,7 +144,7 @@ struct TableFormatter::TableImpl
                 if (it != m_aliases.end())
                     alias = it->second;
 
-                m_cols.emplace_back(s, alias, alias.size(), Attribute::invalid, true);
+                m_cols.emplace_back(s, alias, alias.size(), Attribute(), true);
             }
             break;
         case QuerySpec::AttributeSelection::None:
@@ -164,7 +164,7 @@ struct TableFormatter::TableImpl
 
         Attribute attr = db.get_attribute(attr_id);
 
-        if (attr == Attribute::invalid || attr.is_hidden() || attr.is_global())
+        if (!attr || attr.is_hidden() || attr.is_global())
             return;
 
         std::string name  = attr.name();
@@ -204,7 +204,7 @@ struct TableFormatter::TableImpl
         // Check if we can look up attribute object from name
 
         for (Column& col : m_cols)
-            if (col.attr == Attribute::invalid)
+            if (!col.attr)
                 col.attr = db.get_attribute(col.name);
 
         return m_cols;
@@ -218,7 +218,7 @@ struct TableFormatter::TableImpl
         bool update_max_width = false;
 
         for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c) {
-            if (cols[c].attr == Attribute::invalid)
+            if (!cols[c].attr)
                 continue;
 
             std::string val;

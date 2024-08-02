@@ -26,9 +26,9 @@ namespace
 
 Variant get_value(const CaliperMetadataAccessInterface& db, const std::string& attr_name, Attribute& attr, const EntryList& rec)
 {
-    if (attr == Attribute::invalid)
+    if (!attr)
         attr = db.get_attribute(attr_name);
-    if (attr == Attribute::invalid)
+    if (!attr)
         return Variant();
 
     for (const Entry& e : rec) {
@@ -64,9 +64,6 @@ class ScaledRatioKernel : public Kernel
         : m_res_attr_name(def),
           m_nom_attr_name(args[0]),
           m_dnm_attr_name(args[1]),
-          m_res_attr(Attribute::invalid),
-          m_nom_attr(Attribute::invalid),
-          m_dnm_attr(Attribute::invalid),
           m_scale(1.0)
         {
             if (args.size() > 2)
@@ -89,7 +86,7 @@ public:
 
         double val = m_scale * (v_nom.to_double() / dnm);
 
-        if (m_res_attr == Attribute::invalid)
+        if (!m_res_attr)
             m_res_attr = db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE,
                             CALI_ATTR_SKIP_EVENTS |
                             CALI_ATTR_ASVALUE);
@@ -116,8 +113,6 @@ class ScaleKernel : public Kernel
     ScaleKernel(const std::string& def, const std::vector<std::string>& args)
         : m_res_attr_name(def),
           m_tgt_attr_name(args[0]),
-          m_res_attr(Attribute::invalid),
-          m_tgt_attr(Attribute::invalid),
           m_scale(1.0)
         {
             m_scale = std::stod(args[1]);
@@ -131,7 +126,7 @@ public:
         if (v_tgt.empty())
             return;
 
-        if (m_res_attr == Attribute::invalid)
+        if (!m_res_attr)
             m_res_attr = db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE,
                             CALI_ATTR_SKIP_EVENTS |
                             CALI_ATTR_ASVALUE);
@@ -158,8 +153,6 @@ class TruncateKernel : public Kernel
     TruncateKernel(const std::string& def, const std::vector<std::string>& args)
         : m_res_attr_name(def),
           m_tgt_attr_name(args[0]),
-          m_res_attr(Attribute::invalid),
-          m_tgt_attr(Attribute::invalid),
           m_factor(1.0)
         {
             if (args.size() > 1)
@@ -179,7 +172,7 @@ public:
         if (!(type == CALI_TYPE_INT || type == CALI_TYPE_UINT))
             type = CALI_TYPE_DOUBLE;
 
-        if (m_res_attr == Attribute::invalid)
+        if (!m_res_attr)
             m_res_attr = db.create_attribute(m_res_attr_name, type,
                             CALI_ATTR_SKIP_EVENTS |
                             CALI_ATTR_ASVALUE);
@@ -214,10 +207,9 @@ public:
 
     FirstKernel(const std::string& def, const std::vector<std::string>& args)
         : m_res_attr_name(def),
-          m_res_attr(Attribute::invalid),
           m_tgt_attr_names(args)
         {
-            m_tgt_attrs.assign(args.size(), Attribute::invalid);
+            m_tgt_attrs.assign(args.size(), Attribute());
         }
 
     void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
@@ -229,7 +221,7 @@ public:
 
             cali_attr_type type = m_tgt_attrs[i].type();
 
-            if (m_res_attr == Attribute::invalid)
+            if (!m_res_attr)
                 m_res_attr = db.create_attribute(m_res_attr_name, type,
                                 CALI_ATTR_SKIP_EVENTS |
                                 CALI_ATTR_ASVALUE);
@@ -258,10 +250,9 @@ public:
 
     SumKernel(const std::string& def, const std::vector<std::string>& args)
         : m_res_attr_name(def),
-          m_res_attr(Attribute::invalid),
           m_tgt_attr_names(args)
         {
-            m_tgt_attrs.assign(args.size(), Attribute::invalid);
+            m_tgt_attrs.assign(args.size(), Attribute());
         }
 
     void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
@@ -277,7 +268,7 @@ public:
         }
 
         if (!v_sum.empty()) {
-            if (m_res_attr == Attribute::invalid)
+            if (!m_res_attr)
                 m_res_attr = db.create_attribute(m_res_attr_name, v_sum.type(),
                                 CALI_ATTR_SKIP_EVENTS |
                                 CALI_ATTR_ASVALUE);
@@ -304,27 +295,23 @@ public:
 
     LeafKernel(const std::string& def)
         : m_use_path(true),
-          m_res_attr_name(def),
-          m_res_attr(Attribute::invalid),
-          m_tgt_attr(Attribute::invalid)
+          m_res_attr_name(def)
         { }
 
     LeafKernel(const std::string& def, const std::string& tgt)
         : m_use_path(false),
           m_res_attr_name(def),
-          m_res_attr(Attribute::invalid),
-          m_tgt_attr_name(tgt),
-          m_tgt_attr(Attribute::invalid)
+          m_tgt_attr_name(tgt)
         { }
 
     void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
-        if (m_res_attr == Attribute::invalid) {
+        if (!m_res_attr) {
             cali_attr_type type = CALI_TYPE_STRING;
             int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
             if (!m_use_path) {
                 m_tgt_attr = db.get_attribute(m_tgt_attr_name);
-                if (m_tgt_attr == Attribute::invalid)
+                if (!m_tgt_attr)
                     return;
                 type  = m_tgt_attr.type();
                 prop |= m_tgt_attr.properties();

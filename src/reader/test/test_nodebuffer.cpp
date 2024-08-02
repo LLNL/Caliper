@@ -75,8 +75,8 @@ TEST(NodeBufferTest, Append) {
     Attribute out_1_attr = out_db.get_attribute("my.string.attr");
     Attribute out_2_attr = out_db.get_attribute("my.int.attr");
 
-    ASSERT_NE(out_1_attr, Attribute::invalid);
-    ASSERT_NE(out_2_attr, Attribute::invalid);
+    ASSERT_TRUE(out_1_attr);
+    ASSERT_TRUE(out_2_attr);
     
     EXPECT_STREQ(out_1_attr.name().c_str(), "my.string.attr");
     EXPECT_EQ(out_1_attr.type(), CALI_TYPE_STRING);
@@ -124,8 +124,8 @@ TEST(NodeBufferTest, Import) {
     Attribute out_1_attr = out_db.get_attribute("my.string.attr");
     Attribute out_2_attr = out_db.get_attribute("my.int.attr");
 
-    ASSERT_NE(out_1_attr, Attribute::invalid);
-    ASSERT_NE(out_2_attr, Attribute::invalid);
+    ASSERT_TRUE(out_1_attr);
+    ASSERT_TRUE(out_2_attr);
     
     EXPECT_STREQ(out_1_attr.name().c_str(), "my.string.attr");
     EXPECT_EQ(out_1_attr.type(), CALI_TYPE_STRING);

@@ -91,13 +91,13 @@ public:
     inline Attribute
     get_attribute(cali_id_t id) const {
         auto it = m_attr_map.find(id);
-        return it == m_attr_map.end() ? Attribute::invalid : it->second;
+        return it == m_attr_map.end() ? Attribute() : it->second;
     }
 
     inline Attribute
     get_attribute(const std::string& name) const {
         auto it = m_attr_names.find(name);
-        return it == m_attr_names.end() ? Attribute::invalid : it->second;
+        return it == m_attr_names.end() ? Attribute() : it->second;
     }
 
     inline std::vector<Attribute>
@@ -118,7 +118,7 @@ public:
                      const Attribute*   meta_attr = nullptr,
                      const Variant*     meta_data = nullptr) {
         fail("create_attribute() is not implemented in MockupMetadataDB!");
-        return Attribute::invalid;
+        return Attribute();
     }
 
     Node*

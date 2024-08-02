@@ -109,7 +109,7 @@ public:
     public:
 
         Attribute attribute(CaliperMetadataAccessInterface& db) {
-            if (m_attr == Attribute::invalid)
+            if (!m_attr)
                 m_attr = db.create_attribute("count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
             return m_attr;
@@ -120,7 +120,6 @@ public:
         }
 
         Config()
-            : m_attr { Attribute::invalid }
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>&) {
@@ -173,7 +172,7 @@ public:
     public:
 
         Attribute get_count_attr(CaliperMetadataAccessInterface& db) {
-            if (m_count_attr == Attribute::invalid) {
+            if (!m_count_attr) {
                 m_count_attr =
                     db.create_attribute(std::string("scount#")+m_scale_str, CALI_TYPE_UINT,
                                         CALI_ATTR_ASVALUE |
@@ -184,7 +183,7 @@ public:
         }
 
         Attribute get_result_attr(CaliperMetadataAccessInterface& db) {
-            if (m_res_attr == Attribute::invalid)
+            if (!m_res_attr)
                 m_res_attr =
                     db.create_attribute(std::string("scount"), CALI_TYPE_DOUBLE,
                                         CALI_ATTR_ASVALUE);
@@ -199,10 +198,7 @@ public:
         }
 
         explicit Config(const std::vector<std::string>& cfg)
-            : m_count_attr(Attribute::invalid),
-              m_res_attr(Attribute::invalid),
-              m_scale(0.0),
-              m_scale_str(cfg[0])
+            : m_scale(0.0), m_scale_str(cfg[0])
             {
                 m_scale = std::stod(m_scale_str);
             }
@@ -266,28 +262,16 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "sum(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
             return m_target_attr;
         }
 
         Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
-                return Attribute::invalid;
-
-            if (m_sum_attr == Attribute::invalid)
-                m_sum_attr = db.create_attribute(std::string(m_is_inclusive ? "inclusive#" : "sum#") + m_target_attr_name, m_target_attr.type(),
-                                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
-
+            if (!m_sum_attr)
+                m_sum_attr =
+                    db.create_attribute(std::string(m_is_inclusive ? "inclusive#" : "sum#") + m_target_attr_name, m_target_attr.type(),
+                                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
             return m_sum_attr;
         }
 
@@ -299,8 +283,6 @@ public:
 
         Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid),
-              m_sum_attr(Attribute::invalid),
               m_is_inclusive(inclusive)
             { }
 
@@ -325,7 +307,7 @@ public:
 
         Attribute target_attr = m_config->get_target_attr(db);
 
-        if (target_attr == Attribute::invalid)
+        if (!target_attr)
             return;
 
         Attribute sum_attr = m_config->get_sum_attr(db);
@@ -371,28 +353,25 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
             return m_target_attr;
         }
 
         Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
-            if (m_sum_attr == Attribute::invalid)
+            if (!m_sum_attr)
                 m_sum_attr =
                     db.create_attribute(std::string(m_inclusive ? "iscsum#" : "scsum#")+m_target_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_ASVALUE |
                                         CALI_ATTR_HIDDEN);
-
             return m_sum_attr;
         }
 
         Attribute get_result_attr(CaliperMetadataAccessInterface& db) {
-            if (m_res_attr == Attribute::invalid)
+            if (!m_res_attr)
                 m_res_attr =
                     db.create_attribute(std::string(m_inclusive ? "iscale#" : "scale#")+m_target_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_ASVALUE);
-
             return m_res_attr;
         }
 
@@ -405,9 +384,6 @@ public:
 
         Config(const std::vector<std::string>& cfg, bool inclusive)
             : m_target_attr_name(cfg[0]),
-              m_target_attr(Attribute::invalid),
-              m_sum_attr(Attribute::invalid),
-              m_res_attr(Attribute::invalid),
               m_scale(0.0),
               m_inclusive(inclusive)
             {
@@ -465,51 +441,34 @@ private:
 class MinKernel : public AggregateKernel {
 public:
 
-    struct StatisticsAttributes {
-        Attribute min;
-    };
-
     class Config : public AggregateKernelConfig {
         std::string          m_target_attr_name;
         Attribute            m_target_attr;
-
-        StatisticsAttributes m_stat_attrs;
+        Attribute            m_min_attr;
 
         bool                 m_inclusive;
 
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
             return m_target_attr;
         }
 
-        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
-            if (m_target_attr == Attribute::invalid)
-                return false;
-            if (a.min != Attribute::invalid) {
-                a = m_stat_attrs;
-                return true;
+        Attribute get_min_attr(CaliperMetadataAccessInterface& db) {
+            if (!m_min_attr) {
+                if (m_target_attr) {
+                    cali_attr_type type = m_target_attr.type();
+                    int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+                    m_min_attr =
+                        db.create_attribute(std::string(m_inclusive ? "imin#" : "min#") + m_target_attr_name, type, prop);
+                }
+
             }
 
-            cali_attr_type type = m_target_attr.type();
-            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
-
-            m_stat_attrs.min =
-                db.create_attribute(std::string(m_inclusive ? "imin#" : "min#") + m_target_attr_name, type, prop);
-
-            a = m_stat_attrs;
-            return true;
+            return m_min_attr;
         }
 
         bool is_inclusive() const { return m_inclusive; }
@@ -520,7 +479,6 @@ public:
 
         Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid),
               m_inclusive(inclusive)
             { }
 
@@ -543,13 +501,13 @@ public:
             g(m_lock);
 
         Attribute target_attr = m_config->get_target_attr(db);
-        StatisticsAttributes stat_attr;
+        Attribute min_attr = m_config->get_min_attr(db);
 
-        if (!m_config->get_statistics_attributes(db, stat_attr))
+        if (!min_attr)
             return;
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == stat_attr.min.id()) {
+            if (e.attribute() == target_attr.id() || e.attribute() == min_attr.id()) {
                 if (m_min.empty()) {
                     m_min = e.value();
                 } else {
@@ -575,14 +533,8 @@ public:
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
-        if (!m_min.empty()) {
-            StatisticsAttributes stat_attr;
-
-            if (!m_config->get_statistics_attributes(db, stat_attr))
-                return;
-
-            list.push_back(Entry(stat_attr.min, m_min));
-        }
+        if (!m_min.empty())
+            list.push_back(Entry(m_config->get_min_attr(db), m_min));
     }
 
 private:
@@ -595,51 +547,33 @@ private:
 class MaxKernel : public AggregateKernel {
 public:
 
-    struct StatisticsAttributes {
-        Attribute max;
-    };
-
     class Config : public AggregateKernelConfig {
         std::string          m_target_attr_name;
         Attribute            m_target_attr;
-
-        StatisticsAttributes m_stat_attrs;
-
+        Attribute            m_max_attr;
         bool                 m_inclusive;
 
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
             return m_target_attr;
         }
 
-        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
-            if (m_target_attr == Attribute::invalid)
-                return false;
-            if (a.max != Attribute::invalid) {
-                a = m_stat_attrs;
-                return true;
+        Attribute get_max_attr(CaliperMetadataAccessInterface& db) {
+            if (!m_max_attr) {
+                if (m_target_attr) {
+                    cali_attr_type type = m_target_attr.type();
+                    int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+                    m_max_attr =
+                        db.create_attribute(std::string(m_inclusive ? "imax#" : "max#") + m_target_attr_name, type, prop);
+                }
+
             }
 
-            cali_attr_type type = m_target_attr.type();
-            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
-
-            m_stat_attrs.max =
-                db.create_attribute(std::string(m_inclusive ? "imax#" : "max#") + m_target_attr_name, type, prop);
-
-            a = m_stat_attrs;
-            return true;
+            return m_max_attr;
         }
 
         bool is_inclusive() const { return m_inclusive; }
@@ -650,7 +584,6 @@ public:
 
         Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid),
               m_inclusive(inclusive)
             { }
 
@@ -673,13 +606,13 @@ public:
             g(m_lock);
 
         Attribute target_attr = m_config->get_target_attr(db);
-        StatisticsAttributes stat_attr;
+        Attribute max_attr = m_config->get_max_attr(db);
 
-        if (!m_config->get_statistics_attributes(db, stat_attr))
+        if (!max_attr)
             return;
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == stat_attr.max.id()) {
+            if (e.attribute() == target_attr.id() || e.attribute() == max_attr.id()) {
                 if (m_max.empty()) {
                     m_max = e.value();
                 } else {
@@ -705,14 +638,8 @@ public:
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
-        if (!m_max.empty()) {
-            StatisticsAttributes stat_attr;
-
-            if (!m_config->get_statistics_attributes(db, stat_attr))
-                return;
-
-            list.push_back(Entry(stat_attr.max, m_max));
-        }
+        if (!m_max.empty())
+            list.push_back(Entry(m_config->get_max_attr(db), m_max));
     }
 
 private:
@@ -740,25 +667,15 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
-
             return m_target_attr;
         }
 
         bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
-            if (m_target_attr == Attribute::invalid)
+            if (!m_target_attr)
                 return false;
-            if (a.sum != Attribute::invalid) {
+            if (a.sum) {
                 a = m_stat_attrs;
                 return true;
             }
@@ -781,8 +698,7 @@ public:
         }
 
         Config(const std::string& name)
-            : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid)
+            : m_target_attr_name(name)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -868,22 +784,22 @@ public:
         bool   is_inclusive() const { return m_inclusive; }
 
         std::pair<Attribute,Attribute> get_target_attributes(CaliperMetadataAccessInterface& db) {
-            if (m_tgt1_attr == Attribute::invalid)
+            if (!m_tgt1_attr)
                 m_tgt1_attr = db.get_attribute(m_tgt1_attr_name);
-            if (m_tgt2_attr == Attribute::invalid)
+            if (!m_tgt2_attr)
                 m_tgt2_attr = db.get_attribute(m_tgt2_attr_name);
 
             return std::pair<Attribute,Attribute>(m_tgt1_attr, m_tgt2_attr);
         }
 
         std::pair<Attribute,Attribute> get_sum_attributes(CaliperMetadataAccessInterface& db) {
-            if (m_sum1_attr == Attribute::invalid)
+            if (!m_sum1_attr)
                 m_sum1_attr =
                     db.create_attribute(std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt1_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS |
                                         CALI_ATTR_ASVALUE     |
                                         CALI_ATTR_HIDDEN);
-            if (m_sum2_attr == Attribute::invalid)
+            if (!m_sum2_attr)
                 m_sum2_attr =
                     db.create_attribute(std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt2_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS |
@@ -894,12 +810,11 @@ public:
         }
 
         Attribute get_ratio_attribute(CaliperMetadataAccessInterface& db) {
-            if (m_ratio_attr == Attribute::invalid)
+            if (!m_ratio_attr)
                 m_ratio_attr =
                     db.create_attribute(std::string(m_inclusive ? "iratio#" : "ratio#") + m_tgt1_attr_name + "/" + m_tgt2_attr_name,
                                         CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
-
             return m_ratio_attr;
         }
 
@@ -910,8 +825,6 @@ public:
         Config(const std::vector<std::string>& cfg, bool is_inclusive)
             : m_tgt1_attr_name(cfg[0]), // We have already checked that there are two strings given
               m_tgt2_attr_name(cfg[1]),
-              m_tgt1_attr(Attribute::invalid),
-              m_tgt2_attr(Attribute::invalid),
               m_scale(1.0),
               m_inclusive(is_inclusive)
             {
@@ -1000,26 +913,17 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
             return m_target_attr;
         }
 
         bool get_percentage_attribute(CaliperMetadataAccessInterface& db,
                                       Attribute& percentage_attr,
                                       Attribute& sum_attr) {
-            if (m_target_attr == Attribute::invalid)
+            if (!m_target_attr)
                 return false;
-            if (m_percentage_attr != Attribute::invalid) {
+            if (m_percentage_attr) {
                 percentage_attr = m_percentage_attr;
                 sum_attr = m_sum_attr;
                 return true;
@@ -1062,7 +966,6 @@ public:
 
         Config(const std::vector<std::string>& names, bool inclusive)
             : m_target_attr_name(names.front()),
-              m_target_attr(Attribute::invalid),
               m_total(0),
               m_is_inclusive(inclusive)
         { }
@@ -1161,27 +1064,17 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "any(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
             return m_target_attr;
         }
 
         Attribute get_any_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
-                return Attribute::invalid;
-
-            if (m_any_attr == Attribute::invalid)
-                m_any_attr = db.create_attribute(std::string("any#") + m_target_attr_name, m_target_attr.type(),
-                                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+            if (!m_any_attr) {
+                if (m_target_attr)
+                    m_any_attr = db.create_attribute(std::string("any#") + m_target_attr_name, m_target_attr.type(),
+                                                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+            }
 
             return m_any_attr;
         }
@@ -1191,9 +1084,7 @@ public:
         }
 
         Config(const std::string& name, bool inclusive)
-            : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid),
-              m_any_attr(Attribute::invalid)
+            : m_target_attr_name(name)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -1214,7 +1105,7 @@ public:
         if (m_val.empty()) {
             Attribute target_attr = m_config->get_target_attr(db);
 
-            if (target_attr == Attribute::invalid)
+            if (!target_attr)
                 return;
 
             Attribute any_attr = m_config->get_any_attr(db);
@@ -1264,15 +1155,15 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (!m_target_attr)
                 m_target_attr = db.get_attribute(m_target_attr_name);
             return m_target_attr;
         }
 
         bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
-            if (m_target_attr == Attribute::invalid)
+            if (!m_target_attr)
                 return false;
-            if (a.sum != Attribute::invalid) {
+            if (a.sum) {
                 a = m_stat_attrs;
                 return true;
             }
@@ -1297,8 +1188,7 @@ public:
         }
 
         Config(const std::string& name)
-            : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid)
+            : m_target_attr_name(name)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -1533,7 +1423,7 @@ struct Aggregator::AggregatorImpl
         while (it != m_key_strings.end()) {
             Attribute attr = db.get_attribute(*it);
 
-            if (attr != Attribute::invalid) {
+            if (attr) {
                 m_key_attrs.push_back(attr);
                 it = m_key_strings.erase(it);
             } else

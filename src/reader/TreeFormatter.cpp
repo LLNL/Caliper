@@ -114,7 +114,7 @@ struct TreeFormatter::TreeFormatterImpl
                 m_use_nested = false;
         }
 
-        m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
+        m_path_keys.assign(m_path_key_names.size(), Attribute());
     }
 
     std::vector<Attribute> get_path_keys(const CaliperMetadataAccessInterface& db) {
@@ -128,10 +128,10 @@ struct TreeFormatter::TreeFormatterImpl
         }
 
         for (std::vector<Attribute>::size_type i = 0; i < path_keys.size(); ++i)
-            if (path_keys[i] == Attribute::invalid) {
+            if (!path_keys[i]) {
                 Attribute attr = db.get_attribute(m_path_key_names[i]);
 
-                if (attr != Attribute::invalid) {
+                if (attr) {
                     path_keys[i]   = attr;
                     std::lock_guard<std::mutex>
                         g(m_path_key_lock);
@@ -344,7 +344,7 @@ struct TreeFormatter::TreeFormatterImpl
             for (const std::string& s : m_spec.select.list) {
                 Attribute attr = db.get_attribute(s);
 
-                if (attr == Attribute::invalid)
+                if (!attr)
                     std::cerr << "cali-query: TreeFormatter: Attribute \"" << s << "\" not found."
                               << std::endl;
                 else

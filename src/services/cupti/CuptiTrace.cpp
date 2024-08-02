@@ -479,7 +479,7 @@ class CuptiTraceService
             Attribute attr[8];
             Variant   data[8];
 
-            std::fill(std::begin(attr), std::end(attr), Attribute::invalid);
+            std::fill(std::begin(attr), std::end(attr), Attribute());
             std::fill(std::begin(data), std::end(data), Variant());
 
             attr[0] = activity_kind_attr;
@@ -602,7 +602,7 @@ class CuptiTraceService
 
         for (const std::string& attribute : flush_info_attributes) {
             Attribute attr = c->get_attribute(attribute);
-            if (attr == Attribute::invalid)
+            if (!attr)
                 continue;
 
             Entry e = flush_info.get(attr);
@@ -869,7 +869,7 @@ class CuptiTraceService
     void snapshot_flush_activities_cb(Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
         if (c->is_signal())
             return;
-        if (flush_trigger_attr == Attribute::invalid || trigger_info.get(flush_trigger_attr).empty())
+        if (!flush_trigger_attr || trigger_info.get(flush_trigger_attr).empty())
             return;
 
         do_flush(c, SnapshotView(), [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
@@ -924,7 +924,7 @@ class CuptiTraceService
             std::string attr_name = config.get("flush_trigger").to_string();
             flush_trigger_attr = c->get_attribute(attr_name);
 
-            if (flush_trigger_attr == Attribute::invalid)
+            if (!flush_trigger_attr)
                 chn->events().create_attr_evt.connect(
                     [attr_name](Caliper* c, Channel*, const Attribute& attr){
                         if (attr.name() == attr_name)

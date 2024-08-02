@@ -46,7 +46,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
         util::split(formatstring, '%', std::back_inserter(split_string));
 
         while (!split_string.empty()) {
-            Field field = { "", "", Attribute::invalid, 0, 'l' };
+            Field field = { "", "", Attribute(), 0, 'l' };
 
             field.prefix = split_string.front();
             split_string.erase(split_string.begin());
@@ -122,7 +122,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
             std::string str;
 
-            if (f.attr != Attribute::invalid) {
+            if (f.attr) {
                 Entry e;
 
                 for (auto it = list.begin(); it != list.end(); ++it)

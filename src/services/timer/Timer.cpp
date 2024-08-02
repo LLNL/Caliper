@@ -49,8 +49,8 @@ class TimerService
 
     chrono::time_point<clock> tstart;
 
-    Attribute timeoffs_attr  { Attribute::invalid } ;
-    Attribute timerinfo_attr { Attribute::invalid } ;
+    Attribute timeoffs_attr;
+    Attribute timerinfo_attr;
 
     Attribute snapshot_duration_attr;
     Attribute inclusive_duration_attr;
@@ -62,8 +62,8 @@ class TimerService
 
     bool      record_inclusive_duration;
 
-    Attribute begin_evt_attr { Attribute::invalid };
-    Attribute end_evt_attr   { Attribute::invalid };
+    Attribute begin_evt_attr;
+    Attribute end_evt_attr;
 
     int       n_stack_errors { 0 };
 
@@ -133,7 +133,7 @@ class TimerService
         begin_evt_attr = c->get_attribute("cali.event.begin");
         end_evt_attr   = c->get_attribute("cali.event.end");
 
-        if (begin_evt_attr == Attribute::invalid || end_evt_attr == Attribute::invalid) {
+        if (!begin_evt_attr || !end_evt_attr) {
             if (record_inclusive_duration)
                 Log(1).stream() << chn->name() << ": Timestamp: Note: event trigger attributes not registered,\n"
                     "    disabling phase timers." << std::endl;

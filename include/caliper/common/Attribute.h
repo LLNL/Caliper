@@ -88,8 +88,6 @@ public:
         return node && node->attribute() == NAME_ATTR_ID;
     }
 
-    static const Attribute invalid;
-
 private:
 
     Node* m_node;
