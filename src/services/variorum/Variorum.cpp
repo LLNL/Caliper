@@ -30,39 +30,48 @@ using namespace cali;
 namespace
 {
 
-// Power measurement function
+// Energy measurement function
 std::tuple<bool, uint64_t> measure(const std::string& name)
 {
-    double power_watts;
-    json_t *power_obj = NULL;
-    char *s = NULL;
+	uint64_t energy_joules;
+	json_t *node_obj = NULL;
+	json_t *energy_obj = NULL;
+	char *s = NULL;
 
-    s = (char *) malloc(800 * sizeof(char));
+	int ret = variorum_get_energy_json(&s);
+	if (ret != 0)
+	{
+		std::cout << "Variorum Energy JSON API failed!" << std::endl;
+		uint64_t val;
+		return std::make_tuple(false, val);
+	}
 
-    int ret = variorum_get_node_power_json(&s);
-    if (ret != 0)
-    {
-        std::cout << "Variorum JSON API failed" << std::endl;
-        uint64_t val;
-        return std::make_tuple(false, val);
-    }
+	//Extract the values from JSON object
+	energy_obj = json_loads(s, JSON_DECODE_ANY, NULL);
+	void *iter = json_object_iter(energy_obj);
+	while (iter)
+    	{
+            node_obj = json_object_iter_value(iter);
+            if (node_obj == NULL)
+		    {
+		        printf("JSON object not found.");
+		        exit(0);
+		    }
+        
+		/* The following should return NULL after the first call per our object. */
+		iter = json_object_iter_next(energy_obj, iter);
+	
+       }
+  
+     energy_joules = json_integer_value(json_object_get(node_obj, name.c_str()));
 
-    // TODO: Add error if name is an invalid JSON field
-    // TODO: Assume 1 rank/node for aggregation
+	//Deallocate the string
+	free(s);
 
-    // Extract and print values from JSON object
-    power_obj = json_loads(s, JSON_DECODE_ANY, NULL);
-    power_watts = json_real_value(json_object_get(power_obj, name.c_str()));
+	//Deallocate JSON object
+	json_decref(energy_obj);
 
-    uint64_t val = (uint64_t)power_watts;
-
-    // Deallocate the string
-    free(s);
-
-    // Deallocate JSON object
-    json_decref(power_obj);
-
-    return std::make_tuple(true, val);
+	return std::make_tuple(true, energy_joules);
 }
 
 // The VariorumService class reads a list of domains from the
@@ -308,7 +317,7 @@ public:
                 delete instance;
             });
 
-        Log(1).stream() << channel->name() << ": Registered variorum service"
+        Log(1).stream() << channel->name() << ": Registered variorum service."
                         << std::endl;
     }
 };
@@ -318,10 +327,10 @@ const ConfigSet::Entry VariorumService::s_configdata[] = {
       "domains",                           // config variable name
       CALI_TYPE_STRING,                    // datatype
       "",                                  // default value
-      "List of domains to record", // short description
+      "List of domains to record.", // short description
       // long description
       "List of domains to record (separated by ',')\n"
-      "Example: power_node_watts, power_socket_watts, power_gpu_watts, power_mem_watts"
+      "Example: energy_node_joules"
     },
     ConfigSet::Terminator
 };
