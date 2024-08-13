@@ -15,22 +15,13 @@
 
 #define LARGE_NUM 100000000
 
-void bar()
-{
-    printf("Enter Bar. Sleep for a second.\n");
-    CALI_MARK_FUNCTION_BEGIN;
-    sleep(1);
-    CALI_MARK_FUNCTION_END;
-    printf("Exit Bar. \n");
-}
-
 void foo()
 {
     printf("Enter Foo. Run a long spinloop\n");
     CALI_MARK_FUNCTION_BEGIN;
     long double res=0.1;
     int i;
-    for (i=0;i<100000000;i++)
+    for (i=0;i<1000000000;i++)
         res += res * i;
     CALI_MARK_FUNCTION_END;
     printf("Exit Foo. \n");
@@ -42,7 +33,6 @@ int main(int argc, char* argv[])
     CALI_MARK_FUNCTION_BEGIN;
     printf("Hello World\n");
     foo();
-    bar();
     // Mark the end of the current function
     CALI_MARK_FUNCTION_END;
 }
