@@ -89,10 +89,6 @@ class VariorumService
     {
         std::string domain;     // Measurement name / ID
         Attribute   value_attr; // Attribute for the measurement value
-        Attribute   delta_attr; // Attribute for the delta value (difference
-                                // since last snapshot)
-        Attribute   prval_attr; // A hidden attribute to store the previous
-                                // measurement value on the Caliper blackboard
     };
 
     // Data for the configured measurement variables
@@ -133,17 +129,8 @@ class VariorumService
 
             // Append measurement value to the snapshot record
             Variant v_val(cali_make_variant_from_uint(val));
-
             rec.append(m.value_attr, val);
 
-            // We store the previous measurement value on the Caliper thread
-            // blackboard so we can compute the difference since the last
-            // snapshot. Here, c->exchange() stores the current and returns
-            // the previous value. Compute the difference and append it.
-            // TODO: For aggregation, we use average power instead of
-            // difference.
-            Variant v_prev = c->exchange(m.prval_attr, v_val);
-            rec.append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
         }
     }
 
@@ -201,36 +188,7 @@ class VariorumService
                                     CALI_ATTR_ASVALUE      |
                                     CALI_ATTR_SKIP_EVENTS  |
                                     CALI_ATTR_AGGREGATABLE);
-
-            // The delta attribute stores the difference of the measurement
-            // value since the last snapshot. We add the "aggregatable"
-            // property here, which lets Caliper aggregate these values
-            // automatically.
-            m.delta_attr =
-                c->create_attribute(std::string("variorum.") + domain,
-                            CALI_TYPE_UINT,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_AGGREGATABLE);
-
-            // We use a hidden attribute to store the previous measurement
-            // for <name> on Caliper's per-thread blackboard. This is a
-            // channel-specific attribute, so we encode the channel ID in the
-            // name.
-            //
-            // In case more thread-specific information must be stored, it is
-            // better to combine them in a structure and create a CALI_TYPE_PTR
-            // attribute for this thread info in the service instance.
-            m.prval_attr =
-                c->create_attribute(std::string("variorum.pv.") + std::to_string(channel->id()) + domain,
-                            CALI_TYPE_UINT,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_HIDDEN       |
-                            CALI_ATTR_SKIP_EVENTS);
-            }
-
+         }
         return m;
     }
 
