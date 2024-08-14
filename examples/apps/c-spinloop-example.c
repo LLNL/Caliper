@@ -13,17 +13,15 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LARGE_NUM 100000000
+#define LARGE_NUM 10000000
 
 void foo()
 {
     printf("Enter Foo. Run a long spinloop\n");
-    CALI_MARK_FUNCTION_BEGIN;
     long double res=0.1;
-    int i;
-    for (i=0;i<1000000000;i++)
+    uint64_t i;
+    for (i=0;i<LARGE_NUM;i++)
         res += res * i;
-    CALI_MARK_FUNCTION_END;
     printf("Exit Foo. \n");
 }
 
