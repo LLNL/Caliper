@@ -43,13 +43,13 @@ class EventTrigger
     // --- Per-channel instance data
     //
 
-    Attribute                trigger_begin_attr { Attribute::invalid };
-    Attribute                trigger_end_attr   { Attribute::invalid };
-    Attribute                trigger_set_attr   { Attribute::invalid };
+    Attribute                trigger_begin_attr;
+    Attribute                trigger_end_attr;
+    Attribute                trigger_set_attr;
 
-    Attribute                marker_attr        { Attribute::invalid };
+    Attribute                marker_attr;
 
-    Attribute                region_count_attr  { Attribute::invalid };
+    Attribute                region_count_attr;
     Entry                    region_count_entry;
 
     std::vector<std::string> trigger_attr_names;
@@ -176,10 +176,7 @@ class EventTrigger
 
             Attribute begin_attr = c->get_attribute(evt_info_attr_ids[0]);
 
-            assert(begin_attr != Attribute::invalid);
-
             // Construct the trigger info entry
-
             Attribute attrs[2] = { trigger_begin_attr, begin_attr };
             Variant    vals[2] = { Variant(attr.id()), value };
 
@@ -216,10 +213,7 @@ class EventTrigger
 
             Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
 
-            assert(set_attr != Attribute::invalid);
-
             // Construct the trigger info entry
-
             Attribute attrs[2] = { trigger_set_attr,   set_attr };
             Variant    vals[2] = { Variant(attr.id()), value    };
 

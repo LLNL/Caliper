@@ -119,6 +119,8 @@ public:
         return cali_variant_pack(m_v, buf);
     }
 
+    std::ostream&  write_cali(std::ostream& os);
+
     static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok = nullptr) {
         return Variant(cali_variant_unpack(buf, inc, ok));
     }

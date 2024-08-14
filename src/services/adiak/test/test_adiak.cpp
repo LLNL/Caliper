@@ -139,7 +139,7 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
 
     EXPECT_EQ(do_import_attr_1.type(), CALI_TYPE_INT);
     EXPECT_EQ(do_import_attr_2.type(), CALI_TYPE_STRING);
-    EXPECT_EQ(do_not_import_attr, Attribute::invalid);
+    EXPECT_FALSE(do_not_import_attr);
 
     EXPECT_TRUE(do_import_attr_1.is_global());
     EXPECT_TRUE(do_import_attr_2.is_global());

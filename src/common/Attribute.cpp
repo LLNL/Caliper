@@ -13,7 +13,7 @@ using namespace std;
 Attribute
 Attribute::make_attribute(Node* node)
 {
-    return node && node->attribute() == NAME_ATTR_ID ? Attribute(node) : Attribute::invalid;
+    return node && node->attribute() == NAME_ATTR_ID ? Attribute(node) : Attribute();
 }
 
 std::string
@@ -78,5 +78,3 @@ cali::operator << (std::ostream& os, const Attribute& a)
               << ", \"type\" : \"" << cali_type2string(a.type()) << "\""
               << ", \"properties\" : \"" << buf << "\" }";
 }
-
-const Attribute Attribute::invalid { nullptr };

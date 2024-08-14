@@ -110,16 +110,16 @@ class AllocService
     bool g_record_highwatermark     { false };
 
 // DataTracker attributes
-    Attribute mem_alloc_attr        { Attribute::invalid };
-    Attribute mem_free_attr         { Attribute::invalid };
-    Attribute alloc_uid_attr        { Attribute::invalid };
-    Attribute alloc_addr_attr       { Attribute::invalid };
-    Attribute alloc_elem_size_attr  { Attribute::invalid };
-    Attribute alloc_num_elems_attr  { Attribute::invalid };
-    Attribute alloc_total_size_attr { Attribute::invalid };
-    Attribute active_mem_attr       { Attribute::invalid };
+    Attribute mem_alloc_attr;
+    Attribute mem_free_attr;
+    Attribute alloc_uid_attr;
+    Attribute alloc_addr_attr;
+    Attribute alloc_elem_size_attr;
+    Attribute alloc_num_elems_attr;
+    Attribute alloc_total_size_attr;
+    Attribute active_mem_attr;
 
-    Attribute region_hwm_attr       { Attribute::invalid };
+    Attribute region_hwm_attr;
 
 // Derived attributes for class.memoryaddress attributes
     struct alloc_attrs {

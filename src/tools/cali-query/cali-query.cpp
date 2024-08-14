@@ -121,7 +121,7 @@ namespace
           "List global run metadata. Use with -j, -t, etc. to select output format.",
           nullptr
         },
-        Args::Table::Terminator
+        Args::Terminator
     };
 
     /// A node record filter that filters redundant identical node records.
@@ -341,6 +341,9 @@ int main(int argc, const char* argv[])
     std::atomic<unsigned> index(0);
     std::mutex            msgmutex;
 
+    metadb.add_attribute_aliases(spec.aliases);
+    metadb.add_attribute_units(spec.units);
+
     auto thread_fn = [&](unsigned t) {
         Annotation::Guard
             g_t(Annotation("thread", CALI_ATTR_SCOPE_THREAD).begin(static_cast<int>(t)));
@@ -365,7 +368,7 @@ int main(int argc, const char* argv[])
                 std::lock_guard<std::mutex>
                     g(msgmutex);
 
-                std::cerr << "cali-query: Error reading " 
+                std::cerr << "cali-query: Error reading "
                     << filename << ": " << reader.error_msg() << std::endl;
             }
         }

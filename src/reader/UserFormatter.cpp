@@ -58,7 +58,7 @@ struct UserFormatter::FormatImpl
         util::split(formatstring, '%', back_inserter(split_string));
 
         while (!split_string.empty()) {
-            Field field = { "", "", Attribute::invalid, 0, 'l' };
+            Field field = { "", "", Attribute(), 0, 'l' };
 
             field.prefix = split_string.front();
             split_string.erase(split_string.begin());
@@ -113,13 +113,13 @@ struct UserFormatter::FormatImpl
         std::ostringstream os;
 
         for (Field f : m_fields) {
-            Attribute attr { Attribute::invalid };
+            Attribute attr;
 
             {
                 std::lock_guard<std::mutex>
                     g(m_fields_lock);
 
-                if (f.attr == Attribute::invalid)
+                if (!f.attr)
                     f.attr = db.get_attribute(f.attr_name);
 
                 attr = f.attr;
@@ -127,7 +127,7 @@ struct UserFormatter::FormatImpl
 
             string str;
 
-            if (attr != Attribute::invalid)
+            if (attr)
                 for (const Entry& e: list) {
                     if (e.is_reference()) {
                         for (const Node* node = e.node(); node; node = node->parent())

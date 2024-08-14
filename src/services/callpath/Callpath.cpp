@@ -38,9 +38,9 @@ namespace
 
 class Callpath
 {
-    Attribute callpath_name_attr { Attribute::invalid };
-    Attribute callpath_addr_attr { Attribute::invalid };
-    Attribute ucursor_attr       { Attribute::invalid };
+    Attribute callpath_name_attr;
+    Attribute callpath_addr_attr;
+    Attribute ucursor_attr;
 
     bool      use_name { false };
     bool      use_addr { false };
@@ -63,7 +63,7 @@ class Callpath
         unw_cursor_t  unw_cursor;
 
         Entry e;
-        if (ucursor_attr != Attribute::invalid)
+        if (ucursor_attr)
             e = info.get(ucursor_attr);
         if (!e.empty()) {
             unw_cursor = *static_cast<unw_cursor_t*>(e.value().get_ptr());

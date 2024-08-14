@@ -166,7 +166,7 @@ int main(int argc, char* argv[])
         { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
         { "help",  "help",  'h', false, "Print help",         nullptr },
 
-        util::Args::Table::Terminator
+        util::Args::Terminator
     };
 
     // --- initialization

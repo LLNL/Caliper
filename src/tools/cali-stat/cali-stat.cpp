@@ -38,7 +38,7 @@ namespace
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
-        Args::Table::Terminator
+        Args::Terminator
     };
 
     class ReuseStat {

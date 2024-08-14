@@ -326,7 +326,7 @@ const char* builtin_option_specs = R"json(
           "min(sum#rc.count) as \"Calls/rank (min)\" unit count",
           "avg(sum#rc.count) as \"Calls/rank (avg)\" unit count",
           "max(sum#rc.count) as \"Calls/rank (max)\" unit count",
-          "sum(sum#rc.count) as \"Calls/rank (total)\" unit count"
+          "sum(sum#rc.count) as \"Calls (total)\" unit count"
          ]
        }
      ]

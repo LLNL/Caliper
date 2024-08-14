@@ -112,8 +112,8 @@ TEST(PreprocessorTest, Ratio) {
     Attribute d_attr = db.get_attribute("d.ratio");
     Attribute s_attr = db.get_attribute("s.ratio");
 
-    EXPECT_NE(d_attr, Attribute::invalid);
-    EXPECT_NE(d_attr, Attribute::invalid);
+    EXPECT_TRUE(d_attr);
+    EXPECT_TRUE(d_attr);
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
@@ -163,9 +163,9 @@ TEST(PreprocessorTest, Scale) {
     Attribute d_attr = db.get_attribute("valx2.0");
     Attribute h_attr = db.get_attribute("valx0.5");
 
-    EXPECT_NE(v_attr, Attribute::invalid);
-    EXPECT_NE(d_attr, Attribute::invalid);
-    EXPECT_NE(h_attr, Attribute::invalid);
+    EXPECT_TRUE(v_attr);
+    EXPECT_TRUE(d_attr);
+    EXPECT_TRUE(h_attr);
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
@@ -217,8 +217,8 @@ TEST(PreprocessorTest, First) {
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vbo_attr = db.get_attribute("val.b.out");
 
-    EXPECT_NE(vao_attr, Attribute::invalid);
-    EXPECT_NE(vbo_attr, Attribute::invalid);
+    EXPECT_TRUE(vao_attr);
+    EXPECT_TRUE(vbo_attr);
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
     EXPECT_EQ(vbo_attr.type(), CALI_TYPE_INT);
 
@@ -268,9 +268,9 @@ TEST(PreprocessorTest, Truncate) {
     Attribute t6_attr = db.get_attribute("valt6");
     Attribute td_attr = db.get_attribute("valtd");
 
-    EXPECT_NE(v_attr, Attribute::invalid);
-    EXPECT_NE(t6_attr, Attribute::invalid);
-    EXPECT_NE(td_attr, Attribute::invalid);
+    EXPECT_TRUE(v_attr);
+    EXPECT_TRUE(t6_attr);
+    EXPECT_TRUE(td_attr);
     EXPECT_EQ(td_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(td_attr.store_as_value());
 
@@ -320,9 +320,9 @@ TEST(PreprocessorTest, Chain) {
     Attribute d_attr = db.get_attribute("valx2");
     Attribute t_attr = db.get_attribute("valx2t5");
 
-    EXPECT_NE(v_attr, Attribute::invalid);
-    EXPECT_NE(d_attr, Attribute::invalid);
-    EXPECT_NE(t_attr, Attribute::invalid);
+    EXPECT_TRUE(v_attr);
+    EXPECT_TRUE(d_attr);
+    EXPECT_TRUE(t_attr);
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
@@ -373,8 +373,8 @@ TEST(PreprocessorTest, Conditions) {
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vbo_attr = db.get_attribute("val.b.out");
 
-    EXPECT_NE(vao_attr, Attribute::invalid);
-    EXPECT_EQ(vbo_attr, Attribute::invalid);
+    EXPECT_TRUE(vao_attr);
+    EXPECT_FALSE(vbo_attr);
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
 
     auto res  = ::make_dict_from_entrylist(out);
@@ -418,8 +418,8 @@ TEST(PreprocessorTest, SumKernel)
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vso_attr = db.get_attribute("val.s.out");
 
-    EXPECT_NE(vao_attr, Attribute::invalid);
-    EXPECT_NE(vso_attr, Attribute::invalid);
+    EXPECT_TRUE(vao_attr);
+    EXPECT_TRUE(vso_attr);
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
     EXPECT_EQ(vso_attr.type(), CALI_TYPE_INT);
 
@@ -457,7 +457,7 @@ TEST(PreprocessorTest, LeafKernel)
 
     Attribute leaf_attr = db.get_attribute("leaf");
 
-    ASSERT_NE(leaf_attr, Attribute::invalid);
+    ASSERT_TRUE(leaf_attr);
     ASSERT_EQ(out.size(), 2u);
     EXPECT_EQ(out[1].attribute(), leaf_attr.id());
     EXPECT_EQ(out[1].value(), n_1->data());

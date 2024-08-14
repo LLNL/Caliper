@@ -53,14 +53,14 @@ struct OmptAPI {
     }
 } api;
 
-Attribute    region_attr        { Attribute::invalid };
-Attribute    sync_attr          { Attribute::invalid };
-Attribute    work_attr          { Attribute::invalid };
-Attribute    thread_type_attr   { Attribute::invalid };
-Attribute    state_attr         { Attribute::invalid };
-Attribute    proc_id_attr       { Attribute::invalid };
-Attribute    thread_id_attr     { Attribute::invalid };
-Attribute    num_threads_attr   { Attribute::invalid };
+Attribute    region_attr;
+Attribute    sync_attr;
+Attribute    work_attr;
+Attribute    thread_type_attr;
+Attribute    state_attr;
+Attribute    proc_id_attr;
+Attribute    thread_id_attr;
+Attribute    num_threads_attr;
 
 unsigned int num_skipped        { 0 };
 

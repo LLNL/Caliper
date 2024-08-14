@@ -256,7 +256,7 @@ TEST(CalQLParserTest, FormatSpec) {
     }
 
     {
-        CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd, e)");
+        CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd, e, f)");
         EXPECT_TRUE(p3.error());
     }
 

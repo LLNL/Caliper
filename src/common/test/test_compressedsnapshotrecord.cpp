@@ -93,7 +93,7 @@ TEST(CompressedSnapshotRecordTest, AppendEntrylist) {
 
     // setup data
 
-    Attribute attr_in[3] = { int_attr, Attribute::invalid, dbl_attr };
+    Attribute attr_in[3] = { int_attr, Attribute(), dbl_attr };
     Variant   data_in[3] = { Variant(42), Variant(), Variant(1.23) };
 
     Node n1(401, str_attr.id(), Variant("whee"));
@@ -285,7 +285,7 @@ TEST(CompressedSnapshotRecordTest, MakeEntrylist) {
         Entry(&n2),
         Entry(&n3),
         Entry(int_attr, data_in[0]),
-        Entry(Attribute::invalid, data_in[1]),
+        Entry(Attribute(), data_in[1]),
         Entry(dbl_attr, data_in[2])
     };
 
@@ -402,7 +402,7 @@ TEST(CompressedSnapshotRecordTest, Unpack) {
         Entry(&n2),
         Entry(&n3),
         Entry(int_attr, data_in[0]),
-        Entry(Attribute::invalid, data_in[1]),
+        Entry(Attribute(), data_in[1]),
         Entry(dbl_attr, data_in[2])
     };
 

@@ -96,10 +96,10 @@ class KokkosLookup
     unsigned   m_num_spaces = 0;
     unsigned   m_num_copies = 0;
 
-    Attribute  m_space_attr { Attribute::invalid };
-    Attribute  m_size_attr  { Attribute::invalid };
-    Attribute  m_dst_attr   { Attribute::invalid };
-    Attribute  m_src_attr   { Attribute::invalid };
+    Attribute  m_space_attr;
+    Attribute  m_size_attr;
+    Attribute  m_dst_attr;
+    Attribute  m_src_attr;
 
     Channel*   m_channel;
 
@@ -148,7 +148,7 @@ class KokkosLookup
             for (const std::string& s : m_addr_attr_names) {
                 Attribute attr = c->get_attribute(s);
 
-                if (attr != Attribute::invalid)
+                if (attr)
                     vec.push_back(attr);
                 else
                     Log(0).stream() << "Kokkoslookup: Address attribute \""

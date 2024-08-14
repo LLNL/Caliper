@@ -65,7 +65,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             g(m_node_lock);
 
         if (id >= m_nodes.size())
-            return Attribute::invalid;
+            return Attribute();
 
         return Attribute::make_attribute(m_nodes[id]);
     }
@@ -176,7 +176,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     /// Merge node given by un-mapped node info from stream with given \a idmap into DB
     /// If \a v_data is a string, it must already be in the string database!
     Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data) {
-        if (attribute(attr_id) == Attribute::invalid)
+        if (!attribute(attr_id))
             attr_id = CALI_INV_ID;
 
         if (node_id == CALI_INV_ID || attr_id == CALI_INV_ID || v_data.empty()) {
@@ -319,9 +319,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             g(m_attribute_lock);
 
         auto it = m_attributes.find(name);
-
-        return it == m_attributes.end() ? Attribute::invalid :
-            Attribute::make_attribute(it->second);
+        return it == m_attributes.end() ? Attribute() : Attribute::make_attribute(it->second);
     }
 
     std::vector<Attribute> get_attributes() const {
