@@ -20,16 +20,18 @@ void foo()
     // Mark begin of the current function. Must be manually closed.
     CALI_MARK_FUNCTION_BEGIN;
     printf("Enter foo. Run a long spinloop\n");
-    long double res=0.1;
+    long double res = 0.1;
     uint64_t i;
-    for (i=0;i<LARGE_NUM;i++)
+    for (i = 0; i < LARGE_NUM; i++)
+    {
         res += res * i;
+    }
     printf("Exit foo. \n");
     // Mark the end of the current function
     CALI_MARK_FUNCTION_END;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     printf("Enter main. Call foo.\n");
     foo();
