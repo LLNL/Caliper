@@ -13,24 +13,25 @@
 #include <unistd.h>
 #include <string.h>
 
-#define LARGE_NUM 10000000
+#define LARGE_NUM 50000000
 
 void foo()
 {
-    printf("Enter Foo. Run a long spinloop\n");
+    // Mark begin of the current function. Must be manually closed.
+    CALI_MARK_FUNCTION_BEGIN;
+    printf("Enter foo. Run a long spinloop\n");
     long double res=0.1;
     uint64_t i;
     for (i=0;i<LARGE_NUM;i++)
         res += res * i;
-    printf("Exit Foo. \n");
+    printf("Exit foo. \n");
+    // Mark the end of the current function
+    CALI_MARK_FUNCTION_END;
 }
 
 int main(int argc, char* argv[])
 {
-    // Mark begin of the current function. Must be manually closed.
-    CALI_MARK_FUNCTION_BEGIN;
-    printf("Hello World\n");
+    printf("Enter main. Call foo.\n");
     foo();
-    // Mark the end of the current function
-    CALI_MARK_FUNCTION_END;
+    printf("Exit main. \n");
 }
