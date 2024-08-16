@@ -619,12 +619,12 @@ post_init_cb(Caliper* c, Channel* channel)
         
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
-                break;
+                //break;
             }
 
              if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_pattern) {
                 any_msg_pattern = true;
-                break;
+               // break;
             }
            
         }    
