@@ -80,7 +80,8 @@ class TimeseriesService
     }
 
     TimeseriesService(Caliper* c, Channel* channel, ConfigManager::ChannelPtr prof)
-        : m_timeprofile { prof }
+        : m_timeprofile { prof },
+          m_snapshots   { 0 }
     {
         m_timestamp_attr =
             c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE,
