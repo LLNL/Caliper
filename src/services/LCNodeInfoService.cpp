@@ -60,10 +60,9 @@ find_key(const std::vector<std::string>& path, const std::map<std::string, Strin
         return std::make_pair(true, it->second);
 
     StringConverter ret = it->second;
-    std::vector<std::string> sub_path(path.begin()+1, path.end());
-    for (const std::string& key : sub_path) {
+    for (auto path_it = path.begin()+1; path_it != path.end(); ++path_it) {
         auto sub_dict = ret.rec_dict();
-        it = sub_dict.find(key);
+        it = sub_dict.find(*path_it);
         if (it == sub_dict.end())
             return std::make_pair(false, StringConverter());
         ret = it->second;
