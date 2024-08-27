@@ -13,7 +13,7 @@ const char* event_trace_spec = R"json(
      "name"        : "event-trace",
      "description" : "Record a trace of region enter/exit events in .cali format",
      "services"    : [ "event", "recorder", "timer", "trace" ],
-     "categories"  : [ "output", "event" ],
+     "categories"  : [ "output", "metadata", "event" ],
      "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
      "options":
      [
@@ -1125,6 +1125,21 @@ const char* builtin_option_specs = R"json(
      "description" : "Output location ('stdout', 'stderr', or filename)",
      "type"        : "string",
      "category"    : "output"
+    },
+    {
+     "name"        : "lcnodeinfo",
+     "description" : "Read node info from /etc/node_info.json on LC systems",
+     "type"        : "bool",
+     "category"    : "metadata",
+     "services"    : [ "lcnodeinfo" ]
+    },
+    {
+     "name"        : "lcnodeinfo.keys",
+     "description" : "Keys to read from /etc/node_info.json file",
+     "type"        : "bool",
+     "category"    : "metadata",
+     "services"    : [ "lcnodeinfo" ],
+     "config"      : { "CALI_LCNODEINFO_KEYS": "{}" }
     },
     {
      "name"        : "adiak.import_categories",

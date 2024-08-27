@@ -118,7 +118,7 @@ const char* controller_spec = R"json(
     {
      "name"        : "hatchet-region-profile",
      "description" : "Record a region time profile for processing with hatchet",
-     "categories"  : [ "adiak", "metric", "output", "region", "event" ],
+     "categories"  : [ "adiak", "metadata", "metric", "output", "region", "event" ],
      "services"    : [ "aggregate", "event", "timer" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
