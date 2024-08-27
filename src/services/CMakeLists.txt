@@ -124,6 +124,11 @@ if (CALIPER_HAVE_MPI)
   endif()
 endif()
 
+list(APPEND CALIPER_SERVICES_SOURCES
+  LCNodeInfoService.cpp)
+list(APPEND CALIPER_SERVICE_NAMES
+  "lcnodeinfo")
+
 if (CALIPER_BUILD_TESTING)
   add_subdirectory(templates)
 endif()
