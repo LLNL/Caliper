@@ -544,7 +544,7 @@ const char* spot_controller_spec = R"json(
     {
      "name"        : "spot",
      "description" : "Record a time profile for the Spot web visualization framework",
-     "categories"  : [ "adiak", "metric", "output", "region", "event" ],
+     "categories"  : [ "adiak", "metadata", "metric", "output", "region", "event" ],
      "services"    : [ "aggregate", "event", "timer" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
