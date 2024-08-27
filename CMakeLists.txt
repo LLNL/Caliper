@@ -67,6 +67,7 @@ add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX}
 add_caliper_option(WITH_ROCTX     "Enable AMD RocTX support" FALSE)
 add_caliper_option(WITH_ROCTRACER "Enable AMD RocTracer support" FALSE)
 add_caliper_option(WITH_ROCM      "Enable AMD RocTracer and RocTX support" FALSE)
+add_caliper_option(WITH_ROCPROFILER "Enable AMD rocprofiler-sdk support" FALSE)
 add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
@@ -374,6 +375,18 @@ if (WITH_ROCTRACER OR WITH_ROCM)
   endif()
 endif()
 
+if (WITH_ROCPROFILER)
+  find_package(rocprofiler-sdk REQUIRED)
+  find_package(rocprofiler-sdk-roctx REQUIRED)
+  if (rocprofiler-sdk_FOUND)
+    set(CALIPER_HAVE_ROCPROFILER TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS 
+      rocprofiler-sdk::rocprofiler-sdk 
+      rocprofiler-sdk-roctx::rocprofiler-sdk-roctx)
+    list(APPEND CALIPER_rocprofiler_CMAKE_MSG "Yes, using ${rocprofiler-sdk_ROOT_DIR}")
+  endif()
+endif()
+
 if (WITH_CRAYPAT)
   include(FindCrayPAT)
   if (CRAYPAT_FOUND)
@@ -617,6 +630,7 @@ set(CALIPER_MODULES
   Kokkos
   RocTracer
   RocTX
+  rocprofiler
   TAU
   VTune
   PCP
