@@ -40,7 +40,7 @@ const char* lcnodeinfo_service_spec = R"json(
   { "name"        : "keys",
     "description" : "List of JSON dict keys to read",
     "type"        : "string",
-    "value"       : "host.os"
+    "value"       : "host.name,host.cluster,host.os"
   }
  ]
 }
