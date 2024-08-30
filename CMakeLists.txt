@@ -351,6 +351,11 @@ if (WITH_MPI)
   endif()
 endif()
 
+if (WITH_ROCPROFILER AND (WITH_ROCTX OR WITH_ROCTRACER))
+  message(WARNING "ROCPROFILER and ROCTX/ROCTRACER support are both enabled.\n"
+    "This is not recommended, please select either ROCPROFILER or ROCTRACER/ROCTX")
+endif()
+
 if (WITH_ROCTX OR WITH_ROCM)
   include(FindRocTX)
   if (ROCTX_FOUND)
@@ -380,8 +385,8 @@ if (WITH_ROCPROFILER)
   find_package(rocprofiler-sdk-roctx REQUIRED)
   if (rocprofiler-sdk_FOUND)
     set(CALIPER_HAVE_ROCPROFILER TRUE)
-    list(APPEND CALIPER_EXTERNAL_LIBS 
-      rocprofiler-sdk::rocprofiler-sdk 
+    list(APPEND CALIPER_EXTERNAL_LIBS
+      rocprofiler-sdk::rocprofiler-sdk
       rocprofiler-sdk-roctx::rocprofiler-sdk-roctx)
     list(APPEND CALIPER_rocprofiler_CMAKE_MSG "Yes, using ${rocprofiler-sdk_ROOT_DIR}")
   endif()
