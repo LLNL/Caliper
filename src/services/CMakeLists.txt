@@ -103,6 +103,9 @@ endif()
 if (CALIPER_HAVE_ROCTRACER)
   add_subdirectory(roctracer)
 endif()
+if (CALIPER_HAVE_ROCPROFILER)
+  add_subdirectory(rocprofiler)
+endif()
 if (CALIPER_HAVE_VARIORUM)
   add_subdirectory(variorum)
 endif()
@@ -123,6 +126,11 @@ if (CALIPER_HAVE_MPI)
     add_subdirectory(tau)
   endif()
 endif()
+
+list(APPEND CALIPER_SERVICES_SOURCES
+  LCNodeInfoService.cpp)
+list(APPEND CALIPER_SERVICE_NAMES
+  "lcnodeinfo")
 
 if (CALIPER_BUILD_TESTING)
   add_subdirectory(templates)

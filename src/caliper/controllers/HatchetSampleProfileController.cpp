@@ -146,7 +146,7 @@ const char* controller_spec = R"json(
      "name"        : "hatchet-sample-profile",
      "description" : "Record a sampling profile for processing with hatchet",
      "services"    : [ "sampler", "trace" ],
-     "categories"  : [ "adiak", "sampling", "output" ],
+     "categories"  : [ "adiak", "metadata", "sampling", "output" ],
      "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
      "defaults"    : { "callpath": "true", "source.module": "true" },
      "options":

@@ -130,7 +130,10 @@ if (WITH_FORTRAN)
   list(APPEND PYTHON_SCRIPTS test_fortran_api.py)
 endif()
 
-foreach(file ${PYTHON_SCRIPTS})
+set(DATA_FILES
+  example_node_info.json)
+
+foreach(file ${PYTHON_SCRIPTS} ${DATA_FILES})
   add_custom_target(${file} ALL
     COMMAND ${CMAKE_COMMAND} -E create_symlink
       ${CMAKE_CURRENT_SOURCE_DIR}/${file}

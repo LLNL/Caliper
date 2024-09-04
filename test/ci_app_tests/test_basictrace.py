@@ -151,6 +151,25 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'cali.caliper.version' } ) )
 
+    def test_lcnodeinfo(self):
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-G', '-e' ]
+
+        caliper_config = {
+            'CALI_SERVICES_ENABLE': 'event,lcnodeinfo,aggregate,recorder',
+            'CALI_LCNODEINFO_FILENAME': 'example_node_info.json',
+            'CALI_RECORDER_FILENAME': 'stdout'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, {
+                'nodeinfo.host.os.name': 'TestOS',
+                'nodeinfo.host.os.version': '3.11',
+                'nodeinfo.host.cluster': 'test' }))
+
     def test_esc(self):
         target_cmd = [ './ci_test_basic', 'newline' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j', '-s', 'cali.event.set' ]

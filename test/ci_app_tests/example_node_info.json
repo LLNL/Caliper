@@ -1,0 +1,10 @@
+{
+ "host": 
+ {
+  "os": { "name": "TestOS", "version": "3.11", "kernel": "1.2.3-42" },
+  "name": "test42", 
+  "cluster": "test",
+  "do_not_include": "me"
+ },
+ "other": "nothing to see here"
+}
