@@ -21,8 +21,8 @@ PythonAttribute::PythonAttribute(const char *name, cali_attr_type type,
 
 PythonAttribute::PythonAttribute(const char *name, cali_attr_type type,
                                  cali_attr_properties opt,
-                                 std::vector<PythonAttribute &> &meta_attrs,
-                                 std::vector<PythonVariant &> &meta_vals) {
+                                 std::vector<PythonAttribute> &meta_attrs,
+                                 std::vector<PythonVariant> &meta_vals) {
   if (meta_attrs.size() != meta_vals.size()) {
     throw std::runtime_error(
         "'meta_attrs' and 'meta_vals' must be same length");
@@ -32,10 +32,10 @@ PythonAttribute::PythonAttribute(const char *name, cali_attr_type type,
   cali_variant_t *meta_val_list = new cali_variant_t[num_meta_elems];
   for (size_t i = 0; i < num_meta_elems; i++) {
     meta_attr_list[i] = meta_attrs[i].m_attr_id;
-    meta_val_list[i] = meta_vals[i].c_variant;
+    meta_val_list[i] = meta_vals[i].c_variant();
   }
   m_attr_id = cali_create_attribute_with_metadata(
-      name, type, static_cast<int>(properties), num_meta_elems, meta_attr_list,
+      name, type, static_cast<int>(opt), num_meta_elems, meta_attr_list,
       meta_val_list);
   if (m_attr_id == CALI_INV_ID) {
     throw std::runtime_error("Could not create attribute with metadata");
@@ -92,68 +92,135 @@ void create_caliper_instrumentation_mod(
   // PythonAttribute bindings
   py::class_<PythonAttribute> cali_attribute_type(caliper_instrumentation_mod,
                                                   "Attribute");
-  cali_attribute_type.def(py::init<const char *, cali_attr_type>(), "",
+  cali_attribute_type.def(py::init<const char *, cali_attr_type>(),
+                          "Create Caliper Attribute with name and type.",
                           py::arg(), py::arg());
   cali_attribute_type.def(
-      py::init<const char *, cali_attr_type, cali_attr_properties>(), "",
-      py::arg(), py::arg(), py::arg("opt"));
+      py::init<const char *, cali_attr_type, cali_attr_properties>(),
+      "Create Caliper Attribute with name, type, and properties.", py::arg(),
+      py::arg(), py::arg("opt"));
   cali_attribute_type.def(
       py::init<const char *, cali_attr_type, cali_attr_properties,
-               std::vector<PythonAttribute &> &,
-               std::vector<PythonVariant &> &>(),
-      "");
+               std::vector<PythonAttribute> &, std::vector<PythonVariant> &>(),
+      "Create Caliper Attribute with name, type, properties, and metadata");
   cali_attribute_type.def_static("find_attribute",
-                                 &PythonAttribute::find_attribute);
-  cali_attribute_type.def_property_readonly("name", &PythonAttribute::name);
-  cali_attribute_type.def_property_readonly("type", &PythonAttribute::type);
-  cali_attribute_type.def_property_readonly("properties",
-                                            &PythonAttribute::properties);
-  cali_attribute_type.def("begin", static_cast<void (PythonAttribute::*)()>(
-                                       &PythonAttribute::begin));
-  cali_attribute_type.def("begin", static_cast<void (PythonAttribute::*)(int)>(
-                                       &PythonAttribute::begin));
+                                 &PythonAttribute::find_attribute,
+                                 "Get Caliper Attribute by name.");
+  cali_attribute_type.def_property_readonly("name", &PythonAttribute::name,
+                                            "Name of the Caliper Attribute.");
+  cali_attribute_type.def_property_readonly("type", &PythonAttribute::type,
+                                            "Type of the Caliper Attribute.");
+  cali_attribute_type.def_property_readonly(
+      "properties", &PythonAttribute::properties,
+      "Properties of the Caliper Attribute.");
   cali_attribute_type.def(
       "begin",
-      static_cast<void (PythonAttribute::*)(double)>(&PythonAttribute::begin));
-  cali_attribute_type.def("begin",
-                          static_cast<void (PythonAttribute::*)(const char *)>(
-                              &PythonAttribute::begin));
-  cali_attribute_type.def("set", static_cast<void (PythonAttribute::*)(int)>(
-                                     &PythonAttribute::set));
-  cali_attribute_type.def("set", static_cast<void (PythonAttribute::*)(double)>(
-                                     &PythonAttribute::set));
-  cali_attribute_type.def("set",
-                          static_cast<void (PythonAttribute::*)(const char *)>(
-                              &PythonAttribute::set));
-  cali_attribute_type.def("end", &PythonAttribute::end);
+      static_cast<void (PythonAttribute::*)()>(&PythonAttribute::begin),
+      "Begin region where the value for the Attribute is 'true' on the "
+      "blackboard.");
+  cali_attribute_type.def(
+      "begin",
+      static_cast<void (PythonAttribute::*)(int)>(&PythonAttribute::begin),
+      "Begin integer region for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "begin",
+      static_cast<void (PythonAttribute::*)(double)>(&PythonAttribute::begin),
+      "Begin float region for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "begin",
+      static_cast<void (PythonAttribute::*)(const char *)>(
+          &PythonAttribute::begin),
+      "Begin str/bytes region for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "set", static_cast<void (PythonAttribute::*)(int)>(&PythonAttribute::set),
+      "Set integer value for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "set",
+      static_cast<void (PythonAttribute::*)(double)>(&PythonAttribute::set),
+      "Set double value for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "set",
+      static_cast<void (PythonAttribute::*)(const char *)>(
+          &PythonAttribute::set),
+      "Set str/bytes value for attribute on the blackboard.");
+  cali_attribute_type.def(
+      "end", &PythonAttribute::end,
+      "End innermost open region for attribute on the blackboard.");
 
   // Bindings for region begin/end functions
-  caliper_instrumentation_mod.def("begin_region", &cali_begin_region);
-  caliper_instrumentation_mod.def("end_region", &cali_end_region);
-  caliper_instrumentation_mod.def("begin_phase", &cali_begin_phase);
-  caliper_instrumentation_mod.def("end_phase", &cali_end_phase);
-  caliper_instrumentation_mod.def("begin_comm_region", &cali_begin_comm_region);
-  caliper_instrumentation_mod.def("end_comm_region", &cali_end_comm_region);
+  caliper_instrumentation_mod.def(
+      "begin_region", &cali_begin_region,
+      "Begin nested region by name."
+      ""
+      "Begins nested region using the built-in annotation attribute.");
+  caliper_instrumentation_mod.def(
+      "end_region", &cali_end_region,
+      "End nested region by name."
+      ""
+      "Ends nested region using built-in annotation attribute."
+      "Prints an error if the name does not match the currently open region.");
+  caliper_instrumentation_mod.def(
+      "begin_phase", &cali_begin_phase,
+      "Begin phase region by name."
+      ""
+      "A phase marks high-level, long(er)-running code regions. While regular "
+      "regions"
+      "use the \"region\" attribute with annotation level 0, phase regions use "
+      "the"
+      "\"phase\" attribute with annotation level 4. Otherwise, phases behave"
+      "identical to regular Caliper regions.");
+  caliper_instrumentation_mod.def("end_phase", &cali_end_phase,
+                                  "End phase region by name.");
+  caliper_instrumentation_mod.def(
+      "begin_comm_region", &cali_begin_comm_region,
+      "Begin communication region by name."
+      ""
+      "A communication region can be used to mark communication operations"
+      "(e.g., MPI calls) that belong to a single communication pattern."
+      "They can be used to summarize communication pattern statistics."
+      "Otherwise, they behave identical to regular Caliper regions.");
+  caliper_instrumentation_mod.def("end_comm_region", &cali_end_comm_region,
+                                  "End communication region by name.");
 
   // Bindings for "_byname" functions
-  caliper_instrumentation_mod.def("begin_byname", &cali_begin_byname);
-  caliper_instrumentation_mod.def("begin_byname", &cali_begin_double_byname);
-  caliper_instrumentation_mod.def("begin_byname", &cali_begin_int_byname);
-  caliper_instrumentation_mod.def("begin_byname", &cali_begin_string_byname);
-  caliper_instrumentation_mod.def("set_byname", &cali_set_double_byname);
-  caliper_instrumentation_mod.def("set_byname", &cali_set_int_byname);
-  caliper_instrumentation_mod.def("set_byname", &cali_set_string_byname);
-  caliper_instrumentation_mod.def("end_byname", &cali_end_byname);
+  caliper_instrumentation_mod.def(
+      "begin_byname", &cali_begin_byname,
+      "Same as Annotation.begin, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "begin_byname", &cali_begin_double_byname,
+      "Same as Annotation.begin, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "begin_byname", &cali_begin_int_byname,
+      "Same as Annotation.begin, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "begin_byname", &cali_begin_string_byname,
+      "Same as Annotation.begin, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "set_byname", &cali_set_double_byname,
+      "Same as Annotation.set, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "set_byname", &cali_set_int_byname,
+      "Same as Annotation.set, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "set_byname", &cali_set_string_byname,
+      "Same as Annotation.set, but refers to annotation by name.");
+  caliper_instrumentation_mod.def(
+      "end_byname", &cali_end_byname,
+      "Same as Annotation.end, but refers to annotation by name.");
 
   // Bindings for global "_byname" functions
-  caliper_instrumentation_mod.def("set_global_byname",
-                                  &cali_set_global_double_byname);
-  caliper_instrumentation_mod.def("set_global_byname",
-                                  &cali_set_global_int_byname);
-  caliper_instrumentation_mod.def("set_global_byname",
-                                  &cali_set_global_string_byname);
-  caliper_instrumentation_mod.def("set_global_byname",
-                                  &cali_set_global_uint_byname);
+  caliper_instrumentation_mod.def(
+      "set_global_byname", &cali_set_global_double_byname,
+      "Set a global attribute with a given name to the given value.");
+  caliper_instrumentation_mod.def(
+      "set_global_byname", &cali_set_global_int_byname,
+      "Set a global attribute with a given name to the given value.");
+  caliper_instrumentation_mod.def(
+      "set_global_byname", &cali_set_global_string_byname,
+      "Set a global attribute with a given name to the given value.");
+  caliper_instrumentation_mod.def(
+      "set_global_byname", &cali_set_global_uint_byname,
+      "Set a global attribute with a given name to the given value.");
 }
 
 } // namespace cali

@@ -25,6 +25,15 @@ __annotation_decorator_end_map = {
 
 
 def annotate_function(name=None, annotation_type="region"):
+    """Decorator that automatically starts and ends a region around the decorated function.
+
+    :param name: If provided, use as the name of the created Caliper region.
+                 If None, the name will be derived from the name of the decorated function.
+    :type name: str
+    :param annotation_type: The type of annotation to use. Can be one of "region" (uses `begin|end_region`),
+                            "phase" (uses `begin|end_phase`), or "comm_region` (uses `begin|end_comm_region`).
+    """
+
     def inner_decorator(func):
         real_name = name
         if name is None or name == "":

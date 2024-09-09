@@ -12,6 +12,7 @@ set(WITH_NVPROF       Off CACHE BOOL "")
 set(WITH_PAPI         Off CACHE BOOL "")
 set(WITH_SAMPLER      On  CACHE BOOL "")
 set(WITH_VTUNE        Off CACHE BOOL "")
+set(WITH_PYTHON_BINDINGS On CACHE BOOL "")
 
 set(WITH_DOCS         Off CACHE BOOL "")
 set(BUILD_TESTING     On  CACHE BOOL "")

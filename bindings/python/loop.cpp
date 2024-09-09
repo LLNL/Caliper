@@ -18,10 +18,12 @@ void PythonLoop::end() { cali_end(cali_loop_attr_id); }
 
 void create_caliper_loop_mod(py::module_ &caliper_loop_mod) {
   py::class_<PythonLoop> loop_type(caliper_loop_mod, "Loop");
-  loop_type.def(py::init<const char *>());
-  loop_type.def("start_iteration", &PythonLoop::start_iteration);
-  loop_type.def("end_iteration", &PythonLoop::end_iteration);
-  loop_type.def("end", &PythonLoop::end);
+  loop_type.def(py::init<const char *>(), "Create a loop annotation.");
+  loop_type.def("start_iteration", &PythonLoop::start_iteration,
+                "Start a loop iteration.");
+  loop_type.def("end_iteration", &PythonLoop::end_iteration,
+                "End a loop iteration.");
+  loop_type.def("end", &PythonLoop::end, "End the loop annotation.");
 }
 
 } // namespace cali
