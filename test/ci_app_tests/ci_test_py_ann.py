@@ -1,5 +1,9 @@
 # --- Caliper continuous integration test app for Python annotation interface
 
+import sys
+
+sys.path.insert(0, "@PYPATH_TESTING@")
+
 from pycaliper import config_preset
 from pycaliper.instrumentation import (
     Attribute,
@@ -8,15 +12,13 @@ from pycaliper.instrumentation import (
     set_byname,
     end_byname,
 )
-from pycaliper.types import AttrProperties
+from pycaliper.types import CALI_TYPE_INT, CALI_ATTR_ASVALUE, CALI_TYPE_STRING, CALI_ATTR_UNALIGNED
 from pycaliper.variant import Variant
 from pycaliper.config_manager import ConfigManager
 
-import sys
-
 
 def main():
-    config_preset({"CALI_CHANNEL_FLUSH_ON_EXIT", "false"})
+    config_preset({"CALI_CHANNEL_FLUSH_ON_EXIT": "false"})
 
     mgr = ConfigManager()
     if len(sys.argv) > 1:
@@ -33,7 +35,7 @@ def main():
     set_global_byname("global.string", "my global string")
     set_global_byname("global.uint", 42)
 
-    iter_attr = Attribute("iteration", AttrProperties.CALI_ATTR_ASVALUE)
+    iter_attr = Attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE)
 
     begin_byname("phase", "loop")
 
@@ -45,12 +47,13 @@ def main():
 
     begin_byname("ci_test_c_ann.meta-attr")
 
-    meta_attr = Attribute("meta-attr")
+    meta_attr = Attribute("meta-attr", CALI_TYPE_INT)
     meta_val = Variant(47)
 
     test_attr = Attribute(
         "test-attr-with-metadata",
-        AttrProperties.CALI_ATTR_UNLIGNED,
+        CALI_TYPE_STRING,
+        CALI_ATTR_UNALIGNED,
         [meta_attr],
         [meta_val],
     )

@@ -27,6 +27,27 @@ target_link_libraries(__pycaliper_impl PUBLIC caliper)
 target_compile_features(__pycaliper_impl PUBLIC cxx_std_11)
 target_include_directories(__pycaliper_impl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_custom_target(
+    pycaliper_test ALL # Always build pycaliper_test
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/pycaliper
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/pycaliper ${CMAKE_CURRENT_BINARY_DIR}/pycaliper
+    COMMENT "Copying pycaliper Python source to ${CMAKE_CURRENT_BINARY_DIR}/pycaliper"
+)
+add_dependencies(__pycaliper_impl pycaliper_test)
+
+if (BUILD_TESTING)
+    set(PYPATH_TESTING ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
+    add_custom_target(
+        pycaliper_symlink_lib_in_build ALL
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+          $<TARGET_FILE:__pycaliper_impl>
+          ${CMAKE_CURRENT_BINARY_DIR}/pycaliper/$<TARGET_FILE_NAME:__pycaliper_impl>
+        COMMENT "Creating symlink between Python C module and build directory for testing"
+        DEPENDS __pycaliper_impl
+    )
+    message(STATUS "Will add ${PYPATH_TESTING} to PYTHONPATH during test")
+endif()
+
 install(
     DIRECTORY
         pycaliper/

@@ -501,14 +501,14 @@ configure_file(
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
 
+if (WITH_PYTHON_BINDINGS AND BUILD_TESTING)
+  set(PYPATH_TESTING "" CACHE INTERNAL "")
+endif()
+
 add_subdirectory(ext)
 add_subdirectory(src)
 
 add_subdirectory(examples/apps EXCLUDE_FROM_ALL)
-
-if (WITH_PYTHON_BINDINGS)
-  add_subdirectory(bindings/python)
-endif ()
 
 if (BUILD_TESTING)
   add_subdirectory(test)

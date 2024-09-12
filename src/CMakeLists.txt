@@ -58,6 +58,10 @@ if (WITH_TOOLS)
   add_subdirectory(tools)
 endif()
 
+if (WITH_PYTHON_BINDINGS)
+  add_subdirectory(interface/python)
+endif()
+
 install(
   TARGETS
     caliper

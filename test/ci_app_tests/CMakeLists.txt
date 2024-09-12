@@ -135,21 +135,15 @@ endif()
 
 if (WITH_PYTHON_BINDINGS)
   foreach(file ${CALIPER_CI_Python_TEST_APPS})
-    add_custom_target(${file} ALL
-      COMMAND ${CMAKE_COMMAND} -E create_symlink
-        ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-        ${CMAKE_CURRENT_BINARY_DIR}/${file})
-  endforeach()
-
-  list(APPEND PYTHON_SCRIPTS test_python_api.py)
-endif()
-
-if (WITH_PYTHON_BINDINGS)
-  foreach(file ${CALIPER_CI_Python_TEST_APPS})
-    add_custom_target(${file} ALL
-      COMMAND ${CMAKE_COMMAND} -E create_symlink
-        ${CMAKE_CURRENT_SOURCE_DIR}/${file}
-        ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    # add_custom_target(${file} ALL
+    #   COMMAND ${CMAKE_COMMAND} -E create_symlink
+    #     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+    #     ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+      ${CMAKE_CURRENT_BINARY_DIR}/${file}
+      @ONLY
+    )
   endforeach()
 
   list(APPEND PYTHON_SCRIPTS test_python_api.py)
@@ -166,3 +160,7 @@ foreach(file ${PYTHON_SCRIPTS} ${DATA_FILES})
 endforeach()
 
 add_test(NAME CI_app_tests COMMAND ${CALI_PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")
+# if (WITH_PYTHON_BINDINGS)
+#   message(STATUS "Adding ${PYPATH_TESTING} to PYTHONPATH for CI_app_tests")
+#   set_tests_properties(CI_app_tests PROPERTIES ENVIRONMENT "PYTHONPATH=${PYPATH_TESTING}")
+# endif()
