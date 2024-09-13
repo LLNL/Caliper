@@ -203,7 +203,7 @@ then
     rm -rf ${build_dir} 2>/dev/null
     mkdir -p ${build_dir} && cd ${build_dir}
 
-    timed_message "Building RAJA"
+    timed_message "Building Caliper"
     if [[ "${truehostname}" == "corona" || "${truehostname}" == "tioga" ]]
     then
         module unload rocm
@@ -245,7 +245,7 @@ then
 
     cd ${build_dir}
 
-    timed_message "Testing RAJA"
+    timed_message "Testing Caliper"
     ctest --output-on-failure -T test 2>&1 | tee tests_output.txt
 
     no_test_str="No tests were found!!!"
