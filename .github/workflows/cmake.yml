@@ -28,7 +28,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install libdw-dev libunwind-dev gfortran python-pybind11
+        sudo apt-get install libdw-dev libunwind-dev gfortran
         python3 -m pip install pybind11
 
     - name: Configure CMake
