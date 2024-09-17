@@ -12,8 +12,7 @@ from pycaliper.instrumentation import (
     set_byname,
     end_byname,
 )
-from pycaliper.types import CALI_TYPE_INT, CALI_ATTR_ASVALUE, CALI_TYPE_STRING, CALI_ATTR_UNALIGNED
-from pycaliper.variant import Variant
+from pycaliper.types import CALI_TYPE_INT, CALI_ATTR_ASVALUE
 from pycaliper.config_manager import ConfigManager
 
 
@@ -44,23 +43,6 @@ def main():
         iter_attr.end()
 
     end_byname("phase")
-
-    begin_byname("ci_test_c_ann.meta-attr")
-
-    meta_attr = Attribute("meta-attr", CALI_TYPE_INT)
-    meta_val = Variant(47)
-
-    test_attr = Attribute(
-        "test-attr-with-metadata",
-        CALI_TYPE_STRING,
-        CALI_ATTR_UNALIGNED,
-        [meta_attr],
-        [meta_val],
-    )
-
-    test_attr.set("abracadabra")
-
-    end_byname("ci_test_c_ann.meta-attr")
 
     begin_byname("ci_test_c_ann.setbyname")
 

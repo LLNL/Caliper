@@ -45,8 +45,8 @@ PYBIND11_MODULE(__pycaliper_impl, m) {
   c_attr_type.value("CALI_TYPE_PTR", CALI_TYPE_PTR);
   c_attr_type.export_values();
 
-  py::enum_<cali_attr_properties> c_attr_properties(types_mod,
-                                                    "AttrProperties");
+  py::enum_<cali_attr_properties> c_attr_properties(types_mod, "AttrProperties",
+                                                    py::arithmetic());
   c_attr_properties.value("CALI_ATTR_DEFAULT", CALI_ATTR_DEFAULT);
   c_attr_properties.value("CALI_ATTR_ASVALUE", CALI_ATTR_ASVALUE);
   c_attr_properties.value("CALI_ATTR_NOMERGE", CALI_ATTR_NOMERGE);

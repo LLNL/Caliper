@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#include "variant.h"
-
 namespace cali {
 
 class PythonAttribute {

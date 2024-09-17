@@ -1,7 +1,7 @@
 #ifndef CALI_INTERFACE_PYTHON_ANNOTATION_H
 #define CALI_INTERFACE_PYTHON_ANNOTATION_H
 
-#include "variant.h"
+#include "common.h"
 
 namespace cali {
 

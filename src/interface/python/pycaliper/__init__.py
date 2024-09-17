@@ -11,6 +11,5 @@ import pycaliper.high_level
 import pycaliper.instrumentation
 import pycaliper.loop
 import pycaliper.types
-import pycaliper.variant
 
 from pycaliper.high_level import annotate_function

@@ -1,5 +1,5 @@
 #include "instrumentation.h"
-#include "variant.h"
+
 #include <stdexcept>
 
 namespace cali {
