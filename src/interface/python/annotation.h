@@ -7,10 +7,9 @@ namespace cali {
 
 class PythonAnnotation : public cali::Annotation {
 public:
-  PythonAnnotation(const char* name);
+  PythonAnnotation(const char *name);
 
-  PythonAnnotation(const char *name,
-                   cali_attr_properties opt);
+  PythonAnnotation(const char *name, cali_attr_properties opt);
 
   PythonAnnotation &begin();
 
@@ -22,8 +21,6 @@ public:
 
   PythonAnnotation &begin(cali_attr_type type, const std::string &data);
 
-  PythonAnnotation &begin(PythonVariant &data);
-
   PythonAnnotation &set(int data);
 
   PythonAnnotation &set(double data);
@@ -31,8 +28,6 @@ public:
   PythonAnnotation &set(const char *data);
 
   PythonAnnotation &set(cali_attr_type type, const std::string &data);
-
-  PythonAnnotation &set(PythonVariant &data);
 };
 
 void create_caliper_annotation_mod(py::module_ &caliper_annotation_mod);

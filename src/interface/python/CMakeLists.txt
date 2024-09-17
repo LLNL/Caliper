@@ -3,7 +3,6 @@ set(PYCALIPER_BINDING_SOURCES
     config_manager.cpp
     instrumentation.cpp
     loop.cpp
-    variant.cpp
     mod.cpp
 )
 

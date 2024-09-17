@@ -34,11 +34,6 @@ PythonAnnotation &PythonAnnotation::begin(cali_attr_type type,
   return *this;
 }
 
-PythonAnnotation &PythonAnnotation::begin(PythonVariant &data) {
-  cali::Annotation::begin(data);
-  return *this;
-}
-
 PythonAnnotation &PythonAnnotation::set(int data) {
   cali::Annotation::set(data);
   return *this;
@@ -57,11 +52,6 @@ PythonAnnotation &PythonAnnotation::set(const char *data) {
 PythonAnnotation &PythonAnnotation::set(cali_attr_type type,
                                         const std::string &data) {
   cali::Annotation::set(type, data.data(), data.size());
-  return *this;
-}
-
-PythonAnnotation &PythonAnnotation::set(PythonVariant &data) {
-  cali::Annotation::set(data);
   return *this;
 }
 
@@ -101,12 +91,6 @@ void create_caliper_annotation_mod(py::module_ &caliper_annotation_mod) {
           &PythonAnnotation::begin),
       "Begin the region for the associated context attribute "
       "with a str/bytes value");
-  annotation_type.def(
-      "begin",
-      static_cast<PythonAnnotation &(PythonAnnotation::*)(PythonVariant &)>(
-          &PythonAnnotation::begin),
-      "Begin the region for the associated context attribute "
-      "with a variant");
   annotation_type.def("set",
                       static_cast<PythonAnnotation &(PythonAnnotation::*)(int)>(
                           &PythonAnnotation::set),
@@ -127,13 +111,6 @@ void create_caliper_annotation_mod(py::module_ &caliper_annotation_mod) {
           &PythonAnnotation::set),
       "Exports an entry for the associated context attribute "
       "with a str/bytes value. The top-most prior open value "
-      "for the attribute, if any, will be overwritten.");
-  annotation_type.def(
-      "set",
-      static_cast<PythonAnnotation &(PythonAnnotation::*)(PythonVariant &)>(
-          &PythonAnnotation::set),
-      "Exports an entry for the associated context attribute "
-      "with a variant. The top-most prior open value "
       "for the attribute, if any, will be overwritten.");
 }
 

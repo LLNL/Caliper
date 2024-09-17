@@ -2,9 +2,6 @@
 #include "config_manager.h"
 #include "instrumentation.h"
 #include "loop.h"
-#include "variant.h"
-
-// TODO add cali_init, cali_is_initialized, and cali_version
 
 bool pycaliper_is_initialized() { return cali_is_initialized() != 0; }
 
@@ -70,10 +67,6 @@ PYBIND11_MODULE(__pycaliper_impl, m) {
   c_attr_properties.value("CALI_ATTR_LEVEL_6", CALI_ATTR_LEVEL_6);
   c_attr_properties.value("CALI_ATTR_LEVEL_7", CALI_ATTR_LEVEL_7);
   c_attr_properties.export_values();
-
-  auto variant_mod =
-      m.def_submodule("variant", "Support for Caliper Variants.");
-  cali::create_caliper_variant_mod(variant_mod);
 
   auto annotation_mod =
       m.def_submodule("annotation", "Support for Caliper annotation APIs.");

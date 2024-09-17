@@ -14,11 +14,6 @@ public:
   PythonAttribute(const char *name, cali_attr_type type,
                   cali_attr_properties opt);
 
-  PythonAttribute(const char *name, cali_attr_type type,
-                  cali_attr_properties opt,
-                  std::vector<PythonAttribute> &meta_attrs,
-                  std::vector<PythonVariant> &meta_vals);
-
   static PythonAttribute find_attribute(const char *name);
 
   const char *name() const;
