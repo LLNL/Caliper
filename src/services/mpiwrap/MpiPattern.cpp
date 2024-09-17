@@ -2,6 +2,7 @@
 // See top-level LICENSE file for details.
 
 #include "MpiPattern.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -22,14 +23,14 @@ struct MpiPattern::MpiPatternImpl
 {
     // --- The attributes
     //
-
+/*
     Attribute msg_src_attr;
     Attribute msg_dst_attr;
     Attribute msg_size_attr;
     Attribute msg_tag_attr;
     Attribute send_count_attr;
     Attribute recv_count_attr;
-
+*/
     Attribute total_send_count_attr;
     Attribute total_recv_count_attr;
     Attribute total_dest_ranks_attr;
@@ -38,11 +39,9 @@ struct MpiPattern::MpiPatternImpl
     Attribute total_send_size_attr;
     Attribute total_coll_size_attr;
 
-
     Attribute irecv_count_attr;
     Attribute isend_count_attr;
-
-
+/*
     Attribute coll_type_attr;
     Attribute coll_root_attr;
     Attribute coll_count_attr;
@@ -51,7 +50,7 @@ struct MpiPattern::MpiPatternImpl
     Attribute comm_is_world_attr;
     Attribute comm_list_attr;
     Attribute comm_size_attr;
-
+*/
     // --- MPI object mappings
     //
 
@@ -67,17 +66,7 @@ struct MpiPattern::MpiPatternImpl
         int          count;
         MPI_Datatype type;
         int          size;
-
-        Node*        comm_node;
     };
-
-    std::atomic<int>                             comm_id;
-
-    // We hope that whatever MPI_Comm and MPI_Request is is default-hashable.
-    // So far it works ...
-
-    std::unordered_map<MPI_Comm,    cali::Node*> comm_map; ///< Communicator map
-    std::mutex                                   comm_map_lock;
 
     std::unordered_map<MPI_Request, RequestInfo> req_map;
     std::mutex                                   req_map_lock;
@@ -89,29 +78,6 @@ struct MpiPattern::MpiPatternImpl
         const struct attr_info_t {
             const char* name; cali_attr_type type; int prop; Attribute* ptr;
         } attr_info_tbl[] = {
-            { "mpi.msg.src",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-              &msg_src_attr    },
-            { "mpi.msg.dst",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-              &msg_dst_attr    },
-            { "mpi.msg.tag",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-              &msg_tag_attr    },
-
-            { "mpi.coll.type",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
-              &coll_type_attr  },
-            { "mpi.coll.root",     CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-              &coll_root_attr  },
-
-            { "mpi.comm",          CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
-              &comm_attr       },
-            { "mpi.comm.size",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
-              &comm_size_attr  },
-            { "mpi.comm.is_world", CALI_TYPE_BOOL,  CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
-              &comm_is_world_attr },
-            { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
-              &comm_list_attr  },
-
-            { "mpi.msg.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &msg_size_attr   },
             { "mpi.recv.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_recv_size_attr },
             { "mpi.send.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
@@ -119,130 +85,54 @@ struct MpiPattern::MpiPatternImpl
              { "mpi.coll.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_coll_size_attr },
 
-            { "mpi.send.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &send_count_attr },
-            { "mpi.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &recv_count_attr },
             { "total.send.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_send_count_attr },
             { "total.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_recv_count_attr },
             { "total.dest.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &total_dest_ranks_attr },  
+              &total_dest_ranks_attr },
             { "total.src.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &total_src_ranks_attr }, 
+              &total_src_ranks_attr },
             { "irecv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &irecv_count_attr }, 
+              &irecv_count_attr },
             { "isend.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &isend_count_attr }, 
-
-            { "mpi.coll.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &coll_count_attr },
+              &isend_count_attr },
 
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
-        
-      
+
+
         for (const struct attr_info_t* a = attr_info_tbl; a && a->name; a++)
             *(a->ptr) = c->create_attribute(a->name, a->type, a->prop);
     }
 
     void init_mpi(Caliper* c, Channel* chn) {
         req_map.reserve(100);
-        comm_map.reserve(100);
-
-        make_comm_entry(c, MPI_COMM_WORLD);
-        make_comm_entry(c, MPI_COMM_SELF);
     }
-
-    // --- MPI object lookup
-    //
-
-    Node* make_comm_entry(Caliper* c, MPI_Comm comm) {
-        int id = comm_id++;
-
-        int size = 0;
-        PMPI_Comm_size(comm, &size);
-
-        Node* node = c->make_tree_entry(comm_size_attr, Variant(size));
-
-        int cmp;
-        PMPI_Comm_compare(comm, MPI_COMM_WORLD, &cmp);
-
-        if (cmp == MPI_IDENT || cmp == MPI_CONGRUENT)
-            node = c->make_tree_entry(comm_is_world_attr, Variant(true), node);
-        else {
-            std::vector<int> ranks_in(size, 0);
-            std::iota(ranks_in.begin(), ranks_in.end(), 0); // create sequence 0,1, ... n-1
-
-            std::vector<int> ranks_out(size, 0);
-
-            MPI_Group world_grp;
-            MPI_Group comm_grp;
-
-            PMPI_Comm_group(MPI_COMM_WORLD, &world_grp);
-            PMPI_Comm_group(comm, &comm_grp);
-
-            PMPI_Group_translate_ranks(comm_grp, size, ranks_in.data(), world_grp, ranks_out.data());
-
-            node =
-                c->make_tree_entry(comm_list_attr,
-                                   Variant(CALI_TYPE_USR, ranks_out.data(), ranks_out.size()*sizeof(int)),
-                                   node);
-        }
-
-        return c->make_tree_entry(comm_attr, Variant(id), node);
-    }
-
-    Node* lookup_comm(Caliper* c, MPI_Comm comm) {
-        std::lock_guard<std::mutex>
-            g(comm_map_lock);
-
-        auto it = comm_map.find(comm);
-
-        if (it != comm_map.end())
-            return it->second;
-
-        Node* node = make_comm_entry(c, comm);
-        comm_map[comm] = node;
-
-        return node;
-    }
-
 
     // --- point-to-point
     //
 
-    int irecv_count=0;
-    int isend_count=0;
-    int total_send_count = 0;
-   
-    int total_recv_ranks=0;
+    int irecv_count = 0;
+    int isend_count = 0;
 
+    int total_send_count = 0;
+    int total_recv_ranks =0;
     int total_recv_count = 0;
 
-    int total_send_size = 0;
+    int total_send_size  = 0;
+    int total_recv_size  = 0;
 
-    int total_recv_size = 0;
+    std::set<int> unique_src_ranks;
+    std::set<int> unique_dest_ranks;
 
-    //int total_src_ranks;
+    void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag) {
+        total_send_count++;
+        total_send_size += size;
 
-   
-    /* adding the send and recv rank sets, these will total dest and recv ranks*/
-    std::set<int>unique_src_ranks;//store srcs
-    std::set<int>unique_dest_ranks;//store dests
+        unique_dest_ranks.insert(dest);
+    }
 
-    void push_send_event(Caliper* c, Channel* channel, int size, int dest,
-                         int tag, cali::Node* comm_node) {
-       
-         total_send_count++;
-         total_send_size += size;
-
-         unique_dest_ranks.insert(dest);       
-    
-   } 
-
-  
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
@@ -252,7 +142,6 @@ struct MpiPattern::MpiPatternImpl
         info.tag           = tag;
         info.count         = count;
         info.type          = type;
-        info.comm_node     = lookup_comm(c, comm);
 
         PMPI_Type_size(type, &info.size);
         info.size *= count;
@@ -263,22 +152,12 @@ struct MpiPattern::MpiPatternImpl
         req_map[*req] = info;
     }
 
-    
-
-    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
-
+    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag) {
         total_recv_count++;
         total_recv_size += size;
 
-        unique_src_ranks.insert(src);//insert the src
-
-       //total_src_ranks = unique_recv_ranks.size();//this is the totalnum of src ranks
-    
-
-     
-    } 
-    
-    
+        unique_src_ranks.insert(src);
+    }
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
         int size  = 0;
@@ -286,21 +165,20 @@ struct MpiPattern::MpiPatternImpl
         int count = 0;
         PMPI_Get_count(status, type, &count);
 
-        //we want to know how many recvs they are?
-        push_recv_event(c, chn, status->MPI_SOURCE, size*count, status->MPI_TAG, lookup_comm(c, comm));
+        push_recv_event(c, chn, status->MPI_SOURCE, size*count, status->MPI_TAG);
     }
-      
+
     void handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
+        irecv_count++;
+
         RequestInfo info;
-         irecv_count++;
-         isend_count++;
+
         info.op            = RequestInfo::Recv;
         info.is_persistent = false;
         info.target        = src;
         info.tag           = tag;
         info.type          = type;
         info.count         = count;
-        info.comm_node     = lookup_comm(c, comm);
 
         std::lock_guard<std::mutex>
             g(req_map_lock);
@@ -317,7 +195,6 @@ struct MpiPattern::MpiPatternImpl
         info.tag           = tag;
         info.type          = type;
         info.count         = count;
-        info.comm_node     = lookup_comm(c, comm);
         info.size          = 0;
 
         std::lock_guard<std::mutex>
@@ -339,7 +216,7 @@ struct MpiPattern::MpiPatternImpl
             RequestInfo info = it->second;
 
             if (info.op == RequestInfo::Send)
-                push_send_event(c, chn, info.size, info.target, info.tag, info.comm_node);
+                push_send_event(c, chn, info.size, info.target, info.tag);
         }
     }
 
@@ -361,7 +238,7 @@ struct MpiPattern::MpiPatternImpl
                 int count = 0;
                 PMPI_Get_count(statuses+i, info.type, &count);
 
-                push_recv_event(c, chn, statuses[i].MPI_SOURCE, size*count, statuses[i].MPI_TAG, info.comm_node);
+                push_recv_event(c, chn, statuses[i].MPI_SOURCE, size*count, statuses[i].MPI_TAG);
             }
 
             if (!info.is_persistent)
@@ -380,74 +257,44 @@ struct MpiPattern::MpiPatternImpl
     //
     int total_coll_size = 0;  // collective will increse size globally
 
-    void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root, Node* comm_node) {
-        Node* node = c->make_tree_entry(coll_type_attr, Variant(static_cast<int>(coll_type)), comm_node);
-
-        total_coll_size += size; 
-
-        const Entry data[] = {
-            { node },
-            { coll_count_attr, Variant(1)    },
-            { msg_size_attr,   Variant(size) },
-            { coll_root_attr,  Variant(root) },
-            { total_coll_size_attr, Variant(total_coll_size) }  // New entry for collective total size
-        };
-
-        int ne = 3;
-
-        if (coll_type == Coll_12N || coll_type == Coll_N21)
-            ne = 5;
-        else if (coll_type == Coll_NxN)
-            ne = 4;
-
-        c->push_snapshot(channel, SnapshotView(ne, data));
+    void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root) {
+        total_coll_size += size;
     }
-
-
 
     void handle_comm_begin(Caliper* c, Channel* chn){
-      irecv_count=0;  
-      isend_count=0;    
-      total_send_count=0;
-      total_recv_count=0;
-      total_recv_size=0;
-      total_send_size=0;
-      total_coll_size=0;
-      unique_dest_ranks.clear();
-      unique_src_ranks.clear();
+        irecv_count = 0;
+        isend_count = 0;
 
+        total_send_count = 0;
+        total_recv_count = 0;
+        total_recv_size  = 0;
+        total_send_size  = 0;
+        total_coll_size  = 0;
+
+        unique_dest_ranks.clear();
+        unique_src_ranks.clear();
     }
+
     void handle_comm_end(Caliper* c, Channel* chn){
+        const Entry data[] = 
+        {
+            { total_send_count_attr, Variant(total_send_count) },
+            { total_recv_count_attr, Variant(total_recv_count) },
+            { total_dest_ranks_attr, Variant(unique_dest_ranks.size()) },
+            { total_src_ranks_attr,  Variant(unique_src_ranks.size())  },
+            { total_recv_size_attr,  Variant(total_recv_size) },
+            { total_send_size_attr,  Variant(total_send_size) },
+            { total_coll_size_attr,  Variant(total_coll_size) }
+        };
 
-
-     const Entry data[] = {
-       
-        { irecv_count_attr, Variant(irecv_count) },
-        { isend_count_attr, Variant(isend_count) },
-        { total_send_count_attr, Variant(total_send_count) },
-        { total_recv_count_attr, Variant(total_recv_count) },
-        { total_dest_ranks_attr, Variant(unique_dest_ranks.size()) },
-        { total_src_ranks_attr, Variant(unique_src_ranks.size()) },
-        { total_recv_size_attr, Variant( total_recv_size) },
-        { total_send_size_attr, Variant( total_send_size) },
-        {total_coll_size_attr, Variant( total_coll_size) }
-
-        
-
-         
-    };
-
-    c->push_snapshot(chn, SnapshotView(9, data));
-
-
+        c->push_snapshot(chn, SnapshotView(7, data));
     }
 
     // --- constructor
     //
 
     MpiPatternImpl()
-        : comm_id(0)
-    { }
+        { }
 };
 
 
@@ -479,7 +326,7 @@ MpiPattern::handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, 
     PMPI_Type_size(type, &size);
     size *= count;
 
-    mP->push_send_event(c, chn, size, dest, tag, mP->lookup_comm(c, comm));
+    mP->push_send_event(c, chn, size, dest, tag);
 }
 
 void
@@ -532,7 +379,7 @@ MpiPattern::handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, i
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, chn, Coll_12N, (rank == root ? count : 0) * size, root, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_12N, (rank == root ? count : 0) * size, root);
 }
 
 void
@@ -543,7 +390,7 @@ MpiPattern::handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, i
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, chn, Coll_N21, (rank != root ? count : 0) * size, root, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_N21, (rank != root ? count : 0) * size, root);
 }
 
 void
@@ -552,26 +399,26 @@ MpiPattern::handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, M
     int size = 0;
     PMPI_Type_size(type, &size);
 
-    mP->push_coll_event(c, chn, Coll_NxN, count*size, 0, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_NxN, count*size, 0);
 }
 
 void
 MpiPattern::handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm)
 {
-    mP->push_coll_event(c, chn, Coll_Barrier, 0, 0, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_Barrier, 0, 0);
 }
 
 void
 MpiPattern::handle_init(Caliper* c, Channel* chn)
 {
-    mP->push_coll_event(c, chn, Coll_Init, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+    mP->push_coll_event(c, chn, Coll_Init, 0, 0);
 }
 
 void
 MpiPattern::handle_finalize(Caliper* c, Channel* chn)
 {
-    mP->push_coll_event(c, chn, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
-    
+    mP->push_coll_event(c, chn, Coll_Finalize, 0, 0);
+
 }
 void
 MpiPattern::handle_comm_begin(Caliper* c, Channel* chn)

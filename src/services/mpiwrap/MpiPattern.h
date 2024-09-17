@@ -1,9 +1,8 @@
-//This it!
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 /// \file MsgPattern.h
-/// \brief MPI communication tracer
+/// \brief MPI communication pattern analysis
 
 #include <mpi.h>
 

@@ -32,29 +32,30 @@ namespace
 {
 
 const char* mpi_service_spec = R"json(
-{   "name": "mpi",
-    "description": "MPI function wrapping and message tracing",
-    "config": [
-        {   "name": "blacklist",
-            "description": "List of MPI functions to filter",
-            "type": "string"
-        },
-        {   "name": "whitelist",
-            "description": "List of MPI functions to instrument",
-            "type": "string"
-        },
-        {   "name": "msg_tracing",
-            "description": "Enable message tracing",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "msg_pattern",
-            "description": "Enable message pattern analysis",
-            "type": "bool",
-            "value": "false"
-        }
-        
-    ]
+{   
+ "name": "mpi",
+ "description": "MPI function wrapping and message tracing",
+ "config": 
+ [
+  { "name": "blacklist",
+    "description": "List of MPI functions to filter",
+    "type": "string"
+  },
+  { "name": "whitelist",
+    "description": "List of MPI functions to instrument",
+    "type": "string"
+  },
+  { "name": "msg_tracing",
+    "description": "Enable message tracing",
+    "type": "bool",
+    "value": "false"
+  },
+  { "name": "msg_pattern",
+    "description": "Enable message pattern analysis",
+    "type": "bool",
+    "value": "false"
+  }
+ ]
 }
 )json";
 
