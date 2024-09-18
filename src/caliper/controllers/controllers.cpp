@@ -582,6 +582,49 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "comm.stats",
+     "description" : "MPI message statistics in marked communication regions",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "mpi" ],
+     "config"      : { "CALI_MPI_MSG_PATTERN": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
+     "query"       :
+     [
+      { "level"    : "local",
+        "select"   :
+        [
+         "min(min#total.send.count) as \"Sends (min)\"",
+         "max(max#total.send.count) as \"Sends (max)\"",
+         "min(min#total.recv.count) as \"Recvs (min)\"",
+         "max(max#total.recv.count) as \"Recvs (max)\"",
+         "min(min#total.dest.ranks) as \"Dst ranks (min)\"",
+         "max(max#total.src.ranks)  as \"Src ranks (max)\"",
+         "max(max#total.coll.count) as \"Collectives (max)\"",
+         "min(min#mpi.send.size) as \"Bytes sent (min)\"",
+         "max(max#mpi.send.size) as \"Bytes sent (max)\"",
+         "min(min#mpi.recv.size) as \"Bytes recv (min)\"",
+         "max(max#mpi.recv.size) as \"Bytes recv (max)\""
+        ]
+      },
+      { "level"    : "cross",
+        "select"   :
+        [
+         "min(min#min#total.send.count) as \"Sends (min)\"",
+         "max(max#max#total.send.count) as \"Sends (max)\"",
+         "min(min#min#total.recv.count) as \"Recvs (min)\"",
+         "max(max#max#total.recv.count) as \"Recvs (max)\"",
+         "min(min#min#total.dest.ranks) as \"Dst ranks (min)\"",
+         "max(max#max#total.src.ranks)  as \"Src ranks (max)\"",
+         "max(max#max#total.coll.count) as \"Coll (max)\"",
+         "min(min#min#mpi.send.size) as \"Bytes sent (min)\"",
+         "max(max#max#mpi.send.size) as \"Bytes sent (max)\"",
+         "min(min#min#mpi.recv.size) as \"Bytes recv (min)\"",
+         "max(max#max#mpi.recv.size) as \"Bytes recv (max)\""
+        ]
+      }
+     ]
+    },
+    {
      "name"        : "openmp.times",
      "description" : "Report time spent in OpenMP work and barrier regions",
      "type"        : "bool",
