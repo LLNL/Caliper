@@ -13,44 +13,22 @@
 #include <sstream>
 #include <set>
 
-
-
-//replaced MpiTracing with MpiPattern
-
 using namespace cali;
 
 struct MpiPattern::MpiPatternImpl
 {
     // --- The attributes
     //
-/*
-    Attribute msg_src_attr;
-    Attribute msg_dst_attr;
-    Attribute msg_size_attr;
-    Attribute msg_tag_attr;
-    Attribute send_count_attr;
-    Attribute recv_count_attr;
-*/
+
     Attribute total_send_count_attr;
     Attribute total_recv_count_attr;
+    Attribute total_coll_count_attr;
     Attribute total_dest_ranks_attr;
     Attribute total_src_ranks_attr;
     Attribute total_recv_size_attr;
     Attribute total_send_size_attr;
     Attribute total_coll_size_attr;
 
-    Attribute irecv_count_attr;
-    Attribute isend_count_attr;
-/*
-    Attribute coll_type_attr;
-    Attribute coll_root_attr;
-    Attribute coll_count_attr;
-
-    Attribute comm_attr;
-    Attribute comm_is_world_attr;
-    Attribute comm_list_attr;
-    Attribute comm_size_attr;
-*/
     // --- MPI object mappings
     //
 
@@ -78,29 +56,26 @@ struct MpiPattern::MpiPatternImpl
         const struct attr_info_t {
             const char* name; cali_attr_type type; int prop; Attribute* ptr;
         } attr_info_tbl[] = {
-            { "mpi.recv.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "mpi.recv.size",      CALI_TYPE_INT,  CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_recv_size_attr },
-            { "mpi.send.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "mpi.send.size",      CALI_TYPE_INT,  CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_send_size_attr },
-             { "mpi.coll.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "mpi.coll.size",      CALI_TYPE_INT,  CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_coll_size_attr },
 
-            { "total.send.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "total.send.count",    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_send_count_attr },
-            { "total.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "total.recv.count",    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_recv_count_attr },
-            { "total.dest.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            { "total.coll.count",    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_coll_count_attr },
+            { "total.dest.ranks",    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
               &total_dest_ranks_attr },
-            { "total.src.ranks",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &total_src_ranks_attr },
-            { "irecv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &irecv_count_attr },
-            { "isend.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
-              &isend_count_attr },
+            { "total.src.ranks",    CALI_TYPE_INT,  CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &total_src_ranks_attr  },
 
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
-
 
         for (const struct attr_info_t* a = attr_info_tbl; a && a->name; a++)
             *(a->ptr) = c->create_attribute(a->name, a->type, a->prop);
@@ -113,15 +88,12 @@ struct MpiPattern::MpiPatternImpl
     // --- point-to-point
     //
 
-    int irecv_count = 0;
-    int isend_count = 0;
-
     int total_send_count = 0;
-    int total_recv_ranks =0;
     int total_recv_count = 0;
-
+    int total_coll_count = 0;
     int total_send_size  = 0;
     int total_recv_size  = 0;
+    int total_coll_size  = 0;
 
     std::set<int> unique_src_ranks;
     std::set<int> unique_dest_ranks;
@@ -169,8 +141,6 @@ struct MpiPattern::MpiPatternImpl
     }
 
     void handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
-        irecv_count++;
-
         RequestInfo info;
 
         info.op            = RequestInfo::Recv;
@@ -255,18 +225,16 @@ struct MpiPattern::MpiPatternImpl
 
     // --- collectives
     //
-    int total_coll_size = 0;  // collective will increse size globally
 
     void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root) {
+        ++total_coll_count;
         total_coll_size += size;
     }
 
     void handle_comm_begin(Caliper* c, Channel* chn){
-        irecv_count = 0;
-        isend_count = 0;
-
         total_send_count = 0;
         total_recv_count = 0;
+        total_coll_count = 0;
         total_recv_size  = 0;
         total_send_size  = 0;
         total_coll_size  = 0;
@@ -276,18 +244,20 @@ struct MpiPattern::MpiPatternImpl
     }
 
     void handle_comm_end(Caliper* c, Channel* chn){
-        const Entry data[] = 
-        {
+        const Entry data[] = {
             { total_send_count_attr, Variant(total_send_count) },
             { total_recv_count_attr, Variant(total_recv_count) },
+            { total_coll_count_attr, Variant(total_coll_count) },
+
             { total_dest_ranks_attr, Variant(unique_dest_ranks.size()) },
             { total_src_ranks_attr,  Variant(unique_src_ranks.size())  },
-            { total_recv_size_attr,  Variant(total_recv_size) },
-            { total_send_size_attr,  Variant(total_send_size) },
-            { total_coll_size_attr,  Variant(total_coll_size) }
+
+            { total_recv_size_attr,  Variant(total_recv_size)  },
+            { total_send_size_attr,  Variant(total_send_size)  },
+            { total_coll_size_attr,  Variant(total_coll_size)  }
         };
 
-        c->push_snapshot(chn, SnapshotView(7, data));
+        c->push_snapshot(chn, SnapshotView(8, data));
     }
 
     // --- constructor
