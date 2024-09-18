@@ -1,12 +1,13 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
-
+//This is the ex-wrapper.w file
 #include "MpiTracing.h"
 
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/MpiEvents.h"
+#include "MpiPattern.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
@@ -31,7 +32,7 @@ namespace cali
 extern Attribute mpifn_attr;
 extern Attribute mpirank_attr;
 extern Attribute mpisize_attr;
-// extern Attribute mpi_call_id_attr;
+extern Attribute comm_region_attr;
 
 }
 
@@ -133,7 +134,9 @@ struct MpiWrapperConfig
         : channel(chn), next(nullptr), prev(nullptr)
         {
             setup_filter(cfg.get("whitelist").to_string(), cfg.get("blacklist").to_string());
+
             enable_msg_tracing = cfg.get("msg_tracing").to_bool();
+            enable_msg_pattern = cfg.get("msg_pattern").to_bool();
         }
 
     ~MpiWrapperConfig()
@@ -148,6 +151,9 @@ struct MpiWrapperConfig
 
     bool        enable_msg_tracing;
     MpiTracing  tracing;
+
+    bool        enable_msg_pattern;
+    MpiPattern  pattern;
 
     MpiWrapperConfig* next;
     MpiWrapperConfig* prev;
@@ -294,9 +300,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next){
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -315,9 +326,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_send_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next){
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_send_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_send_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -341,14 +357,19 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next){
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+            }
+       }
 
-        ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
+       ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
-        {{callfn}}
+       {{callfn}}
     }
 #endif
 }{{endfn}}
@@ -367,11 +388,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
-                mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
-                mwc->tracing.handle_recv(&c, mwc->channel, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing) {
+                    mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
+                }
+                if (mwc->enable_msg_pattern) {
+                    mwc->pattern.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
+                    mwc->pattern.handle_recv(&c, mwc->channel, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
+                }
             }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -395,11 +423,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
-                mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
-                mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing) {
+                    mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
+                }
+                if (mwc->enable_msg_pattern) {
+                    mwc->pattern.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
+                    mwc->pattern.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
+                }
             }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -418,9 +453,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_irecv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_irecv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_irecv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -439,9 +479,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_recv_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_recv_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_recv_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -460,9 +505,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_start(&c, mwc->channel, 1, {{0}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_start(&c, mwc->channel, 1, {{0}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_start(&c, mwc->channel, 1, {{0}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -481,9 +531,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_start(&c, mwc->channel, {{0}}, {{1}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_start(&c, mwc->channel, {{0}}, {{1}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_start(&c, mwc->channel, {{0}}, {{1}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -508,9 +563,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{1}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{1}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_completion(&c, mwc->channel, 1, &tmp_req, {{1}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -529,15 +589,16 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Request* tmp_req      = nullptr;
         MPI_Status*  tmp_statuses = nullptr;
 
-        bool any_msg_tracing = false;
+        bool copy_reqs = false;
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
-                any_msg_tracing = true;
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && (mwc->enable_msg_tracing || mwc->enable_msg_pattern)) {
+                copy_reqs = true;
                 break;
             }
+        }
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             tmp_req      = new MPI_Request[nreq];
             tmp_statuses = new MPI_Status[nreq];
 
@@ -552,13 +613,16 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && nreq > 0 && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{2}});
+            if (mwc->enable_msg_pattern && nreq > 0 && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_completion(&c, mwc->channel, nreq, tmp_req, {{2}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             delete[] tmp_statuses;
             delete[] tmp_req;
         }
@@ -580,15 +644,16 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Request* tmp_req = nullptr;
         MPI_Status   tmp_status;
 
-        bool any_msg_tracing = false;
+        bool copy_reqs = false;
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
-                any_msg_tracing = true;
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && (mwc->enable_msg_tracing || mwc->enable_msg_pattern)) {
+                copy_reqs = true;
                 break;
             }
+        }
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             tmp_req = new MPI_Request[nreq];
             std::copy_n({{1}}, nreq, tmp_req);
 
@@ -600,13 +665,16 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && nreq > 0 && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{3}});
+            if (mwc->enable_msg_pattern && nreq > 0 && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{3}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing)
+        if (copy_reqs)
             delete[] tmp_req;
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -626,15 +694,16 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Request* tmp_req = nullptr;
         MPI_Status*  tmp_statuses;
 
-        bool any_msg_tracing = false;
+        bool copy_reqs = false;
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
-                any_msg_tracing = true;
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && (mwc->enable_msg_tracing || mwc->enable_msg_pattern)) {
+                copy_reqs = true;
                 break;
             }
+        }
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             tmp_req      = new MPI_Request[nreq];
             tmp_statuses = new MPI_Status[nreq];
 
@@ -648,14 +717,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 for (int i = 0; i < *{{2}}; ++i)
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+               for (int i = 0; i < *{{2}}; ++i)
+                   mwc->pattern.handle_completion(&c, mwc->channel, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             delete[] tmp_statuses;
             delete[] tmp_req;
         }
@@ -682,9 +755,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && *{{1}} && mwc->enable_{{func}} && mwc->channel->is_active())
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (*{{1}} && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{2}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_completion(&c, mwc->channel, 1, &tmp_req, {{2}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -705,15 +783,16 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Request* tmp_req      = nullptr;
         MPI_Status*  tmp_statuses = nullptr;
 
-        bool any_msg_tracing = false;
+        bool copy_reqs = false;
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
-                any_msg_tracing = true;
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && (mwc->enable_msg_tracing || mwc->enable_msg_pattern)) {
+                copy_reqs = true;
                 break;
             }
+        }
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             tmp_req      = new MPI_Request[nreq];
             tmp_statuses = new MPI_Status[nreq];
 
@@ -727,16 +806,22 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && *{{2}} && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{3}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (*{{2}} && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{3}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_completion(&c, mwc->channel, nreq, tmp_req, {{3}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             delete[] tmp_statuses;
             delete[] tmp_req;
         }
+
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
         {{callfn}}
@@ -755,15 +840,16 @@ post_init_cb(Caliper* c, Channel* channel)
         MPI_Request* tmp_req = nullptr;
         MPI_Status   tmp_status;
 
-        bool any_msg_tracing = false;
+        bool copy_reqs = false;
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
-                any_msg_tracing = true;
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && (mwc->enable_msg_tracing || mwc->enable_msg_pattern)) {
+                copy_reqs = true;
                 break;
             }
+        }
 
-        if (any_msg_tracing) {
+        if (copy_reqs) {
             tmp_req = new MPI_Request[nreq];
             std::copy_n({{1}}, nreq, tmp_req);
 
@@ -775,13 +861,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && *{{3}} && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{4}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (*{{3}} && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{4}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{4}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 
-        if (any_msg_tracing)
+        if (copy_reqs)
             delete[] tmp_req;
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -797,9 +888,12 @@ post_init_cb(Caliper* c, Channel* channel)
         Caliper c;
         ::push_mpifn(&c, ::{{func}}_wrap_count > 0, "{{func}}");
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.request_free(&c, mwc->channel, {{0}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.request_free(&c, mwc->channel, {{0}});
+        }
 
         {{callfn}}
 
@@ -824,9 +918,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_barrier(&c, mwc->channel, {{0}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_barrier(&c, mwc->channel, {{0}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_barrier(&c, mwc->channel, {{0}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -845,9 +944,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -866,9 +970,14 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
-            if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
-                mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                if (mwc->enable_msg_tracing)
+                    mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
+                if (mwc->enable_msg_pattern)
+                    mwc->pattern.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -887,14 +996,20 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
                 int tmp_commsize = 0;
                 PMPI_Comm_size({{8}}, &tmp_commsize);
                 int total_count  = std::accumulate({{2}}, {{2}}+tmp_commsize, 0);
-
                 mwc->tracing.handle_12n(&c, mwc->channel, total_count, {{3}}, {{7}}, {{8}});
             }
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                int tmp_commsize = 0;
+                PMPI_Comm_size({{8}}, &tmp_commsize);
+                int total_count  = std::accumulate({{2}}, {{2}}+tmp_commsize, 0);
+                mwc->pattern.handle_12n(&c, mwc->channel, total_count, {{3}}, {{7}}, {{8}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -913,9 +1028,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -934,9 +1052,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{7}}, {{8}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{7}}, {{8}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -956,9 +1077,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n21(&c, mwc->channel, {{2}}, {{3}}, {{5}}, {{6}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n21(&c, mwc->channel, {{2}}, {{3}}, {{5}}, {{6}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -977,9 +1101,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -998,13 +1125,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
                 int tmp_rank = 0;
                 PMPI_Comm_rank({{5}}, &tmp_rank);
-
                 mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}[tmp_rank], {{3}}, {{5}});
             }
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                int tmp_rank = 0;
+                PMPI_Comm_rank({{5}}, &tmp_rank);
+                mwc->pattern.handle_n2n(&c, mwc->channel, {{2}}[tmp_rank], {{3}}, {{5}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1023,9 +1155,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1044,10 +1179,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{6}});
-
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{6}});
+        }
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1065,9 +1202,12 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
                 mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{7}});
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active())
+                mwc->pattern.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{7}});
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1086,13 +1226,18 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
                 int tmp_commsize = 0;
                 PMPI_Comm_size({{6}}, &tmp_commsize);
-
                 mwc->tracing.handle_n2n(&c, mwc->channel, tmp_commsize * {{1}}, {{2}}, {{6}});
             }
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                int tmp_commsize = 0;
+                PMPI_Comm_size({{6}}, &tmp_commsize);
+                mwc->pattern.handle_n2n(&c, mwc->channel, tmp_commsize * {{1}}, {{2}}, {{6}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1112,14 +1257,20 @@ post_init_cb(Caliper* c, Channel* channel)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
             if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active()) {
                 int tmp_commsize = 0;
                 PMPI_Comm_size({{8}}, &tmp_commsize);
                 int total_count  = std::accumulate({{1}}, {{1}}+tmp_commsize, 0);
-
                 mwc->tracing.handle_n2n(&c, mwc->channel, total_count, {{3}}, {{8}});
             }
+            if (mwc->enable_msg_pattern && mwc->enable_{{func}} && mwc->channel->is_active()) {
+                int tmp_commsize = 0;
+                PMPI_Comm_size({{8}}, &tmp_commsize);
+                int total_count  = std::accumulate({{1}}, {{1}}+tmp_commsize, 0);
+                mwc->pattern.handle_n2n(&c, mwc->channel, total_count, {{3}}, {{8}});
+            }
+        }
 
         ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1263,6 +1414,23 @@ void mpiwrap_init(Caliper* c, Channel* chn, ConfigSet& cfg)
 
     if (mwc->enable_msg_tracing)
         mwc->tracing.init(c, chn);
+
+   if (mwc->enable_msg_pattern) {
+        mwc->pattern.init(c, chn);
+
+        chn->events().pre_begin_evt.connect(
+            [mwc](Caliper* c, Channel* channel, const Attribute& attr, const Variant& value){
+                    if (attr == comm_region_attr)
+                        mwc->pattern.handle_comm_begin(c, channel);
+                });
+        chn->events().pre_end_evt.connect(
+            [mwc](Caliper* c, Channel* channel, const Attribute& attr, const Variant& value){
+                    if (attr == comm_region_attr)
+                        mwc->pattern.handle_comm_end(c, channel);
+                });
+
+        Log(1).stream() << chn->name() << ": mpi: Enabling message pattern analysis" << std::endl;
+    }
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << chn->name() << ": mpiwrap: Using GOTCHA wrappers." << std::endl;

@@ -60,16 +60,26 @@ class Node:
         """
 
         if self.record is None:
-            self.record = self._expand()
+            self._recursive_expand()
 
         return self.record
 
-    def _expand(self):
-        record = {}
+    def _recursive_expand(self):
+        nodelist = [ self ]
+        node = self.parent
 
-        if self.parent is not None:
-            record.update(self.parent.expand())
+        while node is not None and node.record is None:
+            nodelist.append(node)
+            node = node.parent
 
+        record = node.record.copy() if node is not None else {}
+
+        nodelist.reverse()
+        for node in nodelist:
+            node._expand(record)
+            node.record = record.copy()
+
+    def _expand(self, record):
         attr = self.attribute()
 
         if not attr.is_hidden():
@@ -85,8 +95,6 @@ class Node:
 
             if attr.is_nested():
                 record['path'] = record.get('path', []) + [ self.data ]
-
-        return record
 
 class Attribute:
     """ A Caliper attribute key.

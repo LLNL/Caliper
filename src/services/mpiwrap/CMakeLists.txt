@@ -13,6 +13,7 @@ add_wrapped_file(Wrapper.cpp Wrapper.w)
 
 set(CALIPER_MPIWRAP_SOURCES
   MpiTracing.cpp
+  MpiPattern.cpp
   MpiWrap.cpp
   Wrapper.cpp)
 
