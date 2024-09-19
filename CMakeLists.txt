@@ -50,8 +50,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 # Optional Fortran
-add_caliper_option(WITH_FORTRAN   "Install Fortran interface" FALSE)
-add_caliper_option(WITH_TOOLS     "Build Caliper tools" TRUE)
+add_caliper_option(WITH_FORTRAN           "Install Fortran interface" FALSE)
+add_caliper_option(WITH_PYTHON_BINDINGS   "Install Python bindings" FALSE)
+add_caliper_option(WITH_TOOLS             "Build Caliper tools" TRUE)
 
 add_caliper_option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
 add_caliper_option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
@@ -421,7 +422,12 @@ if(WITH_TAU)
 endif()
 
 # Find Python
-find_package(Python COMPONENTS Interpreter REQUIRED)
+set(FIND_PYTHON_COMPONENTS "Interpreter")
+if (WITH_PYTHON_BINDINGS)
+  set(FIND_PYTHON_COMPONENTS "Development" ${FIND_PYTHON_COMPONENTS})
+endif ()
+
+find_package(Python COMPONENTS ${FIND_PYTHON_COMPONENTS} REQUIRED)
 set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
 
 if (WITH_SAMPLER)
@@ -494,6 +500,10 @@ configure_file(
 # Include and install header files
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
+
+if (WITH_PYTHON_BINDINGS AND BUILD_TESTING)
+  set(PYPATH_TESTING "" CACHE INTERNAL "")
+endif()
 
 add_subdirectory(ext)
 add_subdirectory(src)
