@@ -9,6 +9,10 @@ project (caliper C CXX)
 cmake_policy(SET CMP0063 NEW)
 # Use <PackageName>_ROOT variables in find_package()
 cmake_policy(SET CMP0074 NEW)
+# Find Python by location
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.15)
+  cmake_policy(SET CMP0094 NEW)
+endif()
 
 # set the default visibility settings
 set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
@@ -422,12 +426,19 @@ if(WITH_TAU)
 endif()
 
 # Find Python
-set(FIND_PYTHON_COMPONENTS "Interpreter")
 if (WITH_PYTHON_BINDINGS)
-  set(FIND_PYTHON_COMPONENTS "Development" ${FIND_PYTHON_COMPONENTS})
-endif ()
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+  find_package(pybind11 CONFIG REQUIRED)
+  if (pybind11_FOUND)
+    set(CALIPER_HAVE_PYBIND11 TRUE)
+    set(CALIPER_PyBind_CMAKE_MSG "Yes, using pybind ${pybind11_VERSION}")
+  else()
+    message(WARNING "Python bindings requested but pybind11 was not found")
+  endif()
+else()
+  find_package(Python COMPONENTS Interpreter REQUIRED)
+endif()
 
-find_package(Python COMPONENTS ${FIND_PYTHON_COMPONENTS} REQUIRED)
 set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
 
 if (WITH_SAMPLER)
@@ -620,6 +631,7 @@ message(STATUS "Caliper configuration summary:")
 message(STATUS "Caliper version           : ${CALIPER_VERSION}")
 message(STATUS "Build type                : ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler                  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
+message(STATUS "Python interpreter        : ${Python_EXECUTABLE}")
 message(STATUS "System                    : ${CMAKE_SYSTEM} (${CMAKE_SYSTEM_PROCESSOR})")
 message(STATUS "Install dir               : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
@@ -628,6 +640,7 @@ message(STATUS "Build tests               : ${BUILD_TESTING}")
 
 set(CALIPER_MODULES
   Fortran
+  PyBind
   cpuinfo
   memusage
   adiak
