@@ -239,7 +239,8 @@ struct Boundary {
 int find_relro_boundary(struct dl_phdr_info *info, size_t size, void *data) {
   struct Boundary *boundary = data;
   int found = 0;
-  for (int i = 0; i < info->dlpi_phnum; ++i) {
+  int i = 0;
+  for (i = 0; i < info->dlpi_phnum; ++i) {
     if (info->dlpi_phdr[i].p_type == PT_LOAD) {
       if (strcmp(boundary->l_name, info->dlpi_name) == 0 &&
           boundary->load_addr == info->dlpi_addr) {
@@ -249,7 +250,8 @@ int find_relro_boundary(struct dl_phdr_info *info, size_t size, void *data) {
     }
   }
   if (found) {
-    for (int i = 0; i < info->dlpi_phnum; ++i) {
+    int i = 0;
+    for (i = 0; i < info->dlpi_phnum; ++i) {
       if (info->dlpi_phdr[i].p_type == PT_GNU_RELRO) {
         boundary->start_addr = boundary->load_addr + info->dlpi_phdr[i].p_vaddr;
         boundary->end_addr = boundary->start_addr + info->dlpi_phdr[i].p_memsz;

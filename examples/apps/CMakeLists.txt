@@ -13,6 +13,7 @@ set(CALIPER_MPI_EXAMPLE_APPS
   collective-output-channel)
 set(CALIPER_C_EXAMPLE_APPS
   c-example
+  c-spinloop-example
   cali-print-snapshot)
 set(CALIPER_Fortran_EXAMPLE_APPS
   fortran-example

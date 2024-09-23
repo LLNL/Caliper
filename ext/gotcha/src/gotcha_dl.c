@@ -30,7 +30,8 @@ int lib_header_callback(struct dl_phdr_info *info, size_t size, void *data) {
   struct Addrs *addrs = data;
   const char *name = NULL;
   ElfW(Addr) load_address;
-  for (int i = 0; i < info->dlpi_phnum; ++i) {
+  int i = 0;
+  for (i = 0; i < info->dlpi_phnum; ++i) {
     if (info->dlpi_phdr[i].p_type == PT_LOAD) {
       ElfW(Addr) base_addr = info->dlpi_addr;
       ElfW(Addr) start_addr = base_addr + info->dlpi_phdr[i].p_vaddr;
