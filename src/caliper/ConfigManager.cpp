@@ -632,7 +632,15 @@ struct ConfigManager::Options::OptionsImpl
             }
         }
 
-        enabled_options = std::move(vec);
+        // make sure there are no duplicates, but keep entries in input order
+        std::vector<std::string> ret;
+        ret.reserve(vec.size());
+        for (auto it = vec.begin(); it != vec.end(); ++it) {
+            if (std::find(ret.begin(), ret.end(), *it) == ret.end())
+                ret.emplace_back(std::move(*it));
+        }
+
+        enabled_options = std::move(ret);
     }
 
     OptionsImpl(const OptionSpec& s, const arglist_t& a)

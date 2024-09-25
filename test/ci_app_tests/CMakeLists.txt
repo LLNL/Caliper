@@ -24,6 +24,9 @@ set(CALIPER_CI_MPI_TEST_APPS
   ci_test_mpi_channel_manager)
 set(CALIPER_CI_Fortran_TEST_APPS
   ci_test_f_ann)
+set(CALIPER_CI_Python_TEST_APPS
+  ci_test_py_ann.py
+)
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
@@ -130,6 +133,22 @@ if (WITH_FORTRAN)
   list(APPEND PYTHON_SCRIPTS test_fortran_api.py)
 endif()
 
+if (WITH_PYTHON_BINDINGS)
+  foreach(file ${CALIPER_CI_Python_TEST_APPS})
+    # add_custom_target(${file} ALL
+    #   COMMAND ${CMAKE_COMMAND} -E create_symlink
+    #     ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+    #     ${CMAKE_CURRENT_BINARY_DIR}/${file})
+    configure_file(
+      ${CMAKE_CURRENT_SOURCE_DIR}/${file}
+      ${CMAKE_CURRENT_BINARY_DIR}/${file}
+      @ONLY
+    )
+  endforeach()
+
+  list(APPEND PYTHON_SCRIPTS test_python_api.py)
+endif()
+
 set(DATA_FILES
   example_node_info.json)
 
@@ -141,3 +160,7 @@ foreach(file ${PYTHON_SCRIPTS} ${DATA_FILES})
 endforeach()
 
 add_test(NAME CI_app_tests COMMAND ${CALI_PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")
+# if (WITH_PYTHON_BINDINGS)
+#   message(STATUS "Adding ${PYPATH_TESTING} to PYTHONPATH for CI_app_tests")
+#   set_tests_properties(CI_app_tests PROPERTIES ENVIRONMENT "PYTHONPATH=${PYPATH_TESTING}")
+# endif()
