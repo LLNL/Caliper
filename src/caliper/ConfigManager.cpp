@@ -180,6 +180,152 @@ expand_variables(const std::string& in, const std::string& val)
     return ret;
 }
 
+ConfigManager::arglist_t
+parse_keyval_list(std::istream& is)
+{
+    ConfigManager::arglist_t ret;
+    char c = 0;
+
+    do {
+        std::string key = util::read_word(is, "=");
+        if (key.empty())
+            return ret;
+
+        c = util::read_char(is);
+        if (c != '=')
+            return ret;
+
+        std::string val = util::read_word(is, ",()");
+        if (!val.empty())
+            ret.push_back(std::make_pair(key, val));
+
+        c = util::read_char(is);
+    } while (is.good() && c == ',');
+
+    if (is.good())
+        is.unget();
+
+    return ret;
+}
+
+std::pair<bool, StringConverter>
+find_key(const std::vector<std::string>& path, const std::map<std::string, StringConverter>& dict)
+{
+    if (path.empty())
+        return std::make_pair(false, StringConverter());
+
+    auto it = dict.find(path.front());
+    if (it == dict.end())
+        return std::make_pair(false, StringConverter());
+
+    if (path.size() == 1)
+        return std::make_pair(true, it->second);
+
+    StringConverter ret = it->second;
+    for (auto path_it = path.begin()+1; path_it != path.end(); ++path_it) {
+        auto sub_dict = ret.rec_dict();
+        it = sub_dict.find(*path_it);
+        if (it == sub_dict.end())
+            return std::make_pair(false, StringConverter());
+        ret = it->second;
+    }
+
+    return std::make_pair(true, ret);
+}
+
+unsigned
+add_metadata_entries(const std::string& key, const StringConverter& val, info_map_t& info)
+{
+    unsigned num_entries = 0;
+
+    bool is_dict = false;
+    auto dict = val.rec_dict(&is_dict);
+
+    if (is_dict) {
+        std::string prefix = key + ".";
+        for (const auto& p : dict) {
+            info[prefix + p.first] = p.second.to_string();
+            ++num_entries;
+        }
+    } else {
+        info[key] = val.to_string();
+        ++num_entries;
+    }
+
+    return num_entries;
+}
+
+void
+read_metadata_from_json_file(const std::string& filename, const std::string& keys, info_map_t& info)
+{
+    std::ifstream is(filename.c_str(), std::ios::ate);
+
+    if (!is) {
+        Log(0).stream() << "read_metadata_from_json_file(): Cannot open "
+            << filename << ", quitting\n";
+        return;
+    }
+
+    auto size = is.tellg();
+    std::string str(size, '\0');
+    is.seekg(0);
+    if (!is.read(&str[0], size)) {
+        Log(0).stream() << "read_metadata_from_json_file(): Cannot read "
+            << filename << ", quitting\n";
+        return;
+    }
+
+    bool ok = false;
+    auto top = StringConverter(str).rec_dict(&ok);
+
+    if (!ok) {
+        Log(0).stream() << "read_metadata_from_json_file(): Cannot parse top-level dict in "
+            << filename << ", quitting\n";
+        return;
+    }
+
+    auto keylist = StringConverter(keys).to_stringlist();
+    if (keylist.empty()) {
+        for (const auto& p : top)
+            keylist.push_back(p.first);
+    }
+
+    for (const std::string& key : keylist) {
+        std::vector<std::string> path = StringConverter(key).to_stringlist(".");
+        auto ret = find_key(path, top);
+        if (ret.first)
+            add_metadata_entries(key, ret.second, info);
+        else
+            Log(1).stream() << "read_metadata_from_json_file(): Key "
+                << key << " not found\n";
+    }
+}
+
+void
+add_metadata(const std::string& args, info_map_t& info)
+{
+    std::istringstream is(args);
+    auto arglist = parse_keyval_list(is);
+
+    auto it = std::find_if(arglist.begin(), arglist.end(), [](const std::pair<std::string,std::string>& p){
+            return p.first == "file";
+        });
+
+    if (it != arglist.end()) {
+        std::string filename = it->second;
+        std::string keys;
+        it = std::find_if(arglist.begin(), arglist.end(), [](const std::pair<std::string,std::string>& p){
+                return p.first == "keys";
+            });
+        if (it != arglist.end())
+            keys = it->second;
+        read_metadata_from_json_file(filename, keys, info);
+    } else {
+        for (const auto& p : arglist)
+            info[p.first] = p.second;
+    }
+}
+
 } // namespace [anonymous]
 
 
@@ -540,8 +686,15 @@ struct ConfigManager::Options::OptionsImpl
 
     void
     update_channel_metadata(info_map_t& info) {
-        for (const auto &p : args)
-            info[p.first] = p.second;
+        for (const auto &p : args) {
+            if (p.first == "metadata") {
+                add_metadata(p.second, info);
+            } else {
+                std::string key = "opts:";
+                key.append(p.first);
+                info[key] = p.second;
+            }
+        }
     }
 
     std::string
@@ -614,19 +767,16 @@ struct ConfigManager::Options::OptionsImpl
 
         for (const auto &argp : args) {
             auto s_it = spec.data.find(argp.first);
-
             if (s_it == spec.data.end())
                 continue;
 
             //   Non-boolean options are enabled if they are present in args.
             // For boolean options, check if they are set to false or true.
             bool enabled = true;
-
             if (s_it->second.type == "bool")
                 enabled = StringConverter(argp.second).to_bool();
             if (enabled) {
                 vec.push_back(argp.first);
-
                 auto tmp = get_inherited_specs(argp.first);
                 vec.insert(vec.end(), tmp.begin(), tmp.end());
             }
@@ -745,8 +895,8 @@ struct ConfigManager::ConfigManagerImpl
     std::map< std::string, arglist_t >
         m_default_parameters_for_spec;
 
-    arglist_t    m_default_parameters;
-    argmap_t     m_extra_vars;
+    arglist_t   m_default_parameters;
+    argmap_t    m_extra_vars;
 
     OptionSpec  m_global_opts;
 
@@ -893,7 +1043,7 @@ struct ConfigManager::ConfigManagerImpl
             add_config_spec(s.spec, s.create, s.check_args, true /* ignore existing */ );
     }
 
-    //   Parse "=value"
+    //   Parse "=value" or "(value)"
     // Returns an empty string if there is no '=', otherwise the string after '='.
     // Sets error if there is a '=' but no word afterwards.
     std::string
@@ -906,8 +1056,12 @@ struct ConfigManager::ConfigManagerImpl
 
             if (val.empty())
                 set_error("Expected value after \"" + key + "=\"", is);
-        }
-        else
+        } else if (c == '(') {
+            val = util::read_nested_text(is, '(', ')');
+            c = util::read_char(is);
+            if (c != ')')
+                set_error("Missing ')' after \"" + key + "\"(", is);
+        } else
             is.unget();
 
         return val;
@@ -931,7 +1085,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string key = util::read_word(is, ",=()\n");
 
             if (!key.empty()) {
-                if (!(opts.contains(key))) {
+                if (!(opts.contains(key)) && key != "metadata") {
                     set_error("Unknown option: " + key);
                     args.clear();
                     return args;
@@ -1121,7 +1275,9 @@ struct ConfigManager::ConfigManagerImpl
                     if (m_error)
                         return ret;
 
-                    if (is_option(key)) {
+                    if (key == "metadata") {
+                        m_default_parameters.push_back(std::make_pair(key, val));
+                    } else if (is_option(key)) {
                         if (val.empty())
                             val = "true";
 

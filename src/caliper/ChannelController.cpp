@@ -39,12 +39,9 @@ namespace
 void add_channel_metadata(Caliper& c, Channel* channel, const info_map_t& metadata)
 {
     for (const auto &entry : metadata) {
-        std::string key = channel->name();
-        key.append(":");
-        key.append(entry.first);
-
         auto attr =
-            c.create_attribute(key, CALI_TYPE_STRING, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+            c.create_attribute(entry.first, CALI_TYPE_STRING,
+                CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_UNALIGNED);
 
         c.set(channel, attr, Variant(entry.second.c_str()));
     }
