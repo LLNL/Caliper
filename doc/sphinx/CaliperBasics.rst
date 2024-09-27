@@ -613,6 +613,25 @@ Adiak (Adiak support must be enabled in the Caliper build configuration). The
 spot config for the Spot web visualization framework requires that metadata
 attributes are recorded through Adiak.
 
+Finally, metadata can be added through the ``CALI_CONFIG`` and ConfigManager
+configuration strings with the ``metadata`` keyword:
+
+.. code-block:: sh
+
+    $ CALI_CONFIG="runtime-report,print.metadata,metadata(foo=fooval,bar=barval)" ./examples/apps/cxx-example
+    caliper.config        :
+    iterations            : 4
+    cali.caliper.version  : 2.12.0-dev
+    opts:print.metadata   : true
+    opts:output.append    : true
+    opts:order_as_visited : true
+    foo                   : fooval
+    bar                   : barval
+    cali.channel          : runtime-report
+    Path       Time (E) Time (I) Time % (E) Time % (I)
+    main       0.000014 0.000547   2.118374  85.205938
+    ...
+
 Third-party tool support (NVidia NSight, Intel VTune)
 -----------------------------------------------------
 
