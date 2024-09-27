@@ -151,6 +151,22 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'cali.caliper.version' } ) )
 
+    def test_configmanager_metadata_import(self):
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile(metadata(bla=garbl),output.format=json-split),metadata(file=example_node_info.json,keys=\"host.os,host.name\"),output=stdout' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY' : '0'
+        }
+
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
+
+        self.assertEqual(obj['host.os.name'], 'TestOS')
+        self.assertEqual(obj['host.os.version'], '3.11')
+        self.assertEqual(obj['host.name'], 'test42')
+        self.assertEqual(obj['bla'], 'garbl')
+        self.assertFalse('other' in obj.keys())
+        self.assertFalse('host.cluster' in obj.keys())
+
     def test_lcnodeinfo(self):
         target_cmd = [ './ci_test_basic' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-G', '-e' ]

@@ -91,7 +91,7 @@ merge_new_elements(ConfigManager::arglist_t& to, const ConfigManager::arglist_t&
                     return p.first == v.first;
                 });
 
-        if (it == to.end())
+        if (it == to.end() || p.first == "metadata") // hacky but we want to allow multiple entries for metadata
             to.push_back(p);
     }
 
@@ -209,7 +209,7 @@ parse_keyval_list(std::istream& is)
 }
 
 std::pair<bool, StringConverter>
-find_key(const std::vector<std::string>& path, const std::map<std::string, StringConverter>& dict)
+find_key_in_json(const std::vector<std::string>& path, const std::map<std::string, StringConverter>& dict)
 {
     if (path.empty())
         return std::make_pair(false, StringConverter());
@@ -261,7 +261,7 @@ read_metadata_from_json_file(const std::string& filename, const std::string& key
     std::ifstream is(filename.c_str(), std::ios::ate);
 
     if (!is) {
-        Log(0).stream() << "read_metadata_from_json_file(): Cannot open "
+        Log(0).stream() << "read_metadata_from_json_file(): Cannot open file "
             << filename << ", quitting\n";
         return;
     }
@@ -270,7 +270,7 @@ read_metadata_from_json_file(const std::string& filename, const std::string& key
     std::string str(size, '\0');
     is.seekg(0);
     if (!is.read(&str[0], size)) {
-        Log(0).stream() << "read_metadata_from_json_file(): Cannot read "
+        Log(0).stream() << "read_metadata_from_json_file(): Cannot read file "
             << filename << ", quitting\n";
         return;
     }
@@ -292,7 +292,7 @@ read_metadata_from_json_file(const std::string& filename, const std::string& key
 
     for (const std::string& key : keylist) {
         std::vector<std::string> path = StringConverter(key).to_stringlist(".");
-        auto ret = find_key(path, top);
+        auto ret = find_key_in_json(path, top);
         if (ret.first)
             add_metadata_entries(key, ret.second, info);
         else
@@ -688,7 +688,7 @@ struct ConfigManager::Options::OptionsImpl
     update_channel_metadata(info_map_t& info) {
         for (const auto &p : args) {
             if (p.first == "metadata") {
-                add_metadata(p.second, info);
+                ::add_metadata(p.second, info);
             } else {
                 std::string key = "opts:";
                 key.append(p.first);
