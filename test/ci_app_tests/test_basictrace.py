@@ -297,7 +297,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             }))
 
     def test_exclusive_region_filter(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,exclude_regions=before_loop,output.format=cali,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,exclude_regions="before_loop,inner_before_loop",output.format=cali,output=stdout' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {

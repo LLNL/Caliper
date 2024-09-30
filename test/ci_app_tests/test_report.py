@@ -43,7 +43,7 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'region': 'main', 'count': '19', 'inclusive#count': '81' }))
+            snapshots, { 'region': 'main', 'count': '19', 'inclusive#count': '83' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region': 'main/foo', 'count': '48', 'inclusive#count': '60' }))
 
@@ -127,14 +127,15 @@ class CaliperReportTest(unittest.TestCase):
         }
 
         report_targets = [
-            'Path             Count',
-            'main                 1',
-            '  main loop          5',
-            '    foo              4',
-            '      fooloop       20',
-            '      pre-loop       4',
-            '        foo.init     4',
-            '  before_loop        1'
+            'Path                  Count',
+            'main                      1',
+            '  main loop               5',
+            '    foo                   4',
+            '      fooloop            20',
+            '      pre-loop            4',
+            '        foo.init          4',
+            '  before_loop             1',
+            '    inner_before_loop     1'
         ]
 
         report_output,_ = cat.run_test(target_cmd, caliper_config)
