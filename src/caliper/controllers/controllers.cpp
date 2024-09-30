@@ -1174,21 +1174,6 @@ const char* builtin_option_specs = R"json(
      "category"    : "output"
     },
     {
-     "name"        : "lcnodeinfo",
-     "description" : "Read node info from /etc/node_info.json on LC systems",
-     "type"        : "bool",
-     "category"    : "metadata",
-     "services"    : [ "lcnodeinfo" ]
-    },
-    {
-     "name"        : "lcnodeinfo.keys",
-     "description" : "Keys to read from /etc/node_info.json file",
-     "type"        : "bool",
-     "category"    : "metadata",
-     "services"    : [ "lcnodeinfo" ],
-     "config"      : { "CALI_LCNODEINFO_KEYS": "{}" }
-    },
-    {
      "name"        : "adiak.import_categories",
      "services"    : [ "adiak_import" ],
      "description" : "Adiak import categories. Comma-separated list of integers.",
