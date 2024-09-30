@@ -18,6 +18,12 @@
 
 #include "Annotation.h"
 
+// Macros for building variable names with other macros
+// These macros were obtained from:
+// https://stackoverflow.com/a/71899854
+#define CONCAT_(prefix, suffix) perfix##suffix
+#define CREATE_VAR_NAME(prefix, suffix) CONCAT_(prefix, suffix)
+
 /// \brief C++ macro to mark a function
 ///
 /// Mark begin and end of a function. Should be placed at the top of the
@@ -25,7 +31,7 @@
 /// point. Will export the annotated function by name in the pre-defined
 /// `function` attribute. Only available in C++.
 #define CALI_CXX_MARK_FUNCTION \
-    cali::Function __cali_ann##__func__(__func__)
+    cali::Function CREATE_VAR_NAME(__cali_ann, __func__)(__func__)
 
 /// \brief C++ macro marking a scoped region
 ///
@@ -34,7 +40,7 @@
 /// point. Will export the annotated function by name in the pre-defined
 /// `annotation` attribute. Only available in C++.
 #define CALI_CXX_MARK_SCOPE(name) \
-    cali::ScopeAnnotation __cali_ann_scope##__LINE__(name)
+    cali::ScopeAnnotation CREATE_VAR_NAME(__cali_ann_scope, __LINE__)(name)
 
 /// \brief Mark loop in C++
 /// \copydetails CALI_MARK_LOOP_BEGIN

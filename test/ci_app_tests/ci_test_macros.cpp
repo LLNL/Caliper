@@ -61,6 +61,7 @@ int main(int argc, char* argv[])
 
     {
         CALI_CXX_MARK_SCOPE("before_loop");
+        CALI_CXX_MARK_SCOPE("inner_before_loop");
 
         if (argc > 3)
             count = std::max(1, std::stoi(argv[3]));
