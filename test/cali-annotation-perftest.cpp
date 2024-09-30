@@ -136,38 +136,38 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
 #endif
 }
 
+const util::Args::Table option_table[] = {
+    { "width",       "tree-width",  'w', true,
+        "Context tree width", "WIDTH"
+    },
+    { "depth",       "tree-width",  'd', true,
+        "Context tree depth", "DEPTH"
+    },
+    { "iterations",  "iterations",  'i', true,
+        "Iterations",         "ITERATIONS"
+    },
+    { "csv",         "print-csv",   'c', false,
+        "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime.",
+        nullptr
+    },
+    { "channels",     "channels",   'x', true,
+        "Number of replicated channel instances",
+        "CHANNELS"
+    },
+    { "profile",       "profile",   'P', true,
+        "Caliper profiling config (for profiling cali-annotation-perftest)",
+        "CONFIGSTRING"
+    },
+
+    { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
+    { "help",  "help",  'h', false, "Print help",         nullptr },
+
+    util::Args::Terminator
+};
+
 int main(int argc, char* argv[])
 {
     cali_config_preset("CALI_ATTRIBUTE_DEFAULT_SCOPE", "process");
-
-    const util::Args::Table option_table[] = {
-        { "width",       "tree-width",  'w', true,
-          "Context tree width", "WIDTH"
-        },
-        { "depth",       "tree-width",  'd', true,
-          "Context tree depth", "DEPTH"
-        },
-        { "iterations",  "iterations",  'i', true,
-          "Iterations",         "ITERATIONS"
-        },
-        { "csv",         "print-csv",   'c', false,
-          "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime.",
-          nullptr
-        },
-        { "channels",     "channels",   'x', true,
-          "Number of replicated channel instances",
-          "CHANNELS"
-        },
-        { "profile",       "profile",   'P', true,
-          "Caliper profiling config (for profiling cali-annotation-perftest)",
-          "CONFIGSTRING"
-        },
-
-        { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
-        { "help",  "help",  'h', false, "Print help",         nullptr },
-
-        util::Args::Terminator
-    };
 
     // --- initialization
 
