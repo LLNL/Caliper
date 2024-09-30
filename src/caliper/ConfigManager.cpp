@@ -243,10 +243,8 @@ add_metadata_entries(const std::string& key, const StringConverter& val, info_ma
 
     if (is_dict) {
         std::string prefix = key + ".";
-        for (const auto& p : dict) {
-            info[prefix + p.first] = p.second.to_string();
-            ++num_entries;
-        }
+        for (const auto& p : dict)
+            num_entries += add_metadata_entries(prefix + p.first, p.second, info);
     } else {
         info[key] = val.to_string();
         ++num_entries;
