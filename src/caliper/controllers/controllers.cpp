@@ -595,17 +595,23 @@ const char* builtin_option_specs = R"json(
         [
          "min(min#total.send.count) as \"Sends (min)\"",
          "max(max#total.send.count) as \"Sends (max)\"",
+         "sum(sum#total.send.count) as \"Sends (total)\"",
          "min(min#total.recv.count) as \"Recvs (min)\"",
          "max(max#total.recv.count) as \"Recvs (max)\"",
+         "sum(sum#total.recv.count) as \"Recvs (total)\"",
          "min(min#total.dest.ranks) as \"Dst ranks (min)\"",
          "max(max#total.dest.ranks) as \"Dst ranks (max)\"",
+         "avg(avg#total.dest.ranks) as \"Dst ranks (avg)\"",
          "min(min#total.src.ranks)  as \"Src ranks (min)\"",
          "max(max#total.src.ranks)  as \"Src ranks (max)\"",
+         "avg(avg#total.src.ranks)  as \"Src ranks (avg)\"",
          "max(max#total.coll.count) as \"Collectives (max)\"",
          "min(min#mpi.send.size) as \"Bytes sent (min)\"",
          "max(max#mpi.send.size) as \"Bytes sent (max)\"",
+         "sum(sum#mpi.send.size) as \"Bytes sent (total)\"",
          "min(min#mpi.recv.size) as \"Bytes recv (min)\"",
-         "max(max#mpi.recv.size) as \"Bytes recv (max)\""
+         "max(max#mpi.recv.size) as \"Bytes recv (max)\"",
+         "sum(sum#mpi.recv.size) as \"Bytes recv (total)\""
         ]
       },
       { "level"    : "cross",
@@ -613,17 +619,23 @@ const char* builtin_option_specs = R"json(
         [
          "min(min#min#total.send.count) as \"Sends (min)\"",
          "max(max#max#total.send.count) as \"Sends (max)\"",
+         "sum(sum#sum#total.send.count) as \"Sends (total)\"",
          "min(min#min#total.recv.count) as \"Recvs (min)\"",
          "max(max#max#total.recv.count) as \"Recvs (max)\"",
+         "sum(sum#sum#total.recv.count) as \"Recvs (total)\"",
          "min(min#min#total.dest.ranks) as \"Dst ranks (min)\"",
          "max(max#max#total.dest.ranks) as \"Dst ranks (max)\"",
+         "avg(avg#avg#total.dest.ranks) as \"Dst ranks (avg)\"",
          "min(min#min#total.src.ranks)  as \"Src ranks (min)\"",
          "max(max#max#total.src.ranks)  as \"Src ranks (max)\"",
+         "avg(avg#avg#total.src.ranks)  as \"Src ranks (avg)\"",
          "max(max#max#total.coll.count) as \"Coll (max)\"",
          "min(min#min#mpi.send.size) as \"Bytes sent (min)\"",
          "max(max#max#mpi.send.size) as \"Bytes sent (max)\"",
+         "sum(sum#sum#mpi.send.size) as \"Bytes sent (total)\"",
          "min(min#min#mpi.recv.size) as \"Bytes recv (min)\"",
-         "max(max#max#mpi.recv.size) as \"Bytes recv (max)\""
+         "max(max#max#mpi.recv.size) as \"Bytes recv (max)\"",
+         "sum(sum#sum#mpi.recv.size) as \"Bytes recv (total)\""
         ]
       }
      ]
