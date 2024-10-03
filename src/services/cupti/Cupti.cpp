@@ -75,7 +75,7 @@ class CuptiService
 
     Cupti::EventSampling   event_sampling;
 
-    Channel*            channel;
+    Channel channel;
 
     //
     // --- Helper functions
@@ -123,7 +123,7 @@ class CuptiService
         Caliper c;
 
         c.make_record(4, attr, vals, trigger_info.builder());
-        c.push_snapshot(channel, trigger_info.view());
+        c.push_snapshot(&channel, trigger_info.view());
     }
 
     void
@@ -148,7 +148,7 @@ class CuptiService
         Caliper c;
 
         c.make_record(3, attr, vals, trigger_info.builder());
-        c.push_snapshot(channel, trigger_info.view());
+        c.push_snapshot(&channel, trigger_info.view());
     }
 
     void
@@ -258,7 +258,7 @@ class CuptiService
         }
         break;
         case CUPTI_CBID_NVTX_nvtxRangePop:
-            c.end(channel, cupti_info.nvtx_range_attr);
+            c.end(cupti_info.nvtx_range_attr);
             break;
         case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
         {
@@ -451,7 +451,7 @@ class CuptiService
           num_resource_cb(0),
           num_sync_cb(0),
           num_nvtx_cb(0),
-          channel(chn)
+          channel(*chn)
         {
             cupti_info.record_symbol = config.get("record_symbol").to_bool();
 

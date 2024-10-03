@@ -135,7 +135,7 @@ class LibpfmService
 
     static thread_local ThreadState sT;
 
-    static Channel*    sC;
+    static Channel    sC;
     static LibpfmService* sI;
 
     const int signum       = SIGIO;
@@ -161,7 +161,7 @@ class LibpfmService
 
         data[num_attributes] = Entry(event_name_nodes[event_index]);
 
-        c.push_snapshot(sC, SnapshotView(num_attributes+1, data));
+        c.push_snapshot(&sC, SnapshotView(num_attributes+1, data));
 
         sI->samples_produced++;
     }
@@ -694,7 +694,7 @@ public:
         if (sC) {
             Log(0).stream() << chn->name() << ": libpfm: Cannot enable libpfm service twice!"
                             << " It is already enabled in channel "
-                            << sC->name() << std::endl;
+                            << sC.name() << std::endl;
 
             return;
         }
@@ -706,7 +706,7 @@ public:
             return;
         }
 
-        sC = chn;
+        sC = *chn;
 
         sI->setup_process_signals();
 
@@ -722,8 +722,8 @@ public:
             [](Caliper* c, Channel* chn){
                 sI->finish_cb(c, chn);
                 delete sI;
-                sI   = nullptr;
-                sC = nullptr;
+                sI = nullptr;
+                sC = Channel();
             });
 
         if (sI->enable_sampling)
@@ -743,7 +743,7 @@ public:
 
 thread_local LibpfmService::ThreadState LibpfmService::sT;
 
-Channel*       LibpfmService::sC = nullptr;
+Channel        LibpfmService::sC;
 LibpfmService* LibpfmService::sI = nullptr;
 
 const ConfigSet::Entry LibpfmService::s_configdata[] = {

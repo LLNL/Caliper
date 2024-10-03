@@ -97,7 +97,7 @@ class RocProfilerService
     std::map<uint64_t, std::string> m_kernel_info;
     std::mutex m_kernel_info_mutex;
 
-    Channel*   m_channel;
+    Channel    m_channel;
 
     static RocProfilerService* s_instance;
 
@@ -238,7 +238,7 @@ class RocProfilerService
 
                 FixedSizeSnapshotRecord<6> snapshot;
                 c.make_record(6, attr, data, snapshot.builder(), correlation);
-                s_instance->m_channel->events().process_snapshot(&c, s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_TRACING &&
@@ -278,7 +278,7 @@ class RocProfilerService
 
                 FixedSizeSnapshotRecord<6> snapshot;
                 c.make_record(6, attr, data, snapshot.builder(), correlation);
-                s_instance->m_channel->events().process_snapshot(&c, s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             }
@@ -374,7 +374,7 @@ class RocProfilerService
     }
 
     RocProfilerService(Caliper* c, Channel* channel)
-        : m_channel { channel }
+        : m_channel { *channel }
     {
         auto config = services::init_config_from_spec(channel->config(), s_spec);
 

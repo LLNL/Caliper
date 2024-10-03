@@ -39,16 +39,16 @@ using namespace std;
 namespace
 {
 
-Attribute   timer_attr;
-Attribute   sampler_attr;
-Attribute   ucursor_attr;
+Attribute timer_attr;
+Attribute sampler_attr;
+Attribute ucursor_attr;
 
-int         nsec_interval       = 0;
+int       nsec_interval       = 0;
 
-int         n_samples           = 0;
-int         n_processed_samples = 0;
+int       n_samples           = 0;
+int       n_processed_samples = 0;
 
-Channel* channel          = nullptr;
+Channel   channel;
 
 const char* spec = R"json(
 {   "name": "sampler",
@@ -95,7 +95,7 @@ void on_prof(int sig, siginfo_t *info, void *context)
     }
 #endif
 
-    c.push_snapshot(channel, SnapshotView(count, data));
+    c.push_snapshot(&channel, SnapshotView(count, data));
     ++n_processed_samples;
 }
 
@@ -203,16 +203,15 @@ void finish_cb(Caliper* c, Channel* chn) {
     n_samples = 0;
     n_processed_samples = 0;
 
-    channel = nullptr;
+    channel = Channel();
 }
 
 void sampler_register(Caliper* c, Channel* chn)
 {
     if (channel) {
         Log(0).stream() << chn->name() << ": Sampler: Cannot enable sampler service twice!"
-                        << " It is already enabled in channel "
-                        << channel->name() << std::endl;
-
+            << " It is already enabled in channel "
+            << channel.name() << std::endl;
         return;
     }
 
@@ -254,13 +253,13 @@ void sampler_register(Caliper* c, Channel* chn)
     chn->events().pre_finish_evt.connect(pre_finish_cb);
     chn->events().finish_evt.connect(finish_cb);
 
-    channel = chn;
+    channel = *chn;
 
     setup_signal();
     setup_settimer(c);
 
     Log(1).stream() << chn->name() << ": Registered sampler service. Using "
-                    << frequency << "Hz sampling frequency." << endl;
+        << frequency << "Hz sampling frequency." << endl;
 }
 
 } // namespace

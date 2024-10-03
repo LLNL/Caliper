@@ -45,14 +45,14 @@ parse_spec(const char* query)
 
 /// \brief Perform process-local aggregation of channel data into \a output_agg
 void
-local_aggregate(const char* query, Caliper& c, Channel* channel, CaliperMetadataDB& db, Aggregator& output_agg) {
+local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMetadataDB& db, Aggregator& output_agg) {
     QuerySpec      spec(parse_spec(query));
 
     RecordSelector filter(spec);
     Preprocessor   prp(spec);
     Aggregator     agg(spec);
 
-    c.flush(channel, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+    c.flush(&channel, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
             EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
             if (filter.pass(db, mrec))
@@ -169,7 +169,9 @@ public:
                 { "where",    std::string("loop.start_iteration,loop=\"") + loopname + "\"" }
             });
 
-        local_aggregate(query.c_str(), c, channel(), db, output_agg);
+        Channel chn = channel();
+        if (chn)
+            local_aggregate(query.c_str(), c, chn, db, output_agg);
     }
 
     QuerySpec timeseries_spec() {
@@ -330,7 +332,8 @@ class SpotController : public cali::internal::CustomOutputController
 
         Aggregator summary_cross_agg(CalQLParser(summary_cross_query).spec());
 
-        local_aggregate(summary_local_query, c, tsc->channel(), m_db, summary_cross_agg);
+        Channel tsc_channel = tsc->channel();
+        local_aggregate(summary_local_query, c, tsc_channel, m_db, summary_cross_agg);
         comm.cross_aggregate(m_db, summary_cross_agg);
 
         std::vector<LoopInfo> infovec;
@@ -377,7 +380,8 @@ class SpotController : public cali::internal::CustomOutputController
                     { "group by", "path" },
                 });
 
-            local_aggregate(query.c_str(), c, channel(), m_db, output_agg);
+            Channel chn = channel();
+            local_aggregate(query.c_str(), c, chn, m_db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -434,7 +438,7 @@ class SpotController : public cali::internal::CustomOutputController
         m_db.set_global(chn_attr, Variant(spot_channels.c_str()));
     }
 
-    void on_create(Caliper*, Channel*) override {
+    void on_create(Caliper*, Channel&) override {
         if (m_timeseries_mgr.error())
             Log(0).stream() << "[spot controller]: Timeseries config error: "
                             << m_timeseries_mgr.error_msg()
@@ -494,7 +498,7 @@ public:
           m_opts(opts)
     {
         m_channel_attr =
-                m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+            m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
     #ifdef CALIPER_HAVE_ADIAK
         config()["CALI_SERVICES_ENABLE"].append(",adiak_import");

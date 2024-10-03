@@ -144,9 +144,9 @@ cali_push_snapshot(int /*scope*/, int n,
     FixedSizeSnapshotRecord<64> trigger_info;
     c.make_record(n, attr, data, trigger_info.builder());
 
-    for (auto chn : c.get_all_channels())
-        if (chn->is_active())
-            c.push_snapshot(chn, trigger_info.view());
+    for (auto &channel : c.get_all_channels())
+        if (channel.is_active())
+            c.push_snapshot(&channel, trigger_info.view());
 }
 
 void
@@ -169,10 +169,10 @@ cali_channel_push_snapshot(cali_id_t chn_id, int /*scope*/, int n,
     FixedSizeSnapshotRecord<64> trigger_info;
     c.make_record(n, attr, data, trigger_info.builder());
 
-    Channel* chn = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (chn && chn->is_active())
-        c.push_snapshot(chn, trigger_info.view());
+    if (channel && channel.is_active())
+        c.push_snapshot(&channel, trigger_info.view());
 }
 
 size_t
@@ -184,10 +184,10 @@ cali_channel_pull_snapshot(cali_id_t chn_id, int /* scopes */, size_t len, unsig
         return 0;
 
     FixedSizeSnapshotRecord<SNAP_MAX> snapshot;
-    Channel* chn = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (chn)
-        c.pull_snapshot(chn, SnapshotView(), snapshot.builder());
+    if (channel)
+        c.pull_snapshot(&channel, SnapshotView(), snapshot.builder());
     else
         Log(0).stream() << "cali_channel_pull_snapshot(): invalid channel id " << chn_id << std::endl;
 
@@ -349,12 +349,12 @@ cali_variant_t
 cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
 {
     Caliper c = Caliper::sigsafe_instance();
-    Channel* channel = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (!c)
+    if (!c || !channel)
         return cali_make_empty_variant();
 
-    return c.get(channel, c.get_attribute(attr_id)).value().c_variant();
+    return c.get(&channel, c.get_attribute(attr_id)).value().c_variant();
 }
 
 const char*
@@ -704,24 +704,24 @@ cali_create_channel(const char* name, int flags, cali_configset_t cfgset)
     cfg.import(cfgset->cfgset);
 
     Caliper c;
-    Channel* chn = c.create_channel(name, cfg);
+    Channel channel = c.create_channel(name, cfg);
 
-    if (!chn)
+    if (!channel)
         return CALI_INV_ID;
     if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
-        c.deactivate_channel(chn);
+        c.deactivate_channel(channel);
 
-    return chn->id();
+    return channel.id();
 }
 
 void
 cali_delete_channel(cali_id_t chn_id)
 {
     Caliper c;
-    Channel* chn = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (chn)
-        c.delete_channel(chn);
+    if (channel)
+        c.delete_channel(channel);
     else
         Log(0).stream() << "cali_channel_delete(): invalid channel id " << chn_id << std::endl;
 }
@@ -730,10 +730,10 @@ void
 cali_activate_channel(cali_id_t chn_id)
 {
     Caliper c;
-    Channel* chn = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (chn)
-        c.activate_channel(chn);
+    if (channel)
+        c.activate_channel(channel);
     else
         Log(0).stream() << "cali_activate_channel(): invalid channel id " << chn_id << std::endl;
 }
@@ -742,10 +742,10 @@ void
 cali_deactivate_channel(cali_id_t chn_id)
 {
     Caliper c;
-    Channel* chn = c.get_channel(chn_id);
+    Channel channel = c.get_channel(chn_id);
 
-    if (chn)
-        c.deactivate_channel(chn);
+    if (channel)
+        c.deactivate_channel(channel);
     else
         Log(0).stream() << "cali_deactivate_channel(): invalid channel id " << chn_id << std::endl;
 }
@@ -753,40 +753,40 @@ cali_deactivate_channel(cali_id_t chn_id)
 int
 cali_channel_is_active(cali_id_t chn_id)
 {
-    Channel* chn = Caliper::instance().get_channel(chn_id);
+    Channel channel = Caliper::instance().get_channel(chn_id);
 
-    if (!chn) {
+    if (!channel) {
         Log(0).stream() << "cali_channel_is_active(): invalid channel id " << chn_id << std::endl;
         return 0;
     }
 
-    return (chn->is_active() ? 1 : 0);
+    return (channel.is_active() ? 1 : 0);
 }
 
 void
 cali_flush(int flush_opts)
 {
-    Caliper  c;
-    Channel* channel = c.get_channel(0); // channel 0 should be the default channel
+    Caliper c;
+    Channel channel = c.get_channel(0); // channel 0 should be the default channel
 
-    if (channel && channel->is_active()) {
-        c.flush_and_write(channel, SnapshotView());
+    if (channel) {
+        c.flush_and_write(&channel, SnapshotView());
 
         if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
-            c.clear(channel);
+            c.clear(&channel);
     }
 }
 
 void
 cali_channel_flush(cali_id_t chn_id, int flush_opts)
 {
-    Caliper  c;
-    Channel* chn = c.get_channel(chn_id);
+    Caliper c;
+    Channel channel = c.get_channel(chn_id);
 
-    c.flush_and_write(chn, SnapshotView());
+    c.flush_and_write(&channel, SnapshotView());
 
     if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
-        c.clear(chn);
+        c.clear(&channel);
 }
 
 void
@@ -842,24 +842,24 @@ create_channel(const char* name, int flags, const config_map_t& cfgmap)
     cfg.allow_read_env(flags & CALI_CHANNEL_ALLOW_READ_ENV);
     cfg.import(cfgmap);
 
-    Caliper  c;
-    Channel* chn = c.create_channel(name, cfg);
+    Caliper c;
+    Channel channel = c.create_channel(name, cfg);
 
-    if (!chn)
+    if (!channel)
         return CALI_INV_ID;
     if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
-        c.deactivate_channel(chn);
+        c.deactivate_channel(channel);
 
-    return chn->id();
+    return channel.id();
 }
 
 void
 write_report_for_query(cali_id_t chn_id, const char* query, int flush_opts, std::ostream& os)
 {
-    Caliper  c;
-    Channel* chn = c.get_channel(chn_id);
+    Caliper c;
+    Channel channel = c.get_channel(chn_id);
 
-    if (!chn) {
+    if (!channel) {
         Log(0).stream() << "write_report_for_query(): invalid channel id " << chn_id
                         << std::endl;
 
@@ -883,7 +883,7 @@ write_report_for_query(cali_id_t chn_id, const char* query, int flush_opts, std:
 
     QueryProcessor queryP(spec, stream);
 
-    c.flush(chn, SnapshotView(), [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+    c.flush(&channel, SnapshotView(), [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
             queryP.process_record(db, rec);
         });
 

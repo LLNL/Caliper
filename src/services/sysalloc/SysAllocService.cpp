@@ -49,7 +49,6 @@ struct gotcha_binding_t alloc_bindings[] = {
 
 ChannelList* sysalloc_channels = nullptr;
 
-
 void* cali_malloc_wrapper(size_t size)
 {
     decltype(&std::malloc) orig_malloc =
@@ -62,8 +61,8 @@ void* cali_malloc_wrapper(size_t size)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-        if (c && p->channel->is_active())
-            c.memory_region_begin(p->channel, ret, "malloc", 1, 1, &size);
+        if (c && p->channel.is_active())
+            c.memory_region_begin(&p->channel, ret, "malloc", 1, 1, &size);
     }
 
     errno = saved_errno;
@@ -83,8 +82,8 @@ void* cali_calloc_wrapper(size_t num, size_t size)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-        if (c && p->channel->is_active())
-            c.memory_region_begin(p->channel, ret, "calloc", size, 1, &num);
+        if (c && p->channel.is_active())
+            c.memory_region_begin(&p->channel, ret, "calloc", size, 1, &num);
     }
 
     errno = saved_errno;
@@ -100,8 +99,8 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance();
 
-        if (c && p->channel->is_active())
-            c.memory_region_end(p->channel, ptr);
+        if (c && p->channel.is_active())
+            c.memory_region_end(&p->channel, ptr);
     }
 
     void *ret = (*orig_realloc)(ptr, size);
@@ -111,8 +110,8 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance();
 
-        if (c && p->channel->is_active())
-            c.memory_region_begin(p->channel, ret, "realloc", 1, 1, &size);
+        if (c && p->channel.is_active())
+            c.memory_region_begin(&p->channel, ret, "realloc", 1, 1, &size);
     }
 
     errno = saved_errno;
@@ -128,8 +127,8 @@ void cali_free_wrapper(void *ptr)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance();
 
-        if (c && p->channel->is_active())
-            c.memory_region_end(p->channel, ptr);
+        if (c && p->channel.is_active())
+            c.memory_region_end(&p->channel, ptr);
     }
 
     (*orig_free)(ptr);
@@ -177,13 +176,13 @@ void sysalloc_initialize(Caliper* c, Channel* chn) {
             if (!bindings_are_active)
                 init_alloc_hooks();
 
-            ChannelList::add(&sysalloc_channels, chn);
+            ChannelList::add(&sysalloc_channels, *chn);
         });
 
-    chn->events().finish_evt.connect(
+    chn->events().pre_finish_evt.connect(
         [](Caliper* c, Channel* chn){
             Log(2).stream() << chn->name() << ": Removing sysalloc hooks" << std::endl;
-            ChannelList::remove(&sysalloc_channels, chn);
+            ChannelList::remove(&sysalloc_channels, *chn);
         });
 
     Log(1).stream() << chn->name() << ": Registered sysalloc service" << std::endl;

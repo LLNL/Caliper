@@ -58,7 +58,7 @@ class RocTracerService {
 
     roctracer_pool_t* m_roctracer_pool;
 
-    Channel*  m_channel;
+    Channel   m_channel;
 
     bool      m_enable_tracing;
     bool      m_record_names;
@@ -311,7 +311,7 @@ class RocTracerService {
 
             FixedSizeSnapshotRecord<8> snapshot;
             c->make_record(num, attr, data, snapshot.builder(), parent);
-            m_channel->events().process_snapshot(c, m_channel, SnapshotView(), snapshot.view());
+            m_channel.events().process_snapshot(c, &m_channel, SnapshotView(), snapshot.view());
 
             ++num_records;
         }
@@ -339,7 +339,7 @@ class RocTracerService {
         }
 
         if (Log::verbosity() >= 2) {
-            Log(2).stream() << m_channel->name() << ": roctracer: Flushed "
+            Log(2).stream() << m_channel.name() << ": roctracer: Flushed "
                             << num_records << " records ("
                             << num_flushed << " flushed, "
                             << num_records - num_flushed << " skipped).\n";
@@ -394,7 +394,7 @@ class RocTracerService {
 
         if (Log::verbosity() >= 2) {
             unitfmt_result bytes = unitfmt(end-begin, unitfmt_bytes);
-            Log(2).stream() << instance->m_channel->name()
+            Log(2).stream() << instance->m_channel.name()
                             << ": roctracer: processed "
                             << bytes.val << bytes.symbol
                             << " buffer" << std::endl;
@@ -530,7 +530,7 @@ class RocTracerService {
           m_num_correlations_found  { 0 },
           m_num_correlations_missed { 0 },
           m_roctracer_pool { nullptr },
-          m_channel        { channel }
+          m_channel        { *channel }
     {
         auto config = services::init_config_from_spec(channel->config(), s_spec);
 

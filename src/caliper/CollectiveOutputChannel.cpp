@@ -77,7 +77,7 @@ public:
     }
 
     void collective_flush(OutputStream& stream, MPI_Comm comm) override {
-        Channel* chn = m_channel->channel();
+        Channel chn = m_channel->channel();
 
         if (!chn)
             return;
@@ -112,7 +112,7 @@ public:
         }
 
         Caliper c;
-        cali::collective_flush(stream, c, *chn, SnapshotView(), local_spec, cross_spec, comm);
+        cali::collective_flush(stream, c, chn, SnapshotView(), local_spec, cross_spec, comm);
     }
 
     void collective_flush(MPI_Comm comm) override {

@@ -71,7 +71,7 @@ collective_flush(OutputStream& stream, Caliper& c, Channel& channel, SnapshotVie
     //   create a formatter and print it out
     if (rank == 0) {
         // import globals from runtime Caliper object
-        db.import_globals(c, c.get_globals(&channel));
+        db.import_globals(c, c.get_globals(channel));
 
         QuerySpec spec = cross_query;
 

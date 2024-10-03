@@ -41,14 +41,14 @@ TEST(PostprocessSnapshotTest, PostprocessSnapshot)
     cfg.allow_read_env(false);
 
     Caliper c;
-    Channel* channel = c.create_channel("test.postprocess_snapshot", cfg);
+    Channel channel = c.create_channel("test.postprocess_snapshot", cfg);
 
-    channel->events().flush_evt.connect(::flush_cb);
-    channel->events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
+    channel.events().flush_evt.connect(::flush_cb);
+    channel.events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
 
     std::vector< std::vector<Entry> > output;
 
-    c.flush(channel, SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+    c.flush(&channel, SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
             output.push_back(rec);
         });
 

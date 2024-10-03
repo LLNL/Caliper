@@ -49,9 +49,9 @@ class TimeseriesService
             Entry(m_snapshot_attr, cali_make_variant_from_uint(m_snapshots))
         };
 
-        Channel* prof_chn = m_timeprofile->channel();
+        Channel prof_chn = m_timeprofile->channel();
 
-        c->flush(prof_chn, info, [c,channel,info,ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
+        c->flush(&prof_chn, info, [c,channel,info,ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
                 std::vector<Entry> rec;
                 rec.reserve(frec.size() + info.size() + ts_entries.size());
                 rec.insert(rec.end(), frec.begin(), frec.end());
@@ -61,7 +61,7 @@ class TimeseriesService
                 channel->events().process_snapshot(c, channel, SnapshotView(), SnapshotView(rec.size(), rec.data()));
             });
 
-        c->clear(prof_chn);
+        c->clear(&prof_chn);
 
         srec.append(ts_entries.size(), ts_entries.data());
         srec.append(m_duration_attr, Variant(ts_now - v_prev.to_double()));
