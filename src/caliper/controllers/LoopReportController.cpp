@@ -79,7 +79,7 @@ class LoopReportController : public cali::internal::CustomOutputController
     }
 
     Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db) {
-        const char* select =
+        std::string select =
             " loop"
             ",count()"
             ",sum(loop.iterations)"
@@ -88,9 +88,12 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(iter_per_sec)"
             ",avg(iter_per_sec)";
 
+        if (m_opts.is_set("loop_summary_local_aggregation_query"))
+                select = m_opts.get("loop_summary_local_aggregation_query").to_string();
+
         std::string query = m_opts.build_query("local", {
                 { "let",      "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
-                { "select",   select },
+                { "select",   select.c_str() },
                 { "group by", "loop" },
                 { "where",    "loop" }
             });
@@ -107,22 +110,31 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
             ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\"";
 
+        std::string format = "table";
+        if (m_opts.is_set("format"))
+            format = m_opts.get("format").to_string();
+
         std::string query = m_opts.build_query("cross", {
                 { "select",    select },
                 { "aggregate", "max(count)" },
                 { "group by",  "loop" },
-                { "format",    "table" },
+                { "format",    format },
             });
 
         return CalQLParser(query.c_str()).spec();
     }
 
     Aggregator timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
-        const char* select =
+        std::string select =
             " Block"
             ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration.ns,1e9)";
+
+        if (m_opts.is_set("loop_timeseries_local_aggregation_query"))
+            select = m_opts.get("loop_timeseries_local_aggregation_query").to_string();
+
+        Log(1).stream() << name() << ": Creating selection from:" << select << std::endl;
 
         std::string block =
             std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
@@ -144,10 +156,15 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(scale#time.duration.ns) as \"Time (s)\""
             ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\"";
 
+        std::string format = "table";
+        if (m_opts.is_set("format"))
+            format = m_opts.get("format").to_string();
+
         std::string query = m_opts.build_query("cross", {
                 { "select",   select  },
                 { "group by", "Block" },
-                { "format",   "table order by Block" }
+                { "format",   format.c_str() },
+                { "order by", "Block" }
             });
 
         CalQLParser parser(query.c_str());
@@ -197,6 +214,8 @@ class LoopReportController : public cali::internal::CustomOutputController
         Caliper c;
         OutputStream stream;
         stream.set_filename(output.c_str(), c, c.get_globals());
+
+        Log(1).stream() << name() << ": Creating output stream from:" << output << std::endl;
 
         return stream;
     }
@@ -316,6 +335,21 @@ const char* loop_report_controller_spec =
     "   \"name\": \"target_loops\","
     "   \"type\": \"string\","
     "   \"description\": \"List of loops to target. Default: any top-level loop.\""
+    "  },"
+    "  {"
+    "   \"name\": \"loop_timeseries_local_aggregation_query\","
+    "   \"type\": \"string\","
+    "   \"description\": \"CalQL query to aggregate the local timeseries data.\""
+    "  },"
+    "  {"
+    "   \"name\": \"loop_summary_local_aggregation_query\","
+    "   \"type\": \"string\","
+    "   \"description\": \"CalQL query to aggregate the local summary data.\""
+    "  },"
+    "  {"
+    "   \"name\": \"format\","
+    "   \"type\": \"string\","
+    "   \"description\": \"Output format.\""
     "  }"
     " ]"
     "}";
