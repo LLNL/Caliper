@@ -38,6 +38,8 @@ public:
 
   virtual ~TopdownCalculator() = default;
 
+  virtual bool check_for_disabled_multiplex() const = 0;
+
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) = 0;
 
