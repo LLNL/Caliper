@@ -12,6 +12,8 @@ public:
 
   virtual ~HaswellTopdown() = default;
 
+  virtual bool check_for_disabled_multiplex() const override;
+
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) override;
 

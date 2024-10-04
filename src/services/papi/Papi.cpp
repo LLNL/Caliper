@@ -64,6 +64,7 @@ class PapiService
     Attribute m_thread_attr;
 
     bool m_enable_multiplex;
+    bool m_disable_multiplex;
 
     unsigned m_num_eventsets;
     unsigned m_num_event_mismatch;
@@ -169,21 +170,20 @@ class PapiService
 
             int num = static_cast<int>(p.second->codes.size());
 
-            // if (cpi && (num > 4 /* magic number for Intel counter support :-( */ ||
-            // m_enable_multiplex)) {
-            //     if (Log::verbosity() >= 2)
-            //         Log(2).stream() << "papi: Initializing multiplex support for
-            //         component "
-            //                         << p.first << " (" << cpi->name << ")"
-            //                         << std::endl;
+            if (!m_disable_multiplex && cpi
+                && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
+                if (Log::verbosity() >= 2)
+                    Log(2).stream() << "papi: Initializing multiplex support for
+                        component "
+                                    << p.first << " (" << cpi->name << ")" << std::endl;
 
-            //     ret = PAPI_assign_eventset_component(eventset, p.first);
-            //     if (ret != PAPI_OK)
-            //         print_papi_error("PAPI_assign_eventset_component", ret);
-            //     ret = PAPI_set_multiplex(eventset);
-            //     if (ret != PAPI_OK)
-            //         print_papi_error("PAPI_set_multiplex", ret);
-            // }
+                ret = PAPI_assign_eventset_component(eventset, p.first);
+                if (ret != PAPI_OK)
+                    print_papi_error("PAPI_assign_eventset_component", ret);
+                ret = PAPI_set_multiplex(eventset);
+                if (ret != PAPI_OK)
+                    print_papi_error("PAPI_set_multiplex", ret);
+            }
 
             ret = PAPI_add_events(eventset, p.second->codes.data(), num);
             if (ret < 0) {
@@ -370,6 +370,7 @@ class PapiService
 
     PapiService(Caliper* c, Channel* channel)
         : m_enable_multiplex(false),
+          m_disable_multiplex(false),
           m_num_eventsets(0),
           m_num_event_mismatch(0),
           m_num_failed_acquire(0),
@@ -450,7 +451,8 @@ public:
         ++s_num_instances;
         PapiService* instance = new PapiService(c, channel);
 
-        instance->m_enable_multiplex = cfg.get("enable_multiplexing").to_bool();
+        instance->m_enable_multiplex  = cfg.get("enable_multiplexing").to_bool();
+        instance->m_disable_multiplex = cfg.get("disable_multiplexing").to_bool();
 
         if (!(instance->setup_event_info(c, eventlist) && instance->setup_thread_eventsets(c))) {
             Log(0).stream() << channel->name() << ": papi: Failed to initialize event sets, dropping papi service"
@@ -494,13 +496,21 @@ const char* PapiService::s_spec = R"json(
   "name": "counters",
   "description": "List of PAPI events to record",
   "type": "string"
- },{
+ },
+ {
   "name": "enable_multiplexing",
   "description": "Always enable multiplexing",
   "type": "bool",
   "value": "False"
+ },
+ {
+  "name": "disable_multiplexing",
+  "description": "Always disable multiplexing",
+  "type": "bool",
+  "value": "False"
  }
-]}
+]
+}
 )json";
 
 } // namespace

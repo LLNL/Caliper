@@ -34,6 +34,10 @@ SapphireRapidsTopdown::SapphireRapidsTopdown(IntelTopdownLevel level)
            "frontend_bandwidth", "memory_bound", "core_bound", "light_ops",
            "heavy_ops"}) {}
 
+bool SapphireRapidsTopdown::check_for_disabled_multiplex() const {
+  return true;
+}
+
 std::vector<Entry>
 SapphireRapidsTopdown::compute_toplevel(const std::vector<Entry> &rec) {
   std::vector<Entry> ret;

@@ -39,6 +39,8 @@ HaswellTopdown::HaswellTopdown(IntelTopdownLevel level)
            "frontend_bandwidth", "memory_bound", "core_bound", "ext_mem_bound",
            "l1_bound", "l2_bound", "l3_bound"}) {}
 
+bool HaswellTopdown::check_for_disabled_multiplex() const { return false; }
+
 std::vector<Entry>
 HaswellTopdown::compute_toplevel(const std::vector<Entry> &rec) {
   std::vector<Entry> ret;

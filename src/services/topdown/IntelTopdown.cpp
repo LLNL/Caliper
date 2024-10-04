@@ -172,6 +172,10 @@ public:
 #endif
 
         channel->config().set("CALI_PAPI_COUNTERS", calculator->get_counters());
+        // Some PAPI counters for topdown (particularly on SPR) don't play nice
+        // with PAPI multiplexing. Ask the TopdownCalculator class whether we need
+        // to disable multiplexing for the corresponding architecture.
+        channel->config().set("CALI_PAPI_DISABLE_MULTIPLEXING", calculator->check_for_disabled_multiplex());
 
         if (!cali::services::register_service(c, channel, "papi")) {
             Log(0).stream() << channel->name() << ": topdown: Unable to register papi service, skipping topdown"
