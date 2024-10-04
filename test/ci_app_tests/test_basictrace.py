@@ -151,24 +151,21 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'cali.caliper.version' } ) )
 
-    def test_lcnodeinfo(self):
-        target_cmd = [ './ci_test_basic' ]
-        query_cmd = [ '../../src/tools/cali-query/cali-query', '-G', '-e' ]
+    def test_configmanager_metadata_import(self):
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile(metadata(bla=garbl),output.format=json-split),metadata(file=example_node_info.json,keys=\"host.os,host.name\"),output=stdout' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE': 'event,lcnodeinfo,aggregate,recorder',
-            'CALI_LCNODEINFO_FILENAME': 'example_node_info.json',
-            'CALI_RECORDER_FILENAME': 'stdout'
+            'CALI_LOG_VERBOSITY' : '0'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
-        self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {
-                'nodeinfo.host.os.name': 'TestOS',
-                'nodeinfo.host.os.version': '3.11',
-                'nodeinfo.host.cluster': 'test' }))
+        self.assertEqual(obj['host.os.name'], 'TestOS')
+        self.assertEqual(obj['host.os.version'], '3.11')
+        self.assertEqual(obj['host.name'], 'test42')
+        self.assertEqual(obj['bla'], 'garbl')
+        self.assertFalse('other' in obj.keys())
+        self.assertFalse('host.cluster' in obj.keys())
 
     def test_esc(self):
         target_cmd = [ './ci_test_basic', 'newline' ]
@@ -281,7 +278,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             }))
 
     def test_exclusive_region_filter(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,exclude_regions=before_loop,output.format=cali,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,exclude_regions="before_loop,inner_before_loop",output.format=cali,output=stdout' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
