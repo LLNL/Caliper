@@ -167,9 +167,8 @@ struct Channel::ChannelImpl
     static const ConfigSet::Entry   s_configdata[];
 
     cali_id_t                       id;
-
     std::string                     name;
-    bool                            active;
+    bool                            is_active;
 
     RuntimeConfig                   config;
     Events                          events;          ///< callbacks
@@ -181,7 +180,7 @@ struct Channel::ChannelImpl
     ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
         : id(_id),
           name(_name),
-          active(true),
+          is_active(true),
           config(cfg)
         {
             ConfigSet cali_cfg =
@@ -243,7 +242,7 @@ Channel::name() const
 bool
 Channel::is_active() const
 {
-    return mP && mP->active;
+    return mP && mP->is_active;
 }
 
 cali_id_t
@@ -1402,7 +1401,7 @@ Caliper::delete_channel(Channel& channel)
 void
 Caliper::activate_channel(Channel& channel)
 {
-    channel.mP->active = true;
+    channel.mP->is_active = true;
 
     auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
     if (it == sG->active_channels.end())
@@ -1416,7 +1415,7 @@ Caliper::deactivate_channel(Channel& channel)
     if (it != sG->active_channels.end())
         sG->active_channels.erase(it);
 
-    channel.mP->active = false;
+    channel.mP->is_active = false;
 }
 
 /// \brief Release current thread
