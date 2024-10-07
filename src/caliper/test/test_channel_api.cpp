@@ -15,8 +15,8 @@ TEST(ChannelAPITest, MultiChannel) {
     cali_id_t chn_b_id =
         create_channel("chn.m.b", 0, { { "CALI_CHANNEL_CONFIG_CHECK", "false" } });
 
-    Channel* chn_a = c.get_channel(chn_a_id);
-    Channel* chn_b = c.get_channel(chn_b_id);
+    Channel chn_a = c.get_channel(chn_a_id);
+    Channel chn_b = c.get_channel(chn_b_id);
 
     Attribute   attr_global =
         c.create_attribute("multichn.global", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
@@ -25,21 +25,18 @@ TEST(ChannelAPITest, MultiChannel) {
 
     c.begin(attr_global, Variant(42));
 
-    c.begin(chn_a, attr_local, Variant(1144));
-    c.begin(chn_b, attr_local, Variant(4411));
+    c.begin(&chn_a, attr_local, Variant(1144));
+    c.begin(&chn_b, attr_local, Variant(4411));
 
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
-    EXPECT_EQ(c.get(chn_a, attr_local ).value().to_int(), 1144);
-    EXPECT_EQ(c.get(chn_b, attr_local ).value().to_int(), 4411);
+    EXPECT_EQ(c.get(&chn_a, attr_local).value().to_int(), 1144);
+    EXPECT_EQ(c.get(&chn_b, attr_local).value().to_int(), 4411);
 
-    Channel* chn_default = c.get_channel(0);
-
-    EXPECT_TRUE(c.get(chn_default, attr_local).empty());
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
 
-    c.end(chn_b, attr_local);
-    c.end(chn_a, attr_local);
+    c.end(&chn_b, attr_local);
+    c.end(&chn_a, attr_local);
 
     c.delete_channel(chn_a);
 
@@ -47,10 +44,10 @@ TEST(ChannelAPITest, MultiChannel) {
 
     int chn_a_count = 0, chn_b_count = 0;
 
-    for (const Channel* chn : c.get_all_channels()) {
-        if (chn->id() == chn_a_id)
+    for (const Channel& chn : c.get_all_channels()) {
+        if (chn.id() == chn_a_id)
             ++chn_a_count;
-        if (chn->id() == chn_b_id)
+        if (chn.id() == chn_b_id)
             ++chn_b_count;
     }
 
@@ -140,9 +137,9 @@ TEST(ChannelAPITest, C_API) {
 
     Caliper c;
 
-    EXPECT_EQ(c.get_channel(chn_a_id), nullptr);
-    EXPECT_EQ(c.get_channel(chn_b_id), nullptr);
-    EXPECT_EQ(c.get_channel(chn_c_id), nullptr);
+    EXPECT_FALSE(c.get_channel(chn_a_id));
+    EXPECT_FALSE(c.get_channel(chn_b_id));
+    EXPECT_FALSE(c.get_channel(chn_c_id));
 }
 
 TEST(ChannelAPITest, WriteReport) {

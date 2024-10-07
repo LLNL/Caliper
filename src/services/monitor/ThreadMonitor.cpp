@@ -24,7 +24,7 @@ class ThreadMonitor
     pthread_t monitor_thread;
     bool      thread_running;
 
-    Channel*  channel;
+    Channel   channel;
 
     time_t    sleep_sec;
     long      sleep_nsec;
@@ -36,7 +36,7 @@ class ThreadMonitor
     void snapshot() {
         Caliper c;
         Entry   data(monitor_attr, cali_make_variant_from_int(num_events++));
-        c.push_snapshot(channel, SnapshotView(1, &data));
+        c.push_snapshot(&channel, SnapshotView(1, &data));
     }
 
     // the main monitor loop
@@ -71,25 +71,25 @@ class ThreadMonitor
 
     bool start() {
         if (pthread_create(&monitor_thread, nullptr, thread_fn, this) != 0) {
-            Log(0).stream() << channel->name() << ": monitor(): pthread_create() failed"
+            Log(0).stream() << channel.name() << ": monitor(): pthread_create() failed"
                             << std::endl;
             return false;
         }
 
-        Log(1).stream() << channel->name() << ": monitor: monitoring thread initialized" << std::endl;
+        Log(1).stream() << channel.name() << ": monitor: monitoring thread initialized" << std::endl;
         thread_running = true;
         return true;
     }
 
     void cancel() {
-        Log(2).stream() << channel->name() << ": monitor: cancelling monitoring thread" << std::endl;
+        Log(2).stream() << channel.name() << ": monitor: cancelling monitoring thread" << std::endl;
 
         if (pthread_cancel(monitor_thread) != 0)
-            Log(0).stream() << channel->name() << ": monitor: pthread_cancel() failed" << std::endl;
+            Log(0).stream() << channel.name() << ": monitor: pthread_cancel() failed" << std::endl;
 
         pthread_join(monitor_thread, nullptr);
 
-        Log(1).stream() << channel->name() << ": monitor: monitoring thread finished" << std::endl;
+        Log(1).stream() << channel.name() << ": monitor: monitoring thread finished" << std::endl;
     }
 
     void post_init_cb() {
@@ -101,13 +101,13 @@ class ThreadMonitor
         if (thread_running)
             cancel();
 
-        Log(1).stream() << channel->name()
+        Log(1).stream() << channel.name()
                         << ": monitor: triggered " << num_events << " monitoring events"
                         << std::endl;
     }
 
     ThreadMonitor(Caliper* c, Channel* chn)
-        : thread_running(false), channel(chn), sleep_sec(2), sleep_nsec(0), num_events(0)
+        : thread_running(false), channel(*chn), sleep_sec(2), sleep_nsec(0), num_events(0)
         {
             monitor_attr =
                 c->create_attribute("monitor.event", CALI_TYPE_INT,
@@ -116,7 +116,7 @@ class ThreadMonitor
                                     CALI_ATTR_SKIP_EVENTS);
 
             sleep_sec =
-                channel->config().init("monitor", s_configdata).get("interval").to_uint();
+                channel.config().init("monitor", s_configdata).get("interval").to_uint();
         }
 
 public:

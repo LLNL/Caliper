@@ -11,13 +11,21 @@
 
 #include <string.h>
 #include <cstddef>
+#include <memory>
 #include <unordered_map>
 
 using namespace cali;
 
 namespace
 {
-  std::unordered_map<Channel *, curious_t> curious_insts;
+  struct user_data_t {
+    curious_t curious_ctx;
+    Channel channel;
+    user_data_t(curious_t ctx, Channel& chn)
+      : curious_ctx(ctx), channel(chn) { }
+  };
+
+  std::unordered_map<cali_id_t, std::unique_ptr<user_data_t>> curious_insts;
 
   int num_io_callbacks;
   int num_failed_io_callbacks;
@@ -43,25 +51,25 @@ namespace
   // We need to record different info for different I/O regions/records:
 
   // For read regions...
-  void handle_unique_record_data(Caliper &c, Channel *channel, curious_read_record_t *record) {
+  void handle_unique_record_data(Caliper &c, Channel &channel, curious_read_record_t *record) {
     if (record->bytes_read > 0) {
       // ...we care about how much data was read
       Entry data(io_bytes_read_attr, cali_make_variant_from_uint(record->bytes_read));
-      c.push_snapshot(channel, SnapshotView(1, &data));
+      c.push_snapshot(&channel, SnapshotView(1, &data));
     }
   }
 
   // For write regions...
-  void handle_unique_record_data(Caliper &c, Channel *channel, curious_write_record_t *record) {
+  void handle_unique_record_data(Caliper &c, Channel &channel, curious_write_record_t *record) {
     if (record->bytes_written > 0) {
       // ...we care about how much data was written
       Entry data(io_bytes_written_attr, cali_make_variant_from_uint(record->bytes_written));
-      c.push_snapshot(channel, SnapshotView(1, &data));
+      c.push_snapshot(&channel, SnapshotView(1, &data));
     }
   }
 
   // We don't need anything extra from metadata regions
-  void handle_unique_record_data(Caliper &c, Channel *channel, curious_metadata_record_t *record) {}
+  void handle_unique_record_data(Caliper &c, Channel &channel, curious_metadata_record_t *record) {}
 
   // Just preforms some sanity checking before making a Variant from a C string
   Variant make_variant(char *str) {
@@ -77,18 +85,19 @@ namespace
   }
 
   template <typename Record>
-  void handle_io(curious_callback_type_t type, Channel *channel, Record *record) {
+  void handle_io(curious_callback_type_t type, void *usr_data, Record *record) {
     ++num_io_callbacks;
 
     // get a Caliper instance
 
     Caliper c = Caliper::sigsafe_instance();
+    auto data = static_cast<user_data_t*>(usr_data);
 
     // If we got a Caliper instance successfully...
-    if (c && channel->is_active()) {
+    if (c && data->channel.is_active()) {
       // ...mark the end...
       if (type & CURIOUS_POST_CALLBACK) {
-        handle_unique_record_data(c, channel, record);
+        handle_unique_record_data(c, data->channel, record);
 
         c.end(io_region_attr);
         c.end(io_filesystem_attr);
@@ -104,7 +113,7 @@ namespace
         c.begin(io_region_attr, categories[GET_CATEGORY(type)]);
       }
 
-    // ...otherwise note our failure (probably already inside Caliper)
+    // ...otherwise not our failure (probably already inside Caliper)
     } else {
       ++num_failed_io_callbacks;
     }
@@ -115,49 +124,54 @@ namespace
     channel->events().subscribe_attribute(c, channel, io_region_attr);
 
     curious_t curious_inst = curious_init(CURIOUS_ALL_APIS);
+    auto data = std::unique_ptr<user_data_t>(new user_data_t { curious_inst, *channel });
 
     curious_register_callback(
       curious_inst,
       CURIOUS_READ_CALLBACK,
       (curious_callback_f) handle_io<curious_read_record_t>,
-      (void *) channel
+      data.get()
     );
     curious_register_callback(
       curious_inst,
       CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK,
       (curious_callback_f) handle_io<curious_read_record_t>,
-      (void *) channel
+      data.get()
     );
     curious_register_callback(
       curious_inst,
       CURIOUS_WRITE_CALLBACK,
       (curious_callback_f) handle_io<curious_write_record_t>,
-      (void *) channel
+      data.get()
     );
     curious_register_callback(
       curious_inst,
       CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK,
       (curious_callback_f) handle_io<curious_write_record_t>,
-      (void *) channel
+      data.get()
     );
     curious_register_callback(
       curious_inst,
       CURIOUS_METADATA_CALLBACK,
       (curious_callback_f) handle_io<curious_metadata_record_t>,
-      (void *) channel
+      data.get()
     );
     curious_register_callback(
       curious_inst,
       CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK,
       (curious_callback_f) handle_io<curious_metadata_record_t>,
-      (void *) channel
+      data.get()
     );
 
-    curious_insts[channel] = curious_inst;
+    curious_insts.insert(std::make_pair(channel->id(), std::move(data)));
   }
 
   void finalize_curious_in_channel(Caliper* c, Channel* channel) {
-    curious_finalize(curious_insts[channel]);
+    auto it = curious_insts.find(channel->id());
+    if (it != curious_insts.end()) {
+      curious_finalize(it->second->curious_ctx);
+      curious_insts.erase(it);
+    }
 
     if (Log::verbosity() >= 2)
       Log(2).stream() << channel->name() << ": Processed "
@@ -196,7 +210,7 @@ namespace
     channel->events().post_init_evt.connect(init_curious_in_channel);
 
     // finish_evt: unregister channel from curious (??)
-    channel->events().finish_evt.connect(finalize_curious_in_channel);
+    channel->events().pre_finish_evt.connect(finalize_curious_in_channel);
 
     Log(1).stream() << channel->name() << ": Registered io service" << std::endl;
   }

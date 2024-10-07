@@ -139,9 +139,10 @@ int main(int argc, char* argv[])
                                                     CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE));
 
     // --- set up channels
-
-    std::vector<cali::Channel*> channels;
-    channels.push_back(c.get_channel(0));
+    std::vector<cali::Channel> channels;
+    auto default_channel = c.get_channel(0);
+    if (default_channel)
+        channels.push_back(default_channel);
 
     for (int i = 1; i < cfg.channels; ++i) {
         std::string s("chn.");
@@ -166,11 +167,11 @@ int main(int argc, char* argv[])
 
     auto stime = std::chrono::system_clock::now();
 
-    for (cali::Channel* chn : channels)
+    for (auto &chn : channels)
         if (cfg.write)
-            c.flush_and_write(chn, cali::SnapshotView());
+            c.flush_and_write(&chn, cali::SnapshotView());
         else
-            c.flush(chn, cali::SnapshotView(), [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
+            c.flush(&chn, cali::SnapshotView(), [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
 
     auto etime = std::chrono::system_clock::now();
 

@@ -43,12 +43,10 @@ TEST(AdiakServiceTest, AdiakImport)
     std::vector<int> vec { 1, 4, 16 };
     adiak::value("import.vec", vec);
 
-    Caliper  c;
-    Channel* chn = c.get_channel(import_chn_id);
+    Caliper c;
+    Channel chn = c.get_channel(import_chn_id);
 
-    ASSERT_NE(chn, nullptr);
-
-    chn->events().pre_flush_evt(&c, chn, SnapshotView());
+    chn.events().pre_flush_evt(&c, &chn, SnapshotView());
 
     Attribute int_attr = c.get_attribute("import.int");
     Attribute str_attr = c.get_attribute("import.str");
@@ -66,9 +64,9 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(str_attr.get(adk_type_attr).to_string(), std::string("string"));
     EXPECT_EQ(vec_attr.get(adk_type_attr).to_string(), std::string("list of int"));
 
-    EXPECT_EQ(c.get(chn, int_attr).value().to_int(), 42);
-    EXPECT_EQ(c.get(chn, str_attr).value().to_string(), std::string("import"));
-    EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
+    EXPECT_EQ(c.get(&chn, int_attr).value().to_int(), 42);
+    EXPECT_EQ(c.get(&chn, str_attr).value().to_string(), std::string("import"));
+    EXPECT_EQ(c.get(&chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
 }
 
 
@@ -89,12 +87,10 @@ TEST(AdiakServiceTest, AdiakImportLonglong)
     std::vector<unsigned long long> vec { 1, 4, ullv };
     adiak::value("import.vec", vec);
 
-    Caliper  c;
-    Channel* chn = c.get_channel(import_chn_id);
+    Caliper c;
+    Channel chn = c.get_channel(import_chn_id);
 
-    ASSERT_NE(chn, nullptr);
-
-    chn->events().pre_flush_evt(&c, chn, SnapshotView());
+    chn.events().pre_flush_evt(&c, &chn, SnapshotView());
 
     Attribute i64_attr = c.get_attribute("import.i64");
     Attribute vec_attr = c.get_attribute("import.vec");
@@ -109,8 +105,8 @@ TEST(AdiakServiceTest, AdiakImportLonglong)
     EXPECT_EQ(i64_attr.get(adk_type_attr).to_string(), std::string("long long"));
     EXPECT_EQ(vec_attr.get(adk_type_attr).to_string(), std::string("list of int"));
 
-    EXPECT_EQ(c.get(chn, i64_attr).value().to_int64(), llv);
-    EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,281474976710570}"));
+    EXPECT_EQ(c.get(&chn, i64_attr).value().to_int64(), llv);
+    EXPECT_EQ(c.get(&chn, vec_attr).value().to_string(), std::string("{1,4,281474976710570}"));
 }
 #endif
 
@@ -126,12 +122,10 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
     adiak_namevalue("do.import.1", static_cast<adiak_category_t>(424242), "import.category", "%d", 42);
     adiak_namevalue("do.import.2", static_cast<adiak_category_t>(12345), "import.category", "%s", "hi");
 
-    Caliper  c;
-    Channel* chn = c.get_channel(import_chn_id);
+    Caliper c;
+    Channel chn = c.get_channel(import_chn_id);
 
-    ASSERT_NE(chn, nullptr);
-
-    chn->events().pre_flush_evt(&c, chn, SnapshotView());
+    chn.events().pre_flush_evt(&c, &chn, SnapshotView());
 
     Attribute do_import_attr_1 = c.get_attribute("do.import.1");
     Attribute do_import_attr_2 = c.get_attribute("do.import.2");
@@ -152,8 +146,8 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
     EXPECT_EQ(do_import_attr_1.get(adk_caty_attr).to_int(), 424242);
     EXPECT_EQ(do_import_attr_1.get(adk_scat_attr).to_string(), std::string("import.category"));
 
-    EXPECT_EQ(c.get(chn, do_import_attr_1).value().to_int(), 42);
-    EXPECT_EQ(c.get(chn, do_import_attr_2).value().to_string(), std::string("hi"));
+    EXPECT_EQ(c.get(&chn, do_import_attr_1).value().to_int(), 42);
+    EXPECT_EQ(c.get(&chn, do_import_attr_2).value().to_string(), std::string("hi"));
 }
 
 TEST(AdiakServiceTest, AdiakExport)
@@ -166,12 +160,10 @@ TEST(AdiakServiceTest, AdiakExport)
     cali_set_global_int_byname("export.int", 42);
     cali_set_global_string_byname("export.str", "export");
 
-    Caliper  c;
-    Channel* chn = c.get_channel(export_chn_id);
+    Caliper c;
+    Channel chn = c.get_channel(export_chn_id);
 
-    ASSERT_NE(chn, nullptr);
-
-    chn->events().pre_flush_evt(&c, chn, SnapshotView());
+    chn.events().pre_flush_evt(&c, &chn, SnapshotView());
 
     std::map<std::string, std::string> res;
 
@@ -180,4 +172,3 @@ TEST(AdiakServiceTest, AdiakExport)
     EXPECT_STREQ(res["export.int"].c_str(), "42");
     EXPECT_STREQ(res["export.str"].c_str(), "export");
 }
-

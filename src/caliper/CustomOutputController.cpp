@@ -57,7 +57,7 @@ void CustomOutputController::flush()
     if (s_flush_fn) {
         (*s_flush_fn)(this);
     } else {
-        Log(2).stream() << chn->name()
+        Log(2).stream() << chn.name()
                         << ": CustomOutputController::flush(): using serial flush"
                         << std::endl;
 

@@ -40,12 +40,20 @@ typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cal
 class Channel
 {
     struct ChannelImpl;
-
     std::shared_ptr<ChannelImpl> mP;
 
     Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg);
 
 public:
+
+    constexpr Channel()
+        : mP { nullptr } { }
+
+    Channel(const Channel&) = default;
+    Channel(Channel&&) = default;
+
+    Channel& operator = (const Channel&) = default;
+    Channel& operator = (Channel&&) = default;
 
     ~Channel();
 
@@ -175,9 +183,22 @@ public:
 
     cali_id_t      id() const;
 
+    operator bool() const { return mP.use_count() > 0; }
+
     friend class Caliper;
+    friend bool operator == (const Channel&, const Channel&);
+    friend bool operator != (const Channel&, const Channel&);
 };
 
+inline bool operator == (const Channel& a, const Channel& b)
+{
+    return a.mP == b.mP;
+}
+
+inline bool operator != (const Channel& a, const Channel& b)
+{
+    return a.mP != b.mP;
+}
 
 /// \class Caliper
 /// \brief The main interface for the caliper runtime system
@@ -493,7 +514,7 @@ public:
     /// \brief Return all global attributes for \a channel
     ///
     ///
-    std::vector<Entry> get_globals(Channel* channel);
+    std::vector<Entry> get_globals(const Channel& channel);
 
     /// \}
     /// \name Explicit snapshot record manipulation
@@ -630,38 +651,32 @@ public:
     /// \param name Name of the channel. This is used to identify the channel
     ///   in %Caliper log output.
     /// \param cfg The channel's runtime configuration.
-    /// \return Pointer to the channel. Null pointer if the channel could
-    ///   not be created.
-    Channel* create_channel(const char* name, const RuntimeConfig& cfg);
+    /// \return The channel
+    Channel   create_channel(const char* name, const RuntimeConfig& cfg);
 
     /// \brief Return all existing channels
-    std::vector<Channel*> get_all_channels();
+    std::vector<Channel> get_all_channels();
 
-    /// \brief Return pointer to channel object with the given ID.
-    ///
-    /// The call returns a pointer to the created channel object. %Caliper
-    /// retains ownership of the channel object. This pointer becomes invalid
-    /// when the channel is deleted. %Caliper notifies users with the
-    /// finish_evt callback when an channel is about to be deleted.
-    Channel* get_channel(cali_id_t id);
+    /// \brief Return the channel with the given ID or an empty Channel object.
+    Channel   get_channel(cali_id_t id);
 
     /// \brief Delete the given channel.
     ///
     /// Deleting channels is \b not thread-safe.
-    void     delete_channel(Channel* chn);
+    void      delete_channel(Channel& chn);
 
     /// \brief Activate the given channel.
     ///
     /// Inactive channels will not track or process annotations and other
     /// blackboard updates.
-    void     activate_channel(Channel* chn);
+    void      activate_channel(Channel& chn);
 
     /// \brief Deactivate the given channel.
     /// \copydetails Caliper::activate_channel
-    void     deactivate_channel(Channel* chn);
+    void      deactivate_channel(Channel& chn);
 
     /// \brief Flush and delete all channels
-    void     finalize();
+    void      finalize();
 
     /// \}
 

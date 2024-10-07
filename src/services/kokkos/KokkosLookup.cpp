@@ -101,7 +101,7 @@ class KokkosLookup
     Attribute  m_dst_attr;
     Attribute  m_src_attr;
 
-    Channel*   m_channel;
+    Channel    m_channel;
 
 #if 0
     struct KokkosAttributes {
@@ -260,13 +260,13 @@ class KokkosLookup
         Caliper c;
         Variant v_space(handle.name);
 
-        c.memory_region_begin(m_channel, ptr, name, 1, 1, &size, 1, &m_space_attr, &v_space);
+        c.memory_region_begin(&m_channel, ptr, name, 1, 1, &size, 1, &m_space_attr, &v_space);
         ++m_num_spaces;
     }
 
     void kokkos_deallocate(const void* const ptr) {
         Caliper c;
-        c.memory_region_end(ptr);
+        c.memory_region_end(&m_channel, ptr);
     }
 
     void kokkos_deepcopy(const void* dst, const void* src, uint64_t size) {
@@ -278,7 +278,7 @@ class KokkosLookup
             { m_size_attr, Variant(cali_make_variant_from_uint(size))   }
         };
 
-        c.push_snapshot(m_channel, SnapshotView(3, data));
+        c.push_snapshot(&m_channel, SnapshotView(3, data));
 
         ++m_num_copies;
     }
@@ -305,7 +305,7 @@ class KokkosLookup
     }
 
     KokkosLookup(Caliper* c, Channel* chn)
-            : m_channel(chn)
+            : m_channel(*chn)
         {
             ConfigSet config =
                 chn->config().init("kokkoslookup", s_configdata);

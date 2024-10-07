@@ -17,7 +17,7 @@ struct ChannelController::ChannelControllerImpl
     config_map_t config;
     info_map_t   metadata;
 
-    Channel*     channel = nullptr;
+    Channel      channel;
 
     ChannelControllerImpl(const char* cname, int cflags, const config_map_t& cfg)
         : name(cname),
@@ -36,20 +36,20 @@ struct ChannelController::ChannelControllerImpl
 namespace
 {
 
-void add_channel_metadata(Caliper& c, Channel* channel, const info_map_t& metadata)
+void add_channel_metadata(Caliper& c, Channel& channel, const info_map_t& metadata)
 {
     for (const auto &entry : metadata) {
         auto attr =
             c.create_attribute(entry.first, CALI_TYPE_STRING,
                 CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_UNALIGNED);
 
-        c.set(channel, attr, Variant(entry.second.c_str()));
+        c.set(&channel, attr, Variant(entry.second.c_str()));
     }
 }
 
 } // namespace [anonymous]
 
-Channel*
+Channel
 ChannelController::channel()
 {
     return mP->channel;
@@ -73,7 +73,7 @@ ChannelController::metadata()
     return mP->metadata;
 }
 
-Channel*
+Channel
 ChannelController::create()
 {
     if (mP->channel)
@@ -91,20 +91,19 @@ ChannelController::create()
     if (!mP->channel) {
         Log(0).stream() << "ChannelController::create(): Could not create channel "
                         << mP->name << std::endl;
-        return nullptr;
+        return Channel();
     }
 
     if (mP->flags & CALI_CHANNEL_LEAVE_INACTIVE)
         c.deactivate_channel(mP->channel);
 
     on_create(&c, mP->channel);
-
     add_channel_metadata(c, mP->channel, mP->metadata);
 
     //   Reset the object's channel pointer if the channel is destroyed
     // behind our back (e.g., in Caliper::release())
-    mP->channel->events().finish_evt.connect([this](Caliper*, Channel*){
-            mP->channel = nullptr;
+    mP->channel.events().finish_evt.connect([this](Caliper*, Channel*){
+            mP->channel = Channel();
         });
 
     return mP->channel;
@@ -113,13 +112,12 @@ ChannelController::create()
 void
 ChannelController::start()
 {
-    Caliper  c;
-    Channel* chn = mP->channel;
+    Caliper c;
 
-    if (!chn)
-        chn = create();
-    if (chn)
-        c.activate_channel(chn);
+    if (!mP->channel)
+        create();
+    if (mP->channel)
+        c.activate_channel(mP->channel);
 }
 
 void
@@ -132,16 +130,15 @@ ChannelController::stop()
 bool
 ChannelController::is_active() const
 {
-    return mP->channel && mP->channel->is_active();
+    return mP->channel && mP->channel.is_active();
 }
 
 void
 ChannelController::flush()
 {
-    Channel* chn = channel();
-
+    Channel chn = channel();
     if (chn)
-        Caliper().flush_and_write(chn, SnapshotView());
+        Caliper().flush_and_write(&chn, SnapshotView());
 }
 
 std::string

@@ -23,7 +23,7 @@ std::map< cali_id_t, std::vector<Variant> >
 get_caliper_globals(Caliper* c, Channel* chn)
 {
     std::map< cali_id_t, std::vector<Variant> > ret;
-    auto globals = c->get_globals(chn);
+    auto globals = c->get_globals(*chn);
     
     // expand globals
 

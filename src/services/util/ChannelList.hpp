@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #pragma once
@@ -19,8 +19,8 @@ namespace util
 //   This must remain a POD type!
 //
 struct ChannelList {
-    cali::Channel* channel;
-    
+    cali::Channel channel;
+
     ChannelList* next;
     ChannelList* prev;
 
@@ -31,7 +31,7 @@ struct ChannelList {
             prev->next = next;
     }
 
-    inline static void add(ChannelList** head, cali::Channel* chn) {
+    inline static void add(ChannelList** head, cali::Channel& chn) {
         ChannelList* ret = new ChannelList { chn, nullptr, nullptr };
 
         if (*head)
@@ -41,10 +41,10 @@ struct ChannelList {
         *head = ret;
     }
 
-    inline static void remove(ChannelList** head, cali::Channel* chn) {
+    inline static void remove(ChannelList** head, cali::Channel& chn) {
         ChannelList* p = *head;
-        
-        while (p && p->channel->id() != chn->id())
+
+        while (p && p->channel != chn)
             p = p->next;
 
         if (p) {
@@ -53,7 +53,7 @@ struct ChannelList {
 
             p->unlink();
             delete p;
-        }        
+        }
     }
 };
 

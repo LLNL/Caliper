@@ -1,4 +1,4 @@
-// Test for annotation binding interface 
+// Test for annotation binding interface
 
 #include "caliper/AnnotationBinding.h"
 
@@ -18,12 +18,12 @@ class TestBinding : public AnnotationBinding
 
 public:
 
-    const char* service_tag() const { 
-        return "testbinding"; 
+    const char* service_tag() const {
+        return "testbinding";
     }
 
     void initialize(Caliper* c, Channel*) {
-        m_my_attr = 
+        m_my_attr =
             c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
         m_prop_attr =
             c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
@@ -44,7 +44,7 @@ public:
 
         std::string s(attr.name());
         s.append("=").append(value.to_string());
-        
+
         c->begin(m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
 
         if (s_verbose)
@@ -75,8 +75,9 @@ int main(int argc, const char** argv)
         TestBinding::set_verbose(true);
 
     Caliper c;
+    Channel channel = c.get_channel(0);
 
-    AnnotationBinding::make_binding<TestBinding>(&c, c.get_channel(0));
+    AnnotationBinding::make_binding<TestBinding>(&c, &channel);
 
     Attribute nested_attr  =
         c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);

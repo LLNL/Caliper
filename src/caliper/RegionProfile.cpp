@@ -42,10 +42,11 @@ RegionProfile::region_profile_t
 RegionProfile::exclusive_region_times(const std::string& region_type)
 {
     Caliper c;
+    Channel chn = channel();
     FlatExclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
-    if (channel())
-        c.flush(channel(), SnapshotView(), rp);
+    if (chn)
+        c.flush(&chn, SnapshotView(), rp);
     else
         Log(1).stream() << "RegionProfile::exclusive_region_times(): channel is not enabled"
                         << std::endl;
@@ -66,10 +67,11 @@ RegionProfile::region_profile_t
 RegionProfile::inclusive_region_times(const std::string& region_type)
 {
     Caliper c;
+    Channel chn = channel();
     FlatInclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
-    if (channel())
-        c.flush(channel(), SnapshotView(), rp);
+    if (chn)
+        c.flush(&chn, SnapshotView(), rp);
     else
         Log(1).stream() << "RegionProfile::inclusive_region_times(): channel is not enabled"
                         << std::endl;
@@ -87,8 +89,8 @@ RegionProfile::inclusive_region_times(const std::string& region_type)
 void
 RegionProfile::clear()
 {
-    Channel* chn = channel();
+    Channel chn = channel();
 
     if (chn)
-        Caliper::instance().clear(chn);
+        Caliper::instance().clear(&chn);
 }

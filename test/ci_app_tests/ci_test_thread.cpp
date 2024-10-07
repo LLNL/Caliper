@@ -32,7 +32,7 @@ int main()
     exp_nopthread_cfg.set("CALI_SERVICES_ENABLE", "event,trace,recorder");
     exp_nopthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
-    cali::Channel* exp_nopthread =
+    cali::Channel exp_nopthread =
         c.create_channel("exp_nopthread", exp_nopthread_cfg);
 
     cali::RuntimeConfig exp_pthread_cfg;
@@ -40,7 +40,7 @@ int main()
     exp_pthread_cfg.set("CALI_SERVICES_ENABLE", "event,trace,pthread,recorder");
     exp_pthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
-    cali::Channel* exp_pthread =
+    cali::Channel exp_pthread =
         c.create_channel("exp_pthread", exp_pthread_cfg);
 
     int       thread_ids[4] = { 16, 25, 36, 49 };
