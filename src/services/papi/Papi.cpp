@@ -173,9 +173,8 @@ class PapiService
             if (!m_disable_multiplex && cpi
                 && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
                 if (Log::verbosity() >= 2)
-                    Log(2).stream() << "papi: Initializing multiplex support for
-                        component "
-                                    << p.first << " (" << cpi->name << ")" << std::endl;
+                    Log(2).stream() << "papi: Initializing multiplex support for component " << p.first << " ("
+                                    << cpi->name << ")" << std::endl;
 
                 ret = PAPI_assign_eventset_component(eventset, p.first);
                 if (ret != PAPI_OK)

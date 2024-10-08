@@ -1240,28 +1240,20 @@ const char* builtin_papi_spr_option_specs = R"json(
      "config"      :
      {
        "CALI_PAPI_COUNTERS":
-         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING"
+         "perf::slots,perf::topdown-retiring"
      },
      "query"  :
      [
       { "level": "local", "select":
        [
         "inclusive_sum(sum#papi.slots) as slots",
-        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
-        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
        ]
       },
       { "level": "cross", "select":
        [
         "sum(inclusive#sum#papi.slots) as slots",
-        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
-        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
        ]
       }
      ]
@@ -1275,36 +1267,20 @@ const char* builtin_papi_spr_option_specs = R"json(
      "config"      :
      {
        "CALI_PAPI_COUNTERS":
-         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700"
+         "perf::slots,perf::topdown-retiring"
      },
      "query"  :
      [
       { "level": "local", "select":
        [
         "inclusive_sum(sum#papi.slots) as slots",
-        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
-        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
-        "inclusive_sum(sum#papi.perf_raw::r8400) as topdown_heavy_ops",
-        "inclusive_sum(sum#papi.perf_raw::r8500) as topdown_br_mispredict",
-        "inclusive_sum(sum#papi.perf_raw::r8600) as topdown_fetch_lat",
-        "inclusive_sum(sum#papi.perf_raw::r8700) as topdown_mem_bound"
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
        ]
       },
       { "level": "cross", "select":
        [
         "sum(inclusive#sum#papi.slots) as slots",
-        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
-        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
-        "sum(inclusive#sum#papi.perf_raw::r8400) as topdown_heavy_ops",
-        "sum(inclusive#sum#papi.perf_raw::r8500) as topdown_br_mispredict",
-        "sum(inclusive#sum#papi.perf_raw::r8600) as topdown_fetch_lat",
-        "sum(inclusive#sum#papi.perf_raw::r8700) as topdown_mem_bound"
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
        ]
       }
      ]

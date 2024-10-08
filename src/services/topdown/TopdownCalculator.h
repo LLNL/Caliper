@@ -6,6 +6,19 @@
 #include <map>
 #include <vector>
 
+// clang-format off
+/* How to create a new topdown calculation plugin:
+ * 
+ * Step 1: Create a subclass of this class implementing the calculations for the new 
+ *         architecture (see Haswell and SPR as examples)
+ * Step 2: Edit IntelTopdown::intel_topdown_register in IntelTopdown.cpp with logic for
+ *         creating an instance of your subclass (edits should be made around line 165)
+ * Step 3: Edit CMakeLists.txt to include the source file for your new subclass
+ * Step 4: Edit the 'get_builtin_option_specs' function in src/caliper/controllers/controllers.cpp
+ *         to add the appropriate option spec for your architecture in the topdown service
+ */
+// clang-format on
+
 namespace cali {
 namespace topdown {
 
