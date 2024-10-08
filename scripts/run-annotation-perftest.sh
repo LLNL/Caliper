@@ -1,14 +1,14 @@
 #!/bin/bash
 
-depth=20
+depth=28
 width=200
 
 EXE=`pwd`/test/cali-annotation-perftest
 ARGS="-d ${depth} -w ${width}"
 
-# Run Caliper annotation benchmarks. Designed to run on LLNL quartz (36 cores/node)
+# Run Caliper annotation benchmarks. Designed to run on LLNL dane (56 cores/socket)
 
-for threads in 1 4 36
+for threads in 1 4 56
 do
     # Annotations only, no active measurement config
     OMP_NUM_THREADS=${threads} \

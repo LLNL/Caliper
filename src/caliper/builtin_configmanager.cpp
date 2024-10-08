@@ -22,7 +22,7 @@ using namespace cali;
 namespace
 {
 
-Channel* make_flush_trigger_channel(Caliper* c)
+Channel make_flush_trigger_channel(Caliper* c)
 {
     auto services =
         services::get_available_services();
@@ -79,11 +79,11 @@ void init_builtin_configmanager(Caliper* c)
                             CALI_ATTR_HIDDEN      |
                             CALI_ATTR_ASVALUE);
 
-    Channel* channel = ::make_flush_trigger_channel(c);
+    Channel channel = ::make_flush_trigger_channel(c);
 
     mgr.start();
 
-    channel->events().write_output_evt.connect(
+    channel.events().write_output_evt.connect(
         [mgr,flag_attr](Caliper* c, Channel* channel, SnapshotView) mutable {
             if (c->get(channel, flag_attr).value().to_bool() == true)
                 return;

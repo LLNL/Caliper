@@ -16,8 +16,6 @@ class CaliperLogTest(unittest.TestCase):
         }
 
         log_targets = [
-            'CALI_LOG_VERBOSITY=3',
-            '== CALIPER: Releasing channel default',
             '== CALIPER: Releasing Caliper thread data',
             'Process blackboard',
             'Thread blackboard',

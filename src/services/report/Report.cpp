@@ -70,7 +70,7 @@ class Report {
                 queryP.process_record(db, db.merge_snapshot(in_db, rec));
             } );
 
-        db.import_globals(*c, c->get_globals(channel));
+        db.import_globals(*c, c->get_globals(*channel));
 
         queryP.flush(db);
     }

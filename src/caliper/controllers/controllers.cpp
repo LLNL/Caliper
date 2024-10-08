@@ -375,6 +375,39 @@ const char* builtin_option_specs = R"json(
      ]
     },
     {
+     "name"        : "loop.stats",
+     "description" : "Loop iteration count and time statistics",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "loop_statistics" ],
+     "query"  :
+     [
+       { "level"   : "local",
+         "let"     :
+         [
+          "ls.min=scale(min#iter.duration.ns,1e-9)",
+          "ls.avg=scale(avg#iter.duration.ns,1e-9)",
+          "ls.max=scale(max#iter.duration.ns,1e-9)"
+         ],
+         "select"  :
+         [
+          "max(max#iter.count) as \"Iterations\" unit count",
+          "min(ls.min) as \"Time/iter (min)\" unit sec",
+          "avg(ls.avg) as \"Time/iter (avg)\" unit sec",
+          "max(ls.max) as \"Time/iter (max)\" unit sec"
+         ]
+       },
+       { "level"   : "cross", "select":
+         [
+          "max(max#max#iter.count) as \"Iterations\" unit count",
+          "min(min#ls.min) as \"Time/iter (min)\" unit sec",
+          "avg(avg#ls.avg) as \"Time/iter (avg)\" unit sec",
+          "max(max#ls.max) as \"Time/iter (max)\" unit sec"
+         ]
+       }
+     ]
+    },
+    {
      "name"        : "node.order",
      "description" : "Report order in which regions first appeared",
      "type"        : "bool",

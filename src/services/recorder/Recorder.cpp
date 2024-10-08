@@ -66,7 +66,7 @@ void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)
             writer.write_snapshot(db, rec);
         });
 
-    writer.write_globals(*c, c->get_globals(chn));
+    writer.write_globals(*c, c->get_globals(*chn));
 
     Log(1).stream() << chn->name()
                     << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;

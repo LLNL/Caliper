@@ -136,7 +136,7 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
 }
 
 void
-set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type, adiak_category_t category, const char *subcategory)
+set_val(Channel& channel, const char* name, const Variant& val, adiak_datatype_t* type, adiak_category_t category, const char *subcategory)
 {
     Caliper c;
     Variant v_metavals[3];
@@ -153,11 +153,11 @@ set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t
        c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS,
                           3, meta_attr, v_metavals);
 
-    c.set(channel, attr, val);
+    c.set(&channel, attr, val);
 }
 
 struct nameval_usr_args_t {
-    Channel* channel;
+    Channel channel;
     int count;
 };
 
@@ -166,7 +166,7 @@ nameval_cb(const char *name, adiak_category_t category, const char *subcategory,
 {
     nameval_usr_args_t* args = static_cast<nameval_usr_args_t*>(usr_args);
 
-    Channel* channel = args->channel;
+    Channel channel = args->channel;
 
     if (!channel)
         return;
@@ -284,7 +284,7 @@ register_adiak_import(Caliper* c, Channel* channel)
 
     channel->events().pre_flush_evt.connect(
         [categories](Caliper*, Channel* channel, SnapshotView){
-            nameval_usr_args_t args { channel, 0 };
+            nameval_usr_args_t args { *channel, 0 };
 
             for (int category : categories)
                 adiak_list_namevals(1, static_cast<adiak_category_t>(category), nameval_cb, &args);

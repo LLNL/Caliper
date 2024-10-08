@@ -139,10 +139,20 @@ void make_default_channel()
 {
     //   Creates default channel (which reads env vars and/or caliper.config)
     // and initializes builtin ConfigManager during initialization
+    RuntimeConfig cfg = RuntimeConfig::get_default_config();
+    const RuntimeConfig::config_entry_list_t configdata {
+        { "enable", "" }
+    };
+    std::vector<std::string> services =
+        cfg.init("services", configdata).get("enable").to_stringlist(",:");
 
     Caliper c;
 
-    c.create_channel("default", RuntimeConfig::get_default_config());
+    if (services.empty())
+        Log(1).stream() << "No manual config specified, disabling default channel\n";
+    else
+        c.create_channel("default", cfg);
+
     internal::init_builtin_configmanager(&c);
 }
 
@@ -157,9 +167,8 @@ struct Channel::ChannelImpl
     static const ConfigSet::Entry   s_configdata[];
 
     cali_id_t                       id;
-
     std::string                     name;
-    bool                            active;
+    bool                            is_active;
 
     RuntimeConfig                   config;
     Events                          events;          ///< callbacks
@@ -171,7 +180,7 @@ struct Channel::ChannelImpl
     ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
         : id(_id),
           name(_name),
-          active(true),
+          is_active(true),
           config(cfg)
         {
             ConfigSet cali_cfg =
@@ -233,7 +242,7 @@ Channel::name() const
 bool
 Channel::is_active() const
 {
-    return mP->active;
+    return mP && mP->is_active;
 }
 
 cali_id_t
@@ -323,9 +332,10 @@ struct Caliper::GlobalData
 
     Blackboard                         process_blackboard;
 
-    vector< std::unique_ptr<Channel> > channels;
+    vector< Channel >                  all_channels;
+    vector< Channel >                  active_channels;
 
-    vector< ThreadData*              > thread_data;
+    vector< ThreadData* >              thread_data;
     std::mutex                         thread_data_lock;
 
     // --- constructor
@@ -759,9 +769,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     Attribute attr = Attribute::make_attribute(node);
 
-    for (auto& chn : sG->channels)
-        if (chn)
-            chn->mP->events.create_attr_evt(this, chn.get(), attr);
+    for (auto& channel : sG->all_channels)
+        channel.mP->events.create_attr_evt(this, &channel, attr);
 
     return attr;
 }
@@ -824,18 +833,16 @@ void
 Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
     size_t nextra, const Attribute* extra_attrs, const Variant* extra_vals)
 {
-    for (auto& chn : sG->channels)
-        if (chn && chn->is_active())
-            memory_region_begin(chn.get(), ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
+    for (auto& channel : sG->active_channels)
+        memory_region_begin(&channel, ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
 }
 
 /// Dispatch memory region annotation end across all active channels
 void
 Caliper::memory_region_end(const void* ptr)
 {
-    for (auto& chn : sG->channels)
-        if (chn && chn->is_active())
-            memory_region_end(chn.get(), ptr);
+    for (auto& channel : sG->active_channels)
+        memory_region_end(&channel, ptr);
 }
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the process
@@ -852,7 +859,7 @@ Caliper::get_globals()
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// and the process blackboard.
 std::vector<Entry>
-Caliper::get_globals(Channel* channel)
+Caliper::get_globals(const Channel& channel)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -860,7 +867,7 @@ Caliper::get_globals(Channel* channel)
     std::vector<Entry> ret =
         get_globals_from_blackboard(this, sG->process_blackboard);
     std::vector<Entry> tmp =
-        get_globals_from_blackboard(this, channel->mP->channel_blackboard);
+        get_globals_from_blackboard(this, channel.mP->channel_blackboard);
 
     ret.insert(ret.end(), tmp.begin(), tmp.end());
 
@@ -985,9 +992,8 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.pre_begin_evt(this, channel.get(), attr, data);
+        for (auto& channel : sG->active_channels)
+            channel.mP->events.pre_begin_evt(this, &channel, attr, data);
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_begin(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -996,9 +1002,8 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.post_begin_evt(this, channel.get(), attr, data);
+        for (auto& channel : sG->active_channels)
+            channel.mP->events.post_begin_evt(this, &channel, attr, data);
 }
 
 void
@@ -1034,9 +1039,8 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
+        for (auto& channel : sG->active_channels)
+            channel.mP->events.pre_end_evt(this, &channel, attr, current.entry.value());
 
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
@@ -1075,9 +1079,8 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.pre_end_evt(this, channel.get(), attr, current.entry.value());
+        for (auto& channel : sG->active_channels)
+            channel.mP->events.pre_end_evt(this, &channel, attr, current.entry.value());
 
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
@@ -1098,9 +1101,8 @@ Caliper::set(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (run_events)
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.pre_set_evt(this, channel.get(), attr, data);
+        for (auto& channel : sG->active_channels)
+            channel.mP->events.pre_set_evt(this, &channel, attr, data);
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -1330,83 +1332,90 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 // --- Channel API
 //
 
-Channel*
+Channel
 Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
     Log(1).stream() << "Creating channel " << name << std::endl;
+    static cali_id_t next_id = 0;
 
-    Channel* channel = new Channel(sG->channels.size(), name, cfg);
-    sG->channels.emplace_back(channel);
+    Channel channel(next_id++, name, cfg);
+    sG->all_channels.emplace_back(channel);
+    sG->active_channels.emplace_back(channel);
 
     // Create and set key & version attributes
+    begin(&channel, create_attribute("cali.channel", CALI_TYPE_STRING,
+                        CALI_ATTR_SKIP_EVENTS |
+                        CALI_ATTR_GLOBAL),
+        Variant(name));
 
-    begin(channel, create_attribute("cali.channel", CALI_TYPE_STRING,
-                                    CALI_ATTR_SKIP_EVENTS |
-                                    CALI_ATTR_GLOBAL),
-          Variant(name));
+    services::register_configured_services(this, &channel);
 
-    services::register_configured_services(this, channel);
-
-    if (channel->config().get("channel", "config_check").to_bool())
-        config_sanity_check(name, channel->config());
+    if (channel.config().get("channel", "config_check").to_bool())
+        config_sanity_check(name, channel.config());
     if (Log::verbosity() >= 3)
-        channel->config().print( Log(3).stream() << "Configuration:\n" );
+        channel.config().print( Log(3).stream() << "Configuration:\n" );
 
-    channel->mP->events.post_init_evt(this, channel);
+    channel.mP->events.post_init_evt(this, &channel);
 
     return channel;
 }
 
-Channel*
+Channel
 Caliper::get_channel(cali_id_t id)
 {
-    if (sG->channels.size() <= id)
-        return nullptr;
+    auto it = std::find_if(sG->all_channels.begin(), sG->all_channels.end(),
+        [id](const Channel& channel){ return id == channel.id(); });
 
-    return sG->channels[id].get();
+    return it == sG->all_channels.end() ? Channel() : *it;
 }
 
-std::vector<Channel*>
+std::vector<Channel>
 Caliper::get_all_channels()
 {
-    std::vector<Channel*> ret;
-
-    ret.reserve(sG->channels.size());
-
-    for (auto &chn : sG->channels)
-        if (chn)
-            ret.push_back(chn.get());
-
-    return ret;
+    return sG->all_channels;
 }
 
 void
-Caliper::delete_channel(Channel* chn)
+Caliper::delete_channel(Channel& channel)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    chn->mP->events.pre_finish_evt(this, chn);
+    channel.mP->events.pre_finish_evt(this, &channel);
 
-    Log(1).stream() << "Releasing channel " << chn->name() << std::endl;
+    Log(1).stream() << "Releasing channel " << channel.name() << std::endl;
 
-    chn->mP->events.finish_evt(this, chn);
-    sG->channels[chn->id()].reset();
+    auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
+    if (it != sG->active_channels.end())
+        sG->active_channels.erase(it);
+    it = std::find(sG->all_channels.begin(), sG->all_channels.end(), channel);
+    if (it != sG->all_channels.end())
+        sG->all_channels.erase(it);
+
+    channel.mP->events.finish_evt(this, &channel);
 }
 
 void
-Caliper::activate_channel(Channel* chn)
+Caliper::activate_channel(Channel& channel)
 {
-    chn->mP->active = true;
+    channel.mP->is_active = true;
+
+    auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
+    if (it == sG->active_channels.end())
+        sG->active_channels.emplace_back(channel);
 }
 
 void
-Caliper::deactivate_channel(Channel* chn)
+Caliper::deactivate_channel(Channel& channel)
 {
-    chn->mP->active = false;
+    auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
+    if (it != sG->active_channels.end())
+        sG->active_channels.erase(it);
+
+    channel.mP->is_active = false;
 }
 
 /// \brief Release current thread
@@ -1416,9 +1425,8 @@ Caliper::release_thread()
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    for (auto &chn : sG->channels)
-        if (chn)
-            chn->mP->events.release_thread_evt(this, chn.get());
+    for (auto &channel : sG->all_channels)
+        channel.mP->events.release_thread_evt(this, &channel);
 }
 
 void
@@ -1429,17 +1437,13 @@ Caliper::finalize()
 
     Log(1).stream() << "Finalizing ... " << std::endl;
 
-    for (auto &chnI : sG->channels)
-        if (chnI) {
-            Channel* channel = chnI.get();
-
-            if (channel->is_active() && channel->mP->flush_on_exit)
-                flush_and_write(channel, SnapshotView());
-
-            delete_channel(channel);
-        }
+    auto channels_copy = sG->all_channels;
+    for (auto &channel : channels_copy) {
+        if (channel.mP->flush_on_exit)
+            flush_and_write(&channel, SnapshotView());
+        delete_channel(channel);
+    }
 }
-
 
 //
 // --- Caliper constructor & singleton API
@@ -1485,7 +1489,6 @@ Caliper::instance()
             GlobalData::s_init_lock = 0;
 
             // now we can use Caliper::instance()
-
             ::make_default_channel();
         }
     }
@@ -1494,9 +1497,8 @@ Caliper::instance()
         tPtr = gPtr->add_thread_data(new ThreadData(false /* is_initial_thread */));
         Caliper c(gPtr, tPtr, false);
 
-        for (auto& chn : gPtr->channels)
-            if (chn)
-                chn->mP->events.create_thread_evt(&c, chn.get());
+        for (auto& channel : gPtr->all_channels)
+            channel.mP->events.create_thread_evt(&c, &channel);
     }
 
     return Caliper(gPtr, tPtr, false);

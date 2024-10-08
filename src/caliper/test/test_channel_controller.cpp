@@ -10,10 +10,10 @@ using namespace cali;
 TEST(ChannelControllerTest, ChannelController)
 {
     struct TestCC : public ChannelController {
-        bool     saw_create_callback = false;
-        Channel* the_channel = nullptr;
+        bool    saw_create_callback = false;
+        Channel the_channel;
 
-        void on_create(Caliper*, Channel* chn) {
+        void on_create(Caliper*, Channel& chn) {
             saw_create_callback = true;
             the_channel = chn;
         }
@@ -38,8 +38,8 @@ TEST(ChannelControllerTest, ChannelController)
     EXPECT_TRUE(testCC.is_active());
     EXPECT_TRUE(testCC.saw_create_callback);
 
-    ASSERT_NE(testCC.the_channel, nullptr);
-    EXPECT_EQ(testCC.the_channel->name(), std::string("testCC"));
+    ASSERT_TRUE(testCC.the_channel);
+    EXPECT_EQ(testCC.the_channel.name(), std::string("testCC"));
 
     testCC.stop();
 
@@ -50,12 +50,14 @@ TEST(ChannelControllerTest, DestroyChannel)
 {
     struct DestroyTestCC : public ChannelController {
         void destruct() {
-            if (is_active())
-                Caliper::instance().delete_channel(channel());
+            if (is_active()) {
+                Channel chn = channel();
+                Caliper::instance().delete_channel(chn);
+            }
         }
 
         bool channel_is_null() {
-            return channel() == nullptr;
+            return !channel();
         }
 
         DestroyTestCC()

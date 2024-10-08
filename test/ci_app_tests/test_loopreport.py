@@ -112,5 +112,27 @@ class CaliperLoopReportTest(unittest.TestCase):
             else:
                 self.fail('%s not found in log' % target)
 
+    """ Loop statistics option """
+    def test_loop_stats(self):
+        target_cmd = [ './ci_test_macros', '10', 'spot,loop.stats,output=stdout' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'let r=leaf() select * where r=main\ loop format json' ]
+
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, None) )
+
+        self.assertEqual(len(obj), 1)
+
+        rec = obj[0]
+
+        self.assertTrue("max#max#max#iter.count" in rec)
+        self.assertTrue("avg#avg#ls.avg" in rec)
+        self.assertTrue("min#min#ls.min" in rec)
+        self.assertTrue("max#max#ls.max" in rec)
+
+        self.assertEqual(int(rec["max#max#max#iter.count"]), 4)
+        self.assertGreaterEqual(float(rec["min#min#ls.min"]), 0.000009)
+        self.assertGreaterEqual(float(rec["avg#avg#ls.avg"]), float(rec["min#min#ls.min"]))
+        self.assertGreaterEqual(float(rec["max#max#ls.max"]), float(rec["avg#avg#ls.avg"]))
+
+
 if __name__ == "__main__":
     unittest.main()
