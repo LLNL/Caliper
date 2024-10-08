@@ -127,6 +127,11 @@ if (CALIPER_HAVE_MPI)
   endif()
 endif()
 
+list(APPEND CALIPER_SERVICES_SOURCES
+  LoopStatistics.cpp)
+list(APPEND CALIPER_SERVICE_NAMES
+  "loop_statistics")
+
 if (CALIPER_BUILD_TESTING)
   add_subdirectory(templates)
 endif()
