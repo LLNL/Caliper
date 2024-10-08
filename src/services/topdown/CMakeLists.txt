@@ -6,13 +6,13 @@ set(CALIPER_TOPDOWN_SOURCES
   HaswellTopdown.cpp)
 
 
-if (CALIPER_HAVE_ARCH STREQUAL "sapphirerapids")
-  if (WITH_PAPI_RDPMC)
+if (WITH_PAPI_RDPMC)
+  if (CALIPER_HAVE_ARCH STREQUAL "sapphirerapids")
     message(WARNING "Trying to use rdpmc for topdown on Sapphire Rapids will likely result in invalid values!")
-    list(APPEND CALIPER_TOPDOWN_SOURCES SapphireRapidsTopdown_rdpmc.cpp)
-  else()
-    list(APPEND CALIPER_TOPDOWN_SOURCES SapphireRapidsTopdown_read.cpp)
-  endif ()
+  endif()
+  list(APPEND CALIPER_TOPDOWN_SOURCES SapphireRapidsTopdown_rdpmc.cpp)
+else()
+  list(APPEND CALIPER_TOPDOWN_SOURCES SapphireRapidsTopdown_read.cpp)
 endif ()
 
 add_library(caliper-topdown OBJECT ${CALIPER_TOPDOWN_SOURCES})
