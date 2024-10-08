@@ -60,7 +60,7 @@ class IntelTopdown {
       ++num_top_computed;
     }
 
-    if (m_level == All) {
+    if (m_level == cali::topdown::All) {
       result = m_calculator->compute_backend_bound(rec);
 
       if (result.size() != m_calculator->get_num_expected_backend_bound()) {
@@ -147,13 +147,13 @@ public:
   static const char *s_spec;
 
   static void intel_topdown_register(Caliper *c, Channel *channel) {
-    cali::topdown::IntelTopdownLevel level = Top;
+    cali::topdown::IntelTopdownLevel level = cali::topdown::Top;
 
     auto config = services::init_config_from_spec(channel->config(), s_spec);
     std::string lvlcfg = config.get("level").to_string();
 
     if (lvlcfg == "all") {
-      level = All;
+      level = cali::topdown::All;
     } else if (lvlcfg != "top") {
       Log(0).stream() << channel->name() << ": topdown: Unknown level \""
                       << lvlcfg << "\", skipping topdown" << std::endl;
@@ -178,7 +178,8 @@ public:
     // with PAPI multiplexing. Ask the TopdownCalculator class whether we need
     // to disable multiplexing for the corresponding architecture.
     channel->config().set("CALI_PAPI_DISABLE_MULTIPLEXING",
-                          calculator->check_for_disabled_multiplex());
+                          calculator->check_for_disabled_multiplex() ? "true"
+                                                                     : "false");
 
     if (!cali::services::register_service(c, channel, "papi")) {
       Log(0).stream()
