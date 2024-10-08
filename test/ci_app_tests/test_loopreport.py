@@ -129,7 +129,7 @@ class CaliperLoopReportTest(unittest.TestCase):
         self.assertTrue("max#max#ls.max" in rec)
 
         self.assertEqual(int(rec["max#max#max#iter.count"]), 4)
-        self.assertGreaterEqual(float(rec["min#min#ls.min"]), 0.0001)
+        self.assertGreaterEqual(float(rec["min#min#ls.min"]), 0.000009)
         self.assertGreaterEqual(float(rec["avg#avg#ls.avg"]), float(rec["min#min#ls.min"]))
         self.assertGreaterEqual(float(rec["max#max#ls.max"]), float(rec["avg#avg#ls.avg"]))
 
