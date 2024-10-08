@@ -50,10 +50,9 @@ TEST(Variant_Test, FromString) {
     };
 
     for (const testcase_t* t = testcases; t->str; ++t) {
-        bool    ok = false;
-        Variant v(Variant::from_string(t->type, t->str, &ok));
+        Variant v(Variant::from_string(t->type, t->str));
 
-        EXPECT_EQ(ok, t->ok) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
+        EXPECT_EQ(!v.empty(), t->ok) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
         EXPECT_EQ(v, t->expected) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
     }
 }
@@ -97,7 +96,7 @@ TEST(Variant_Test, Conversions) {
         EXPECT_EQ(val_int, val_1_int_neg);
     }
     {
-        bool v_1_int_neg_to_i64 = false;        
+        bool v_1_int_neg_to_i64 = false;
         int64_t val_i64 = v_1_int_neg.to_int64(&v_1_int_neg_to_i64);
         EXPECT_TRUE(v_1_int_neg_to_i64);
         EXPECT_EQ(val_i64, static_cast<int64_t>(val_1_int_neg));
@@ -123,7 +122,7 @@ TEST(Variant_Test, Conversions) {
         bool v_2_i64_nlrg_to_uint = true;
         v_2_i64_nlrg.to_uint(&v_2_i64_nlrg_to_uint);
         EXPECT_FALSE(v_2_i64_nlrg_to_uint);
-    }    
+    }
 
     {
         bool v_3_uint_sml_to_int = false;
