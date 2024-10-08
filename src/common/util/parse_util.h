@@ -37,4 +37,14 @@ read_nested_text(std::istream& is, char start_char, char end_char);
 char
 read_char(std::istream& is);
 
+inline std::pair<bool, uint64_t>
+str_to_uint64(const char* str)
+{
+    uint64_t ret = 0;
+    const char* p = str;
+    for ( ; *p >= '0' && *p <= '9'; ++p)
+        ret = ret * 10 + static_cast<uint64_t>(*p - '0');
+    return std::make_pair(p != str, ret);
+}
+
 }

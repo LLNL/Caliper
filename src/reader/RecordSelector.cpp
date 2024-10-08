@@ -113,7 +113,7 @@ struct RecordSelector::RecordSelectorImpl
         Clause clause { f.op, db.get_attribute(f.attr_name), Variant() };
 
         if (clause.attr)
-            clause.value = Variant::from_string(clause.attr.type(), f.value.c_str(), nullptr);
+            clause.value = Variant::from_string(clause.attr.type(), f.value.c_str());
 
         return clause;
     }

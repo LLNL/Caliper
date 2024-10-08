@@ -9,6 +9,7 @@
 #include "caliper/common/StringConverter.h"
 
 #include "util/format_util.h"
+#include "util/parse_util.h"
 
 #include <algorithm>
 #include <cctype>
@@ -98,76 +99,53 @@ Variant::to_string() const
 }
 
 Variant
-Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
+Variant::from_string(cali_attr_type type, const char* str)
 {
-    Variant ret;
-    bool    ok = false;
-
     switch (type) {
     case CALI_TYPE_INV:
     case CALI_TYPE_USR:
     case CALI_TYPE_PTR:
-        // Can't convert USR or INV types at this point
-        break;
+        return Variant();
     case CALI_TYPE_STRING:
-        ret = Variant(CALI_TYPE_STRING, str, strlen(str));
-        ok  = true;
-        break;
+        return Variant(CALI_TYPE_STRING, str, strlen(str));
     case CALI_TYPE_INT:
         {
-            int64_t i = StringConverter(str).to_int64(&ok);
-
-            if (ok)
-                ret = Variant(cali_make_variant_from_int64(i));
+            char* str_end = nullptr;
+            long long ll = std::strtoll(str, &str_end, 10);
+            return str != str_end ? Variant(cali_make_variant_from_int64(ll)) : Variant();
         }
-        break;
     case CALI_TYPE_ADDR:
         {
+            bool ok = false;
             uint64_t u = StringConverter(str).to_uint(&ok, 16);
-
-            if (ok)
-                ret = Variant(CALI_TYPE_ADDR, &u, sizeof(uint64_t));
+            return ok ? Variant(CALI_TYPE_ADDR, &u, sizeof(uint64_t)) : Variant();
         }
-        break;
     case CALI_TYPE_UINT:
         {
-            uint64_t u = StringConverter(str).to_uint(&ok);
-
-            if (ok)
-                ret = Variant(CALI_TYPE_UINT, &u, sizeof(uint64_t));
+            auto p = util::str_to_uint64(str);
+            return p.first ? Variant(cali_make_variant_from_uint(p.second)) : Variant();
         }
-        break;
     case CALI_TYPE_DOUBLE:
         {
-            double d = StringConverter(str).to_double(&ok);
-
-            if (ok)
-                ret = Variant(d);
+            char* str_end = nullptr;
+            double d = std::strtod(str, &str_end);
+            return str != str_end ? Variant(d) : Variant();
         }
-        break;
     case CALI_TYPE_BOOL:
         {
+            bool ok = false;
             bool b = StringConverter(str).to_bool(&ok);
-
-            if (ok)
-                ret = Variant(b);
+            return ok ? Variant(b) : Variant();
         }
-        break;
     case CALI_TYPE_TYPE:
         {
             cali_attr_type type = cali_string2type(str);
-            ok = (type != CALI_TYPE_INV);
+            return (type != CALI_TYPE_INV) ? Variant(type) : Variant();
 
-            if (ok)
-                ret = Variant(type);
         }
-        break;
     }
 
-    if (okptr)
-        *okptr = ok;
-
-    return ret;
+    return Variant();
 }
 
 std::ostream&

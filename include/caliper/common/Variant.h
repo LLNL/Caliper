@@ -125,7 +125,7 @@ public:
         return Variant(cali_variant_unpack(buf, inc, ok));
     }
 
-    static Variant from_string(cali_attr_type type, const char* str, bool* ok = nullptr);
+    static Variant from_string(cali_attr_type type, const char* str);
 
     // vector<unsigned char> data() const;
 
