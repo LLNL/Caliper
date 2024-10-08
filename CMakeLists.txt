@@ -82,6 +82,8 @@ add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
 add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" FALSE)
+add_caliper_option(WITH_PAPI_RDPMC "Declare that PAPI is built to use rdpmc for reading counters. Does nothing if PAPI support is not enabled." TRUE)
+
 
 set(WITH_ARCH "" CACHE STRING "Enable features specific to the provided archspec CPU architecture name")
 if (NOT WITH_ARCH STREQUAL "")
