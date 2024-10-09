@@ -115,6 +115,11 @@ public:
 
     Variant& operator += (const Variant& val);
 
+    Variant&       min(const Variant& val);
+    Variant&       max(const Variant& val);
+
+    static void    update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val);
+
     size_t         pack(unsigned char* buf) const {
         return cali_variant_pack(m_v, buf);
     }
@@ -154,4 +159,3 @@ inline bool operator >  (const Variant& lhs, const Variant& rhs) {
 std::ostream& operator << (std::ostream& os, const Variant& v);
 
 } // namespace cali
-

@@ -507,28 +507,8 @@ public:
             return;
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == min_attr.id()) {
-                if (m_min.empty()) {
-                    m_min = e.value();
-                } else {
-                    switch (target_attr.type()) {
-                    case CALI_TYPE_INT:
-                        {
-                            int64_t m = std::min(m_min.to_int64(), e.value().to_int64());
-                            m_min = Variant(cali_make_variant_from_int64(m));
-                        }
-                        break;
-                    case CALI_TYPE_DOUBLE:
-                        m_min = Variant(std::min(m_min.to_double(), e.value().to_double()));
-                        break;
-                    case CALI_TYPE_UINT:
-                        m_min = Variant(std::min(m_min.to_uint(),   e.value().to_uint()));
-                        break;
-                    default:
-                        ;
-                    }
-                }
-            }
+            if (e.attribute() == target_attr.id() || e.attribute() == min_attr.id())
+                m_min.min(e.value());
         }
     }
 
@@ -612,28 +592,8 @@ public:
             return;
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == max_attr.id()) {
-                if (m_max.empty()) {
-                    m_max = e.value();
-                } else {
-                    switch (target_attr.type()) {
-                    case CALI_TYPE_INT:
-                        {
-                            int64_t m = std::max(m_max.to_int64(), e.value().to_int64());
-                            m_max = Variant(cali_make_variant_from_int64(m));
-                        }
-                        break;
-                    case CALI_TYPE_DOUBLE:
-                        m_max = Variant(std::max(m_max.to_double(), e.value().to_double()));
-                        break;
-                    case CALI_TYPE_UINT:
-                        m_max = Variant(std::max(m_max.to_uint(),   e.value().to_uint()));
-                        break;
-                    default:
-                        ;
-                    }
-                }
-            }
+            if (e.attribute() == target_attr.id() || e.attribute() == max_attr.id())
+                m_max.max(e.value());
         }
     }
 

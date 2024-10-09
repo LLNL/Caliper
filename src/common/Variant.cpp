@@ -223,3 +223,128 @@ Variant& Variant::operator += (const Variant& val)
 
     return *this;
 }
+
+Variant& Variant::min(const Variant& val)
+{
+    cali_attr_type type = this->type();
+
+    if (type == val.type()) {
+        switch (type) {
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double = std::min(m_v.value.v_double, val.m_v.value.v_double);
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int = std::min(m_v.value.v_int, val.m_v.value.v_int);
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint = std::min(m_v.value.v_uint, val.m_v.value.v_uint);
+            break;
+        default:
+            break;
+        }
+    } else {
+        switch (type) {
+        case CALI_TYPE_INV:
+            *this = val;
+            break;
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double = std::min(m_v.value.v_double, val.to_double());
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int = std::min(m_v.value.v_int, val.to_int64());
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint = std::min(m_v.value.v_uint, val.to_uint());
+            break;
+        default:
+            break;
+        }
+    }
+
+    return *this;
+}
+
+Variant& Variant::max(const Variant& val)
+{
+    cali_attr_type type = this->type();
+
+    if (type == val.type()) {
+        switch (type) {
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double = std::max(m_v.value.v_double, val.m_v.value.v_double);
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int = std::max(m_v.value.v_int, val.m_v.value.v_int);
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint = std::max(m_v.value.v_uint, val.m_v.value.v_uint);
+            break;
+        default:
+            break;
+        }
+    } else {
+        switch (type) {
+        case CALI_TYPE_INV:
+            *this = val;
+            break;
+        case CALI_TYPE_DOUBLE:
+            m_v.value.v_double = std::max(m_v.value.v_double, val.to_double());
+            break;
+        case CALI_TYPE_INT:
+            m_v.value.v_int = std::max(m_v.value.v_int, val.to_int64());
+            break;
+        case CALI_TYPE_UINT:
+            m_v.value.v_uint = std::max(m_v.value.v_uint, val.to_uint());
+            break;
+        default:
+            break;
+        }
+    }
+
+    return *this;
+}
+
+void Variant::update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val)
+{
+    if (min_val.empty()) {
+        min_val = val;
+        max_val = val;
+        sum_val = val;
+        return;
+    }
+
+    switch (val.m_v.type_and_size & CALI_VARIANT_TYPE_MASK) {
+    case CALI_TYPE_DOUBLE:
+        {
+            double d = val.m_v.value.v_double;
+            sum_val.m_v.value.v_double += d;
+            if (d < min_val.m_v.value.v_double)
+                min_val.m_v.value.v_double = d;
+            else if (d > max_val.m_v.value.v_double)
+                max_val.m_v.value.v_double = d;
+        }
+        break;
+    case CALI_TYPE_INT:
+        {
+            int64_t i = val.m_v.value.v_int;
+            sum_val.m_v.value.v_int += i;
+            if (i < min_val.m_v.value.v_int)
+                min_val.m_v.value.v_int = i;
+            else if (i > max_val.m_v.value.v_int)
+                max_val.m_v.value.v_int = i;
+        }
+        break;
+    case CALI_TYPE_UINT:
+        {
+            uint64_t u = val.m_v.value.v_uint;
+            sum_val.m_v.value.v_uint += u;
+            if (u < min_val.m_v.value.v_uint)
+                min_val.m_v.value.v_uint = u;
+            else if (u > max_val.m_v.value.v_uint)
+                max_val.m_v.value.v_uint = u;
+        }
+        break;
+    default:
+        break;
+    }
+}
