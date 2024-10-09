@@ -306,98 +306,45 @@ Variant& Variant::max(const Variant& val)
 
 void Variant::update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val)
 {
-    auto type = val.type();
-    if (type == min_val.type() && type == max_val.type() && type == sum_val.type()) {
-        switch (type) {
-        case CALI_TYPE_DOUBLE:
-            {
-                double d = val.m_v.value.v_double;
-                sum_val.m_v.value.v_double += d;
-                if (d < min_val.m_v.value.v_double)
-                    min_val.m_v.value.v_double = d;
-                else if (d > max_val.m_v.value.v_double)
-                    max_val.m_v.value.v_double = d;
-            }
-            break;
-        case CALI_TYPE_INT:
-            {
-                int64_t i = val.m_v.value.v_int;
-                sum_val.m_v.value.v_int += i;
-                if (i < min_val.m_v.value.v_int)
-                    min_val.m_v.value.v_int = i;
-                else if (i > max_val.m_v.value.v_int)
-                    max_val.m_v.value.v_int = i;
-            }
-            break;
-        case CALI_TYPE_UINT:
-            {
-                uint64_t u = val.m_v.value.v_uint;
-                sum_val.m_v.value.v_uint += u;
-                if (u < min_val.m_v.value.v_uint)
-                    min_val.m_v.value.v_uint = u;
-                else if (u > max_val.m_v.value.v_uint)
-                    max_val.m_v.value.v_uint = u;
-            }
-            break;
-        default:
-            break;
-        }
-    } else {
-        switch (sum_val.type()) {
-        case CALI_TYPE_INV:
-            sum_val = val;
-            break;
-        case CALI_TYPE_DOUBLE:
-            sum_val.m_v.value.v_double += val.to_double();
-            break;
-        case CALI_TYPE_INT:
-            sum_val.m_v.value.v_int += val.to_int64();
-            break;
-        case CALI_TYPE_UINT:
-            sum_val.m_v.value.v_uint += val.to_uint();
-            break;
-        default:
-            break;
-        }
+    if (!min_val) {
+        min_val = val;
+        max_val = val;
+        sum_val = val;
+        return;
+    }
 
-        switch (min_val.type()) {
-        case CALI_TYPE_INV:
-            min_val = val;
-            break;
-        case CALI_TYPE_DOUBLE:
-            min_val.m_v.value.v_double =
-                std::min(min_val.m_v.value.v_double, val.to_double());
-            break;
-        case CALI_TYPE_INT:
-            min_val.m_v.value.v_int =
-                std::min(min_val.m_v.value.v_int, val.to_int64());
-            break;
-        case CALI_TYPE_UINT:
-            min_val.m_v.value.v_uint =
-                std::min(min_val.m_v.value.v_uint, val.to_uint());
-            break;
-        default:
-            break;
+    switch (val.type()) {
+    case CALI_TYPE_DOUBLE:
+        {
+            double d = val.m_v.value.v_double;
+            sum_val.m_v.value.v_double += d;
+            if (d < min_val.m_v.value.v_double)
+                min_val.m_v.value.v_double = d;
+            else if (d > max_val.m_v.value.v_double)
+                max_val.m_v.value.v_double = d;
         }
-
-        switch (max_val.type()) {
-        case CALI_TYPE_INV:
-            max_val = val;
-            break;
-        case CALI_TYPE_DOUBLE:
-            max_val.m_v.value.v_double =
-                std::max(min_val.m_v.value.v_double, val.to_double());
-            break;
-        case CALI_TYPE_INT:
-            max_val.m_v.value.v_int =
-                std::max(min_val.m_v.value.v_int, val.to_int64());
-            break;
-        case CALI_TYPE_UINT:
-            max_val.m_v.value.v_uint =
-                std::max(min_val.m_v.value.v_uint, val.to_uint());
-            break;
-        default:
-            break;
+        break;
+    case CALI_TYPE_INT:
+        {
+            int64_t i = val.m_v.value.v_int;
+            sum_val.m_v.value.v_int += i;
+            if (i < min_val.m_v.value.v_int)
+                min_val.m_v.value.v_int = i;
+            else if (i > max_val.m_v.value.v_int)
+                max_val.m_v.value.v_int = i;
         }
+        break;
+    case CALI_TYPE_UINT:
+        {
+            uint64_t u = val.m_v.value.v_uint;
+            sum_val.m_v.value.v_uint += u;
+            if (u < min_val.m_v.value.v_uint)
+                min_val.m_v.value.v_uint = u;
+            else if (u > max_val.m_v.value.v_uint)
+                max_val.m_v.value.v_uint = u;
+        }
+        break;
+    default:
+        break;
     }
 }
