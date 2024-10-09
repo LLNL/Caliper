@@ -23,10 +23,10 @@ namespace
 {
 
 struct AggregateKernel {
-    double   min;
-    double   max;
-    double   sum;
-    int      count;
+    Variant  min;
+    Variant  max;
+    Variant  sum;
+    unsigned count;
 
 #ifdef CALIPER_ENABLE_HISTOGRAMS
     int histogram_max;
@@ -42,18 +42,14 @@ struct AggregateKernel {
 #endif
 
     AggregateKernel()
-        : min(std::numeric_limits<double>::max()),
-          max(std::numeric_limits<double>::min()),
-          sum(0), count(0)
+        : count(0)
 #ifdef CALIPER_ENABLE_HISTOGRAMS
           , histogram_max(0)
 #endif
         { }
 
-    void update(double val) {
-        min  = std::min(min, val);
-        max  = std::max(max, val);
-        sum += val;
+    void update(const Variant& val) {
+        Variant::update_minmaxsum(val, min, max, sum);
         ++count;
 
 #ifdef CALIPER_ENABLE_HISTOGRAMS
@@ -263,7 +259,7 @@ struct AggregationDB::AggregationDBImpl
             if (e.empty())
                 continue;
 
-            m_kernels[entry->kernels_idx + a].update(e.value().to_double());
+            m_kernels[entry->kernels_idx + a].update(e.value());
         }
     }
 
@@ -296,7 +292,7 @@ struct AggregationDB::AggregationDBImpl
                 if (k->count == 0)
                     continue;
 
-                double avg = k->sum / k->count;
+                double avg = k->sum.to_double() / k->count;
 
                 rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
                 rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));

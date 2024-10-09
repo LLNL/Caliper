@@ -112,10 +112,11 @@ class Aggregate
         ResultAttributes res;
 
         int prop = CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS;
+        cali_attr_type type = attr.type();
 
-        res.min_attr = c->create_attribute(std::string("min#") + name, CALI_TYPE_DOUBLE, prop);
-        res.max_attr = c->create_attribute(std::string("max#") + name, CALI_TYPE_DOUBLE, prop);
-        res.sum_attr = c->create_attribute(std::string("sum#") + name, CALI_TYPE_DOUBLE, prop);
+        res.min_attr = c->create_attribute(std::string("min#") + name, type, prop);
+        res.max_attr = c->create_attribute(std::string("max#") + name, type, prop);
+        res.sum_attr = c->create_attribute(std::string("sum#") + name, type, prop);
         res.avg_attr = c->create_attribute(std::string("avg#") + name, CALI_TYPE_DOUBLE, prop);
     #ifdef CALIPER_ENABLE_HISTOGRAMS
         for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
