@@ -1484,7 +1484,7 @@ const char *get_builtin_option_specs() {
      [
       { "level": "local", "select":
        [
-        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::slots) as slots",
         "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
         "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
         "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
@@ -1494,7 +1494,7 @@ const char *get_builtin_option_specs() {
       },
       { "level": "cross", "select":
        [
-        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::slots) as slots",
         "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
         "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
         "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
@@ -1519,7 +1519,7 @@ const char *get_builtin_option_specs() {
      [
       { "level": "local", "select":
        [
-        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::slots) as slots",
         "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
         "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
         "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
@@ -1533,7 +1533,7 @@ const char *get_builtin_option_specs() {
       },
       { "level": "cross", "select":
        [
-        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::slots) as slots",
         "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
         "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
         "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
