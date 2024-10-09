@@ -4,7 +4,7 @@ set(CALIPER_TOPDOWN_SOURCES
   HaswellTopdown.cpp)
 
 
-if (CALIPER_WITH_PAPI_RDPMC)
+if (WITH_PAPI_RDPMC)
   message(STATUS "PAPI uses rdpmc")
   if (CALIPER_HAVE_ARCH STREQUAL "sapphirerapids")
     message(WARNING "Trying to use rdpmc for topdown on Sapphire Rapids will likely result in invalid values!")
