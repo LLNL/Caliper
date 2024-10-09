@@ -1478,7 +1478,8 @@ const char *get_builtin_option_specs() {
      "config"      :
      {
        "CALI_PAPI_COUNTERS":
-         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING"
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
      },
      "query"  :
      [
@@ -1513,7 +1514,8 @@ const char *get_builtin_option_specs() {
      "config"      :
      {
        "CALI_PAPI_COUNTERS":
-         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700"
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
      },
      "query"  :
      [
