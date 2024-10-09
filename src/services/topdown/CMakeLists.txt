@@ -1,12 +1,10 @@
-add_caliper_option(WITH_PAPI_RDPMC "Declare that PAPI is built to use rdpmc for reading counters" TRUE)
-
 set(CALIPER_TOPDOWN_SOURCES
   IntelTopdown.cpp
   TopdownCalculator.cpp
   HaswellTopdown.cpp)
 
 
-if (WITH_PAPI_RDPMC)
+if (CALIPER_WITH_PAPI_RDPMC)
   message(STATUS "PAPI uses rdpmc")
   if (CALIPER_HAVE_ARCH STREQUAL "sapphirerapids")
     message(WARNING "Trying to use rdpmc for topdown on Sapphire Rapids will likely result in invalid values!")
