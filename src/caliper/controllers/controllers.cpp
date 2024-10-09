@@ -207,25 +207,6 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_
                                                                  &spot_controller_info,
                                                                  nullptr };
 
-// Compile-time string comparison
-// Based on code from:
-// https://gist.github.com/ac1dloop/4f7109e8856e5d28e769134bca7d6d7d
-constexpr bool const_strcmp(const char* a, const char* b)
-{
-    // Iterate until one of the strings hits its NULL terminator
-    for (; *a || *b;) {
-        // Check if the current characters in the strings are equal
-        // If not equal, return false
-        // If equal, progress to the next character in the strings
-        if (*a++ != *b++) {
-            return false;
-        }
-    }
-    // If we reach here, every character from the strings were equal,
-    // so we return true
-    return true;
-}
-
 const char* builtin_base_option_specs = R"json(
 [
 {
