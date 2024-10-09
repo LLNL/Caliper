@@ -306,14 +306,14 @@ Variant& Variant::max(const Variant& val)
 
 void Variant::update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val)
 {
-    if (!min_val) {
+    if (min_val.empty()) {
         min_val = val;
         max_val = val;
         sum_val = val;
         return;
     }
 
-    switch (val.type()) {
+    switch (val.m_v.type_and_size & CALI_VARIANT_TYPE_MASK) {
     case CALI_TYPE_DOUBLE:
         {
             double d = val.m_v.value.v_double;

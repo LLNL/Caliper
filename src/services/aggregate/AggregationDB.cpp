@@ -17,7 +17,7 @@
 using namespace cali;
 using namespace aggregate;
 
-#define MAX_KEYLEN 20
+#define MAX_KEYLEN 16
 
 namespace
 {
@@ -48,7 +48,7 @@ struct AggregateKernel {
 #endif
         { }
 
-    void update(const Variant& val) {
+    inline void update(const Variant& val) {
         Variant::update_minmaxsum(val, min, max, sum);
         ++count;
 
@@ -93,18 +93,6 @@ struct AggregateEntry {
     size_t num_kernels;
     size_t next_entry_idx;
 };
-
-bool key_equal(SnapshotView lhs, SnapshotView rhs)
-{
-    if (lhs.size() != rhs.size())
-        return false;
-
-    for (size_t i = 0; i < lhs.size(); ++i)
-        if (lhs[i] != rhs[i])
-            return false;
-
-    return true;
-}
 
 } // namespace [anonymous]
 
@@ -160,11 +148,12 @@ struct AggregationDB::AggregationDBImpl
 
     AggregateEntry* find_or_create_entry(SnapshotView key, std::size_t hash, std::size_t num_aggr_attrs, bool can_alloc) {
         hash = hash % m_hashmap.size();
+        size_t key_len = key.size();
         size_t count = 0;
 
         for (std::size_t idx = m_hashmap[hash]; idx != 0; idx = m_entries[idx].next_entry_idx) {
             AggregateEntry* e = &m_entries[idx];
-            if (key_equal(key, SnapshotView(e->key_len, &m_keyents[e->key_idx])))
+            if (key_len == e->key_len && std::equal(key.begin(), key.end(), m_keyents.begin()+e->key_idx))
                 return e;
             ++count;
         }
@@ -175,7 +164,7 @@ struct AggregationDB::AggregationDBImpl
         if (!can_alloc) {
             if (m_kernels.size() + num_aggr_attrs >= m_kernels.capacity())
                 return &m_entries[0];
-            if (m_keyents.size() + key.size() >= m_keyents.capacity())
+            if (m_keyents.size() + key_len >= m_keyents.capacity())
                 return &m_entries[0];
             if (m_entries.size() + 1 >= m_entries.capacity())
                 return &m_entries[0];
@@ -191,7 +180,7 @@ struct AggregationDB::AggregationDBImpl
 
         e.count          = 0;
         e.key_idx        = key_idx;
-        e.key_len        = key.size();
+        e.key_len        = key_len;
         e.kernels_idx    = kernels_idx;
         e.num_kernels    = num_aggr_attrs;
         e.next_entry_idx = m_hashmap[hash];
@@ -282,7 +271,7 @@ struct AggregationDB::AggregationDBImpl
             SnapshotView kv(entry.key_len, &m_keyents[entry.key_idx]);
 
             std::vector<Entry> rec;
-            rec.reserve(kv.size() + entry.num_kernels + 2);
+            rec.reserve(kv.size() + 4*entry.num_kernels + 2);
 
             std::copy(kv.begin(), kv.end(), std::back_inserter(rec));
 
