@@ -19,74 +19,99 @@
  */
 // clang-format on
 
-namespace cali {
-namespace topdown {
+namespace cali
+{
+namespace topdown
+{
 
 enum IntelTopdownLevel { All = 1, Top = 2 };
 
-class TopdownCalculator {
+class TopdownCalculator
+{
 protected:
-  IntelTopdownLevel m_level;
 
-  const char *m_top_counters;
-  const char *m_all_counters;
+    IntelTopdownLevel m_level;
 
-  std::vector<const char *> m_res_top;
-  std::vector<const char *> m_res_all;
+    const char* m_top_counters;
+    const char* m_all_counters;
 
-  std::map<std::string, Attribute> m_counter_attrs;
-  std::map<std::string, Attribute> m_result_attrs;
+    std::vector<const char*> m_res_top;
+    std::vector<const char*> m_res_all;
 
-  std::map<std::string, int> m_counters_not_found;
+    std::map<std::string, Attribute> m_counter_attrs;
+    std::map<std::string, Attribute> m_result_attrs;
 
-  Variant get_val_from_rec(const std::vector<Entry> &rec, const char *name);
+    std::map<std::string, int> m_counters_not_found;
 
-  TopdownCalculator(IntelTopdownLevel level, const char *top_counters,
-                    const char *all_counters,
-                    std::vector<const char *> &&res_top,
-                    std::vector<const char *> &&res_all);
+    Variant get_val_from_rec(const std::vector<Entry>& rec, const char* name);
+
+    TopdownCalculator(
+        IntelTopdownLevel          level,
+        const char*                top_counters,
+        const char*                all_counters,
+        std::vector<const char*>&& res_top,
+        std::vector<const char*>&& res_all
+    );
 
 public:
-  TopdownCalculator(IntelTopdownLevel level);
 
-  virtual ~TopdownCalculator() = default;
+    TopdownCalculator(IntelTopdownLevel level);
 
-  virtual bool check_for_disabled_multiplex() const = 0;
+    virtual ~TopdownCalculator() = default;
 
-  virtual std::vector<Entry>
-  compute_toplevel(const std::vector<Entry> &rec) = 0;
+    // Returns true if PAPI multiplexing cannot be used for the
+    // counters and/or architecture needed for the subclass
+    virtual bool check_for_disabled_multiplex() const = 0;
 
-  virtual std::size_t get_num_expected_toplevel() const = 0;
+    // Computes the L1 topdown metrics using the counters contained
+    // in the Caliper Entries.
+    virtual std::vector<Entry> compute_toplevel(const std::vector<Entry>& rec) = 0;
 
-  virtual std::vector<Entry>
-  compute_retiring(const std::vector<Entry> &rec) = 0;
+    // Returns the expected size of the vectoor returned from
+    // compute_toplevel
+    virtual std::size_t get_num_expected_toplevel() const = 0;
 
-  virtual std::size_t get_num_expected_retiring() const = 0;
+    // Computes the topdown metrics beneath "Retiring" in the
+    // topdown hierarchy for the given architecture
+    virtual std::vector<Entry> compute_retiring(const std::vector<Entry>& rec) = 0;
 
-  virtual std::vector<Entry>
-  compute_backend_bound(const std::vector<Entry> &rec) = 0;
+    // Returns the expected size of the vector returned from
+    // compute_retiring
+    virtual std::size_t get_num_expected_retiring() const = 0;
 
-  virtual std::size_t get_num_expected_backend_bound() const = 0;
+    // Computes the topdown metrics beneath "Backend bound" in the
+    // topdown hierarchy for the given architecture
+    virtual std::vector<Entry> compute_backend_bound(const std::vector<Entry>& rec) = 0;
 
-  virtual std::vector<Entry>
-  compute_frontend_bound(const std::vector<Entry> &rec) = 0;
+    // Returns the expected size of the vector returned from
+    // compute_backend_bounnd
+    virtual std::size_t get_num_expected_backend_bound() const = 0;
 
-  virtual std::size_t get_num_expected_frontend_bound() const = 0;
+    // Computes the topdown metrics beneath "Frontend bound" in the
+    // topdown hierarchy for the given architecture
+    virtual std::vector<Entry> compute_frontend_bound(const std::vector<Entry>& rec) = 0;
 
-  virtual std::vector<Entry>
-  compute_bad_speculation(const std::vector<Entry> &rec) = 0;
+    // Returns the expected size of the vector returned from
+    // compute_frontend_bounnd
+    virtual std::size_t get_num_expected_frontend_bound() const = 0;
 
-  virtual std::size_t get_num_expected_bad_speculation() const = 0;
+    // Computes the topdown metrics beneath "Bad speculation" in the
+    // topdown hierarchy for the given architecture
+    virtual std::vector<Entry> compute_bad_speculation(const std::vector<Entry>& rec) = 0;
 
-  bool find_counter_attrs(CaliperMetadataAccessInterface &db);
+    // Returns the expected size of the vector returned from
+    // compute_bad_speculation
+    virtual std::size_t get_num_expected_bad_speculation() const = 0;
 
-  void make_result_attrs(CaliperMetadataAccessInterface &db);
+    bool find_counter_attrs(CaliperMetadataAccessInterface& db);
 
-  const std::map<std::string, int> &get_counters_not_found() const;
+    void make_result_attrs(CaliperMetadataAccessInterface& db);
 
-  const char *get_counters() const;
+    const std::map<std::string, int>& get_counters_not_found() const;
 
-  IntelTopdownLevel get_level() const;
+    const char* get_counters() const;
+
+    IntelTopdownLevel get_level() const;
 };
 
 } // namespace topdown
