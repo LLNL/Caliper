@@ -51,31 +51,53 @@ public:
 
   virtual ~TopdownCalculator() = default;
 
+  // Returns true if PAPI multiplexing cannot be used for the
+  // counters and/or architecture needed for the subclass
   virtual bool check_for_disabled_multiplex() const = 0;
 
+  // Computes the L1 topdown metrics using the counters contained
+  // in the Caliper Entries.
   virtual std::vector<Entry>
   compute_toplevel(const std::vector<Entry> &rec) = 0;
 
+  // Returns the expected size of the vectoor returned from
+  // compute_toplevel
   virtual std::size_t get_num_expected_toplevel() const = 0;
 
+  // Computes the topdown metrics beneath "Retiring" in the
+  // topdown hierarchy for the given architecture
   virtual std::vector<Entry>
   compute_retiring(const std::vector<Entry> &rec) = 0;
 
+  // Returns the expected size of the vector returned from
+  // compute_retiring
   virtual std::size_t get_num_expected_retiring() const = 0;
 
+  // Computes the topdown metrics beneath "Backend bound" in the
+  // topdown hierarchy for the given architecture
   virtual std::vector<Entry>
   compute_backend_bound(const std::vector<Entry> &rec) = 0;
 
+  // Returns the expected size of the vector returned from
+  // compute_backend_bounnd
   virtual std::size_t get_num_expected_backend_bound() const = 0;
 
+  // Computes the topdown metrics beneath "Frontend bound" in the
+  // topdown hierarchy for the given architecture
   virtual std::vector<Entry>
   compute_frontend_bound(const std::vector<Entry> &rec) = 0;
 
+  // Returns the expected size of the vector returned from
+  // compute_frontend_bounnd
   virtual std::size_t get_num_expected_frontend_bound() const = 0;
 
+  // Computes the topdown metrics beneath "Bad speculation" in the
+  // topdown hierarchy for the given architecture
   virtual std::vector<Entry>
   compute_bad_speculation(const std::vector<Entry> &rec) = 0;
 
+  // Returns the expected size of the vector returned from
+  // compute_bad_speculation
   virtual std::size_t get_num_expected_bad_speculation() const = 0;
 
   bool find_counter_attrs(CaliperMetadataAccessInterface &db);
