@@ -31,7 +31,8 @@ public:
     static void fini();
     static bool is_initialized();
 
-    inline std::ostream& stream() {
+    inline std::ostream& stream()
+    {
         if (verbosity() < m_level)
             return m_nullstream;
 
@@ -57,9 +58,7 @@ public:
     /// \return The log stream's \a std::ostream object
     std::ostream& perror(int errnum, const char* msg = "");
 
-    Log(int level = 1)
-        : m_level { level }
-        { }
+    Log(int level = 1) : m_level { level } {}
 };
 
 } // namespace cali

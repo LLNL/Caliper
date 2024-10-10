@@ -24,8 +24,9 @@ namespace
 
 inline double get_timestamp()
 {
-    return 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
+    return 1e-6
+           * std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch())
+                 .count();
 }
 
 class TimeseriesService
@@ -36,22 +37,24 @@ class TimeseriesService
 
     ConfigManager::ChannelPtr m_timeprofile;
 
-    unsigned  m_snapshots;
+    unsigned m_snapshots;
 
     static const char* s_profile_spec;
 
-    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& srec) {
-        double ts_now = get_timestamp();
+    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& srec)
+    {
+        double  ts_now = get_timestamp();
         Variant v_prev = c->exchange(m_timestamp_attr, Variant(ts_now));
 
-        std::array<Entry, 2> ts_entries = {
-            Entry(m_timestamp_attr, v_prev),
-            Entry(m_snapshot_attr, cali_make_variant_from_uint(m_snapshots))
-        };
+        std::array<Entry, 2> ts_entries = { Entry(m_timestamp_attr, v_prev),
+                                            Entry(m_snapshot_attr, cali_make_variant_from_uint(m_snapshots)) };
 
         Channel prof_chn = m_timeprofile->channel();
 
-        c->flush(&prof_chn, info, [c,channel,info,ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec){
+        c->flush(
+            &prof_chn,
+            info,
+            [c, channel, info, ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec) {
                 std::vector<Entry> rec;
                 rec.reserve(frec.size() + info.size() + ts_entries.size());
                 rec.insert(rec.end(), frec.begin(), frec.end());
@@ -59,7 +62,8 @@ class TimeseriesService
                 rec.insert(rec.end(), ts_entries.begin(), ts_entries.end());
 
                 channel->events().process_snapshot(c, channel, SnapshotView(), SnapshotView(rec.size(), rec.data()));
-            });
+            }
+        );
 
         c->clear(&prof_chn);
 
@@ -69,43 +73,40 @@ class TimeseriesService
         ++m_snapshots;
     }
 
-    void post_init_cb(Caliper* c, Channel*) {
+    void post_init_cb(Caliper* c, Channel*)
+    {
         c->set(m_timestamp_attr, Variant(get_timestamp()));
         m_timeprofile->start();
     }
 
-    void finish_cb(Caliper*, Channel* channel) {
-        Log(1).stream() << channel->name() << ": timeseries: Processed "
-            << m_snapshots << " snapshots\n";
+    void finish_cb(Caliper*, Channel* channel)
+    {
+        Log(1).stream() << channel->name() << ": timeseries: Processed " << m_snapshots << " snapshots\n";
     }
 
     TimeseriesService(Caliper* c, Channel* channel, ConfigManager::ChannelPtr prof)
-        : m_timeprofile { prof },
-          m_snapshots   { 0 }
+        : m_timeprofile { prof }, m_snapshots { 0 }
     {
         m_timestamp_attr =
-            c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE,
-                                CALI_ATTR_ASVALUE |
-                                CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         m_snapshot_attr =
-            c->create_attribute("timeseries.snapshot", CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE |
-                                CALI_ATTR_SKIP_EVENTS);
-        m_duration_attr =
-            c->create_attribute("timeseries.duration", CALI_TYPE_DOUBLE,
-                                CALI_ATTR_ASVALUE     |
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("timeseries.snapshot", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+        m_duration_attr = c->create_attribute(
+            "timeseries.duration",
+            CALI_TYPE_DOUBLE,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
     }
 
 public:
 
     static const char* s_spec;
 
-    static void create(Caliper* c, Channel* channel) {
+    static void create(Caliper* c, Channel* channel)
+    {
         std::string profile_cfg_str = "timeseries.profile";
 
-        ConfigSet cfg = services::init_config_from_spec(channel->config(), s_spec);
+        ConfigSet   cfg          = services::init_config_from_spec(channel->config(), s_spec);
         std::string profile_opts = cfg.get("profile.options").to_string();
         if (profile_opts.size() > 0)
             profile_cfg_str.append("(").append(profile_opts).append(")");
@@ -115,33 +116,30 @@ public:
         mgr.add(profile_cfg_str.c_str());
 
         if (mgr.error()) {
-            Log(0).stream() << channel->name() << ": timeseries: Profile config error: "
-                << mgr.error_msg() << "\n";
+            Log(0).stream() << channel->name() << ": timeseries: Profile config error: " << mgr.error_msg() << "\n";
             return;
         }
 
         auto profile = mgr.get_channel("timeseries.profile");
         if (!profile) {
-            Log(0).stream() << channel->name()
-                << ": timeseries: Cannot create profile channel\n";
+            Log(0).stream() << channel->name() << ": timeseries: Cannot create profile channel\n";
             return;
         }
 
         TimeseriesService* instance = new TimeseriesService(c, channel, profile);
 
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec) {
                 instance->snapshot_cb(c, channel, info, rec);
-            });
-        channel->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->post_init_cb(c, channel);
-            });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+            }
+        );
+        channel->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->post_init_cb(c, channel);
+        });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
         Log(1).stream() << channel->name() << ": Registered timeseries service\n";
     }
@@ -176,7 +174,7 @@ const char* TimeseriesService::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

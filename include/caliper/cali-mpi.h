@@ -49,21 +49,22 @@ struct QuerySpec;
  * \ingroup ReaderAPI
  */
 
-void
-aggregate_over_mpi(CaliperMetadataDB& db, Aggregator& a, MPI_Comm comm);
+void aggregate_over_mpi(CaliperMetadataDB& db, Aggregator& a, MPI_Comm comm);
 
-void
-collective_flush(OutputStream&    stream,
-                 Caliper&         c,
-                 Channel&         channel,
-                 SnapshotView     flush_info,
-                 const QuerySpec& local_query,
-                 const QuerySpec& cross_query,
-                 MPI_Comm         comm);
+void collective_flush(
+    OutputStream&    stream,
+    Caliper&         c,
+    Channel&         channel,
+    SnapshotView     flush_info,
+    const QuerySpec& local_query,
+    const QuerySpec& cross_query,
+    MPI_Comm         comm
+);
 
 } /* namespace cali */
 
-extern "C" {
+extern "C"
+{
 #endif
 
 /*
@@ -84,8 +85,7 @@ extern "C" {
  * and makes the mpi-specific services visible to the Caliper initializer.
  */
 
-void
-cali_mpi_init();
+void cali_mpi_init();
 
 #ifdef __cplusplus
 } /* extern "C" */

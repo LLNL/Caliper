@@ -24,16 +24,16 @@ namespace cali
 
 // --- Forward declarations
 
-class  Caliper;
+class Caliper;
 struct CaliperService;
-class  Node;
-class  RuntimeConfig;
+class Node;
+class RuntimeConfig;
 
 // --- Typedefs
 
 /// \brief A callback function to process snapshot records when flushing
 ///   snapshot buffers.
-typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cali::Entry>&)> SnapshotFlushFn;
+typedef std::function<void(CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&)> SnapshotFlushFn;
 
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data.
@@ -46,14 +46,13 @@ class Channel
 
 public:
 
-    constexpr Channel()
-        : mP { nullptr } { }
+    constexpr Channel() : mP { nullptr } {}
 
     Channel(const Channel&) = default;
-    Channel(Channel&&) = default;
+    Channel(Channel&&)      = default;
 
-    Channel& operator = (const Channel&) = default;
-    Channel& operator = (Channel&&) = default;
+    Channel& operator= (const Channel&) = default;
+    Channel& operator= (Channel&&)      = default;
 
     ~Channel();
 
@@ -61,66 +60,57 @@ public:
 
     /// \brief Holds the %Caliper callbacks for a channel.
     struct Events {
-        typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
-            attribute_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
-            update_cbvec;
-        typedef util::callback<void(Caliper*,Channel*)>
-            caliper_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, const Attribute&)>                 attribute_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, const Attribute&, const Variant&)> update_cbvec;
+        typedef util::callback<void(Caliper*, Channel*)>                                   caliper_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotBuilder&)>
-            snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotView)>
-            process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,std::vector<Entry>&)>
-            edit_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, std::vector<Entry>&)>            edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotFlushFn)>
-            flush_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,SnapshotView)>
-            write_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotFlushFn)> flush_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                  write_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*,
-                size_t, const Attribute*, const Variant*)>
-            track_mem_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const void*)>
-            untrack_mem_cbvec;
+        typedef util::callback<
+            void(Caliper*, Channel*, const void*, const char*, size_t, size_t, const size_t*, size_t, const Attribute*, const Variant*)>
+                                                                      track_mem_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, const void*)> untrack_mem_cbvec;
 
         /// \brief Invoked when a new attribute has been created.
-        attribute_cbvec        create_attr_evt;
+        attribute_cbvec create_attr_evt;
 
         /// \brief Invoked on region begin, \e before it has been put on the blackboard.
-        update_cbvec           pre_begin_evt;
+        update_cbvec pre_begin_evt;
         /// \brief Invoked on region begin, \e after it has been put on the blackboard.
-        update_cbvec           post_begin_evt;
+        update_cbvec post_begin_evt;
         /// \brief Invoked when value is set, \e before it has been put on the blackboard.
-        update_cbvec           pre_set_evt;
+        update_cbvec pre_set_evt;
         /// \brief Invoked on region end, \e before it has been removed from the blackboard.
-        update_cbvec           pre_end_evt;
+        update_cbvec pre_end_evt;
 
         /// \brief Invoked when a new thread context is being created.
-        caliper_cbvec          create_thread_evt;
+        caliper_cbvec create_thread_evt;
         /// \brief Invoked when a thread context is being released.
-        caliper_cbvec          release_thread_evt;
+        caliper_cbvec release_thread_evt;
 
         /// \brief Invoked at the end of a %Caliper channel initialization.
         ///
         /// At this point, all registered services have been initialized.
-        caliper_cbvec          post_init_evt;
+        caliper_cbvec post_init_evt;
         /// \brief Invoked prior to %Caliper channel finalization.
-        caliper_cbvec          pre_finish_evt;
+        caliper_cbvec pre_finish_evt;
         /// \brief Invoked at the end of %Caliper channel finalization.
         ///
         /// At this point, other services in this channel may already be
         /// destroyed. It is no longer safe to use any %Caliper API calls for
         /// this channel. It is for local cleanup only.
-        caliper_cbvec          finish_evt;
+        caliper_cbvec finish_evt;
 
         /// \brief Invoked when a snapshot is being taken.
         ///
         /// Use this callback to take performance measurements and append them
         /// to the snapshot record.
-        snapshot_cbvec         snapshot;
+        snapshot_cbvec snapshot;
         /// \brief Invoked when a snapshot has been completed.
         ///
         /// Used by snapshot processing services (e.g., trace and aggregate) to
@@ -128,29 +118,29 @@ public:
         process_snapshot_cbvec process_snapshot;
 
         /// \brief Invoked before flush.
-        write_cbvec            pre_flush_evt;
+        write_cbvec pre_flush_evt;
         /// \brief Flush all snapshot records.
-        flush_cbvec            flush_evt;
+        flush_cbvec flush_evt;
         /// \brief Invoked after flush.
-        write_cbvec            post_flush_evt;
+        write_cbvec post_flush_evt;
 
         /// \brief Modify snapshot records during flush.
-        edit_snapshot_cbvec    postprocess_snapshot;
+        edit_snapshot_cbvec postprocess_snapshot;
 
         /// \brief Write output.
         ///
         /// This is invoked by the Caliper::flush_and_write() API call, and
         /// causes output services (e.g., report or recorder) to trigger a
         /// flush.
-        write_cbvec            write_output_evt;
+        write_cbvec write_output_evt;
 
         /// \brief Invoked at a memory region begin.
-        track_mem_cbvec        track_mem_evt;
+        track_mem_cbvec track_mem_evt;
         /// \brief Invoked at memory region end.
-        untrack_mem_cbvec      untrack_mem_evt;
+        untrack_mem_cbvec untrack_mem_evt;
 
         /// \brief Clear local storage (trace buffers, aggregation DB)
-        caliper_cbvec          clear_evt;
+        caliper_cbvec clear_evt;
 
         /// \brief Process events for a subscription attribute in this channel.
         ///
@@ -161,41 +151,41 @@ public:
         /// them, for example with wrapper services like IO or
         /// MPI, where regions should only be tracked if the service is enabled
         /// in the given channel.
-        attribute_cbvec        subscribe_attribute;
+        attribute_cbvec subscribe_attribute;
     };
 
     /// \brief Access the callback vectors to register callbacks for this channel.
-    Events&        events();
+    Events& events();
 
     /// \brief Return the configuration for this channel.
-    RuntimeConfig  config();
+    RuntimeConfig config();
 
     // --- Channel management
 
     /// \brief Return the channel's name.
-    std::string    name() const;
+    std::string name() const;
 
     /// \brief Is the channel currently active?
     ///
     /// Channels can be enabled and disabled with Caliper::activate_channel()
     /// and Caliper::deactivate_channel().
-    bool           is_active() const;
+    bool is_active() const;
 
-    cali_id_t      id() const;
+    cali_id_t id() const;
 
-    operator bool() const { return mP.use_count() > 0; }
+    operator bool () const { return mP.use_count() > 0; }
 
     friend class Caliper;
-    friend bool operator == (const Channel&, const Channel&);
-    friend bool operator != (const Channel&, const Channel&);
+    friend bool operator== (const Channel&, const Channel&);
+    friend bool operator!= (const Channel&, const Channel&);
 };
 
-inline bool operator == (const Channel& a, const Channel& b)
+inline bool operator== (const Channel& a, const Channel& b)
 {
     return a.mP == b.mP;
 }
 
-inline bool operator != (const Channel& a, const Channel& b)
+inline bool operator!= (const Channel& a, const Channel& b)
 {
     return a.mP != b.mP;
 }
@@ -227,9 +217,7 @@ class Caliper : public CaliperMetadataAccessInterface
 
     bool m_is_signal; // are we in a signal handler?
 
-    Caliper(GlobalData* g, ThreadData* t, bool sig)
-        : sG(g), sT(t), m_is_signal(sig)
-        { }
+    Caliper(GlobalData* g, ThreadData* t, bool sig) : sG(g), sT(t), m_is_signal(sig) {}
 
     void release_thread();
 
@@ -255,7 +243,7 @@ public:
     ///
     /// \param attr Attribute key
     /// \param data Value to set
-    void  begin(const Attribute& attr, const Variant& data);
+    void begin(const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with \a attr from
     ///   the process or thread blackboard.
@@ -266,7 +254,7 @@ public:
     /// This function is signal safe.
     ///
     /// \param attr Attribute key.
-    void  end(const Attribute& attr);
+    void end(const Attribute& attr);
 
     /// \brief Pop/remove top-most \a attr entry from blackboard
     ///   and check if current value is equal to \a data
@@ -277,7 +265,7 @@ public:
     /// This function is signal safe.
     ///
     /// \param attr Attribute key.
-    void  end_with_value_check(const Attribute& attr, const Variant& data);
+    void end_with_value_check(const Attribute& attr, const Variant& data);
 
     /// \brief Set attribute:value pair on the process or thread blackboard.
     ///
@@ -291,7 +279,7 @@ public:
     ///
     /// \param attr Attribute key
     /// \param data Value to set
-    void  set(const Attribute& attr, const Variant& data);
+    void set(const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (across channels)
@@ -311,18 +299,20 @@ public:
     ///   record for this memory region
     /// \param extra_attrs Attribute keys for additional attribute:value pairs
     /// \param estra_vals Values for additional attribute:value pairs
-    void      memory_region_begin(const void*  ptr,
-                                  const char*  label,
-                                  size_t       elem_size,
-                                  size_t       ndim,
-                                  const size_t dims[],
-                                  size_t       n_extra = 0,
-                                  const Attribute* extra_attrs = nullptr,
-                                  const Variant*   extra_vals = nullptr);
+    void memory_region_begin(
+        const void*      ptr,
+        const char*      label,
+        size_t           elem_size,
+        size_t           ndim,
+        const size_t     dims[],
+        size_t           n_extra     = 0,
+        const Attribute* extra_attrs = nullptr,
+        const Variant*   extra_vals  = nullptr
+    );
 
     /// \brief De-register a tracked memory region starting at \a ptr
     /// \sa memory_region_begin()
-    void      memory_region_end(const void* ptr);
+    void memory_region_end(const void* ptr);
 
     //
     // --- Per-channel API
@@ -343,7 +333,7 @@ public:
     /// \param trigger_info A caller-provided list of attributes that is passed
     ///   to the snapshot and process_snapshot callbacks, and added to the
     ///   returned snapshot record.
-    void      push_snapshot(Channel* channel, SnapshotView trigger_info);
+    void push_snapshot(Channel* channel, SnapshotView trigger_info);
 
     /// \brief Return context data from blackboards.
     ///
@@ -353,7 +343,7 @@ public:
     /// This function is signal safe.
     ///
     /// \param rec The snapshot record buffer to update.
-    void     pull_context(SnapshotBuilder& rec);
+    void pull_context(SnapshotBuilder& rec);
 
     /// \brief Trigger and return a snapshot.
     ///
@@ -376,7 +366,7 @@ public:
     /// \param trigger_info A caller-provided record that is passed to the
     ///   snapshot callback, and added to the returned snapshot record.
     /// \param rec The snapshot record buffer to update.
-    void      pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec);
+    void pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec);
 
     // --- Flush and I/O API
 
@@ -386,7 +376,7 @@ public:
 
     /// \brief Flush aggregation/trace buffer contents into the \a proc_fn
     ///   processing function.
-    void      flush(Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn);
+    void flush(Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn);
 
     /// \brief Flush snapshot buffer contents on \a channel into the registered
     ///   output services.
@@ -397,7 +387,7 @@ public:
     ///
     /// \param channel The channel to flush
     /// \param input_flush_info User-provided flush context information
-    void      flush_and_write(Channel* channel, SnapshotView flush_info);
+    void flush_and_write(Channel* channel, SnapshotView flush_info);
 
     /// \brief Clear snapshot buffers on \a channel
     ///
@@ -405,7 +395,7 @@ public:
     /// that has not been written yet will be lost.
     ///
     /// This function is not signal safe.
-    void      clear(Channel* channel);
+    void clear(Channel* channel);
 
     // --- Annotation API
 
@@ -429,7 +419,7 @@ public:
     /// \param data Value to set
     ///
     /// \sa begin(const Attribute&, const Variant&)
-    void  begin(Channel* channel, const Attribute& attr, const Variant& data);
+    void begin(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with given attribute from
     ///   the channel blackboard.
@@ -442,7 +432,7 @@ public:
     /// \param attr Attribute key.
     ///
     /// \sa end(const Attribute&)
-    void  end(Channel* channel, const Attribute& attr);
+    void end(Channel* channel, const Attribute& attr);
 
     /// \brief Set attribute:value pair on the channel blackboard.
     ///
@@ -457,15 +447,24 @@ public:
     /// \param attr Attribute key
     /// \param data Value to set
     /// \sa set(const Attribute&, const Variant&)
-    void  set(Channel* channel, const Attribute& attr, const Variant& data);
+    void set(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (single channel)
     /// \{
 
-    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
-                                  size_t n = 0, const Attribute* extra_attr = nullptr, const Variant* extra_val = nullptr);
-    void      memory_region_end(Channel* chn, const void* ptr);
+    void memory_region_begin(
+        Channel*         chn,
+        const void*      ptr,
+        const char*      label,
+        size_t           elem_size,
+        size_t           ndim,
+        const size_t     dims[],
+        size_t           n          = 0,
+        const Attribute* extra_attr = nullptr,
+        const Variant*   extra_val  = nullptr
+    );
+    void memory_region_end(Channel* chn, const void* ptr);
 
     /// \}
     /// \name Blackboard access
@@ -480,7 +479,7 @@ public:
     /// \param data The new value.
     ///
     /// \return The previous value \a attr
-    Variant   exchange(const Attribute& attr, const Variant& data);
+    Variant exchange(const Attribute& attr, const Variant& data);
 
     /// \brief Retrieve top-most entry for the given attribute key from the
     ///   process or thread blackboard.
@@ -491,7 +490,7 @@ public:
     ///
     /// \return The top-most entry on the blackboard for the given attribute key.
     ///   An empty Entry object if this attribute is not set.
-    Entry     get(const Attribute& attr);
+    Entry get(const Attribute& attr);
 
     /// \brief Retrieve top-most entry for the given attribute key from the
     ///   channel blackboard of the given channel.
@@ -502,10 +501,10 @@ public:
     ///
     /// \return The top-most entry on the blackboard for the given attribute key.
     ///   An empty Entry object if this attribute is not set.
-    Entry     get(Channel* channel, const Attribute& attr);
+    Entry get(Channel* channel, const Attribute& attr);
 
     /// \brief Retrieve the current path entry from the blackboard.
-    Entry     get_path_node();
+    Entry get_path_node();
 
     /// \brief Return all global attributes for the default channel
     /// \sa get_globals(Channel*)
@@ -530,11 +529,13 @@ public:
     /// \param data   Value list
     /// \param list   Output record builder
     /// \param parent (Optional) parent node for any treee elements.
-    void      make_record(size_t n,
-                          const Attribute  attr[],
-                          const Variant    data[],
-                          SnapshotBuilder& rec,
-                          cali::Node*      parent = nullptr);
+    void make_record(
+        size_t           n,
+        const Attribute  attr[],
+        const Variant    data[],
+        SnapshotBuilder& rec,
+        cali::Node*      parent = nullptr
+    );
 
     // --- Metadata Access Interface
 
@@ -543,7 +544,7 @@ public:
     /// \{
 
     /// \brief Return \a true if the attribute with name \a name exists
-    bool      attribute_exists(const std::string& name) const;
+    bool attribute_exists(const std::string& name) const;
 
     /// \brief Return the attribute object for a given attribute ID
     Attribute get_attribute(cali_id_t id) const;
@@ -581,15 +582,17 @@ public:
     ///   entries.
     /// \param meta_val Metadata values. An array of n_meta values.
     /// \return The created attribute.
-    Attribute create_attribute(const std::string& name,
-                               cali_attr_type     type,
-                               int                prop = CALI_ATTR_DEFAULT,
-                               int                meta = 0,
-                               const Attribute*   meta_attr = nullptr,
-                               const Variant*     meta_data = nullptr);
+    Attribute create_attribute(
+        const std::string& name,
+        cali_attr_type     type,
+        int                prop      = CALI_ATTR_DEFAULT,
+        int                meta      = 0,
+        const Attribute*   meta_attr = nullptr,
+        const Variant*     meta_data = nullptr
+    );
 
     /// \brief Return node with given \a id
-    Node*     node(cali_id_t id) const;
+    Node* node(cali_id_t id) const;
 
     /// \brief Merge all nodes in \a nodelist into a single path under \a parent
     ///
@@ -603,7 +606,7 @@ public:
     /// \param parent   Construct path off this parent node
     ///
     /// \return Node pointing to the new path
-    Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
+    Node* make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
 
     /// \brief Return a context tree path for the given key:value pair
     ///
@@ -614,7 +617,7 @@ public:
     /// \param parent Construct path off this parent node
     ///
     /// \return Node pointing to the end of the new path
-    Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
+    Node* make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
     /// \brief Return a context tree branch for the list of values with the given attribute.
     ///
@@ -626,7 +629,7 @@ public:
     /// \param parent Construct path off this parent node
     ///
     /// \return Node pointing to the end of the new path
-    Node*     make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
+    Node* make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
 
     /// \}
     /// \name Channel API
@@ -652,31 +655,31 @@ public:
     ///   in %Caliper log output.
     /// \param cfg The channel's runtime configuration.
     /// \return The channel
-    Channel   create_channel(const char* name, const RuntimeConfig& cfg);
+    Channel create_channel(const char* name, const RuntimeConfig& cfg);
 
     /// \brief Return all existing channels
     std::vector<Channel> get_all_channels();
 
     /// \brief Return the channel with the given ID or an empty Channel object.
-    Channel   get_channel(cali_id_t id);
+    Channel get_channel(cali_id_t id);
 
     /// \brief Delete the given channel.
     ///
     /// Deleting channels is \b not thread-safe.
-    void      delete_channel(Channel& chn);
+    void delete_channel(Channel& chn);
 
     /// \brief Activate the given channel.
     ///
     /// Inactive channels will not track or process annotations and other
     /// blackboard updates.
-    void      activate_channel(Channel& chn);
+    void activate_channel(Channel& chn);
 
     /// \brief Deactivate the given channel.
     /// \copydetails Caliper::activate_channel
-    void      deactivate_channel(Channel& chn);
+    void deactivate_channel(Channel& chn);
 
     /// \brief Flush and delete all channels
-    void      finalize();
+    void finalize();
 
     /// \}
 
@@ -686,12 +689,11 @@ public:
     /// \see instance()
     Caliper();
 
-    ~Caliper()
-        { }
+    ~Caliper() {}
 
     Caliper(const Caliper&) = default;
 
-    Caliper& operator = (const Caliper&) = default;
+    Caliper& operator= (const Caliper&) = default;
 
     /// \brief Check if this is a signal-safe %Caliper instance.
     ///
@@ -749,11 +751,11 @@ public:
     static Caliper sigsafe_instance();
 
     /// \brief Test if Caliper has been initialized yet.
-    static bool    is_initialized();
+    static bool is_initialized();
 
     /// \brief Release %Caliper. Note that %Caliper cannot be re-initialized
     ///   after it has been released.
-    static void    release();
+    static void release();
 
     /// \brief Add a list of %Caliper service specs.
     ///
@@ -773,7 +775,7 @@ public:
     ///
     ///   Caliper::add_services(my_services);
     /// \endcode
-    static void    add_services(const CaliperService*);
+    static void add_services(const CaliperService*);
 
     friend struct GlobalData;
 };

@@ -15,7 +15,7 @@
 
 void print_help()
 {
-    const char* helpstr = 
+    const char* helpstr =
         "Usage: c-example [caliper-config(arg=...,),...]."
         "\nRuns \"runtime-report\" configuration by default."
         "\nUse \"none\" to run without a ConfigManager configuration."
@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
 
     // Mark a code region. Opens region "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
-    int count = 4;
-    double  t = 0;
+    int    count = 4;
+    double t     = 0;
     CALI_MARK_END("init");
 
     // Mark a loop. Opens region "loop=mainloop" in Caliper.

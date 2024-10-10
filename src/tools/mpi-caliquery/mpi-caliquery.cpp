@@ -30,78 +30,73 @@ using namespace util;
 namespace
 {
 
-const char* usage = "mpi-caliquery [OPTION]... "
+const char* usage =
+    "mpi-caliquery [OPTION]... "
     "\n  Read, merge, and filter caliper streams in parallel."
     "\n  Reads data from <rank>.cali on each MPI rank (i.e., 0.cali, 1.cali, ...)";
 
 const Args::Table option_table[] = {
     // name, longopt name, shortopt char, has argument, info, argument info
-    { "select", "select", 's', true,
+    { "select",
+      "select",
+      's',
+      true,
       "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]",
-      "QUERY_STRING"
-    },
-    { "aggregate", "aggregate", 'a', true,
+      "QUERY_STRING" },
+    { "aggregate",
+      "aggregate",
+      'a',
+      true,
       "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
-      "AGGREGATION_OPS"
-    },
-    { "aggregate-key", "aggregate-key", 0, true,
+      "AGGREGATION_OPS" },
+    { "aggregate-key",
+      "aggregate-key",
+      0,
+      true,
       "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
-      "ATTRIBUTES"
-    },
-    { "attributes", "print-attributes", 0, true,
+      "ATTRIBUTES" },
+    { "attributes",
+      "print-attributes",
+      0,
+      true,
       "Select attributes to print (or hide) in expanded output: [-]attribute[:...]",
-      "ATTRIBUTES"
-    },
-    { "sort", "sort-by", 'S', true,
-      "Sort rows in table format: attribute[:...]",
-      "SORT_ATTRIBUTES"
-    },
-    { "format", "format", 'f', true,
+      "ATTRIBUTES" },
+    { "sort", "sort-by", 'S', true, "Sort rows in table format: attribute[:...]", "SORT_ATTRIBUTES" },
+    { "format",
+      "format",
+      'f',
+      true,
       "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
-      "FORMAT_STRING"
-    },
-    { "title",  "title",  0, true,
-      "Set the title row for formatted output",
-      "STRING"
-    },
-    { "table", "table", 't', false,
-      "Print given attributes in human-readable table form",
-      "ATTRIBUTES"
-    },
-    { "tree" , "tree", 'T', false,
+      "FORMAT_STRING" },
+    { "title", "title", 0, true, "Set the title row for formatted output", "STRING" },
+    { "table", "table", 't', false, "Print given attributes in human-readable table form", "ATTRIBUTES" },
+    { "tree",
+      "tree",
+      'T',
+      false,
       "Print records in a tree based on the hierarchy of the selected path attributes",
-      nullptr
-    },
-    { "path-attributes", "path-attributes", 0, true,
-      "Select the path attributes for tree printers",
-      "ATTRIBUTES"
-    },
-    { "json", "json", 'j', false,
-      "Print given attributes in web-friendly json format",
-      "ATTRIBUTES"
-    },
-    { "query", "query", 'q', true,
-      "Execute a query in CalQL format",
-      "QUERY STRING"
-    },
-    { "query-file", "query-file", 'Q', true,
-      "Read a CalQL query from a file",
-      "FILENAME"
-    },
-    { "caliper-config", "caliper-config", 'P', true,
+      nullptr },
+    { "path-attributes", "path-attributes", 0, true, "Select the path attributes for tree printers", "ATTRIBUTES" },
+    { "json", "json", 'j', false, "Print given attributes in web-friendly json format", "ATTRIBUTES" },
+    { "query", "query", 'q', true, "Execute a query in CalQL format", "QUERY STRING" },
+    { "query-file", "query-file", 'Q', true, "Read a CalQL query from a file", "FILENAME" },
+    { "caliper-config",
+      "caliper-config",
+      'P',
+      true,
       "Set Caliper configuration for profiling mpi-caliquery",
-      "CALIPER-CONFIG"
-    },
-    { "caliper-config-vars", "caliper-config-vars", 0, true,
+      "CALIPER-CONFIG" },
+    { "caliper-config-vars",
+      "caliper-config-vars",
+      0,
+      true,
       "Caliper configuration flags (for cali-query profiling)",
-      "KEY=VALUE,..."
-    },
-    { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
-    { "help",    "help",    'h', true,  "Print help message",       nullptr },
-    { "output", "output",   'o', true,  "Set the output file name", "FILE"  },
+      "KEY=VALUE,..." },
+    { "verbose", "verbose", 'v', false, "Be verbose.", nullptr },
+    { "help", "help", 'h', true, "Print help message", nullptr },
+    { "output", "output", 'o', true, "Set the output file name", "FILE" },
     Args::Terminator
 };
-
 
 void format_output(const Args& args, const QuerySpec& spec, CaliperMetadataAccessInterface& db, Aggregator& aggregate)
 {
@@ -130,11 +125,13 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
         if (!args.arguments().front().empty())
             filename = args.arguments().front() + "/" + filename;
 
-    NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
+    NodeProcessFn node_proc = [](CaliperMetadataAccessInterface&, const Node*) {
+        return;
+    };
     SnapshotProcessFn snap_proc = aggregate;
 
     if (!spec.preprocess_ops.empty())
-        snap_proc = SnapshotFilterStep(Preprocessor(spec),   snap_proc);
+        snap_proc = SnapshotFilterStep(Preprocessor(spec), snap_proc);
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
         snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
 
@@ -142,8 +139,7 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
     reader.read(filename, db, node_proc, snap_proc);
 
     if (reader.error())
-        std::cerr << "mpi-caliquery (" << rank << "): error "
-          << filename << ": " << reader.error_msg() << std::endl;
+        std::cerr << "mpi-caliquery (" << rank << "): error " << filename << ": " << reader.error_msg() << std::endl;
 }
 
 void setup_caliper_config(const Args& args)
@@ -158,24 +154,22 @@ void setup_caliper_config(const Args& args)
     if (args.is_set("verbose"))
         cali_config_preset("CALI_LOG_VERBOSITY", "2");
 
-    std::vector<std::string> config_list =
-        StringConverter(args.get("caliper-config-vars")).to_stringlist();
+    std::vector<std::string> config_list = StringConverter(args.get("caliper-config-vars")).to_stringlist();
 
     for (const std::string entry : config_list) {
         auto p = entry.find('=');
 
         if (p == std::string::npos) {
-            std::cerr << "cali-query: error: invalid Caliper configuration flag format \""
-                      << entry << "\" (missing \"=\")" << std::endl;
+            std::cerr << "cali-query: error: invalid Caliper configuration flag format \"" << entry
+                      << "\" (missing \"=\")" << std::endl;
             continue;
         }
 
-        cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
+        cali_config_set(entry.substr(0, p).c_str(), entry.substr(p + 1).c_str());
     }
 }
 
-} // namespace [anonymous]
-
+} // namespace
 
 int main(int argc, char* argv[])
 {
@@ -185,7 +179,7 @@ int main(int argc, char* argv[])
     //
 
     Args args(::option_table);
-    int first_unknown_arg = args.parse(argc, argv);
+    int  first_unknown_arg = args.parse(argc, argv);
 
     // must be done before Caliper initialization in MPI_Init wrapper
     ::setup_caliper_config(args);
@@ -214,8 +208,7 @@ int main(int argc, char* argv[])
 
     if (!query_parser.parse_args(args)) {
         if (rank == 0)
-            std::cerr << "mpi-caliquery: Invalid query: " << query_parser.error_msg()
-                      << std::endl;
+            std::cerr << "mpi-caliquery: Invalid query: " << query_parser.error_msg() << std::endl;
 
         MPI_Abort(MPI_COMM_WORLD, -2);
     }
@@ -238,9 +231,9 @@ int main(int argc, char* argv[])
 
     CALI_MARK_FUNCTION_BEGIN;
 
-    QuerySpec  spec = query_parser.spec();
+    QuerySpec spec = query_parser.spec();
 
-    Aggregator aggregate(spec);
+    Aggregator        aggregate(spec);
     CaliperMetadataDB metadb;
 
     // --- Process our own input

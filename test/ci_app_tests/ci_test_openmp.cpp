@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 
     int sum = 0;
 
-    #pragma omp parallel for reduction(+:sum)
+#pragma omp parallel for reduction(+ : sum)
     for (int i = 0; i < 42; ++i) {
         sum += i;
     }

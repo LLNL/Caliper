@@ -6,7 +6,8 @@
 
 using namespace cali;
 
-TEST(StringConverterTest, ConvertBool) {
+TEST(StringConverterTest, ConvertBool)
+{
     StringConverter strconv_in_1(std::string("tRue"));
     StringConverter strconv_in_2(std::string("faLse"));
     StringConverter strconv_in_3;
@@ -50,63 +51,66 @@ TEST(StringConverterTest, ConvertBool) {
     EXPECT_EQ(res_7, true);
 }
 
-TEST(StringConverterTest, ConvertInt) {
+TEST(StringConverterTest, ConvertInt)
+{
     bool ok = false;
 
     StringConverter strconv("42");
-    int res = strconv.to_int(&ok);
+    int             res = strconv.to_int(&ok);
     EXPECT_TRUE(ok);
     EXPECT_EQ(res, 42);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter("0");
-    res = strconv.to_int(&ok);
+    res     = strconv.to_int(&ok);
     EXPECT_TRUE(ok);
     EXPECT_EQ(res, 0);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter("  -14  ");
-    res = strconv.to_int(&ok);
+    res     = strconv.to_int(&ok);
     EXPECT_TRUE(ok);
     EXPECT_EQ(res, -14);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter("bla");
-    res = strconv.to_int(&ok);
+    res     = strconv.to_int(&ok);
     EXPECT_FALSE(ok);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter();
-    res = strconv.to_int(&ok);
+    res     = strconv.to_int(&ok);
     EXPECT_FALSE(ok);
 }
 
-TEST(StringConverterTest, ConvertUint) {
+TEST(StringConverterTest, ConvertUint)
+{
     bool ok = false;
 
     StringConverter strconv("42");
-    unsigned long res = strconv.to_uint(&ok);
+    unsigned long   res = strconv.to_uint(&ok);
     EXPECT_TRUE(ok);
     EXPECT_EQ(res, 42);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter("0");
-    res = strconv.to_uint(&ok);
+    res     = strconv.to_uint(&ok);
     EXPECT_TRUE(ok);
     EXPECT_EQ(res, 0);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter("bla");
-    res = strconv.to_uint(&ok);
+    res     = strconv.to_uint(&ok);
     EXPECT_FALSE(ok);
 
-    ok  = false;
+    ok      = false;
     strconv = StringConverter();
-    res = strconv.to_uint(&ok);
+    res     = strconv.to_uint(&ok);
     EXPECT_FALSE(ok);
 }
 
-TEST(StringConverterTest, ConvertStringList) {
+TEST(StringConverterTest, ConvertStringList)
+{
     bool ok = false;
 
     StringConverter sc(" aword, b.c:cdef,, d, e\\ f\",gword \"  ,  ");
@@ -123,13 +127,14 @@ TEST(StringConverterTest, ConvertStringList) {
     EXPECT_EQ(res[4], std::string("e f,gword "));
 }
 
-TEST(StringConverterTest, JsonList) {
+TEST(StringConverterTest, JsonList)
+{
     bool ok = false;
 
-    StringConverter sc("[ a, [ b, c ] , { \"this\": [ is, \"a , nested\" , list ]}, \"  a string with \\\"]\\\" \"  ] ");
+    StringConverter sc("[ a, [ b, c ] , { \"this\": [ is, \"a , nested\" , list ]}, \"  a string with \\\"]\\\" \"  ] "
+    );
 
-    std::vector<StringConverter> res =
-        sc.rec_list(&ok);
+    std::vector<StringConverter> res = sc.rec_list(&ok);
 
     EXPECT_TRUE(ok);
     ASSERT_EQ(res.size(), 4u);
@@ -139,15 +144,13 @@ TEST(StringConverterTest, JsonList) {
     EXPECT_EQ(res[2].to_string(), std::string("{ \"this\": [ is, \"a , nested\" , list ]}"));
     EXPECT_EQ(res[3].to_string(), std::string("  a string with \"]\" "));
 
-    std::map<std::string, StringConverter> kv =
-        res[2].rec_dict(&ok);
+    std::map<std::string, StringConverter> kv = res[2].rec_dict(&ok);
 
     EXPECT_TRUE(ok);
 
     EXPECT_EQ(kv["this"].to_string(), std::string("[ is, \"a , nested\" , list ]"));
 
-    std::vector<StringConverter> nested_res =
-        kv["this"].rec_list(&ok);
+    std::vector<StringConverter> nested_res = kv["this"].rec_list(&ok);
 
     EXPECT_TRUE(ok);
     ASSERT_EQ(nested_res.size(), 3u);
@@ -156,21 +159,20 @@ TEST(StringConverterTest, JsonList) {
     EXPECT_EQ(nested_res[1].to_string(), std::string("a , nested"));
     EXPECT_EQ(nested_res[2].to_string(), std::string("list"));
 
-    StringConverter sce("[   ]");
-    std::vector<StringConverter> e_res =
-        sce.rec_list(&ok);
+    StringConverter              sce("[   ]");
+    std::vector<StringConverter> e_res = sce.rec_list(&ok);
 
     EXPECT_TRUE(ok);
     EXPECT_EQ(e_res.size(), 0u);
 }
 
-TEST(StringConverterTest, JsonDict) {
+TEST(StringConverterTest, JsonDict)
+{
     bool ok = false;
 
     StringConverter sc("{ \"aa\": { b : [ c, \"d }\", e], ff: \"gg\"},x:y  } blagarbl ");
 
-    std::map<std::string, StringConverter> dict =
-        sc.rec_dict(&ok);
+    std::map<std::string, StringConverter> dict = sc.rec_dict(&ok);
 
     EXPECT_TRUE(ok);
     EXPECT_EQ(dict.size(), 2u);

@@ -35,23 +35,24 @@ class Hierarchy
     class HierarchyNode : public util::LockfreeIntrusiveTree<HierarchyNode>
     {
         util::LockfreeIntrusiveTree<HierarchyNode>::Node m_treenode;
-        cali_id_t   m_id;
-        std::string m_label;
-        std::string m_column;
+        cali_id_t                                        m_id;
+        std::string                                      m_label;
+        std::string                                      m_column;
 
     public:
 
         HierarchyNode(cali_id_t id, const std::string& label, const std::string& column)
             : util::LockfreeIntrusiveTree<HierarchyNode>(this, &HierarchyNode::m_treenode),
-            m_id(id),
-            m_label(label),
-            m_column(column)
-        { }
+              m_id(id),
+              m_label(label),
+              m_column(column)
+        {}
 
         const std::string& label() const { return m_label; }
 
-        std::ostream& write_json(std::ostream& os) const {
-            util::write_json_esc_string(os << "{ \"label\": \"",  m_label ) << "\"";
+        std::ostream& write_json(std::ostream& os) const
+        {
+            util::write_json_esc_string(os << "{ \"label\": \"", m_label) << "\"";
             util::write_json_esc_string(os << ", \"column\": \"", m_column) << "\"";
 
             if (parent() && parent()->id() != CALI_INV_ID)
@@ -65,12 +66,13 @@ class Hierarchy
         cali_id_t id() const { return m_id; }
     };
 
-    HierarchyNode*              m_root;
+    HierarchyNode* m_root;
 
     std::mutex                  m_nodes_lock;
     std::vector<HierarchyNode*> m_nodes;
 
-    void recursive_delete(HierarchyNode* node) {
+    void recursive_delete(HierarchyNode* node)
+    {
         HierarchyNode* child = node->first_child();
 
         while (child) {
@@ -84,18 +86,18 @@ class Hierarchy
 
 public:
 
-    Hierarchy()
-        : m_root(new HierarchyNode(CALI_INV_ID, "", ""))
-    { }
+    Hierarchy() : m_root(new HierarchyNode(CALI_INV_ID, "", "")) {}
 
-    ~Hierarchy() {
+    ~Hierarchy()
+    {
         // delete all nodes
         recursive_delete(m_root);
         m_root = nullptr;
     }
 
     /// \brief Return Node ID for the given path
-    cali_id_t get_id(const std::vector<Entry>& vec, const std::string& column) {
+    cali_id_t get_id(const std::vector<Entry>& vec, const std::string& column)
+    {
         HierarchyNode* node = m_root;
 
         for (const Entry& e : vec) {
@@ -106,8 +108,7 @@ public:
                 ;
 
             if (!node) {
-                std::lock_guard<std::mutex>
-                    g(m_nodes_lock);
+                std::lock_guard<std::mutex> g(m_nodes_lock);
 
                 node = new HierarchyNode(m_nodes.size(), label, column);
                 m_nodes.push_back(node);
@@ -119,9 +120,9 @@ public:
         return node->id();
     }
 
-    std::ostream& write_nodes(std::ostream& os) {
-        std::lock_guard<std::mutex>
-            g(m_nodes_lock);
+    std::ostream& write_nodes(std::ostream& os)
+    {
+        std::lock_guard<std::mutex> g(m_nodes_lock);
 
         os << "\"nodes\": [";
 
@@ -135,11 +136,9 @@ public:
     }
 };
 
-}
+} // namespace
 
-
-struct JsonSplitFormatter::JsonSplitFormatterImpl
-{
+struct JsonSplitFormatter::JsonSplitFormatterImpl {
     bool                     m_select_all;
     bool                     m_select_path;
     std::vector<std::string> m_attr_names;
@@ -152,25 +151,25 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         std::vector<Attribute> attributes;
         bool                   is_hierarchy;
 
-        static Column make_column(const std::string& title, const Attribute& a) {
+        static Column make_column(const std::string& title, const Attribute& a)
+        {
             Column c;
-            c.title        = title;
+            c.title = title;
             c.attributes.push_back(a);
             c.is_hierarchy = !(a.store_as_value());
             return c;
         }
     };
 
-    Hierarchy                m_hierarchy;
+    Hierarchy m_hierarchy;
 
-    std::vector<EntryList>   m_records;
-    std::mutex               m_records_lock;
+    std::vector<EntryList> m_records;
+    std::mutex             m_records_lock;
 
-    JsonSplitFormatterImpl()
-        : m_select_all(false)
-    { }
+    JsonSplitFormatterImpl() : m_select_all(false) {}
 
-    void configure(const QuerySpec& spec) {
+    void configure(const QuerySpec& spec)
+    {
         m_select_all  = false;
         m_select_path = spec.select.use_path;
         m_attr_names.clear();
@@ -180,8 +179,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         case QuerySpec::AttributeSelection::All:
             // Explicitly use aggregation key and ops if there is a GROUPBY
             if (spec.groupby.selection == QuerySpec::AttributeSelection::List) {
-                m_attr_names.insert(m_attr_names.end(),
-                                    spec.groupby.list.begin(), spec.groupby.list.end());
+                m_attr_names.insert(m_attr_names.end(), spec.groupby.list.begin(), spec.groupby.list.end());
 
                 for (auto op : spec.aggregate.list)
                     m_attr_names.push_back(Aggregator::get_aggregation_attribute_name(op));
@@ -194,37 +192,32 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         case QuerySpec::AttributeSelection::None:
             break;
         case QuerySpec::AttributeSelection::List:
-            m_attr_names.insert(m_attr_names.end(),
-                                spec.select.list.begin(),
-                                spec.select.list.end());
+            m_attr_names.insert(m_attr_names.end(), spec.select.list.begin(), spec.select.list.end());
             break;
         }
 
         m_aliases = spec.aliases;
     }
 
-    std::vector<Column> init_columns(const CaliperMetadataAccessInterface& db) const {
+    std::vector<Column> init_columns(const CaliperMetadataAccessInterface& db) const
+    {
         std::vector<Column> columns;
 
-        auto attrs = db.get_all_attributes();
+        auto attrs     = db.get_all_attributes();
         auto attrs_rem = attrs.end();
 
         if (m_select_all) {
             // filter out hidden and global attributes
-            attrs_rem =
-                std::remove_if(attrs.begin(), attrs.end(), [](const Attribute& a) {
-                        return (a.is_hidden() || a.is_global());
-                    });
+            attrs_rem = std::remove_if(attrs.begin(), attrs.end(), [](const Attribute& a) {
+                return (a.is_hidden() || a.is_global());
+            });
         } else {
             // only include selected attributes
-            attrs_rem =
-                std::remove_if(attrs.begin(), attrs.end(), [this](const Attribute& a) {
-                        bool select =
-                            (m_select_path && a.is_nested()) ||
-                                std::find(m_attr_names.begin(), m_attr_names.end(),
-                                          a.name()) != m_attr_names.end();
-                        return !select;
-                    });
+            attrs_rem = std::remove_if(attrs.begin(), attrs.end(), [this](const Attribute& a) {
+                bool select = (m_select_path && a.is_nested())
+                              || std::find(m_attr_names.begin(), m_attr_names.end(), a.name()) != m_attr_names.end();
+                return !select;
+            });
         }
 
         attrs.erase(attrs_rem, attrs.end());
@@ -254,7 +247,13 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         return columns;
     }
 
-    void write_hierarchy_entry(std::ostream& os, const EntryList& list, const std::vector<Attribute>& path_attrs, const std::string& column) {
+    void write_hierarchy_entry(
+        std::ostream&                 os,
+        const EntryList&              list,
+        const std::vector<Attribute>& path_attrs,
+        const std::string&            column
+    )
+    {
         std::vector<Entry> path;
 
         for (const Entry& e : list)
@@ -274,9 +273,10 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             os << "null";
     }
 
-    void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& attr) {
-        cali_attr_type type = attr.type();
-        bool quote = !(type == CALI_TYPE_INT || type == CALI_TYPE_UINT || type == CALI_TYPE_DOUBLE);
+    void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& attr)
+    {
+        cali_attr_type type  = attr.type();
+        bool           quote = !(type == CALI_TYPE_INT || type == CALI_TYPE_UINT || type == CALI_TYPE_DOUBLE);
 
         for (const Entry& e : list)
             if (e.attribute() == attr.id()) {
@@ -291,15 +291,16 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         os << "null";
     }
 
-    void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::lock_guard<std::mutex>
-            g(m_records_lock);
+    void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list)
+    {
+        std::lock_guard<std::mutex> g(m_records_lock);
 
         m_records.push_back(list);
     }
 
-    std::ostream& write_globals(std::ostream& os, CaliperMetadataAccessInterface& db) {
-        std::vector<Entry> globals = db.get_globals();
+    std::ostream& write_globals(std::ostream& os, CaliperMetadataAccessInterface& db)
+    {
+        std::vector<Entry>               globals = db.get_globals();
         std::map<cali_id_t, std::string> global_vals;
 
         for (const Entry& e : globals)
@@ -315,7 +316,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             else
                 global_vals[e.attribute()] = e.value().to_string();
 
-        for (auto &p : global_vals) {
+        for (auto& p : global_vals) {
             util::write_json_esc_string(os << ",\n  \"", db.get_attribute(p.first).name()) << "\": ";
             util::write_json_esc_string(os << '"', p.second) << '\"';
         }
@@ -323,7 +324,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         return os;
     }
 
-    std::ostream& write_column_metadata(std::ostream& os, const Column& column, CaliperMetadataAccessInterface& db) {
+    std::ostream& write_column_metadata(std::ostream& os, const Column& column, CaliperMetadataAccessInterface& db)
+    {
         os << "\"is_value\": " << (column.is_hierarchy ? "false" : "true");
 
         // for single-attribute columns (i.e. not "path"), write metadata
@@ -333,22 +335,27 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             if (node)
                 node = node->parent();
 
-            for ( ; node && node->id() != CALI_INV_ID; node = node->parent()) {
+            for (; node && node->id() != CALI_INV_ID; node = node->parent()) {
                 Attribute attr = db.get_attribute(node->attribute());
 
                 // skip bootstrap info and hidden attributes
                 if (attr.id() < 12 || attr.is_hidden())
                     continue;
 
-                util::write_json_esc_string(os << ", \"", attr.name_c_str())        << "\": ";
-                util::write_json_esc_string(os << "\"",   node->data().to_string()) << "\"";
+                util::write_json_esc_string(os << ", \"", attr.name_c_str()) << "\": ";
+                util::write_json_esc_string(os << "\"", node->data().to_string()) << "\"";
             }
         }
 
         return os;
     }
 
-    std::ostream& write_metadata(CaliperMetadataAccessInterface& db, const std::vector<Column>& columns, std::ostream& os) {
+    std::ostream& write_metadata(
+        CaliperMetadataAccessInterface& db,
+        const std::vector<Column>&      columns,
+        std::ostream&                   os
+    )
+    {
         // start "columns"
         os << ",\n  \"columns\": [";
 
@@ -372,12 +379,13 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         }
 
         // close "column_metadata", write "nodes"
-        m_hierarchy.write_nodes( os << " ],\n  " );
+        m_hierarchy.write_nodes(os << " ],\n  ");
 
         return write_globals(os, db);
     }
 
-    void flush(CaliperMetadataAccessInterface& db, std::ostream& os) {
+    void flush(CaliperMetadataAccessInterface& db, std::ostream& os)
+    {
         auto columns = init_columns(db);
 
         os << "{\n  \"data\": [";
@@ -410,9 +418,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     }
 };
 
-
-JsonSplitFormatter::JsonSplitFormatter(const QuerySpec& spec)
-    : mP { new JsonSplitFormatterImpl }
+JsonSplitFormatter::JsonSplitFormatter(const QuerySpec& spec) : mP { new JsonSplitFormatterImpl }
 {
     mP->configure(spec);
 }
@@ -422,8 +428,7 @@ JsonSplitFormatter::~JsonSplitFormatter()
     mP.reset();
 }
 
-void
-JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
+void JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process_record(db, list);
 }

@@ -16,23 +16,19 @@
 #define _EXTRACT_TYPE(type_and_size) ((type_and_size) & CALI_VARIANT_TYPE_MASK)
 #define _EXTRACT_SIZE(type_and_size) ((type_and_size) >> 32)
 
-extern inline bool
-cali_variant_is_empty(cali_variant_t v);
+extern inline bool cali_variant_is_empty(cali_variant_t v);
 
-extern inline cali_variant_t
-cali_make_empty_variant();
+extern inline cali_variant_t cali_make_empty_variant();
 
-cali_attr_type
-cali_variant_get_type(cali_variant_t v)
+cali_attr_type cali_variant_get_type(cali_variant_t v)
 {
     uint64_t t = _EXTRACT_TYPE(v.type_and_size);
     return (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 }
 
-size_t
-cali_variant_get_size(cali_variant_t v)
+size_t cali_variant_get_size(cali_variant_t v)
 {
-    uint64_t          t = _EXTRACT_TYPE(v.type_and_size);
+    uint64_t       t    = _EXTRACT_TYPE(v.type_and_size);
     cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     switch (type) {
@@ -58,10 +54,9 @@ cali_variant_get_size(cali_variant_t v)
     return 0;
 }
 
-const void*
-cali_variant_get_data(const cali_variant_t* v)
+const void* cali_variant_get_data(const cali_variant_t* v)
 {
-    uint64_t          t = _EXTRACT_TYPE(v->type_and_size);
+    uint64_t       t    = _EXTRACT_TYPE(v->type_and_size);
     cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     switch (type) {
@@ -88,8 +83,7 @@ cali_variant_get_data(const cali_variant_t* v)
     return NULL;
 }
 
-cali_variant_t
-cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
+cali_variant_t cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
 {
     cali_variant_t v = { 0, { .v_uint = 0 } };
 
@@ -100,38 +94,38 @@ cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
         break;
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
-    {
-        uint64_t hash = 0;
+        {
+            uint64_t hash = 0;
 
-        if (size > 0) {
-            const unsigned char* p = (const unsigned char*) ptr;
-            hash |= p[0];
-            hash <<= 8;
-            hash |= p[size/2];
-            hash <<= 8;
-            hash |= p[size-1];
-            hash <<= 8;
+            if (size > 0) {
+                const unsigned char* p = (const unsigned char*) ptr;
+                hash |= p[0];
+                hash <<= 8;
+                hash |= p[size / 2];
+                hash <<= 8;
+                hash |= p[size - 1];
+                hash <<= 8;
+            }
+
+            v.type_and_size             = (size << 32) | hash | (type & CALI_VARIANT_TYPE_MASK);
+            v.value.unmanaged_const_ptr = ptr;
         }
-
-        v.type_and_size = (size << 32) | hash | (type & CALI_VARIANT_TYPE_MASK);
-        v.value.unmanaged_const_ptr = ptr;
-    }
         break;
     case CALI_TYPE_INT:
-        v.value.v_int    = *((const int64_t*) ptr);
+        v.value.v_int = *((const int64_t*) ptr);
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
-        v.value.v_uint   = *((const uint64_t*) ptr);
+        v.value.v_uint = *((const uint64_t*) ptr);
         break;
     case CALI_TYPE_DOUBLE:
         v.value.v_double = *((const double*) ptr);
         break;
     case CALI_TYPE_BOOL:
-        v.value.v_bool   = *((const bool*) ptr);
+        v.value.v_bool = *((const bool*) ptr);
         break;
     case CALI_TYPE_TYPE:
-        v.value.v_type   = *((const cali_attr_type*) ptr);
+        v.value.v_type = *((const cali_attr_type*) ptr);
         break;
     case CALI_TYPE_PTR:
         v.value.unmanaged_const_ptr = ptr;
@@ -141,32 +135,23 @@ cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
     return v;
 }
 
-extern inline cali_variant_t
-cali_make_variant_from_bool(bool value);
+extern inline cali_variant_t cali_make_variant_from_bool(bool value);
 
-extern inline cali_variant_t
-cali_make_variant_from_int(int value);
+extern inline cali_variant_t cali_make_variant_from_int(int value);
 
-extern inline cali_variant_t
-cali_make_variant_from_int64(int64_t value);
+extern inline cali_variant_t cali_make_variant_from_int64(int64_t value);
 
-extern inline cali_variant_t
-cali_make_variant_from_uint(uint64_t value);
+extern inline cali_variant_t cali_make_variant_from_uint(uint64_t value);
 
-extern inline cali_variant_t
-cali_make_variant_from_double(double value);
+extern inline cali_variant_t cali_make_variant_from_double(double value);
 
-extern inline cali_variant_t
-cali_make_variant_from_string(const char* str);
+extern inline cali_variant_t cali_make_variant_from_string(const char* str);
 
-extern inline cali_variant_t
-cali_make_variant_from_type(cali_attr_type value);
+extern inline cali_variant_t cali_make_variant_from_type(cali_attr_type value);
 
-extern inline cali_variant_t
-cali_make_variant_from_ptr(void* ptr);
+extern inline cali_variant_t cali_make_variant_from_ptr(void* ptr);
 
-extern inline void*
-cali_variant_get_ptr(cali_variant_t v);
+extern inline void* cali_variant_get_ptr(cali_variant_t v);
 
 /** \brief Return the variant's value as integer
  *
@@ -180,8 +165,7 @@ cali_variant_get_ptr(cali_variant_t v);
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The integer value. Zero if the conversion was unsuccesful.
  */
-int
-cali_variant_to_int(cali_variant_t v, bool* okptr)
+int cali_variant_to_int(cali_variant_t v, bool* okptr)
 {
     bool ok  = true;
     int  ret = 0;
@@ -194,7 +178,7 @@ cali_variant_to_int(cali_variant_t v, bool* okptr)
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
     case CALI_TYPE_PTR:
-        ok  = false;
+        ok = false;
         break;
     case CALI_TYPE_INT:
         if (v.value.v_int >= INT_MIN && v.value.v_int <= INT_MAX)
@@ -238,8 +222,7 @@ cali_variant_to_int(cali_variant_t v, bool* okptr)
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The integer value. Zero if the conversion was unsuccesful.
  */
-int64_t
-cali_variant_to_int64(cali_variant_t v, bool* okptr)
+int64_t cali_variant_to_int64(cali_variant_t v, bool* okptr)
 {
     bool    ok  = true;
     int64_t ret = 0;
@@ -252,7 +235,7 @@ cali_variant_to_int64(cali_variant_t v, bool* okptr)
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
     case CALI_TYPE_PTR:
-        ok  = false;
+        ok = false;
         break;
     case CALI_TYPE_INT:
         ret = v.value.v_int;
@@ -293,8 +276,7 @@ cali_variant_to_int64(cali_variant_t v, bool* okptr)
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The integer value. Zero if the conversion was unsuccesful.
  */
-uint64_t
-cali_variant_to_uint(cali_variant_t v, bool* okptr)
+uint64_t cali_variant_to_uint(cali_variant_t v, bool* okptr)
 {
     bool     ok  = true;
     uint64_t ret = 0;
@@ -307,7 +289,7 @@ cali_variant_to_uint(cali_variant_t v, bool* okptr)
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
     case CALI_TYPE_PTR:
-        ok  = false;
+        ok = false;
         break;
     case CALI_TYPE_INT:
         if (v.value.v_int >= 0)
@@ -348,13 +330,12 @@ cali_variant_to_uint(cali_variant_t v, bool* okptr)
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The double value. Zero if the conversion was unsuccesful.
  */
-double
-cali_variant_to_double(cali_variant_t v, bool* okptr)
+double cali_variant_to_double(cali_variant_t v, bool* okptr)
 {
     bool   ok  = true;
     double ret = 0;
 
-    uint64_t          t = _EXTRACT_TYPE(v.type_and_size);
+    uint64_t       t    = _EXTRACT_TYPE(v.type_and_size);
     cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     switch (type) {
@@ -362,7 +343,7 @@ cali_variant_to_double(cali_variant_t v, bool* okptr)
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
     case CALI_TYPE_PTR:
-        ok  = false;
+        ok = false;
         break;
     case CALI_TYPE_INT:
         ret = (double) v.value.v_int;
@@ -400,28 +381,27 @@ cali_variant_to_double(cali_variant_t v, bool* okptr)
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The boolean value; `false` if the conversion was unsuccesful.
  */
-bool
-cali_variant_to_bool(cali_variant_t v, bool* okptr)
+bool cali_variant_to_bool(cali_variant_t v, bool* okptr)
 {
     bool ok  = true;
     bool ret = false;
 
-    uint64_t          t = _EXTRACT_TYPE(v.type_and_size);
+    uint64_t       t    = _EXTRACT_TYPE(v.type_and_size);
     cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     switch (type) {
     case CALI_TYPE_INT:
-        ret = (v.value.v_int   != 0);
+        ret = (v.value.v_int != 0);
         break;
     case CALI_TYPE_UINT:
     case CALI_TYPE_ADDR:
-        ret = (v.value.v_uint  != 0);
+        ret = (v.value.v_uint != 0);
         break;
     case CALI_TYPE_BOOL:
         ret = v.value.v_bool;
         break;
     default:
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -441,13 +421,12 @@ cali_variant_to_bool(cali_variant_t v, bool* okptr)
  *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
  *  \return The type value. CALI_TYPE_INV if the conversion was unsuccesful.
  */
-cali_attr_type
-cali_variant_to_type(cali_variant_t v, bool* okptr)
+cali_attr_type cali_variant_to_type(cali_variant_t v, bool* okptr)
 {
-    bool ok  = true;
+    bool           ok  = true;
     cali_attr_type ret = CALI_TYPE_INV;
 
-    uint64_t          t = _EXTRACT_TYPE(v.type_and_size);
+    uint64_t       t    = _EXTRACT_TYPE(v.type_and_size);
     cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     switch (type) {
@@ -455,7 +434,7 @@ cali_variant_to_type(cali_variant_t v, bool* okptr)
         ret = v.value.v_type;
         break;
     default:
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -464,18 +443,16 @@ cali_variant_to_type(cali_variant_t v, bool* okptr)
     return ret;
 }
 
-static inline int
-imin(int l, int r)
+static inline int imin(int l, int r)
 {
     return l < r ? l : r;
 }
 
-int
-cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
+int cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
 {
-    uint64_t t = _EXTRACT_TYPE(lhs.type_and_size);
+    uint64_t       t       = _EXTRACT_TYPE(lhs.type_and_size);
     cali_attr_type lhstype = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
-    t          = _EXTRACT_TYPE(rhs.type_and_size);
+    t                      = _EXTRACT_TYPE(rhs.type_and_size);
     cali_attr_type rhstype = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
 
     if (lhstype == rhstype) {
@@ -486,8 +463,7 @@ cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
             {
                 int lhssize = (int) _EXTRACT_SIZE(lhs.type_and_size);
                 int rhssize = (int) _EXTRACT_SIZE(rhs.type_and_size);
-                int cmp     = memcmp(lhs.value.unmanaged_const_ptr, rhs.value.unmanaged_const_ptr,
-                                     imin(lhssize, rhssize));
+                int cmp = memcmp(lhs.value.unmanaged_const_ptr, rhs.value.unmanaged_const_ptr, imin(lhssize, rhssize));
 
                 return (cmp ? cmp : (lhssize - rhssize));
             }
@@ -495,8 +471,7 @@ cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
             {
                 int lhssize = (int) _EXTRACT_SIZE(lhs.type_and_size);
                 int rhssize = (int) _EXTRACT_SIZE(rhs.type_and_size);
-                int cmp     = strncmp(lhs.value.unmanaged_const_ptr, rhs.value.unmanaged_const_ptr,
-                                      imin(lhssize, rhssize));
+                int cmp = strncmp(lhs.value.unmanaged_const_ptr, rhs.value.unmanaged_const_ptr, imin(lhssize, rhssize));
 
                 return (cmp ? cmp : (lhssize - rhssize));
             }
@@ -520,27 +495,30 @@ cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
         case CALI_TYPE_TYPE:
             return ((int) lhs.value.v_type) - ((int) rhs.value.v_type);
         case CALI_TYPE_PTR:
-            return (int) ((char const*)(lhs.value.unmanaged_ptr)  - (char const*)(rhs.value.unmanaged_ptr));
+            return (int) ((char const*) (lhs.value.unmanaged_ptr) - (char const*) (rhs.value.unmanaged_ptr));
         }
     }
 
     return ((int) lhstype) - ((int) rhstype);
 }
 
-bool
-_cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs)
+bool _cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs)
 {
     /* We can assume that type_and_size are equal */
 
-    switch ( _EXTRACT_TYPE(lhs.type_and_size) ) {
+    switch (_EXTRACT_TYPE(lhs.type_and_size)) {
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
         {
             if (lhs.value.unmanaged_const_ptr == rhs.value.unmanaged_const_ptr)
                 return true;
             else
-                return 0 == memcmp(lhs.value.unmanaged_const_ptr, rhs.value.unmanaged_const_ptr,
-                                   _EXTRACT_SIZE(lhs.type_and_size));
+                return 0
+                       == memcmp(
+                           lhs.value.unmanaged_const_ptr,
+                           rhs.value.unmanaged_const_ptr,
+                           _EXTRACT_SIZE(lhs.type_and_size)
+                       );
         }
         break;
     default:
@@ -550,25 +528,22 @@ _cali_variant_value_eq(cali_variant_t lhs, cali_variant_t rhs)
     return false;
 }
 
-extern inline bool
-cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs);
+extern inline bool cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs);
 
-size_t
-cali_variant_pack(cali_variant_t v, unsigned char* buf)
+size_t cali_variant_pack(cali_variant_t v, unsigned char* buf)
 {
     size_t pos = 0;
 
     pos += vlenc_u64(v.type_and_size, buf);
-    pos += vlenc_u64(v.value.v_uint,  buf+pos);
+    pos += vlenc_u64(v.value.v_uint, buf + pos);
 
     return pos;
 }
 
-cali_variant_t
-cali_variant_unpack(const unsigned char* buf, size_t* inc, bool *okptr)
+cali_variant_t cali_variant_unpack(const unsigned char* buf, size_t* inc, bool* okptr)
 {
     cali_variant_t v = { 0, { .v_uint = 0 } };
-    size_t p = 0;
+    size_t         p = 0;
 
     uint64_t ts = vldec_u64(buf, &p);
 
@@ -580,10 +555,10 @@ cali_variant_unpack(const unsigned char* buf, size_t* inc, bool *okptr)
     }
 
     v.type_and_size = ts;
-    v.value.v_uint  = vldec_u64(buf+p, &p);
+    v.value.v_uint  = vldec_u64(buf + p, &p);
 
     if (inc)
-        *inc  += p;
+        *inc += p;
     if (okptr)
         *okptr = true;
 

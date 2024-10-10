@@ -34,17 +34,13 @@ public:
 
     void add(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        add(db, list);
-    }
+    void operator() (CaliperMetadataAccessInterface& db, const EntryList& list) { add(db, list); }
 
     void flush(CaliperMetadataAccessInterface&, SnapshotProcessFn push);
 
-    static const QuerySpec::FunctionSignature*
-    aggregation_defs();
+    static const QuerySpec::FunctionSignature* aggregation_defs();
 
-    static std::string
-    get_aggregation_attribute_name(const QuerySpec::AggregationOp& op);
+    static std::string get_aggregation_attribute_name(const QuerySpec::AggregationOp& op);
 };
 
 } // namespace cali

@@ -14,23 +14,21 @@ namespace util
 {
 
 /// \brief Write a uint64_t \a value into \a os
-inline std::ostream&
-write_uint64(std::ostream& os, uint64_t value)
+inline std::ostream& write_uint64(std::ostream& os, uint64_t value)
 {
-    char buf[24]; // max uint64 formatted length is 20
+    char     buf[24]; // max uint64 formatted length is 20
     unsigned p = 24;
     do {
         buf[--p] = (static_cast<char>(value % 10) + '0');
         value /= 10;
     } while (value > 0);
-    os.write(buf+p, 24-p);
+    os.write(buf + p, 24 - p);
     return os;
 }
 
 /// \brief Write string \a str to \a os,
 ///   escaping all characters in \a mask_chars with \a esc.
-inline std::ostream&
-write_json_esc_string(std::ostream& os, const char* str, std::string::size_type size)
+inline std::ostream& write_json_esc_string(std::ostream& os, const char* str, std::string::size_type size)
 {
     for (size_t i = 0; i < size; ++i) {
         const char c = str[i];
@@ -39,7 +37,7 @@ write_json_esc_string(std::ostream& os, const char* str, std::string::size_type 
             os.put('\\');
             os.put('n');
         }
-        if (c < 0x20)  // skip control characters
+        if (c < 0x20) // skip control characters
             continue;
         if (c == '\\' || c == '\"')
             os.put('\\');
@@ -52,17 +50,16 @@ write_json_esc_string(std::ostream& os, const char* str, std::string::size_type 
 
 /// \brief Write string \a str to \a os,
 ///   escaping all characters in \a mask_chars with \a esc.
-inline std::ostream&
-write_cali_esc_string(std::ostream& os, const char* str, std::string::size_type size)
+inline std::ostream& write_cali_esc_string(std::ostream& os, const char* str, std::string::size_type size)
 {
     for (size_t i = 0; i < size; ++i) {
         const char c = str[i];
 
-        if (c == '\n') {// handle newline in string
+        if (c == '\n') { // handle newline in string
             os.put('\\');
             os.put('n');
         }
-        if (c < 0x20)  // skip control characters
+        if (c < 0x20) // skip control characters
             continue;
         if (c == '\\' || c == ',' || c == '=')
             os.put('\\');
@@ -73,25 +70,20 @@ write_cali_esc_string(std::ostream& os, const char* str, std::string::size_type 
     return os;
 }
 
-inline std::ostream&
-write_json_esc_string(std::ostream& os, const std::string& str)
+inline std::ostream& write_json_esc_string(std::ostream& os, const std::string& str)
 {
     return write_json_esc_string(os, str.data(), str.size());
 }
 
-inline std::ostream&
-write_cali_esc_string(std::ostream& os, const std::string& str)
+inline std::ostream& write_cali_esc_string(std::ostream& os, const std::string& str)
 {
     return write_cali_esc_string(os, str.data(), str.size());
 }
 
-std::ostream&
-pad_right(std::ostream& os, const std::string& str, std::size_t width);
+std::ostream& pad_right(std::ostream& os, const std::string& str, std::size_t width);
 
-std::ostream&
-pad_left (std::ostream& os, const std::string& str, std::size_t width);
+std::ostream& pad_left(std::ostream& os, const std::string& str, std::size_t width);
 
-std::string
-clamp_string(const std::string& str, std::size_t max_width);
+std::string clamp_string(const std::string& str, std::size_t max_width);
 
 } // namespace util

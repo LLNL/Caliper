@@ -26,7 +26,7 @@ public:
 
     ~AttributeExtract();
 
-    void operator()(CaliperMetadataAccessInterface&, const Node*);
+    void operator() (CaliperMetadataAccessInterface&, const Node*);
 };
 
-}
+} // namespace cali

@@ -34,12 +34,13 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-struct unitfmt_table{
+struct unitfmt_table {
     unsigned long long factor;
-    const char*  symbol;  
+    const char*        symbol;
 };
 
 /*! \brief A format table for byte values (in base-2) */
@@ -50,7 +51,6 @@ typedef struct {
     const char* symbol;
 } unitfmt_result;
 
-    
 /*! \brief Scale values to human-readable size
  * 
  * \param val    Value to scale
@@ -58,10 +58,9 @@ typedef struct {
  *
  * \return       Conversion result. Member val is the scaled value, member 
  *               symbol points to the conversion factor symbol.
- */    
-unitfmt_result
-unitfmt(unsigned long long val, const struct unitfmt_table table[]);
-    
+ */
+unitfmt_result unitfmt(unsigned long long val, const struct unitfmt_table table[]);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

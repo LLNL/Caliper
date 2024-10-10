@@ -24,8 +24,7 @@ using COC = cali::internal::CustomOutputController;
 namespace
 {
 
-void
-setup_log_prefix()
+void setup_log_prefix()
 {
     static bool done = false;
 
@@ -54,8 +53,7 @@ setup_log_prefix()
 }
 
 // Implement flush over MPI for CustomOutputController objects
-void
-custom_output_controller_flush_mpi(COC* controller)
+void custom_output_controller_flush_mpi(COC* controller)
 {
     Log(2).stream() << controller->name() << ": CustomOutputController::flush(): using MPI" << std::endl;
 
@@ -65,7 +63,7 @@ custom_output_controller_flush_mpi(COC* controller)
     controller->collective_flush(stream, comm);
 }
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
@@ -74,9 +72,7 @@ extern CaliperService mpiflush_service;
 
 void add_submodule_controllers_and_services()
 {
-    static const CaliperService mpi_services[] = {
-        mpiflush_service, { nullptr, nullptr }
-    };
+    static const CaliperService mpi_services[] = { mpiflush_service, { nullptr, nullptr } };
 
     services::add_service_specs(mpi_services);
     services::add_default_service_specs();
@@ -95,10 +91,8 @@ void init_submodules()
 extern "C"
 {
 
-void
-cali_mpi_init()
+void cali_mpi_init()
 {
     ::setup_log_prefix();
 }
-
 }

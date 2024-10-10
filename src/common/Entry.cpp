@@ -12,8 +12,7 @@
 
 using namespace cali;
 
-int
-Entry::count(cali_id_t attr_id) const
+int Entry::count(cali_id_t attr_id) const
 {
     int res = 0;
 
@@ -28,21 +27,19 @@ Entry::count(cali_id_t attr_id) const
     return res;
 }
 
-Variant
-Entry::value(cali_id_t attr_id) const
+Variant Entry::value(cali_id_t attr_id) const
 {
     if (m_node && m_node->id() == attr_id)
         return m_value;
 
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == attr_id)
-	       return node->data();
+            return node->data();
 
     return Variant();
 }
 
-Entry
-Entry::get(const Attribute& attr) const
+Entry Entry::get(const Attribute& attr) const
 {
     if (empty())
         return Entry();
@@ -59,24 +56,22 @@ Entry::get(const Attribute& attr) const
     return Entry();
 }
 
-size_t
-Entry::pack(unsigned char* buffer) const
+size_t Entry::pack(unsigned char* buffer) const
 {
     size_t pos = 0;
     pos += vlenc_u64(m_node->id(), buffer);
     if (m_node->attribute() == Attribute::NAME_ATTR_ID)
-        pos += m_value.pack(buffer+pos);
+        pos += m_value.pack(buffer + pos);
     return pos;
 }
 
-Entry
-Entry::unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc)
+Entry Entry::unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc)
 {
     size_t p = 0;
-    Entry ret { db.node(vldec_u64(buffer, &p)) };
+    Entry  ret { db.node(vldec_u64(buffer, &p)) };
 
     if (ret.m_node->attribute() == Attribute::NAME_ATTR_ID)
-        ret.m_value = Variant::unpack(buffer+p, &p);
+        ret.m_value = Variant::unpack(buffer + p, &p);
 
     if (inc)
         *inc += p;

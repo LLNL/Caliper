@@ -33,17 +33,17 @@ const char* wr_cas_metrics =
     ",perfevent.hwcounters.bdx_unc_imc4__UNC_M_CAS_COUNT_WR.value"
     ",perfevent.hwcounters.bdx_unc_imc5__UNC_M_CAS_COUNT_WR.value";
 
-std::vector<Attribute>
-find_counter_attributes(const CaliperMetadataAccessInterface& db, const char* metrics) {
+std::vector<Attribute> find_counter_attributes(const CaliperMetadataAccessInterface& db, const char* metrics)
+{
     std::vector<Attribute> res;
 
     auto counters = StringConverter(metrics).to_stringlist();
 
-    for (const auto &s : counters) {
-        Attribute attr = db.get_attribute(std::string("sum#pcp.")+s);
+    for (const auto& s : counters) {
+        Attribute attr = db.get_attribute(std::string("sum#pcp.") + s);
 
         if (!attr)
-            attr = db.get_attribute(std::string("pcp.")+s);
+            attr = db.get_attribute(std::string("pcp.") + s);
         if (!attr)
             continue;
 
@@ -53,16 +53,13 @@ find_counter_attributes(const CaliperMetadataAccessInterface& db, const char* me
     return res;
 }
 
-std::pair<double, int>
-sum_attributes(const std::vector<Entry>& rec, const std::vector<Attribute>& attributes)
+std::pair<double, int> sum_attributes(const std::vector<Entry>& rec, const std::vector<Attribute>& attributes)
 {
-    double sum = 0.0;
-    int count = 0;
+    double sum   = 0.0;
+    int    count = 0;
 
     for (const Attribute& a : attributes) {
-        auto it = std::find_if(rec.begin(), rec.end(), [a](const Entry& e) {
-                            return e.attribute() == a.id();
-                        });
+        auto it = std::find_if(rec.begin(), rec.end(), [a](const Entry& e) { return e.attribute() == a.id(); });
 
         if (it != rec.end()) {
             ++count;
@@ -73,7 +70,6 @@ sum_attributes(const std::vector<Entry>& rec, const std::vector<Attribute>& attr
     return std::make_pair(sum, count);
 }
 
-
 class PcpMemory
 {
     std::vector<Attribute> rd_counter_attrs;
@@ -82,10 +78,11 @@ class PcpMemory
     Attribute rd_result_attr;
     Attribute wr_result_attr;
 
-    unsigned  num_computed;
-    unsigned  num_flushes;
+    unsigned num_computed;
+    unsigned num_flushes;
 
-    void postprocess_snapshot_cb(std::vector<Entry>& rec) {
+    void postprocess_snapshot_cb(std::vector<Entry>& rec)
+    {
         auto rp = sum_attributes(rec, rd_counter_attrs);
         auto wp = sum_attributes(rec, wr_counter_attrs);
 
@@ -98,7 +95,8 @@ class PcpMemory
             ++num_computed;
     }
 
-    void pre_flush_cb(Caliper* c, Channel* channel) {
+    void pre_flush_cb(Caliper* c, Channel* channel)
+    {
         ++num_flushes;
 
         if (rd_counter_attrs.size() + wr_counter_attrs.size() > 0)
@@ -108,48 +106,42 @@ class PcpMemory
         wr_counter_attrs = ::find_counter_attributes(*c, wr_cas_metrics);
 
         if (rd_counter_attrs.size() + wr_counter_attrs.size() > 0)
-            channel->events().postprocess_snapshot.connect(
-                [this](Caliper*, Channel*, std::vector<Entry>& rec){
-                    this->postprocess_snapshot_cb(rec);
-                });
+            channel->events().postprocess_snapshot.connect([this](Caliper*, Channel*, std::vector<Entry>& rec) {
+                this->postprocess_snapshot_cb(rec);
+            });
     }
 
-    void finish_cb(Caliper* c, Channel* channel) {
+    void finish_cb(Caliper* c, Channel* channel)
+    {
         if (num_flushes > 0) {
             if (rd_counter_attrs.empty())
-                Log(1).stream() << channel->name()
-                                << ": pcp.memory: read metrics not found"
-                                << std::endl;
+                Log(1).stream() << channel->name() << ": pcp.memory: read metrics not found" << std::endl;
             if (wr_counter_attrs.empty())
-                Log(1).stream() << channel->name()
-                                << ": pcp.memory: write metrics not found"
-                                << std::endl;
+                Log(1).stream() << channel->name() << ": pcp.memory: write metrics not found" << std::endl;
         }
 
-        Log(1).stream() << channel->name()
-                        << ": pcp.memory: Computed memory metrics for "
-                        << num_computed << " records"
+        Log(1).stream() << channel->name() << ": pcp.memory: Computed memory metrics for " << num_computed << " records"
                         << std::endl;
     }
 
-    PcpMemory(Caliper* c, Channel*)
-        : num_computed(0), num_flushes(0)
-        {
-            rd_result_attr =
-                c->create_attribute("mem.bytes.read", CALI_TYPE_DOUBLE,
-                                    CALI_ATTR_ASVALUE     |
-                                    CALI_ATTR_SKIP_EVENTS |
-                                    CALI_ATTR_AGGREGATABLE);
-            wr_result_attr =
-                c->create_attribute("mem.bytes.written", CALI_TYPE_DOUBLE,
-                                    CALI_ATTR_ASVALUE     |
-                                    CALI_ATTR_SKIP_EVENTS |
-                                    CALI_ATTR_AGGREGATABLE);
-        }
+    PcpMemory(Caliper* c, Channel*) : num_computed(0), num_flushes(0)
+    {
+        rd_result_attr = c->create_attribute(
+            "mem.bytes.read",
+            CALI_TYPE_DOUBLE,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
+        wr_result_attr = c->create_attribute(
+            "mem.bytes.written",
+            CALI_TYPE_DOUBLE,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
+    }
 
 public:
 
-    static void pcp_memory_register(Caliper* c, Channel* channel) {
+    static void pcp_memory_register(Caliper* c, Channel* channel)
+    {
         std::string metrics = rd_cas_metrics;
         metrics.append(",");
         metrics.append(wr_cas_metrics);
@@ -157,30 +149,26 @@ public:
         channel->config().set("CALI_PCP_METRICS", metrics);
 
         if (!cali::services::register_service(c, channel, "pcp")) {
-            Log(0).stream() << channel->name()
-                            << ": pcp.memory: Unable to register pcp service, skipping pcp.memory"
+            Log(0).stream() << channel->name() << ": pcp.memory: Unable to register pcp service, skipping pcp.memory"
                             << std::endl;
             return;
         }
 
         PcpMemory* instance = new PcpMemory(c, channel);
 
-        channel->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* channel, SnapshotView){
-                instance->pre_flush_cb(c, channel);
-            });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+        channel->events().pre_flush_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView) {
+            instance->pre_flush_cb(c, channel);
+        });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
         Log(1).stream() << channel->name() << ": Registered pcp.memory service" << std::endl;
     }
-
 };
 
-}
+} // namespace
 
 namespace cali
 {

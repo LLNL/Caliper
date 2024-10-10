@@ -34,12 +34,12 @@ public:
 
     EntryList process(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec, SnapshotProcessFn push) {
+    void operator() (CaliperMetadataAccessInterface& db, const EntryList& rec, SnapshotProcessFn push)
+    {
         push(db, process(db, rec));
     }
 
-    static const QuerySpec::FunctionSignature*
-    preprocess_defs();
+    static const QuerySpec::FunctionSignature* preprocess_defs();
 };
 
 } // namespace cali

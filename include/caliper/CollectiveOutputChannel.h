@@ -49,8 +49,7 @@ public:
     /// \return A new <tt>std::shared_ptr</tt>-wrapped CollectiveOutputChannel, or
     ///   an empty \c std::shared_ptr object if \a from couldn't be
     ///   made into a collective output channel.
-    static std::shared_ptr<CollectiveOutputChannel>
-    from(const std::shared_ptr<ChannelController>& from);
+    static std::shared_ptr<CollectiveOutputChannel> from(const std::shared_ptr<ChannelController>& from);
 
     /// \brief Aggregate data from MPI ranks in \a comm and write it into
     ///   \a os.
@@ -146,8 +145,7 @@ public:
 ///   <tt>std::shared_ptr</tt>-wrapped CollectiveOutputChannel object for the
 ///   given configuration. If the \c std::shared_ptr object is empty, an error
 ///   occured and the second pair element contains an error message.
-std::pair< std::shared_ptr<CollectiveOutputChannel>, std::string >
-make_collective_output_channel(const char* config_str);
+std::pair<std::shared_ptr<CollectiveOutputChannel>, std::string> make_collective_output_channel(const char* config_str);
 
 } // namespace cali
 

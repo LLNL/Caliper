@@ -8,112 +8,96 @@
 // splicer begin class.BufferedRegionProfile.CXX_definitions
 // splicer end class.BufferedRegionProfile.CXX_definitions
 
-extern "C" {
+extern "C"
+{
 
 // splicer begin class.BufferedRegionProfile.C_definitions
 // splicer end class.BufferedRegionProfile.C_definitions
 
-cali_BufferedRegionProfile * cali_BufferedRegionProfile_new(
-    cali_BufferedRegionProfile * SHC_rv)
+cali_BufferedRegionProfile* cali_BufferedRegionProfile_new(cali_BufferedRegionProfile* SHC_rv)
 {
     // splicer begin class.BufferedRegionProfile.method.new
-    cali::BufferedRegionProfile *SHCXX_rv =
-        new cali::BufferedRegionProfile();
-    SHC_rv->addr = static_cast<void *>(SHCXX_rv);
-    SHC_rv->idtor = 5;
+    cali::BufferedRegionProfile* SHCXX_rv = new cali::BufferedRegionProfile();
+    SHC_rv->addr                          = static_cast<void*>(SHCXX_rv);
+    SHC_rv->idtor                         = 5;
     return SHC_rv;
     // splicer end class.BufferedRegionProfile.method.new
 }
 
-void cali_BufferedRegionProfile_delete(
-    cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_delete(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.delete
     delete SH_this;
     self->addr = nullptr;
     // splicer end class.BufferedRegionProfile.method.delete
 }
 
-void cali_BufferedRegionProfile_start(cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_start(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.start
     SH_this->start();
     // splicer end class.BufferedRegionProfile.method.start
 }
 
-void cali_BufferedRegionProfile_stop(cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_stop(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.stop
     SH_this->stop();
     // splicer end class.BufferedRegionProfile.method.stop
 }
 
-void cali_BufferedRegionProfile_clear(cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_clear(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.clear
     SH_this->clear();
     // splicer end class.BufferedRegionProfile.method.clear
 }
 
-void cali_BufferedRegionProfile_fetch_exclusive_region_times(
-    cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_fetch_exclusive_region_times(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.fetch_exclusive_region_times
     SH_this->fetch_exclusive_region_times();
     // splicer end class.BufferedRegionProfile.method.fetch_exclusive_region_times
 }
 
-void cali_BufferedRegionProfile_fetch_inclusive_region_times(
-    cali_BufferedRegionProfile * self)
+void cali_BufferedRegionProfile_fetch_inclusive_region_times(cali_BufferedRegionProfile* self)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.fetch_inclusive_region_times
     SH_this->fetch_inclusive_region_times();
     // splicer end class.BufferedRegionProfile.method.fetch_inclusive_region_times
 }
 
-double cali_BufferedRegionProfile_total_profiling_time(
-    const cali_BufferedRegionProfile * self)
+double cali_BufferedRegionProfile_total_profiling_time(const cali_BufferedRegionProfile* self)
 {
-    const cali::BufferedRegionProfile *SH_this =
-        static_cast<const cali::BufferedRegionProfile *>(self->addr);
+    const cali::BufferedRegionProfile* SH_this = static_cast<const cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.total_profiling_time
     double SHC_rv = SH_this->total_profiling_time();
     return SHC_rv;
     // splicer end class.BufferedRegionProfile.method.total_profiling_time
 }
 
-double cali_BufferedRegionProfile_total_region_time(
-    const cali_BufferedRegionProfile * self)
+double cali_BufferedRegionProfile_total_region_time(const cali_BufferedRegionProfile* self)
 {
-    const cali::BufferedRegionProfile *SH_this =
-        static_cast<const cali::BufferedRegionProfile *>(self->addr);
+    const cali::BufferedRegionProfile* SH_this = static_cast<const cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.total_region_time
     double SHC_rv = SH_this->total_region_time();
     return SHC_rv;
     // splicer end class.BufferedRegionProfile.method.total_region_time
 }
 
-double cali_BufferedRegionProfile_region_time(
-    cali_BufferedRegionProfile * self, const char * region)
+double cali_BufferedRegionProfile_region_time(cali_BufferedRegionProfile* self, const char* region)
 {
-    cali::BufferedRegionProfile *SH_this =
-        static_cast<cali::BufferedRegionProfile *>(self->addr);
+    cali::BufferedRegionProfile* SH_this = static_cast<cali::BufferedRegionProfile*>(self->addr);
     // splicer begin class.BufferedRegionProfile.method.region_time
     double SHC_rv = SH_this->region_time(region);
     return SHC_rv;
     // splicer end class.BufferedRegionProfile.method.region_time
 }
 
-}  // extern "C"
+} // extern "C"

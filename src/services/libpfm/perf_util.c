@@ -39,484 +39,484 @@
  * max_fds and num_fds must both point to a zero value on the first call
  * The return value is success (0) vs. failure (non-zero)
  */
-int
-perf_setup_argv_events(const char **argv, perf_event_desc_t **fds, int *num_fds)
+int perf_setup_argv_events(const char** argv, perf_event_desc_t** fds, int* num_fds)
 {
-	perf_event_desc_t *fd;
-	pfm_perf_encode_arg_t arg;
-	int new_max, ret, num, max_fds;
-	int group_leader;
+    perf_event_desc_t*    fd;
+    pfm_perf_encode_arg_t arg;
+    int                   new_max, ret, num, max_fds;
+    int                   group_leader;
 
-	if (!(argv && fds && num_fds))
-		return -1;
+    if (!(argv && fds && num_fds))
+        return -1;
 
-	fd = *fds;
-	if (fd) {
-		max_fds = fd[0].max_fds;
-		if (max_fds < 2)
-			return -1;
-		num = *num_fds;
-	} else {
-		max_fds = num = 0; /* bootstrap */
-	}
-	group_leader = num;
+    fd = *fds;
+    if (fd) {
+        max_fds = fd[0].max_fds;
+        if (max_fds < 2)
+            return -1;
+        num = *num_fds;
+    } else {
+        max_fds = num = 0; /* bootstrap */
+    }
+    group_leader = num;
 
-	while(*argv) {
-		if (num == max_fds) {
-			if (max_fds == 0)
-				new_max = 2;
-			else
-				new_max = max_fds << 1;
+    while (*argv) {
+        if (num == max_fds) {
+            if (max_fds == 0)
+                new_max = 2;
+            else
+                new_max = max_fds << 1;
 
-			if (new_max < max_fds) {
-				warn("too many entries");
-				goto error;
-			}
-			fd = realloc(fd, new_max * sizeof(*fd));
-			if (!fd) {
-				warn("cannot allocate memory");
-				goto error;
-			}
-			/* reset newly allocated chunk */
-			memset(fd + max_fds, 0, (new_max - max_fds) * sizeof(*fd));
-			max_fds = new_max;
+            if (new_max < max_fds) {
+                warn("too many entries");
+                goto error;
+            }
+            fd = realloc(fd, new_max * sizeof(*fd));
+            if (!fd) {
+                warn("cannot allocate memory");
+                goto error;
+            }
+            /* reset newly allocated chunk */
+            memset(fd + max_fds, 0, (new_max - max_fds) * sizeof(*fd));
+            max_fds = new_max;
 
-			/* update max size */
-			fd[0].max_fds = max_fds;
-		}
-		/* ABI compatibility, set before calling libpfm */
-		fd[num].hw.size = sizeof(fd[num].hw);
+            /* update max size */
+            fd[0].max_fds = max_fds;
+        }
+        /* ABI compatibility, set before calling libpfm */
+        fd[num].hw.size = sizeof(fd[num].hw);
 
-		memset(&arg, 0, sizeof(arg));
-		arg.attr = &fd[num].hw;
-		arg.fstr = &fd[num].fstr; /* fd[].fstr is NULL */
+        memset(&arg, 0, sizeof(arg));
+        arg.attr = &fd[num].hw;
+        arg.fstr = &fd[num].fstr; /* fd[].fstr is NULL */
 
-		ret = pfm_get_os_event_encoding(*argv, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
-		if (ret != PFM_SUCCESS) {
-			//warnx("event %s: %s", *argv, pfm_strerror(ret));
-			goto error;
-		}
+        ret = pfm_get_os_event_encoding(*argv, PFM_PLM0 | PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
+        if (ret != PFM_SUCCESS) {
+            //warnx("event %s: %s", *argv, pfm_strerror(ret));
+            goto error;
+        }
 
-		fd[num].name = strdup(*argv);
-		fd[num].group_leader = group_leader;
-		fd[num].idx = arg.idx;
-		fd[num].cpu = arg.cpu;
+        fd[num].name         = strdup(*argv);
+        fd[num].group_leader = group_leader;
+        fd[num].idx          = arg.idx;
+        fd[num].cpu          = arg.cpu;
 
-		num++;
-		argv++;
-	}
-	*num_fds = num;
-	*fds = fd;
-	return 0;
+        num++;
+        argv++;
+    }
+    *num_fds = num;
+    *fds     = fd;
+    return 0;
 error:
-	perf_free_fds(fd, num);
-	return -1;
+    perf_free_fds(fd, num);
+    return -1;
 }
 
-int
-perf_setup_list_events(const char *ev, perf_event_desc_t **fd, int *num_fds)
+int perf_setup_list_events(const char* ev, perf_event_desc_t** fd, int* num_fds)
 {
-	const char **argv;
-	char *p, *q, *events;
-	int i, ret, num = 0;
+    const char** argv;
+    char *       p, *q, *events;
+    int          i, ret, num = 0;
 
-	if (!(ev && fd && num_fds))
-		return -1;
+    if (!(ev && fd && num_fds))
+        return -1;
 
-	events = strdup(ev);
-	if (!events)
-		return -1;
+    events = strdup(ev);
+    if (!events)
+        return -1;
 
-	q = events;
-	while((p = strchr(q, ','))) {
-		num++;
-		q = p + 1;
-	}
-	num++;
-	num++; /* terminator */
+    q = events;
+    while ((p = strchr(q, ','))) {
+        num++;
+        q = p + 1;
+    }
+    num++;
+    num++; /* terminator */
 
-	argv = malloc(num * sizeof(char *));
-	if (!argv) {
-		free(events);
-		return -1;
-	}
+    argv = malloc(num * sizeof(char*));
+    if (!argv) {
+        free(events);
+        return -1;
+    }
 
-	i = 0; q = events;
-	while((p = strchr(q, ','))) {
-		*p = '\0';
-		argv[i++] = q;
-		q = p + 1;
-	}
-	argv[i++] = q;
-	argv[i] = NULL;
+    i = 0;
+    q = events;
+    while ((p = strchr(q, ','))) {
+        *p        = '\0';
+        argv[i++] = q;
+        q         = p + 1;
+    }
+    argv[i++] = q;
+    argv[i]   = NULL;
 
-	ret = perf_setup_argv_events(argv, fd, num_fds);
-	free(argv);
-	free(events); /* strdup in perf_setup_argv_events() */
-	return ret;
+    ret = perf_setup_argv_events(argv, fd, num_fds);
+    free(argv);
+    free(events); /* strdup in perf_setup_argv_events() */
+    return ret;
 }
 
-void
-perf_free_fds(perf_event_desc_t *fds, int num_fds)
+void perf_free_fds(perf_event_desc_t* fds, int num_fds)
 {
-	int i;
+    int i;
 
-	for (i = 0 ; i < num_fds; i++) {
-		free(fds[i].name);
-		free(fds[i].fstr);
-	}
-	free(fds);
+    for (i = 0; i < num_fds; i++) {
+        free(fds[i].name);
+        free(fds[i].fstr);
+    }
+    free(fds);
 }
 
-int
-perf_get_group_nevents(perf_event_desc_t *fds, int num, int idx)
+int perf_get_group_nevents(perf_event_desc_t* fds, int num, int idx)
 {
-	int leader;
-	int i;
+    int leader;
+    int i;
 
-	if (idx < 0 || idx >= num)
-		return 0;
+    if (idx < 0 || idx >= num)
+        return 0;
 
-	leader = fds[idx].group_leader;
+    leader = fds[idx].group_leader;
 
-	for (i = leader + 1; i < num; i++) {
-		if (fds[i].group_leader != leader) {
-			/* This is a new group leader, so the previous
+    for (i = leader + 1; i < num; i++) {
+        if (fds[i].group_leader != leader) {
+            /* This is a new group leader, so the previous
 			 * event was the final event of the preceding
 			 * group.
 			 */
-			return i - leader;
-		}
-	}
-	return i - leader;
+            return i - leader;
+        }
+    }
+    return i - leader;
 }
 
-int
-perf_read_buffer(perf_event_desc_t *hw, void *buf, size_t sz)
+int perf_read_buffer(perf_event_desc_t* hw, void* buf, size_t sz)
 {
-	struct perf_event_mmap_page *hdr = hw->buf;
-	size_t pgmsk = hw->pgmsk;
-	void *data;
-	unsigned long tail;
-	size_t avail_sz, m, c;
-	
-	/*
+    struct perf_event_mmap_page* hdr   = hw->buf;
+    size_t                       pgmsk = hw->pgmsk;
+    void*                        data;
+    unsigned long                tail;
+    size_t                       avail_sz, m, c;
+
+    /*
 	 * data points to beginning of buffer payload
 	 */
-	data = ((void *)hdr)+sysconf(_SC_PAGESIZE);
+    data = ((void*) hdr) + sysconf(_SC_PAGESIZE);
 
-	/*
+    /*
 	 * position of tail within the buffer payload
 	 */
-	tail = hdr->data_tail & pgmsk;
+    tail = hdr->data_tail & pgmsk;
 
-	/*
+    /*
 	 * size of what is available
 	 *
 	 * data_head, data_tail never wrap around
 	 */
-	avail_sz = hdr->data_head - hdr->data_tail;
-	if (sz > avail_sz)
-		return -1;
+    avail_sz = hdr->data_head - hdr->data_tail;
+    if (sz > avail_sz)
+        return -1;
 
-	/*
+    /*
 	 * sz <= avail_sz, we can satisfy the request
 	 */
 
-	/*
+    /*
 	 * c = size till end of buffer
 	 *
 	 * buffer payload size is necessarily
 	 * a power of two, so we can do:
 	 */
-	c = pgmsk + 1 -  tail;
+    c = pgmsk + 1 - tail;
 
-	/*
+    /*
 	 * min with requested size
 	 */
-	m = c < sz ? c : sz;
+    m = c < sz ? c : sz;
 
-	/* copy beginning */
-	memcpy(buf, data+tail, m);
+    /* copy beginning */
+    memcpy(buf, data + tail, m);
 
-	/*
+    /*
 	 * copy wrapped around leftover
 	 */
-	if (sz > m)
-		memcpy(buf+m, data, sz - m);
+    if (sz > m)
+        memcpy(buf + m, data, sz - m);
 
-	//printf("\nhead=%lx tail=%lx new_tail=%lx sz=%zu\n", hdr->data_head, hdr->data_tail, hdr->data_tail+sz, sz);
-	hdr->data_tail += sz;
+    //printf("\nhead=%lx tail=%lx new_tail=%lx sz=%zu\n", hdr->data_head, hdr->data_tail, hdr->data_tail+sz, sz);
+    hdr->data_tail += sz;
 
-	return 0;
+    return 0;
 }
 
-void
-perf_skip_buffer(perf_event_desc_t *hw, size_t sz)
+void perf_skip_buffer(perf_event_desc_t* hw, size_t sz)
 {
-	struct perf_event_mmap_page *hdr = hw->buf;
+    struct perf_event_mmap_page* hdr = hw->buf;
 
-	if ((hdr->data_tail + sz) > hdr->data_head)
-		sz = hdr->data_head - hdr->data_tail;
+    if ((hdr->data_tail + sz) > hdr->data_head)
+        sz = hdr->data_head - hdr->data_tail;
 
-	hdr->data_tail += sz;
+    hdr->data_tail += sz;
 }
 
-static size_t
-__perf_handle_raw(perf_event_desc_t *hw)
+static size_t __perf_handle_raw(perf_event_desc_t* hw)
 {
-	size_t sz = 0;
-	uint32_t raw_sz, i;
-	char *buf;
-	int ret;
+    size_t   sz = 0;
+    uint32_t raw_sz, i;
+    char*    buf;
+    int      ret;
 
-	ret = perf_read_buffer_32(hw, &raw_sz);
-	if (ret) {
-		warnx("cannot read raw size");
-		return -1;
-	}
+    ret = perf_read_buffer_32(hw, &raw_sz);
+    if (ret) {
+        warnx("cannot read raw size");
+        return -1;
+    }
 
-	sz += sizeof(raw_sz);
+    sz += sizeof(raw_sz);
 
-	printf("\n\tRAWSZ:%u\n", raw_sz);
+    printf("\n\tRAWSZ:%u\n", raw_sz);
 
-	buf = malloc(raw_sz);
-	if (!buf) {
-		warn("cannot allocate raw buffer");
-		return -1;
-	}
+    buf = malloc(raw_sz);
+    if (!buf) {
+        warn("cannot allocate raw buffer");
+        return -1;
+    }
 
+    ret = perf_read_buffer(hw, buf, raw_sz);
+    if (ret) {
+        warnx("cannot read raw data");
+        free(buf);
+        return -1;
+    }
 
-	ret = perf_read_buffer(hw, buf, raw_sz);
-	if (ret) {
-		warnx("cannot read raw data");
-		free(buf);
-		return -1;
-	}
+    if (raw_sz)
+        putchar('\t');
 
-	if (raw_sz)
-		putchar('\t');
+    for (i = 0; i < raw_sz; i++) {
+        printf("0x%02x ", buf[i] & 0xff);
+        if (((i + 1) % 16) == 0)
+            printf("\n\t");
+    }
+    if (raw_sz)
+        putchar('\n');
 
-	for(i=0; i < raw_sz; i++) {
-		printf("0x%02x ", buf[i] & 0xff );
-		if (((i+1) % 16)  == 0)
-			printf("\n\t");
-	}
-	if (raw_sz)
-		putchar('\n');
+    free(buf);
 
-	free(buf);
-
-	return sz + raw_sz;
+    return sz + raw_sz;
 }
 
-static int
-perf_display_branch_stack(perf_event_desc_t *desc, FILE *fp)
+static int perf_display_branch_stack(perf_event_desc_t* desc, FILE* fp)
 {
-	struct perf_branch_entry b;
-	uint64_t nr, n;
-	int ret;
+    struct perf_branch_entry b;
+    uint64_t                 nr, n;
+    int                      ret;
 
-	ret = perf_read_buffer(desc, &n, sizeof(n));
-	if (ret)
-		errx(1, "cannot read branch stack nr");
+    ret = perf_read_buffer(desc, &n, sizeof(n));
+    if (ret)
+        errx(1, "cannot read branch stack nr");
 
-	fprintf(fp, "\n\tBRANCH_STACK:%"PRIu64"\n", n);
-	nr = n;
-	/*
+    fprintf(fp, "\n\tBRANCH_STACK:%" PRIu64 "\n", n);
+    nr = n;
+    /*
 	 * from most recent to least recent take branch
 	 */
-	while (nr--) {
-		ret = perf_read_buffer(desc, &b, sizeof(b));
-		if (ret)
-			errx(1, "cannot read branch stack entry");
+    while (nr--) {
+        ret = perf_read_buffer(desc, &b, sizeof(b));
+        if (ret)
+            errx(1, "cannot read branch stack entry");
 
-		fprintf(fp, "\tFROM:0x%016"PRIx64" TO:0x%016"PRIx64" MISPRED:%c\n",
-			b.from,
-			b.to,
-			!(b.mispred || b.predicted) ? '-':
-			(b.mispred ? 'Y' :'N'));
-	}
-	return (int)(n * sizeof(b) + sizeof(n));
+        fprintf(
+            fp,
+            "\tFROM:0x%016" PRIx64 " TO:0x%016" PRIx64 " MISPRED:%c\n",
+            b.from,
+            b.to,
+            !(b.mispred || b.predicted) ? '-' : (b.mispred ? 'Y' : 'N')
+        );
+    }
+    return (int) (n * sizeof(b) + sizeof(n));
 }
 
-static int
-perf_display_regs_user(perf_event_desc_t *hw, FILE *fp)
+static int perf_display_regs_user(perf_event_desc_t* hw, FILE* fp)
 {
-	errx(1, "display regs_user not implemented yet\n");
-	return 0;
+    errx(1, "display regs_user not implemented yet\n");
+    return 0;
 }
 
-static int
-perf_display_regs_intr(perf_event_desc_t *hw, FILE *fp)
+static int perf_display_regs_intr(perf_event_desc_t* hw, FILE* fp)
 {
-	errx(1, "display regs_intr not implemented yet\n");
-	return 0;
+    errx(1, "display regs_intr not implemented yet\n");
+    return 0;
 }
 
-static int
-perf_display_stack_user(perf_event_desc_t *hw, FILE *fp)
+static int perf_display_stack_user(perf_event_desc_t* hw, FILE* fp)
 {
-	uint64_t nr;
-	char buf[512];
-	size_t sz;
-	int ret;
+    uint64_t nr;
+    char     buf[512];
+    size_t   sz;
+    int      ret;
 
-	ret = perf_read_buffer(hw, &nr, sizeof(nr));
-	if (ret)
-		errx(1, "cannot user stack size");
+    ret = perf_read_buffer(hw, &nr, sizeof(nr));
+    if (ret)
+        errx(1, "cannot user stack size");
 
-	fprintf(fp, "USER_STACK: SZ:%"PRIu64"\n", nr);
+    fprintf(fp, "USER_STACK: SZ:%" PRIu64 "\n", nr);
 
-	/* consume content */
-	while (nr) {
-		sz = nr;
-		if (sz > sizeof(buf))
-			sz = sizeof(buf);
+    /* consume content */
+    while (nr) {
+        sz = nr;
+        if (sz > sizeof(buf))
+            sz = sizeof(buf);
 
-		ret = perf_read_buffer(hw, buf, sz);
-		if (ret)
-			errx(1, "cannot user stack content");
-		nr -= sz;
-	}
+        ret = perf_read_buffer(hw, buf, sz);
+        if (ret)
+            errx(1, "cannot user stack content");
+        nr -= sz;
+    }
 
-	return 0;
+    return 0;
 }
 
-int
-perf_display_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, FILE *fp)
+int perf_display_sample(perf_event_desc_t* fds, int num_fds, int idx, struct perf_event_header* ehdr, FILE* fp)
 {
-	perf_event_desc_t *hw;
-	struct { uint32_t pid, tid; } pid;
-	struct { uint64_t value, id; } grp;
-	uint64_t time_enabled, time_running;
-	size_t sz;
-	uint64_t type, fmt;
-	uint64_t val64;
-	const char *str;
-	int ret, e;
+    perf_event_desc_t* hw;
 
-	if (!fds || !fp || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
-		return -1;
+    struct {
+        uint32_t pid, tid;
+    } pid;
 
-	sz = ehdr->size - sizeof(*ehdr);
+    struct {
+        uint64_t value, id;
+    } grp;
 
-	hw = fds+idx;
+    uint64_t    time_enabled, time_running;
+    size_t      sz;
+    uint64_t    type, fmt;
+    uint64_t    val64;
+    const char* str;
+    int         ret, e;
 
-	type = hw->hw.sample_type;
-	fmt  = hw->hw.read_format;
+    if (!fds || !fp || !ehdr || num_fds < 0 || idx < 0 || idx >= num_fds)
+        return -1;
 
-	if (type & PERF_SAMPLE_IDENTIFIER) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx("cannot read IP");
-			return -1;
-		}
-		fprintf(fp, "ID:%"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
-	/*
+    sz = ehdr->size - sizeof(*ehdr);
+
+    hw = fds + idx;
+
+    type = hw->hw.sample_type;
+    fmt  = hw->hw.read_format;
+
+    if (type & PERF_SAMPLE_IDENTIFIER) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read IP");
+            return -1;
+        }
+        fprintf(fp, "ID:%" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
+    /*
 	 * the sample_type information is laid down
 	 * based on the PERF_RECORD_SAMPLE format specified
 	 * in the libpfm.h header file.
 	 * That order is different from the enum perf_event_sample_format
 	 */
-	if (type & PERF_SAMPLE_IP) {
-		const char *xtra = " ";
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx("cannot read IP");
-			return -1;
-		}
+    if (type & PERF_SAMPLE_IP) {
+        const char* xtra = " ";
+        ret              = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read IP");
+            return -1;
+        }
 
-		/*
+        /*
 		 * MISC_EXACT_IP indicates that kernel is returning
 		 * th  IIP of an instruction which caused the event, i.e.,
 		 * no skid
 		 */
-		if (hw->hw.precise_ip && (ehdr->misc & PERF_RECORD_MISC_EXACT_IP))
-			xtra = " (exact) ";
+        if (hw->hw.precise_ip && (ehdr->misc & PERF_RECORD_MISC_EXACT_IP))
+            xtra = " (exact) ";
 
-		fprintf(fp, "IIP:%#016"PRIx64"%s", val64, xtra);
-		sz -= sizeof(val64);
-	}
+        fprintf(fp, "IIP:%#016" PRIx64 "%s", val64, xtra);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_TID) {
-		ret = perf_read_buffer(hw, &pid, sizeof(pid));
-		if (ret) {
-			warnx( "cannot read PID");
-			return -1;
-		}
+    if (type & PERF_SAMPLE_TID) {
+        ret = perf_read_buffer(hw, &pid, sizeof(pid));
+        if (ret) {
+            warnx("cannot read PID");
+            return -1;
+        }
 
-		fprintf(fp, "PID:%d TID:%d ", pid.pid, pid.tid);
-		sz -= sizeof(pid);
-	}
+        fprintf(fp, "PID:%d TID:%d ", pid.pid, pid.tid);
+        sz -= sizeof(pid);
+    }
 
-	if (type & PERF_SAMPLE_TIME) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read time");
-			return -1;
-		}
+    if (type & PERF_SAMPLE_TIME) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read time");
+            return -1;
+        }
 
-		fprintf(fp, "TIME:%'"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+        fprintf(fp, "TIME:%'" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_ADDR) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read addr");
-			return -1;
-		}
+    if (type & PERF_SAMPLE_ADDR) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read addr");
+            return -1;
+        }
 
-		fprintf(fp, "ADDR:%#016"PRIx64" ", val64);
-		sz -= sizeof(val64);
-	}
+        fprintf(fp, "ADDR:%#016" PRIx64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_ID) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read id");
-			return -1;
-		}
+    if (type & PERF_SAMPLE_ID) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read id");
+            return -1;
+        }
 
-		fprintf(fp, "ID:%"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+        fprintf(fp, "ID:%" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_STREAM_ID) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read stream_id");
-			return -1;
-		}
-		fprintf(fp, "STREAM_ID:%"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+    if (type & PERF_SAMPLE_STREAM_ID) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read stream_id");
+            return -1;
+        }
+        fprintf(fp, "STREAM_ID:%" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_CPU) {
-		struct { uint32_t cpu, reserved; } cpu;
-		ret = perf_read_buffer(hw, &cpu, sizeof(cpu));
-		if (ret) {
-			warnx( "cannot read cpu");
-			return -1;
-		}
-		fprintf(fp, "CPU:%u ", cpu.cpu);
-		sz -= sizeof(cpu);
-	}
+    if (type & PERF_SAMPLE_CPU) {
+        struct {
+            uint32_t cpu, reserved;
+        } cpu;
 
-	if (type & PERF_SAMPLE_PERIOD) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read period");
-			return -1;
-		}
-		fprintf(fp, "PERIOD:%'"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+        ret = perf_read_buffer(hw, &cpu, sizeof(cpu));
+        if (ret) {
+            warnx("cannot read cpu");
+            return -1;
+        }
+        fprintf(fp, "CPU:%u ", cpu.cpu);
+        sz -= sizeof(cpu);
+    }
 
-	/* struct read_format {
+    if (type & PERF_SAMPLE_PERIOD) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read period");
+            return -1;
+        }
+        fprintf(fp, "PERIOD:%'" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
+
+    /* struct read_format {
 	 * 	{ u64		value;
 	 * 	  { u64		time_enabled; } && PERF_FORMAT_ENABLED
 	 * 	  { u64		time_running; } && PERF_FORMAT_RUNNING
@@ -532,272 +532,280 @@ perf_display_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_ev
 	 * 	} && PERF_FORMAT_GROUP
 	 * };
 	 */
-	if (type & PERF_SAMPLE_READ) {
-		uint64_t values[3];
-		uint64_t nr;
+    if (type & PERF_SAMPLE_READ) {
+        uint64_t values[3];
+        uint64_t nr;
 
-		if (fmt & PERF_FORMAT_GROUP) {
-			ret = perf_read_buffer_64(hw, &nr);
-			if (ret) {
-				warnx( "cannot read nr");
-				return -1;
-			}
+        if (fmt & PERF_FORMAT_GROUP) {
+            ret = perf_read_buffer_64(hw, &nr);
+            if (ret) {
+                warnx("cannot read nr");
+                return -1;
+            }
 
-			sz -= sizeof(nr);
+            sz -= sizeof(nr);
 
-			time_enabled = time_running = 1;
+            time_enabled = time_running = 1;
 
-			if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-				ret = perf_read_buffer_64(hw, &time_enabled);
-				if (ret) {
-					warnx( "cannot read timing info");
-					return -1;
-				}
-				sz -= sizeof(time_enabled);
-			}
+            if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+                ret = perf_read_buffer_64(hw, &time_enabled);
+                if (ret) {
+                    warnx("cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_enabled);
+            }
 
-			if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-				ret = perf_read_buffer_64(hw, &time_running);
-				if (ret) {
-					warnx( "cannot read timing info");
-					return -1;
-				}
-				sz -= sizeof(time_running);
-			}
+            if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+                ret = perf_read_buffer_64(hw, &time_running);
+                if (ret) {
+                    warnx("cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_running);
+            }
 
-			fprintf(fp, "ENA=%'"PRIu64" RUN=%'"PRIu64" NR=%"PRIu64"\n", time_enabled, time_running, nr);
+            fprintf(fp, "ENA=%'" PRIu64 " RUN=%'" PRIu64 " NR=%" PRIu64 "\n", time_enabled, time_running, nr);
 
-			values[1] = time_enabled;
-			values[2] = time_running;
-			while(nr--) {
-				grp.id = -1;
-				ret = perf_read_buffer_64(hw, &grp.value);
-				if (ret) {
-					warnx( "cannot read group value");
-					return -1;
-				}
-				sz -= sizeof(grp.value);
+            values[1] = time_enabled;
+            values[2] = time_running;
+            while (nr--) {
+                grp.id = -1;
+                ret    = perf_read_buffer_64(hw, &grp.value);
+                if (ret) {
+                    warnx("cannot read group value");
+                    return -1;
+                }
+                sz -= sizeof(grp.value);
 
-				if (fmt & PERF_FORMAT_ID) {
-					ret = perf_read_buffer_64(hw, &grp.id);
-					if (ret) {
-						warnx( "cannot read leader id");
-						return -1;
-					}
-					sz -= sizeof(grp.id);
-				}
+                if (fmt & PERF_FORMAT_ID) {
+                    ret = perf_read_buffer_64(hw, &grp.id);
+                    if (ret) {
+                        warnx("cannot read leader id");
+                        return -1;
+                    }
+                    sz -= sizeof(grp.id);
+                }
 
-				e = perf_id2event(fds, num_fds, grp.id);
-				if (e == -1)
-					str = "unknown sample event";
-				else
-					str = fds[e].name;
+                e = perf_id2event(fds, num_fds, grp.id);
+                if (e == -1)
+                    str = "unknown sample event";
+                else
+                    str = fds[e].name;
 
-				values[0] = grp.value;
-				grp.value = perf_scale(values);
+                values[0] = grp.value;
+                grp.value = perf_scale(values);
 
-				fprintf(fp, "\t%'"PRIu64" %s (%"PRIu64"%s)\n",
-					grp.value, str,
-					grp.id,
-					time_running != time_enabled ? ", scaled":"");
-
-			}
-		} else {
-			time_enabled = time_running = 0;
-			/*
+                fprintf(
+                    fp,
+                    "\t%'" PRIu64 " %s (%" PRIu64 "%s)\n",
+                    grp.value,
+                    str,
+                    grp.id,
+                    time_running != time_enabled ? ", scaled" : ""
+                );
+            }
+        } else {
+            time_enabled = time_running = 0;
+            /*
 			 * this program does not use FORMAT_GROUP when there is only one event
 			 */
-			ret = perf_read_buffer_64(hw, &val64);
-			if (ret) {
-				warnx( "cannot read value");
-				return -1;
-			}
-			sz -= sizeof(val64);
+            ret = perf_read_buffer_64(hw, &val64);
+            if (ret) {
+                warnx("cannot read value");
+                return -1;
+            }
+            sz -= sizeof(val64);
 
-			if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
-				ret = perf_read_buffer_64(hw, &time_enabled);
-				if (ret) {
-					warnx( "cannot read timing info");
-					return -1;
-				}
-				sz -= sizeof(time_enabled);
-			}
+            if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+                ret = perf_read_buffer_64(hw, &time_enabled);
+                if (ret) {
+                    warnx("cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_enabled);
+            }
 
-			if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
-				ret = perf_read_buffer_64(hw, &time_running);
-				if (ret) {
-					warnx( "cannot read timing info");
-					return -1;
-				}
-				sz -= sizeof(time_running);
-			}
-			if (fmt & PERF_FORMAT_ID) {
-				ret = perf_read_buffer_64(hw, &val64);
-				if (ret) {
-					warnx( "cannot read leader id");
-					return -1;
-				}
-				sz -= sizeof(val64);
-			}
+            if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+                ret = perf_read_buffer_64(hw, &time_running);
+                if (ret) {
+                    warnx("cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_running);
+            }
+            if (fmt & PERF_FORMAT_ID) {
+                ret = perf_read_buffer_64(hw, &val64);
+                if (ret) {
+                    warnx("cannot read leader id");
+                    return -1;
+                }
+                sz -= sizeof(val64);
+            }
 
-			fprintf(fp, "ENA=%'"PRIu64" RUN=%'"PRIu64"\n", time_enabled, time_running);
+            fprintf(fp, "ENA=%'" PRIu64 " RUN=%'" PRIu64 "\n", time_enabled, time_running);
 
-			values[0] = val64;
-			values[1] = time_enabled;
-			values[2] = time_running;
-			val64 = perf_scale(values);
+            values[0] = val64;
+            values[1] = time_enabled;
+            values[2] = time_running;
+            val64     = perf_scale(values);
 
-			fprintf(fp, "\t%'"PRIu64" %s %s\n",
-				val64, fds[0].name,
-				time_running != time_enabled ? ", scaled":"");
-		}
-	}
+            fprintf(fp, "\t%'" PRIu64 " %s %s\n", val64, fds[0].name, time_running != time_enabled ? ", scaled" : "");
+        }
+    }
 
-	if (type & PERF_SAMPLE_CALLCHAIN) {
-		uint64_t nr, ip;
+    if (type & PERF_SAMPLE_CALLCHAIN) {
+        uint64_t nr, ip;
 
-		ret = perf_read_buffer_64(hw, &nr);
-		if (ret) {
-			warnx( "cannot read callchain nr");
-			return -1;
-		}
-		sz -= sizeof(nr);
+        ret = perf_read_buffer_64(hw, &nr);
+        if (ret) {
+            warnx("cannot read callchain nr");
+            return -1;
+        }
+        sz -= sizeof(nr);
 
-		while(nr--) {
-			ret = perf_read_buffer_64(hw, &ip);
-			if (ret) {
-				warnx( "cannot read ip");
-				return -1;
-			}
+        while (nr--) {
+            ret = perf_read_buffer_64(hw, &ip);
+            if (ret) {
+                warnx("cannot read ip");
+                return -1;
+            }
 
-			sz -= sizeof(ip);
+            sz -= sizeof(ip);
 
-			fprintf(fp, "\t0x%"PRIx64"\n", ip);
-		}
-	}
+            fprintf(fp, "\t0x%" PRIx64 "\n", ip);
+        }
+    }
 
-	if (type & PERF_SAMPLE_RAW) {
-		ret = __perf_handle_raw(hw);
-		if (ret == -1)
-			return -1;
-		sz -= ret;
-	}
+    if (type & PERF_SAMPLE_RAW) {
+        ret = __perf_handle_raw(hw);
+        if (ret == -1)
+            return -1;
+        sz -= ret;
+    }
 
-	if (type & PERF_SAMPLE_BRANCH_STACK) {
-		ret = perf_display_branch_stack(hw, fp);
-		sz -= ret;
-	}
+    if (type & PERF_SAMPLE_BRANCH_STACK) {
+        ret = perf_display_branch_stack(hw, fp);
+        sz -= ret;
+    }
 
-	if (type & PERF_SAMPLE_REGS_USER) {
-		ret = perf_display_regs_user(hw, fp);
-		sz -= ret;
-	}
+    if (type & PERF_SAMPLE_REGS_USER) {
+        ret = perf_display_regs_user(hw, fp);
+        sz -= ret;
+    }
 
-	if (type & PERF_SAMPLE_STACK_USER) {
-		ret = perf_display_stack_user(hw, fp);
-		sz -= ret;
-	}
+    if (type & PERF_SAMPLE_STACK_USER) {
+        ret = perf_display_stack_user(hw, fp);
+        sz -= ret;
+    }
 
-	if (type & PERF_SAMPLE_WEIGHT) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read weight");
-			return -1;
-		}
-		fprintf(fp, "WEIGHT:%'"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+    if (type & PERF_SAMPLE_WEIGHT) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read weight");
+            return -1;
+        }
+        fprintf(fp, "WEIGHT:%'" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_DATA_SRC) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read data src");
-			return -1;
-		}
-		fprintf(fp, "DATA_SRC:%'"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
-	if (type & PERF_SAMPLE_TRANSACTION) {
-		ret = perf_read_buffer_64(hw, &val64);
-		if (ret) {
-			warnx( "cannot read txn");
-			return -1;
-		}
-		fprintf(fp, "TXN:%'"PRIu64" ", val64);
-		sz -= sizeof(val64);
-	}
+    if (type & PERF_SAMPLE_DATA_SRC) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read data src");
+            return -1;
+        }
+        fprintf(fp, "DATA_SRC:%'" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
+    if (type & PERF_SAMPLE_TRANSACTION) {
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read txn");
+            return -1;
+        }
+        fprintf(fp, "TXN:%'" PRIu64 " ", val64);
+        sz -= sizeof(val64);
+    }
 
-	if (type & PERF_SAMPLE_REGS_INTR) {
-		ret = perf_display_regs_intr(hw, fp);
-		sz -= ret;
-	}
+    if (type & PERF_SAMPLE_REGS_INTR) {
+        ret = perf_display_regs_intr(hw, fp);
+        sz -= ret;
+    }
 
-	/*
+    /*
 	 * if we have some data left, it is because there is more
 	 * than what we know about. In fact, it is more complicated
 	 * because we may have the right size but wrong layout. But
 	 * that's the best we can do.
 	 */
-	if (sz) {
-		warnx("did not correctly parse sample leftover=%zu", sz);
-		perf_skip_buffer(hw, sz);
-	}
+    if (sz) {
+        warnx("did not correctly parse sample leftover=%zu", sz);
+        perf_skip_buffer(hw, sz);
+    }
 
-	fputc('\n',fp);
-	return 0;
+    fputc('\n', fp);
+    return 0;
 }
 
-uint64_t
-display_lost(perf_event_desc_t *hw, perf_event_desc_t *fds, int num_fds, FILE *fp)
+uint64_t display_lost(perf_event_desc_t* hw, perf_event_desc_t* fds, int num_fds, FILE* fp)
 {
-	struct { uint64_t id, lost; } lost;
-	const char *str;
-	int e, ret;
+    struct {
+        uint64_t id, lost;
+    } lost;
 
-	ret = perf_read_buffer(hw, &lost, sizeof(lost));
-	if (ret) {
-		warnx("cannot read lost info");
-		return 0;
-	}
+    const char* str;
+    int         e, ret;
 
-	e = perf_id2event(fds, num_fds, lost.id);
-	if (e == -1)
-		str = "unknown lost event";
-	else
-		str = fds[e].name;
+    ret = perf_read_buffer(hw, &lost, sizeof(lost));
+    if (ret) {
+        warnx("cannot read lost info");
+        return 0;
+    }
 
-	fprintf(fp, "<<<LOST %"PRIu64" SAMPLES FOR EVENT %s>>>\n",
-		lost.lost,
-		str);
+    e = perf_id2event(fds, num_fds, lost.id);
+    if (e == -1)
+        str = "unknown lost event";
+    else
+        str = fds[e].name;
 
-	return lost.lost;
+    fprintf(fp, "<<<LOST %" PRIu64 " SAMPLES FOR EVENT %s>>>\n", lost.lost, str);
+
+    return lost.lost;
 }
 
-
-int
-perf_read_sample(perf_event_desc_t *fds, 
-                 int num_fds, 
-                 int idx, 
-                 struct perf_event_header *ehdr, 
-                 perf_event_sample_t *s,
-                 FILE *ferr)
+int perf_read_sample(
+    perf_event_desc_t*        fds,
+    int                       num_fds,
+    int                       idx,
+    struct perf_event_header* ehdr,
+    perf_event_sample_t*      s,
+    FILE*                     ferr
+)
 {
-    perf_event_desc_t *hw;
-    struct { uint32_t pid, tid; } pid;
-    struct { uint64_t value, id; } grp;
-    uint64_t time_enabled, time_running;
-    size_t sz;
-    uint64_t type, fmt;
-    uint64_t val64;
-    int ret, e;
+    perf_event_desc_t* hw;
+
+    struct {
+        uint32_t pid, tid;
+    } pid;
+
+    struct {
+        uint64_t value, id;
+    } grp;
+
+    uint64_t    time_enabled, time_running;
+    size_t      sz;
+    uint64_t    type, fmt;
+    uint64_t    val64;
+    int         ret, e;
     const char* str;
 
-    if (!fds || !s || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
+    if (!fds || !s || !ehdr || num_fds < 0 || idx < 0 || idx >= num_fds)
         return -1;
 
     sz = ehdr->size - sizeof(*ehdr);
 
-    hw = fds+idx;
+    hw = fds + idx;
 
     type = hw->hw.sample_type;
     fmt  = hw->hw.read_format;
@@ -879,7 +887,10 @@ perf_read_sample(perf_event_desc_t *fds,
     }
 
     if (type & PERF_SAMPLE_CPU) {
-        struct { uint32_t cpu, reserved; } cpu;
+        struct {
+            uint32_t cpu, reserved;
+        } cpu;
+
         ret = perf_read_buffer(hw, &cpu, sizeof(cpu));
         if (ret) {
             fprintf(ferr, "libpfm: cannot read cpu");
@@ -953,9 +964,9 @@ perf_read_sample(perf_event_desc_t *fds,
 
             values[1] = time_enabled;
             values[2] = time_running;
-            while(nr--) {
+            while (nr--) {
                 grp.id = -1;
-                ret = perf_read_buffer_64(hw, &grp.value);
+                ret    = perf_read_buffer_64(hw, &grp.value);
                 if (ret) {
                     fprintf(ferr, "libpfm: cannot read group value");
                     return -1;
@@ -984,7 +995,6 @@ perf_read_sample(perf_event_desc_t *fds,
                 //         grp.value, str,
                 //         grp.id,
                 //         time_running != time_enabled ? ", scaled":"");
-
             }
         } else {
             time_enabled = time_running = 0;
@@ -1029,7 +1039,7 @@ perf_read_sample(perf_event_desc_t *fds,
             values[0] = val64;
             values[1] = time_enabled;
             values[2] = time_running;
-            val64 = perf_scale(values);
+            val64     = perf_scale(values);
 
             // fprintf(fp, "\t%'"PRIu64" %s %s\n",
             //         val64, fds[0].name,
@@ -1047,7 +1057,7 @@ perf_read_sample(perf_event_desc_t *fds,
         }
         sz -= sizeof(nr);
 
-        while(nr--) {
+        while (nr--) {
             ret = perf_read_buffer_64(hw, &ip);
             if (ret) {
                 fprintf(ferr, "libpfm: cannot read ip");
@@ -1130,35 +1140,42 @@ perf_read_sample(perf_event_desc_t *fds,
     return 0;
 }
 
-void
-display_exit(perf_event_desc_t *hw, FILE *fp)
+void display_exit(perf_event_desc_t* hw, FILE* fp)
 {
-	struct { pid_t pid, ppid, tid, ptid; } grp;
-	int ret;
+    struct {
+        pid_t pid, ppid, tid, ptid;
+    } grp;
 
-	ret = perf_read_buffer(hw, &grp, sizeof(grp));
-	if (ret) {
-		warnx("cannot read exit info");
-		return;
-	}
+    int ret;
 
-	fprintf(fp,"[%d] exited\n", grp.pid);
+    ret = perf_read_buffer(hw, &grp, sizeof(grp));
+    if (ret) {
+        warnx("cannot read exit info");
+        return;
+    }
+
+    fprintf(fp, "[%d] exited\n", grp.pid);
 }
 
-void
-display_freq(int mode, perf_event_desc_t *hw, FILE *fp)
+void display_freq(int mode, perf_event_desc_t* hw, FILE* fp)
 {
-	struct { uint64_t time, id, stream_id; } thr;
-	int ret;
+    struct {
+        uint64_t time, id, stream_id;
+    } thr;
 
-	ret = perf_read_buffer(hw, &thr, sizeof(thr));
-	if (ret) {
-		warnx("cannot read throttling info");
-		return;
-	}
+    int ret;
 
-	fprintf(fp, "%s value=%"PRIu64" event ID=%"PRIu64"\n",
-		mode ? "Throttled" : "Unthrottled",
-		thr.id,
-		thr.stream_id);
+    ret = perf_read_buffer(hw, &thr, sizeof(thr));
+    if (ret) {
+        warnx("cannot read throttling info");
+        return;
+    }
+
+    fprintf(
+        fp,
+        "%s value=%" PRIu64 " event ID=%" PRIu64 "\n",
+        mode ? "Throttled" : "Unthrottled",
+        thr.id,
+        thr.stream_id
+    );
 }

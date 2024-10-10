@@ -20,7 +20,7 @@ namespace cali
 
 class Caliper;
 class SnapshotBuilder;
-    
+
 namespace Cupti
 {
 
@@ -33,23 +33,23 @@ class EventSampling
 
     std::vector<SamplingInfo> m_sampling_info;
     std::mutex                m_sampling_mtx;
-    
+
     CUpti_EventID m_event_id;
 
-    Attribute     m_event_attr;
+    Attribute m_event_attr;
 
-    unsigned      m_num_snapshots = 0;
-    unsigned      m_num_reads     = 0;
+    unsigned m_num_snapshots = 0;
+    unsigned m_num_reads     = 0;
 
-    bool          m_enabled       = false;
-    
+    bool m_enabled = false;
+
 public:
 
     bool is_enabled() const { return m_enabled; }
 
     // note: event-by-name lookup is currently broken for some reason
     bool setup(Caliper* c, const std::string& event_name);
-    
+
     bool setup(Caliper* c, CUpti_EventID event_id);
 
     bool enable_sampling_for_context(CUcontext context);
@@ -59,14 +59,13 @@ public:
 
     void snapshot(Caliper* c, SnapshotBuilder& snapshot);
 
-    std::ostream&
-    print_statistics(std::ostream& os);
+    std::ostream& print_statistics(std::ostream& os);
 
     EventSampling();
 
-    ~EventSampling();    
+    ~EventSampling();
 };
-    
+
 } // namespace Cupti
-    
+
 } // namespace cali

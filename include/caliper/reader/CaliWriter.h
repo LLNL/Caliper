@@ -17,7 +17,7 @@ namespace cali
 class CaliperMetadataAccessInterface;
 class Node;
 class OutputStream;
-    
+
 class CaliWriter
 {
     struct CaliWriterImpl;
@@ -25,20 +25,17 @@ class CaliWriter
 
 public:
 
-    CaliWriter()
-        { }
-    
+    CaliWriter() {}
+
     CaliWriter(OutputStream& os);
 
     ~CaliWriter();
 
     size_t num_written() const;
-    
-    void write_snapshot(const CaliperMetadataAccessInterface&,
-                        const std::vector<Entry>&);
 
-    void write_globals(const CaliperMetadataAccessInterface&,
-                       const std::vector<Entry>&);
+    void write_snapshot(const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
+
+    void write_globals(const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
 };
 
-}
+} // namespace cali

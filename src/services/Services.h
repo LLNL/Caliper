@@ -38,12 +38,10 @@ void register_configured_services(Caliper* c, Channel* chn);
 ConfigSet init_config_from_spec(RuntimeConfig cfg, const char* spec);
 
 /// \brief Find and print service documentation (description and options)
-std::ostream&
-print_service_documentation(std::ostream& os, const std::string& name);
+std::ostream& print_service_documentation(std::ostream& os, const std::string& name);
 
 /// \brief Get description string for service
-std::string
-get_service_description(const std::string& name);
+std::string get_service_description(const std::string& name);
 
 /// \brief Get all currently available service names.
 std::vector<std::string> get_available_services();

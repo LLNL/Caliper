@@ -28,8 +28,8 @@ public:
 
     Function(const char* name);
 
-    Function(const Function&) = delete;
-    Function& operator = (const Function&) = delete;
+    Function(const Function&)             = delete;
+    Function& operator= (const Function&) = delete;
 
     ~Function();
 };
@@ -42,8 +42,8 @@ public:
 
     explicit ScopeAnnotation(const char* name);
 
-    ScopeAnnotation(const ScopeAnnotation&) = delete;
-    ScopeAnnotation& operator = (const ScopeAnnotation&) = delete;
+    ScopeAnnotation(const ScopeAnnotation&)             = delete;
+    ScopeAnnotation& operator= (const ScopeAnnotation&) = delete;
 
     ~ScopeAnnotation();
 };
@@ -56,7 +56,8 @@ class Loop
 
 public:
 
-    class Iteration {
+    class Iteration
+    {
         const Impl* pI;
 
     public:
@@ -74,7 +75,6 @@ public:
 
     void end();
 };
-
 
 /// \brief Instrumentation interface to add and manipulate context attributes
 ///
@@ -102,8 +102,7 @@ public:
 class Annotation
 {
     struct Impl;
-    Impl*  pI;
-
+    Impl* pI;
 
 public:
 
@@ -115,7 +114,7 @@ public:
     ///   of \ref cali_attr_properties values.
     Annotation(const char* name, int opt = 0);
 
-    typedef std::map<const char*, Variant> MetadataListType ;
+    typedef std::map<const char*, Variant> MetadataListType;
     /// \brief Creates an annotation object to manipulate
     ///   the context attribute with the given \a name.
     ///
@@ -123,14 +122,13 @@ public:
     /// \param opt  %Attribute flags. Bitwise OR combination
     ///   of \ref cali_attr_properties values.
     /// \param metadata: a map of
-    Annotation(const char* name, const MetadataListType& metadata, int opt=0);
+    Annotation(const char* name, const MetadataListType& metadata, int opt = 0);
 
     Annotation(const Annotation&);
 
     ~Annotation();
 
-    Annotation& operator = (const Annotation&);
-
+    Annotation& operator= (const Annotation&);
 
     /// \brief Scope guard to automatically close an annotation at the end of
     ///   the C++ scope.
@@ -145,15 +143,16 @@ public:
     ///   }
     /// \endcode
 
-    class Guard {
+    class Guard
+    {
         Impl* pI;
 
     public:
 
         Guard(Annotation& a);
 
-        Guard(const Guard&) = delete;
-        Guard& operator = (const Guard&) = delete;
+        Guard(const Guard&)             = delete;
+        Guard& operator= (const Guard&) = delete;
 
         ~Guard();
     };
@@ -176,46 +175,57 @@ public:
     Annotation& begin(int data);
     /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(double data);
+
     /// \copydoc cali::Annotation::begin(int)
-    Annotation& begin(const char* data) {
-        return begin(Variant(data));
-    }
+    Annotation& begin(const char* data) { return begin(Variant(data)); }
+
     /// \copydoc cali::Annotation::begin(int)
-    Annotation& begin(cali_attr_type type, void* data, uint64_t size) {
-        return begin(Variant(type, data, size));
-    }
+    Annotation& begin(cali_attr_type type, void* data, uint64_t size) { return begin(Variant(type, data, size)); }
+
     /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(const Variant& data);
 
 #ifdef CALI_FORWARDING_ENABLED
-    template<typename Arg, typename... Args>
-    struct head{
+    template <typename Arg, typename... Args>
+    struct head {
         using type = Arg;
     };
 
-    template<typename... Args>
-    auto begin(Args&&... args) -> typename std::enable_if<!std::is_same<typename head<Args...>::type,cali::Variant>::value,Annotation&>::type {
+    template <typename... Args>
+    auto begin(Args&&... args) ->
+        typename std::enable_if<!std::is_same<typename head<Args...>::type, cali::Variant>::value, Annotation&>::type
+    {
         return begin(Variant(std::forward<Args>(args)...));
     }
-    template<typename... Args>
-    auto set(Args&&... args) -> typename std::enable_if<!std::is_same<typename head<Args...>::type,cali::Variant>::value,Annotation&>::type {
+
+    template <typename... Args>
+    auto set(Args&&... args) ->
+        typename std::enable_if<!std::is_same<typename head<Args...>::type, cali::Variant>::value, Annotation&>::type
+    {
         return set(Variant(std::forward<Args>(args)...));
     }
 #else
-    template<typename Arg>
-    Annotation& begin(const Arg& arg){
+    template <typename Arg>
+    Annotation& begin(const Arg& arg)
+    {
         return begin(Variant(arg));
     }
-    template<typename Arg>
-    Annotation& set(const Arg& arg){
+
+    template <typename Arg>
+    Annotation& set(const Arg& arg)
+    {
         return set(Variant(arg));
     }
-    template<typename Arg>
-    Annotation& begin(Arg& arg){
+
+    template <typename Arg>
+    Annotation& begin(Arg& arg)
+    {
         return begin(Variant(arg));
     }
-    template<typename Arg>
-    Annotation& set(Arg& arg){
+
+    template <typename Arg>
+    Annotation& set(Arg& arg)
+    {
         return set(Variant(arg));
     }
 #endif
@@ -252,6 +262,5 @@ public:
 } // namespace cali
 
 #undef CALI_FORWARDING_ENABLED
-
 
 #endif

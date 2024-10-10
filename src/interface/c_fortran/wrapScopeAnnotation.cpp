@@ -8,30 +8,29 @@
 // splicer begin class.ScopeAnnotation.CXX_definitions
 // splicer end class.ScopeAnnotation.CXX_definitions
 
-extern "C" {
+extern "C"
+{
 
 // splicer begin class.ScopeAnnotation.C_definitions
 // splicer end class.ScopeAnnotation.C_definitions
 
-cali_ScopeAnnotation * cali_ScopeAnnotation_begin(const char * name,
-    cali_ScopeAnnotation * SHC_rv)
+cali_ScopeAnnotation* cali_ScopeAnnotation_begin(const char* name, cali_ScopeAnnotation* SHC_rv)
 {
     // splicer begin class.ScopeAnnotation.method.begin
-    cali::ScopeAnnotation *SHCXX_rv = new cali::ScopeAnnotation(name);
-    SHC_rv->addr = static_cast<void *>(SHCXX_rv);
-    SHC_rv->idtor = 1;
+    cali::ScopeAnnotation* SHCXX_rv = new cali::ScopeAnnotation(name);
+    SHC_rv->addr                    = static_cast<void*>(SHCXX_rv);
+    SHC_rv->idtor                   = 1;
     return SHC_rv;
     // splicer end class.ScopeAnnotation.method.begin
 }
 
-void cali_ScopeAnnotation_end(cali_ScopeAnnotation * self)
+void cali_ScopeAnnotation_end(cali_ScopeAnnotation* self)
 {
-    cali::ScopeAnnotation *SH_this =
-        static_cast<cali::ScopeAnnotation *>(self->addr);
+    cali::ScopeAnnotation* SH_this = static_cast<cali::ScopeAnnotation*>(self->addr);
     // splicer begin class.ScopeAnnotation.method.end
     delete SH_this;
     self->addr = nullptr;
     // splicer end class.ScopeAnnotation.method.end
 }
 
-}  // extern "C"
+} // extern "C"

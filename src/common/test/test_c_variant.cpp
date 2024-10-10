@@ -8,17 +8,19 @@
 // --- test variant creation
 //
 
-TEST(C_Variant_Test, CreateEmptyVariant) {
+TEST(C_Variant_Test, CreateEmptyVariant)
+{
     cali_variant_t v = cali_make_empty_variant();
-    
+
     EXPECT_TRUE(cali_variant_is_empty(v));
-    
+
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_INV);
     EXPECT_EQ(cali_variant_get_size(v), 0);
     EXPECT_EQ(cali_variant_get_data(&v), nullptr);
 }
 
-TEST(C_Variant_Test, CreateIntVariant) {
+TEST(C_Variant_Test, CreateIntVariant)
+{
     int val = -42;
 
     cali_variant_t v = cali_make_variant_from_int(val);
@@ -45,7 +47,8 @@ TEST(C_Variant_Test, CreateIntVariant) {
     EXPECT_EQ(cali_variant_compare(v, v2), 0);
 }
 
-TEST(C_Variant_Test, CreateUintVariant) {
+TEST(C_Variant_Test, CreateUintVariant)
+{
     uint64_t val = 0xFFFFFFFFAA;
 
     cali_variant_t v = cali_make_variant_from_uint(val);
@@ -71,19 +74,20 @@ TEST(C_Variant_Test, CreateUintVariant) {
 
     // also test ADDR type here, basically the same as UINT
 
-    void* ptr = &val;
-    cali_variant_t v3 = cali_make_variant(CALI_TYPE_ADDR, &ptr, sizeof(void*));
+    void*          ptr = &val;
+    cali_variant_t v3  = cali_make_variant(CALI_TYPE_ADDR, &ptr, sizeof(void*));
     EXPECT_EQ(cali_variant_get_type(v3), CALI_TYPE_ADDR);
     EXPECT_EQ(cali_variant_get_size(v3), sizeof(uint64_t)); // yes, Caliper ADDR type is always 64bit
     EXPECT_EQ(cali_variant_to_uint(v3, NULL), reinterpret_cast<uint64_t>(ptr));
 }
 
-TEST(C_Variant_Test, CreateDoubleVariant) {
+TEST(C_Variant_Test, CreateDoubleVariant)
+{
     double val = 42.42;
 
-    cali_variant_t v = cali_make_variant_from_double(val);
-    bool ok = false;
-    
+    cali_variant_t v  = cali_make_variant_from_double(val);
+    bool           ok = false;
+
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_DOUBLE);
     EXPECT_EQ(cali_variant_to_double(v, &ok), val);
     EXPECT_TRUE(ok);
@@ -102,7 +106,8 @@ TEST(C_Variant_Test, CreateDoubleVariant) {
     EXPECT_EQ(*((double*) cali_variant_get_data(&v2)), val);
 }
 
-TEST(C_Variant_Test, CreateStringVariant) {
+TEST(C_Variant_Test, CreateStringVariant)
+{
     const char* mystring = "My test string";
 
     cali_variant_t v = cali_make_variant_from_string(mystring);
@@ -129,13 +134,14 @@ TEST(C_Variant_Test, CreateStringVariant) {
     EXPECT_FALSE(ok);
 }
 
-TEST(C_Variant_Test, CreateExplicitStringVariant) {
+TEST(C_Variant_Test, CreateExplicitStringVariant)
+{
     const char* mystring = "My test string";
 
-    cali_variant_t v = cali_make_variant(CALI_TYPE_STRING, mystring, strlen(mystring)+1);
+    cali_variant_t v = cali_make_variant(CALI_TYPE_STRING, mystring, strlen(mystring) + 1);
 
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_STRING);
-    EXPECT_EQ(cali_variant_get_size(v), strlen(mystring)+1);
+    EXPECT_EQ(cali_variant_get_size(v), strlen(mystring) + 1);
     EXPECT_EQ(cali_variant_get_data(&v), mystring);
     EXPECT_STREQ(static_cast<const char*>(cali_variant_get_data(&v)), mystring);
 
@@ -156,7 +162,8 @@ TEST(C_Variant_Test, CreateExplicitStringVariant) {
     EXPECT_FALSE(ok);
 }
 
-TEST(C_Variant_Test, CreateBoolVariant) {
+TEST(C_Variant_Test, CreateBoolVariant)
+{
     bool val = true;
 
     cali_variant_t v = cali_make_variant_from_bool(val);
@@ -169,7 +176,8 @@ TEST(C_Variant_Test, CreateBoolVariant) {
     EXPECT_EQ(cali_variant_compare(v, v2), 0);
 }
 
-TEST(C_Variant_Test, CreateTypeVariant) {
+TEST(C_Variant_Test, CreateTypeVariant)
+{
     cali_attr_type val = CALI_TYPE_INT;
 
     cali_variant_t v = cali_make_variant_from_type(val);
@@ -185,7 +193,8 @@ TEST(C_Variant_Test, CreateTypeVariant) {
 // --- comparison
 //
 
-TEST(C_Variant_Test, Compare) {
+TEST(C_Variant_Test, Compare)
+{
     cali_variant_t v_int_s = cali_make_variant_from_int(-42);
     cali_variant_t v_int_l = cali_make_variant_from_int(4000);
 
@@ -232,17 +241,15 @@ TEST(C_Variant_Test, Compare) {
     EXPECT_NE(cali_variant_compare(v_int_s, v_dbl_s), 0);
 
     cali_variant_t v_inv = cali_make_variant(CALI_TYPE_INV, NULL, 0);
-    
+
     EXPECT_EQ(cali_variant_compare(v_inv, v_inv), 0);
     EXPECT_NE(cali_variant_compare(v_inv, v_uint_l), 0);
 
     const char* str_ul = "abcd";
     const char* str_us = "abc";
 
-    cali_variant_t v_usr_s = 
-        cali_make_variant(CALI_TYPE_USR, (void*) str_us, strlen(str_us));
-    cali_variant_t v_usr_l = 
-        cali_make_variant(CALI_TYPE_USR, (void*) str_ul, strlen(str_ul));
+    cali_variant_t v_usr_s = cali_make_variant(CALI_TYPE_USR, (void*) str_us, strlen(str_us));
+    cali_variant_t v_usr_l = cali_make_variant(CALI_TYPE_USR, (void*) str_ul, strlen(str_ul));
 
     EXPECT_EQ(cali_variant_compare(v_usr_l, v_usr_l), 0);
     EXPECT_NE(cali_variant_compare(v_usr_s, v_usr_l), 0);
@@ -252,7 +259,8 @@ TEST(C_Variant_Test, Compare) {
 // --- Pack/Unpack
 //
 
-TEST(C_Variant_Test, PackUnpack) {
+TEST(C_Variant_Test, PackUnpack)
+{
     int            val_1_int  = -27;
     uint64_t       val_2_uint = 0xFFFFFFFFAA;
     const char*    val_3_str  = "My wonderful test string";
@@ -263,43 +271,43 @@ TEST(C_Variant_Test, PackUnpack) {
 
     cali_variant_t v_1_int_in  = cali_make_variant_from_int(val_1_int);
     cali_variant_t v_2_uint_in = cali_make_variant_from_uint(val_2_uint);
-    cali_variant_t v_3_str_in  = cali_make_variant(CALI_TYPE_STRING, val_3_str, strlen(val_3_str)+1);
+    cali_variant_t v_3_str_in  = cali_make_variant(CALI_TYPE_STRING, val_3_str, strlen(val_3_str) + 1);
     cali_variant_t v_4_dbl_in  = cali_make_variant_from_double(val_4_dbl);
     cali_variant_t v_5_inv_in  = cali_make_variant(CALI_TYPE_INV, val_5_inv, 0);
     cali_variant_t v_6_type_in = cali_make_variant_from_type(val_6_type);
     cali_variant_t v_7_bool_in = cali_make_variant_from_bool(val_7_bool);
 
     unsigned char buf[144]; // must be >= 7*20 = 140 bytes
-    size_t pos = 0;
+    size_t        pos = 0;
 
     memset(buf, 0xFA, 144);
 
-    pos += cali_variant_pack(v_1_int_in,  buf+pos);
-    pos += cali_variant_pack(v_2_uint_in, buf+pos);
-    pos += cali_variant_pack(v_3_str_in,  buf+pos);
-    pos += cali_variant_pack(v_4_dbl_in,  buf+pos);
-    pos += cali_variant_pack(v_5_inv_in,  buf+pos);
-    pos += cali_variant_pack(v_6_type_in, buf+pos);
-    pos += cali_variant_pack(v_7_bool_in, buf+pos);
+    pos += cali_variant_pack(v_1_int_in, buf + pos);
+    pos += cali_variant_pack(v_2_uint_in, buf + pos);
+    pos += cali_variant_pack(v_3_str_in, buf + pos);
+    pos += cali_variant_pack(v_4_dbl_in, buf + pos);
+    pos += cali_variant_pack(v_5_inv_in, buf + pos);
+    pos += cali_variant_pack(v_6_type_in, buf + pos);
+    pos += cali_variant_pack(v_7_bool_in, buf + pos);
 
     EXPECT_LE(pos, 140);
 
     bool ok = false;
-    pos = 0;
+    pos     = 0;
 
-    cali_variant_t v_1_int_out  = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_1_int_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_1 unpack (int)");
-    cali_variant_t v_2_uint_out = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_2_uint_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_2 unpack (uint)");
-    cali_variant_t v_3_str_out  = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_3_str_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_3 unpack (str)");
-    cali_variant_t v_4_dbl_out  = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_4_dbl_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_4 unpack (dbl)");
-    cali_variant_t v_5_inv_out  = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_5_inv_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_5 unpack (inv)");
-    cali_variant_t v_6_type_out = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_6_type_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_6 unpack (type)");
-    cali_variant_t v_7_bool_out = cali_variant_unpack(buf+pos, &pos, &ok);
+    cali_variant_t v_7_bool_out = cali_variant_unpack(buf + pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_7 unpack (bool)");
 
     EXPECT_FALSE(cali_variant_is_empty(v_1_int_out));
@@ -314,7 +322,7 @@ TEST(C_Variant_Test, PackUnpack) {
 
     EXPECT_FALSE(cali_variant_is_empty(v_3_str_out));
     EXPECT_EQ(cali_variant_get_type(v_3_str_out), CALI_TYPE_STRING);
-    EXPECT_EQ(cali_variant_get_size(v_3_str_out), strlen(val_3_str)+1);
+    EXPECT_EQ(cali_variant_get_size(v_3_str_out), strlen(val_3_str) + 1);
     EXPECT_STREQ(static_cast<const char*>(cali_variant_get_data(&v_3_str_out)), val_3_str);
     EXPECT_TRUE(cali_variant_eq(v_3_str_in, v_3_str_out));
 
@@ -326,7 +334,7 @@ TEST(C_Variant_Test, PackUnpack) {
     EXPECT_TRUE(cali_variant_is_empty(v_5_inv_out));
     EXPECT_EQ(cali_variant_get_type(v_5_inv_out), CALI_TYPE_INV);
     EXPECT_TRUE(cali_variant_eq(v_5_inv_in, v_5_inv_out));
-    
+
     EXPECT_FALSE(cali_variant_is_empty(v_6_type_out));
     EXPECT_EQ(cali_variant_get_type(v_6_type_out), CALI_TYPE_TYPE);
     EXPECT_EQ(cali_variant_to_type(v_6_type_out, NULL), val_6_type);

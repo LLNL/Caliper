@@ -18,7 +18,8 @@
 #include <stddef.h> /* size_t */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*
@@ -64,10 +65,7 @@ const char* cali_caliper_version();
  * \param properties Attribute properties
  * \return Attribute id
  */
-cali_id_t
-cali_create_attribute(const char*     name,
-                      cali_attr_type  type,
-                      int             properties);
+cali_id_t cali_create_attribute(const char* name, cali_attr_type type, int properties);
 
 /**
  * \brief Create an attribute key with additional metadata.
@@ -84,13 +82,14 @@ cali_create_attribute(const char*     name,
  * \sa cali_create_attribute
  */
 
-cali_id_t
-cali_create_attribute_with_metadata(const char*     name,
-                                    cali_attr_type  type,
-                                    int             properties,
-                                    int             n,
-                                    const cali_id_t meta_attr_list[],
-                                    const cali_variant_t meta_val_list[]);
+cali_id_t cali_create_attribute_with_metadata(
+    const char*          name,
+    cali_attr_type       type,
+    int                  properties,
+    int                  n,
+    const cali_id_t      meta_attr_list[],
+    const cali_variant_t meta_val_list[]
+);
 
 /**
  * \brief Find attribute by name
@@ -98,32 +97,28 @@ cali_create_attribute_with_metadata(const char*     name,
  * \return Attribute ID, or CALI_INV_ID if attribute was not found
  */
 
-cali_id_t
-cali_find_attribute  (const char* name);
+cali_id_t cali_find_attribute(const char* name);
 
 /**
  * \brief  Return name of attribute with given ID
  * \param  attr_id Attribute id
  * \return Attribute name, or NULL if `attr_id` is not a valid attribute ID
  */
-const char*
-cali_attribute_name(cali_id_t attr_id);
+const char* cali_attribute_name(cali_id_t attr_id);
 
 /**
  * \brief Return the type of the attribute with given ID
  * \param attr_id Attribute id
  * \return Attribute type, or CALI_TYPE_INV if `attr_id` is not a valid attribute ID
  */
-cali_attr_type
-cali_attribute_type(cali_id_t attr_id);
+cali_attr_type cali_attribute_type(cali_id_t attr_id);
 
 /**
  * \brief Return attribute property flags of the attribute with given ID
  * \param attr_id Attribute id
  * \return Attribute properties, OR'ed
  */
-int
-cali_attribute_properties(cali_id_t attr_id);
+int cali_attribute_properties(cali_id_t attr_id);
 
 /**
  * \}
@@ -150,10 +145,12 @@ cali_attribute_properties(cali_id_t attr_id);
  * \param trigger_info_attr_list Attribute IDs of event info entries
  * \param trigger_info_val_list  Values of event info entries
  */
-void
-cali_push_snapshot(int scope, int n,
-                   const cali_id_t trigger_info_attr_list[],
-                   const cali_variant_t trigger_info_val_list[]);
+void cali_push_snapshot(
+    int                  scope,
+    int                  n,
+    const cali_id_t      trigger_info_attr_list[],
+    const cali_variant_t trigger_info_val_list[]
+);
 
 /**
  * \brief Take a snapshot on the given channel and push it into its
@@ -169,11 +166,13 @@ cali_push_snapshot(int scope, int n,
  * \param trigger_info_attr_list Attribute IDs of event info entries
  * \param trigger_info_val_list  Values of event info entries
  */
-void
-cali_channel_push_snapshot(cali_id_t chn_id,
-                           int scope, int n,
-                           const cali_id_t trigger_info_attr_list[],
-                           const cali_variant_t trigger_info_val_list[]);
+void cali_channel_push_snapshot(
+    cali_id_t            chn_id,
+    int                  scope,
+    int                  n,
+    const cali_id_t      trigger_info_attr_list[],
+    const cali_variant_t trigger_info_val_list[]
+);
 
 /**
  * \brief Take a snapshot on the given channel
@@ -199,8 +198,7 @@ cali_channel_push_snapshot(cali_id_t chn_id,
  *   not all of the snapshot was returned.
  *   If this is zero, no snapshot was taken.
  */
-size_t
-cali_channel_pull_snapshot(cali_id_t chn_id, int scope, size_t len, unsigned char* buf);
+size_t cali_channel_pull_snapshot(cali_id_t chn_id, int scope, size_t len, unsigned char* buf);
 
 /**
  * \}
@@ -235,11 +233,7 @@ cali_channel_pull_snapshot(cali_id_t chn_id, int scope, size_t len, unsigned cha
  *
  * \sa cali_pull_snapshot, cali_entry_proc_fn
  */
-void
-cali_unpack_snapshot(const unsigned char* buf,
-                     size_t*              bytes_read,
-                     cali_entry_proc_fn   proc_fn,
-                     void*                user_arg);
+void cali_unpack_snapshot(const unsigned char* buf, size_t* bytes_read, cali_entry_proc_fn proc_fn, void* user_arg);
 
 /**
  * Return top-most value for attribute ID \a attr_id from snapshot \a buf.
@@ -255,10 +249,7 @@ cali_unpack_snapshot(const unsigned char* buf,
  * \return The top-most stacked value for the given attribute ID, or an empty
  *   variant if none was found
  */
-cali_variant_t
-cali_find_first_in_snapshot(const unsigned char* buf,
-                            cali_id_t            attr_id,
-                            size_t*              bytes_read);
+cali_variant_t cali_find_first_in_snapshot(const unsigned char* buf, cali_id_t attr_id, size_t* bytes_read);
 
 /**
  * Run all entries with attribute `attr_id` in a snapshot that was previously
@@ -273,12 +264,13 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param proc_fn Callback function to process individidual entries
  * \param userdata User-defined parameter passed to `proc_fn`
  */
-void
-cali_find_all_in_snapshot(const unsigned char* buf,
-                          cali_id_t            attr_id,
-                          size_t*              bytes_read,
-                          cali_entry_proc_fn   proc_fn,
-                          void*                userdata);
+void cali_find_all_in_snapshot(
+    const unsigned char* buf,
+    cali_id_t            attr_id,
+    size_t*              bytes_read,
+    cali_entry_proc_fn   proc_fn,
+    void*                userdata
+);
 
 /**
  * \}
@@ -303,8 +295,7 @@ cali_find_all_in_snapshot(const unsigned char* buf,
  * \return The top-most stacked value on the blackboard for the given
  *    attribute ID, or an empty variant if it was not found
  */
-cali_variant_t
-cali_get(cali_id_t attr_id);
+cali_variant_t cali_get(cali_id_t attr_id);
 
 /**
  * \brief Return top-most value for attribute \a attr_id from the
@@ -317,8 +308,7 @@ cali_get(cali_id_t attr_id);
  * \return The top-most stacked value on the blackboard for the given
  *    attribute ID, or an empty variant if it was not found
  */
-cali_variant_t
-cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
+cali_variant_t cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
 
 /**
  * \brief Return the innermost current %Caliper region on the calling thread.
@@ -332,8 +322,7 @@ cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
  *   \a alt if no region has been set or the innermost path region is
  *   not a string attribute.
  */
-const char*
-cali_get_current_region_or(const char* alt);
+const char* cali_get_current_region_or(const char* alt);
 
 /**
  * \}
@@ -358,8 +347,7 @@ cali_get_current_region_or(const char* alt);
  *
  * \see cali_end_region()
  */
-void
-cali_begin_region(const char* name);
+void cali_begin_region(const char* name);
 
 /**
  * \brief End nested region \a name
@@ -370,8 +358,7 @@ cali_begin_region(const char* name);
  *
  * \see cali_begin_region()
  */
-void
-cali_end_region(const char* name);
+void cali_end_region(const char* name);
 
 /**
  * \brief Begin phase region \a name
@@ -381,14 +368,12 @@ cali_end_region(const char* name);
  * use the "phase" attribute with annotation level 4. Otherwise phases behave
  * identical to regular Caliper regions.
  */
-void
-cali_begin_phase(const char* name);
+void cali_begin_phase(const char* name);
 
 /**
  * \brief End phase region \a name
  */
-void
-cali_end_phase(const char* name);
+void cali_end_phase(const char* name);
 
 /**
  * \brief Begin communication region \a name
@@ -398,57 +383,44 @@ cali_end_phase(const char* name);
  * to summarize communication pattern statistics. Otherwise they behave
  * identical to regular Caliper regions.
  */
-void
-cali_begin_comm_region(const char* name);
+void cali_begin_comm_region(const char* name);
 
 /**
  * \brief End phase region \a name
  */
-void
-cali_end_comm_region(const char* name);
+void cali_end_comm_region(const char* name);
 
 /**
  * \brief Begin region where the value for \a attr is `true` on the blackboard.
  */
-void
-cali_begin(cali_id_t   attr);
+void cali_begin(cali_id_t attr);
 
 /**
  * \brief Begin region \a val for attribute \a attr on the blackboard.
  *
  * The region may be nested.
  */
-void
-cali_begin_double(cali_id_t attr, double val);
+void cali_begin_double(cali_id_t attr, double val);
 /** \copydoc cali_begin_double() */
-void
-cali_begin_int(cali_id_t attr, int val);
+void cali_begin_int(cali_id_t attr, int val);
 /** \copydoc cali_begin_double() */
-void
-cali_begin_string(cali_id_t attr, const char* val);
+void cali_begin_string(cali_id_t attr, const char* val);
 
 /**
  * End innermost open region for \a attr on the blackboard.
  */
-void
-cali_end  (cali_id_t   attr);
+void cali_end(cali_id_t attr);
 
 /**
  * \brief Set value for attribute \a attr to \a val on the blackboard.
  */
-void
-cali_set  (cali_id_t   attr,
-           const void* value,
-           size_t      size);
+void cali_set(cali_id_t attr, const void* value, size_t size);
 /** \copybrief cali_set() */
-void
-cali_set_double(cali_id_t attr, double val);
+void cali_set_double(cali_id_t attr, double val);
 /** \copybrief cali_set() */
-void
-cali_set_int(cali_id_t attr, int val);
+void cali_set_int(cali_id_t attr, int val);
 /** \copybrief cali_set() */
-void
-cali_set_string(cali_id_t attr, const char* val);
+void cali_set_string(cali_id_t attr, const char* val);
 
 /**
  * \brief  Begin region where the value for the attribute named \a attr_name
@@ -456,56 +428,44 @@ cali_set_string(cali_id_t attr, const char* val);
  *
  * \deprecated Use cali_begin_region()
  */
-void
-cali_begin_byname(const char* attr_name);
+void cali_begin_byname(const char* attr_name);
 
 /**
  * \brief Begin region \a val for attribute named \a attr_name on the blackboard.
  *
  * The region may be nested.
  */
-void
-cali_begin_double_byname(const char* attr_name, double val);
+void cali_begin_double_byname(const char* attr_name, double val);
 /** \copydoc cali_begin_double_byname() */
-void
-cali_begin_int_byname(const char* attr_name, int val);
+void cali_begin_int_byname(const char* attr_name, int val);
 /** \copydoc cali_begin_double_byname() */
-void
-cali_begin_string_byname(const char* attr_name, const char* val);
+void cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
  * \brief Set value for attribute named \a attr_name to \a val on the blackboard.
  */
-void
-cali_set_double_byname(const char* attr_name, double val);
+void cali_set_double_byname(const char* attr_name, double val);
 /** \copydoc cali_set_double_byname() */
-void
-cali_set_int_byname(const char* attr_name, int val);
+void cali_set_int_byname(const char* attr_name, int val);
 /** \copydoc cali_set_double_byname() */
-void
-cali_set_string_byname(const char* attr_name, const char* val);
+void cali_set_string_byname(const char* attr_name, const char* val);
 
 /**
  * \brief End innermost open region for attribute named \a attr_name on the
  *   blackboard.
  */
-void
-cali_end_byname(const char* attr_name);
+void cali_end_byname(const char* attr_name);
 
 /**
  * \brief Set a global attribute with name \a attr_name to \a val.
  */
-void
-cali_set_global_double_byname(const char* attr_name, double val);
+void cali_set_global_double_byname(const char* attr_name, double val);
 /** \copydoc cali_set_global_double_byname() */
-void
-cali_set_global_int_byname(const char* attr_name, int val);
+void cali_set_global_int_byname(const char* attr_name, int val);
 /** \copydoc cali_set_global_double_byname() */
-void
-cali_set_global_string_byname(const char* attr_name, const char* val);
+void cali_set_global_string_byname(const char* attr_name, const char* val);
 /** \copydoc cali_set_global_double_byname() */
-void
-cali_set_global_uint_byname(const char* attr_name, uint64_t val);
+void cali_set_global_uint_byname(const char* attr_name, uint64_t val);
 
 /**
  * \}
@@ -526,23 +486,20 @@ cali_set_global_uint_byname(const char* attr_name, uint64_t val);
  *
  * The entry can still be overwritten by environment variables.
  */
-void
-cali_config_preset(const char* key, const char* value);
+void cali_config_preset(const char* key, const char* value);
 
 /**
  * \brief Set a config entry in the default configset.
  *
  * This entry will not be overwritten by environment variables.
  */
-void
-cali_config_set(const char* key, const char* value);
+void cali_config_set(const char* key, const char* value);
 
 /**
  * \brief Enable or disable reading environment variables for the default
  *   configset.
  */
-void
-cali_config_allow_read_env(int allow);
+void cali_config_allow_read_env(int allow);
 
 struct _cali_configset_t;
 typedef struct _cali_configset_t* cali_configset_t;
@@ -562,19 +519,16 @@ typedef struct _cali_configset_t* cali_configset_t;
  *    NULL entries: <tt> { NULL, NULL } </tt>.
  * \return The config set.
  */
-cali_configset_t
-cali_create_configset(const char* keyvallist[][2]);
+cali_configset_t cali_create_configset(const char* keyvallist[][2]);
 
 /** \brief Delete a config set created with cali_create_configset(). */
-void
-cali_delete_configset(cali_configset_t cfg);
+void cali_delete_configset(cali_configset_t cfg);
 
 /** \brief Modify a config set created with cali_create_configset().
  *
  * Sets or overwrites the value for \a key with \a value.
  */
-void
-cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
+void cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
 
 /**
  * \}
@@ -638,8 +592,7 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *
  * \return ID of the created channel.
  */
-cali_id_t
-cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
+cali_id_t cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
 
 /**
  * \brief Delete a channel. Frees associated resources, e.g. blackboards,
@@ -650,16 +603,14 @@ cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
  *
  * \param chn_id ID of the channel
  */
-void
-cali_delete_channel(cali_id_t chn_id);
+void cali_delete_channel(cali_id_t chn_id);
 
 /**
  * \brief Activate the (inactive) channel with the given ID.
  *
  * Only active channels will process annotations and other events.
  */
-void
-cali_activate_channel(cali_id_t chn_id);
+void cali_activate_channel(cali_id_t chn_id);
 
 /**
  * \brief Deactivate the channel with the given ID.
@@ -669,15 +620,13 @@ cali_activate_channel(cali_id_t chn_id);
  *
  * \sa cali_channel_activate
  */
-void
-cali_deactivate_channel(cali_id_t chn_id);
+void cali_deactivate_channel(cali_id_t chn_id);
 
 /**
  * \brief Returns a non-zero value if the channel with the given ID
  *   is active, otherwise 0.
  */
-int
-cali_channel_is_active(cali_id_t chn_id);
+int cali_channel_is_active(cali_id_t chn_id);
 
 /**
  * \}
@@ -712,8 +661,7 @@ cali_channel_is_active(cali_id_t chn_id);
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt
  *    flags. Use 0 for default behavior.
  */
-void
-cali_flush(int flush_opts);
+void cali_flush(int flush_opts);
 
 /**
  * \brief Forward aggregation or trace buffer contents to output services
@@ -731,8 +679,7 @@ cali_flush(int flush_opts);
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
-void
-cali_channel_flush(cali_id_t chn_id, int flush_opts);
+void cali_channel_flush(cali_id_t chn_id, int flush_opts);
 
 /**
  * \}
@@ -753,15 +700,13 @@ cali_channel_flush(cali_id_t chn_id, int flush_opts);
  * It can also be used to avoid high initialization costs in the first
  * Caliper API call.
  */
-void
-cali_init();
+void cali_init();
 
 /**
  * \brief  Check if Caliper is initialized on this process.
  * \return A non-zero value if Caliper is initialized, 0 if it is not initialized.
  */
-int
-cali_is_initialized();
+int cali_is_initialized();
 
 /*
  * --- Macro annotation helper functions
@@ -771,8 +716,7 @@ cali_is_initialized();
  * \brief Create a loop iteration attribute for CALI_MARK_LOOP_BEGIN.
  * \param name User-defined name of the loop
  */
-cali_id_t
-cali_make_loop_iteration_attribute(const char* name);
+cali_id_t cali_make_loop_iteration_attribute(const char* name);
 
 #ifdef __cplusplus
 } // extern "C"
@@ -830,8 +774,7 @@ typedef std::map<std::string, std::string> config_map_t;
  *
  * \return ID of the created channel.
  */
-cali_id_t
-create_channel(const char* name, int flags, const config_map_t& cfg);
+cali_id_t create_channel(const char* name, int flags, const config_map_t& cfg);
 
 /**
  * \brief Run a CalQL query on channel \a channel_id and write its output into
@@ -869,8 +812,7 @@ create_channel(const char* name, int flags, const config_map_t& cfg);
  *    Use 0 for default behavior.
  * \param os         A C++ ostream to write the query output to.
  */
-void
-write_report_for_query(cali_id_t channel_id, const char* query, int flush_opts, std::ostream& os);
+void write_report_for_query(cali_id_t channel_id, const char* query, int flush_opts, std::ostream& os);
 
 } // namespace cali
 

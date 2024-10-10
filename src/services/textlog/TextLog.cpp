@@ -32,24 +32,24 @@ namespace
 
 class TextLogService
 {
-    std::mutex                  trigger_attr_mutex;
-    std::vector<Attribute>      trigger_attributes;
+    std::mutex             trigger_attr_mutex;
+    std::vector<Attribute> trigger_attributes;
 
-    std::vector<std::string>    trigger_attr_names;
+    std::vector<std::string> trigger_attr_names;
 
-    std::string                 stream_filename;
-    std::string                 formatstr;
+    std::string stream_filename;
+    std::string formatstr;
 
-    SnapshotTextFormatter       formatter;
-    OutputStream                stream;
+    SnapshotTextFormatter formatter;
+    OutputStream          stream;
 
-    Attribute                   set_event_attr;
-    Attribute                   end_event_attr;
+    Attribute set_event_attr;
+    Attribute end_event_attr;
 
-    std::mutex                  stream_mutex;
+    std::mutex stream_mutex;
 
-    std::string
-    create_default_formatstring(const std::vector<std::string>& attr_names) {
+    std::string create_default_formatstring(const std::vector<std::string>& attr_names)
+    {
         if (attr_names.size() < 1)
             return "%time.inclusive.duration%";
 
@@ -58,7 +58,7 @@ class TextLogService
         for (const std::string& s : attr_names)
             name_sizes += s.size();
 
-        int w = std::max<int>(0, (80-10-name_sizes-2*attr_names.size()) / attr_names.size());
+        int w = std::max<int>(0, (80 - 10 - name_sizes - 2 * attr_names.size()) / attr_names.size());
 
         std::ostringstream os;
 
@@ -70,20 +70,21 @@ class TextLogService
         return os.str();
     }
 
-    void check_attribute(const Attribute& attr) {
+    void check_attribute(const Attribute& attr)
+    {
         std::vector<std::string>::iterator it =
             std::find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
 
         if (it != trigger_attr_names.end()) {
-            std::lock_guard<std::mutex>
-                g(trigger_attr_mutex);
+            std::lock_guard<std::mutex> g(trigger_attr_mutex);
 
             trigger_attributes.push_back(attr);
             Log(1).stream() << "textlog: Found " << *it << std::endl;
         }
     }
 
-    bool is_triggering_event(const Attribute& event_attr, SnapshotView trigger_info) {
+    bool is_triggering_event(const Attribute& event_attr, SnapshotView trigger_info)
+    {
         if (!event_attr)
             return false;
 
@@ -92,8 +93,7 @@ class TextLogService
         if (!event.empty()) {
             cali_id_t id = event.value().to_id();
 
-            std::lock_guard<std::mutex>
-                g(trigger_attr_mutex);
+            std::lock_guard<std::mutex> g(trigger_attr_mutex);
 
             for (const Attribute& a : trigger_attributes)
                 if (id == a.id())
@@ -103,15 +103,15 @@ class TextLogService
         return false;
     }
 
-    bool is_triggering_snapshot(SnapshotView trigger_info) {
+    bool is_triggering_snapshot(SnapshotView trigger_info)
+    {
         if (trigger_info.empty())
             return false;
 
         // check if any of the textlog trigger attributes are in trigger_info
 
         {
-            std::lock_guard<std::mutex>
-                g(trigger_attr_mutex);
+            std::lock_guard<std::mutex> g(trigger_attr_mutex);
 
             for (const Attribute& a : trigger_attributes)
                 if (!trigger_info.get(a).empty())
@@ -119,18 +119,17 @@ class TextLogService
         }
 
         // check if there is a begin or end event with any of the textlog triggers
-        return is_triggering_event(end_event_attr, trigger_info) ||
-               is_triggering_event(set_event_attr, trigger_info);
+        return is_triggering_event(end_event_attr, trigger_info) || is_triggering_event(set_event_attr, trigger_info);
     }
 
-    void process_snapshot(Caliper* c, SnapshotView trigger_info, SnapshotView snapshot) {
+    void process_snapshot(Caliper* c, SnapshotView trigger_info, SnapshotView snapshot)
+    {
         if (!is_triggering_snapshot(trigger_info))
             return;
 
         std::vector<Entry> rec(snapshot.begin(), snapshot.end());
 
-        std::lock_guard<std::mutex>
-            g(stream_mutex);
+        std::lock_guard<std::mutex> g(stream_mutex);
 
         if (!stream)
             stream.set_filename(stream_filename.c_str(), *c, rec);
@@ -140,7 +139,8 @@ class TextLogService
         formatter.print(*osptr, *c, rec) << std::endl;
     }
 
-    void post_init(Caliper* c, Channel* chn) {
+    void post_init(Caliper* c, Channel* chn)
+    {
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
 
@@ -152,43 +152,33 @@ class TextLogService
         for (const Attribute& a : c->get_all_attributes())
             check_attribute(a);
 
-        chn->events().process_snapshot.connect(
-            [this](Caliper* c, Channel* chn, SnapshotView info, SnapshotView rec){
-                process_snapshot(c, info, rec);
-            });
+        chn->events().process_snapshot.connect([this](Caliper* c, Channel* chn, SnapshotView info, SnapshotView rec) {
+            process_snapshot(c, info, rec);
+        });
     }
 
     TextLogService(Caliper* c, Channel* chn)
-        {
-            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
+    {
+        ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
-            trigger_attr_names =
-                config.get("trigger").to_stringlist(",");
-            stream_filename =
-                config.get("filename").to_string();
-            formatstr =
-                config.get("formatstring").to_string();
-        }
+        trigger_attr_names = config.get("trigger").to_stringlist(",");
+        stream_filename    = config.get("filename").to_string();
+        formatstr          = config.get("formatstring").to_string();
+    }
 
 public:
 
     static const char* s_spec;
 
-    static void textlog_register(Caliper* c, Channel* chn) {
+    static void textlog_register(Caliper* c, Channel* chn)
+    {
         TextLogService* instance = new TextLogService(c, chn);
 
-        chn->events().create_attr_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr){
-                instance->check_attribute(attr);
-            });
-        chn->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->post_init(c, chn);
-            });
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                delete instance;
-            });
+        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
+            instance->check_attribute(attr);
+        });
+        chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init(c, chn); });
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) { delete instance; });
 
         Log(1).stream() << chn->name() << ": Registered text log service" << std::endl;
     }
