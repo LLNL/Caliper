@@ -33,11 +33,9 @@ namespace
 {
 
 /// \brief Parse "(arg1, arg2, ...)" argument list, ignoring whitespace
-std::vector<std::string>
-parse_arglist(std::istream& is)
-{
+std::vector<std::string> parse_arglist(std::istream& is) {
     std::vector<std::string> ret;
-    std::string word;
+    std::string              word;
 
     char c = util::read_char(is);
 
@@ -65,9 +63,8 @@ parse_arglist(std::istream& is)
     return ret;
 }
 
-std::pair< int, std::vector<std::string> >
-parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
-{
+std::pair<int, std::vector<std::string>> parse_functioncall(std::istream&                       is,
+                                                            const QuerySpec::FunctionSignature* defs) {
     // read function name
     std::string fname = util::read_word(is, ",()");
 
@@ -77,7 +74,7 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
     // find function among given signatures
     int retid = 0;
 
-    for ( ; defs && defs[retid].name && (fname != defs[retid].name); ++retid)
+    for (; defs && defs[retid].name && (fname != defs[retid].name); ++retid)
         ;
 
     if (!defs || !defs[retid].name) {
@@ -87,12 +84,11 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
 
     // read argument list
     std::vector<std::string> args = parse_arglist(is);
-    int argsize = static_cast<int>(args.size());
+    int                      argsize = static_cast<int>(args.size());
 
     if (argsize < defs[retid].min_args || argsize > defs[retid].max_args) {
-        Log(0).stream() << "Error: Expected " << defs[retid].min_args
-                        << " arguments for function \"" << defs[retid].name
-                        << "\" but got " << argsize << std::endl;
+        Log(0).stream() << "Error: Expected " << defs[retid].min_args << " arguments for function \""
+                        << defs[retid].name << "\" but got " << argsize << std::endl;
 
         return std::make_pair(-1, std::vector<std::string>());
     }
@@ -196,8 +192,7 @@ Available formatters:
 
 )helpstr";
 
-std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s)
-{
+std::ostream& print_function_signature(std::ostream& os, const QuerySpec::FunctionSignature& s) {
     os << "  " << s.name << "(";
     for (int i = 0; i < s.min_args; ++i)
         os << (i > 0 ? ", " : "") << s.args[i];
@@ -207,20 +202,18 @@ std::ostream& print_function_signature(std::ostream& os, const QuerySpec::Functi
     return os;
 }
 
-}
+} // namespace
 
 namespace cali
 {
 
-bool
-QueryArgsParser::parse_args(const Args& args)
-{
-    m_spec.filter.selection    = QuerySpec::FilterSelection::Default;
-    m_spec.select.selection    = QuerySpec::AttributeSelection::Default;
+bool QueryArgsParser::parse_args(const Args& args) {
+    m_spec.filter.selection = QuerySpec::FilterSelection::Default;
+    m_spec.select.selection = QuerySpec::AttributeSelection::Default;
     m_spec.aggregate.selection = QuerySpec::AggregationSelection::None;
-    m_spec.groupby.selection   = QuerySpec::AttributeSelection::None;
-    m_spec.sort.selection      = QuerySpec::SortSelection::Default;
-    m_spec.format.opt          = QuerySpec::FormatSpec::Default;
+    m_spec.groupby.selection = QuerySpec::AttributeSelection::None;
+    m_spec.sort.selection = QuerySpec::SortSelection::Default;
+    m_spec.format.opt = QuerySpec::FormatSpec::Default;
 
     m_error = false;
     m_error_msg.clear();
@@ -232,13 +225,13 @@ QueryArgsParser::parse_args(const Args& args)
         CalQLParser p(q.c_str());
 
         if (p.error()) {
-            m_error     = true;
+            m_error = true;
             m_error_msg = p.error_msg();
             return false;
         } else
             m_spec = p.spec();
     } else if (args.is_set("query-file")) {
-        std::string filename = args.get("query-file");
+        std::string   filename = args.get("query-file");
         std::ifstream in { filename.c_str() };
 
         if (!in) {
@@ -261,7 +254,7 @@ QueryArgsParser::parse_args(const Args& args)
 
     if (args.is_set("select")) {
         m_spec.filter.selection = QuerySpec::FilterSelection::List;
-        m_spec.filter.list      = RecordSelector::parse(args.get("select"));
+        m_spec.filter.list = RecordSelector::parse(args.get("select"));
     }
 
     // setup attribute selection
@@ -283,7 +276,7 @@ QueryArgsParser::parse_args(const Args& args)
             m_spec.aggregate.selection = QuerySpec::AggregationSelection::List;
 
             std::istringstream is(opstr);
-            char c;
+            char               c;
 
             const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
 
@@ -312,14 +305,12 @@ QueryArgsParser::parse_args(const Args& args)
 
             m_spec.groupby.use_path = false;
 
-            auto it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(),
-                                "path");
+            auto it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(), "path");
             if (it != m_spec.groupby.list.end()) {
                 m_spec.groupby.use_path = true;
                 m_spec.groupby.list.erase(it);
             }
-            it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(),
-                           "prop:nested");
+            it = std::find(m_spec.groupby.list.begin(), m_spec.groupby.list.end(), "prop:nested");
             if (it != m_spec.groupby.list.end()) {
                 m_spec.groupby.use_path = true;
                 m_spec.groupby.list.erase(it);
@@ -341,10 +332,11 @@ QueryArgsParser::parse_args(const Args& args)
 
     // setup formatter
 
-    for (const QuerySpec::FunctionSignature* fmtsig = FormatProcessor::formatter_defs(); fmtsig && fmtsig->name; ++fmtsig) {
+    for (const QuerySpec::FunctionSignature* fmtsig = FormatProcessor::formatter_defs(); fmtsig && fmtsig->name;
+         ++fmtsig) {
         // see if a formatting option is set
         if (args.is_set(fmtsig->name)) {
-            m_spec.format.opt       = QuerySpec::FormatSpec::User;
+            m_spec.format.opt = QuerySpec::FormatSpec::User;
             m_spec.format.formatter = *fmtsig;
 
             // Find formatter args (if any)
@@ -354,7 +346,7 @@ QueryArgsParser::parse_args(const Args& args)
 
             // NOTE: This check isn't complete yet.
             if (m_spec.format.kwargs.size() < static_cast<std::size_t>(fmtsig->min_args)) {
-                m_error     = true;
+                m_error = true;
                 m_error_msg = std::string("Insufficient arguments for formatter ") + fmtsig->name;
 
                 return false;
@@ -367,28 +359,27 @@ QueryArgsParser::parse_args(const Args& args)
     return true;
 }
 
-void print_caliquery_help(const Args& args, const char* usage, const ConfigManager& mgr)
-{
+void print_caliquery_help(const Args& args, const char* usage, const ConfigManager& mgr) {
     std::string helpopt = args.get("help");
 
     if (helpopt == "configs" || helpopt == "recipes") {
         std::cout << "Available config recipes:\n";
-        auto list = mgr.available_config_specs();
+        auto   list = mgr.available_config_specs();
         size_t len = 0;
-        for (const auto &s : list)
+        for (const auto& s : list)
             len = std::max(len, s.size());
-        for (const auto &s : list) {
+        for (const auto& s : list) {
             std::string descr = mgr.get_description_for_spec(s.c_str());
             util::pad_right(std::cout << " ", s, len) << descr << "\n";
         }
     } else if (helpopt == "services") {
         std::cout << "Available services:\n";
         services::add_default_service_specs();
-        auto list = services::get_available_services();
+        auto   list = services::get_available_services();
         size_t len = 0;
-        for (const auto &s : list)
+        for (const auto& s : list)
             len = std::max(len, s.size());
-        for (const auto &s : list) {
+        for (const auto& s : list) {
             std::string descr = services::get_service_description(s);
             util::pad_right(std::cout << " ", s, len) << descr << "\n";
         }
@@ -404,7 +395,7 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
         const QuerySpec::FunctionSignature* ops = Aggregator::aggregation_defs();
         for (const auto* p = ops; p && p->name; ++p) {
             print_function_signature(std::cout, *p) << " -> ";
-            std::vector<std::string> args(p->args, p->args+p->max_args);
+            std::vector<std::string>       args(p->args, p->args + p->max_args);
             const QuerySpec::AggregationOp op(*p, args);
             std::cout << Aggregator::get_aggregation_attribute_name(op) << "\n";
         }
@@ -436,22 +427,20 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
         }
 
         std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                    << "\n  [none]:   Describe cali-query usage (default)"
-                    << "\n  configs:  Describe all Caliper profiling configurations"
-                    << "\n  [config or service name]: Describe profiling configuration or service"
-                    << "\n  services: List available services"
-                    << std::endl;
+                  << "\n  [none]:   Describe cali-query usage (default)"
+                  << "\n  configs:  Describe all Caliper profiling configurations"
+                  << "\n  [config or service name]: Describe profiling configuration or service"
+                  << "\n  services: List available services" << std::endl;
     } else {
         std::cout << usage << "\n\n";
         args.print_available_options(std::cout);
-        std::cout <<
-            "\n Use \"--help configs\" to list all config recipes."
-            "\n Use \"--help services\" to list all available services."
-            "\n Use \"--help [recipe name]\" to get help for a config recipe."
-            "\n Use \"--help [service name]\" to get help for a service."
-            "\n Use \"--help calql\" to get help for the CalQL query language."
-            "\n Use \"--help [let,select,where,groupby,format]\" to get help for CalQL statements.\n";
+        std::cout << "\n Use \"--help configs\" to list all config recipes."
+                     "\n Use \"--help services\" to list all available services."
+                     "\n Use \"--help [recipe name]\" to get help for a config recipe."
+                     "\n Use \"--help [service name]\" to get help for a service."
+                     "\n Use \"--help calql\" to get help for the CalQL query language."
+                     "\n Use \"--help [let,select,where,groupby,format]\" to get help for CalQL statements.\n";
     }
 }
 
-}
+} // namespace cali

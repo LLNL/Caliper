@@ -12,8 +12,7 @@
 namespace util
 {
 
-std::string demangle(const char* name)
-{
+std::string demangle(const char* name) {
 #ifdef _WIN32
     // not sure how to demangle on Windows, make it a no-op for now.
     return name;
@@ -24,7 +23,7 @@ std::string demangle(const char* name)
         return result;
 
     char* demangled = nullptr;
-    int status = -1;
+    int   status = -1;
 
     if (name[0] == '_' && name[1] == 'Z')
         demangled = abi::__cxa_demangle(name, nullptr, 0, &status);

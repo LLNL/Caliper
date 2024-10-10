@@ -55,4 +55,4 @@ public:
     static const QuerySpec::FunctionSignature* formatter_defs();
 };
 
-}
+} // namespace cali

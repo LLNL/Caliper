@@ -13,9 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
-void print_help()
-{
-    const char* helpstr = 
+void print_help() {
+    const char* helpstr =
         "Usage: c-example [caliper-config(arg=...,),...]."
         "\nRuns \"runtime-report\" configuration by default."
         "\nUse \"none\" to run without a ConfigManager configuration."
@@ -24,8 +23,7 @@ void print_help()
     puts(helpstr);
 }
 
-double foo(int i)
-{
+double foo(int i) {
     //   A function annotation. Opens region "function=foo" in Caliper,
     // and automatically closes it at the end of the function.
     CALI_MARK_FUNCTION_BEGIN;
@@ -34,8 +32,7 @@ double foo(int i)
     return res;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     //   The ConfigManager manages built-in or custom Caliper measurement
     // configurations, and provides an API to control performance profiling.
     cali_ConfigManager mgr;
@@ -81,8 +78,8 @@ int main(int argc, char* argv[])
 
     // Mark a code region. Opens region "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
-    int count = 4;
-    double  t = 0;
+    int    count = 4;
+    double t = 0;
     CALI_MARK_END("init");
 
     // Mark a loop. Opens region "loop=mainloop" in Caliper.

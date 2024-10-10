@@ -37,12 +37,12 @@ public:
 
     int rank() const override;
 
-    int bcast_int(int val) const override;
+    int         bcast_int(int val) const override;
     std::string bcast_str(const std::string& str) const override;
 
     void cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) const override;
 };
 
-}
+} // namespace cali
 
 #endif

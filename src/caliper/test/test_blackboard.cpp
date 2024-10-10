@@ -10,14 +10,10 @@ using namespace cali;
 TEST(BlackboardTest, BasicFunctionality) {
     Caliper c;
 
-    Attribute attr_ref =
-        c.create_attribute("bb.gs.ref", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
-    Attribute attr_imm =
-        c.create_attribute("bb.gs.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute attr_uns =
-        c.create_attribute("bb.gs.uns", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute attr_hidden =
-        c.create_attribute("bb.gs.h",   CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
+    Attribute attr_ref = c.create_attribute("bb.gs.ref", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute attr_imm = c.create_attribute("bb.gs.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute attr_uns = c.create_attribute("bb.gs.uns", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute attr_hidden = c.create_attribute("bb.gs.h", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
     Node* node_p = c.make_tree_entry(attr_ref, Variant(42));
     Node* node_c = c.make_tree_entry(attr_ref, Variant(24), node_p);
@@ -36,7 +32,7 @@ TEST(BlackboardTest, BasicFunctionality) {
     bb.set(attr_ref.id(), Entry(node_p), true);
     EXPECT_EQ(bb.get(attr_ref.id()).node()->id(), node_p->id());
 
-    bb.set(attr_imm.id(), Entry(attr_imm, Variant(1122)), true) ;
+    bb.set(attr_imm.id(), Entry(attr_imm, Variant(1122)), true);
     EXPECT_EQ(bb.get(attr_imm.id()).value().to_int(), 1122);
     bb.set(attr_hidden.id(), Entry(attr_hidden, Variant(2211)), false);
     EXPECT_EQ(bb.get(attr_hidden.id()).value().to_int(), 2211);
@@ -83,8 +79,7 @@ TEST(BlackboardTest, BasicFunctionality) {
 TEST(BlackboardTest, Exchange) {
     Caliper c;
 
-    Attribute attr_imm =
-        c.create_attribute("bb.ex.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute attr_imm = c.create_attribute("bb.ex.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     Blackboard bb;
 
@@ -101,7 +96,7 @@ TEST(BlackboardTest, Overflow) {
 
     for (int i = 0; i < 1100; ++i) {
         Attribute attr =
-            c.create_attribute(std::string("bb.ov.")+std::to_string(i), CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+            c.create_attribute(std::string("bb.ov.") + std::to_string(i), CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
         bb.set(attr.id(), Entry(attr, Variant(i)), true);
     }
@@ -109,15 +104,13 @@ TEST(BlackboardTest, Overflow) {
     EXPECT_GT(bb.num_skipped_entries(), 0);
 
     for (int i = 0; i < 1100; ++i) {
-        Attribute attr =
-            c.get_attribute(std::string("bb.ov.")+std::to_string(i));
+        Attribute attr = c.get_attribute(std::string("bb.ov.") + std::to_string(i));
 
         bb.del(attr.id());
     }
 
     {
-        Attribute attr =
-            c.get_attribute("bb.ov.42");
+        Attribute attr = c.get_attribute("bb.ov.42");
 
         bb.set(attr.id(), Entry(attr, Variant(1142)), true);
         EXPECT_EQ(bb.get(attr.id()).value().to_int(), 1142);
@@ -129,12 +122,9 @@ TEST(BlackboardTest, Overflow) {
 TEST(BlackboardTest, Snapshot) {
     Caliper c;
 
-    Attribute attr_ref =
-        c.create_attribute("bb.sn.ref", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
-    Attribute attr_imm =
-        c.create_attribute("bb.sn.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute attr_hidden =
-        c.create_attribute("bb.sn.h",   CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
+    Attribute attr_ref = c.create_attribute("bb.sn.ref", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute attr_imm = c.create_attribute("bb.sn.imm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute attr_hidden = c.create_attribute("bb.sn.h", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
     Node* node_p = c.make_tree_entry(attr_ref, Variant(42));
     Node* node_c = c.make_tree_entry(attr_ref, Variant(24), node_p);
@@ -153,14 +143,14 @@ TEST(BlackboardTest, Snapshot) {
 
     bb.set(attr_imm.id(), Entry(attr_imm, Variant(1122)), true);
     EXPECT_EQ(bb.get(attr_imm.id()).value().to_int(), 1122);
-    
+
     bb.set(attr_hidden.id(), Entry(attr_hidden, Variant(2211)), false);
     EXPECT_EQ(bb.get(attr_hidden.id()).value().to_int(), 2211);
 
     //
     // --- snapshot
     //
-    
+
     FixedSizeSnapshotRecord<8> rec;
     bb.snapshot(rec.builder());
 

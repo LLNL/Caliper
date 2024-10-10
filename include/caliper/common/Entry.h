@@ -29,24 +29,21 @@ class CaliperMetadataAccessInterface;
 
 class Entry
 {
-    Node*   m_node;  // reference or attribute node
+    Node*   m_node; // reference or attribute node
     Variant m_value;
 
 public:
 
     constexpr static size_t MAX_PACKED_SIZE = 30;
 
-    constexpr Entry()
-        : m_node(nullptr)
-        { }
+    constexpr Entry() : m_node(nullptr) {
+    }
 
-    Entry(Node* node)
-        : m_node(node), m_value(node->data())
-        { }
+    Entry(Node* node) : m_node(node), m_value(node->data()) {
+    }
 
-    Entry(const Attribute& attr, const Variant& val)
-        : m_node(attr.node()), m_value(val)
-        { }
+    Entry(const Attribute& attr, const Variant& val) : m_node(attr.node()), m_value(val) {
+    }
 
     /// \brief Return context tree node pointer for reference entries.
     /// \return The context tree node or attribute node
@@ -64,54 +61,55 @@ public:
     }
 
     /// \brief Count instances of attribute \a attr_id in this entry
-    int       count(cali_id_t attr_id = CALI_INV_ID) const;
-    int       count(const Attribute& attr) const {
+    int count(cali_id_t attr_id = CALI_INV_ID) const;
+
+    int count(const Attribute& attr) const {
         return count(attr.id());
     }
 
     /// \brief Return top-level data value of this entry
-    Variant   value() const {
+    Variant value() const {
         return m_value;
     }
 
     /// \brief Extract data value for attribute \a attr_id from this entry
-    Variant   value(cali_id_t attr_id) const;
-    Variant   value(const Attribute& attr) const {
+    Variant value(cali_id_t attr_id) const;
+
+    Variant value(const Attribute& attr) const {
         return value(attr.id());
     }
 
     /// \brief Find and return entry for the given attribute in this entries'
     ///    value or path
-    Entry     get(const Attribute& attr) const;
+    Entry get(const Attribute& attr) const;
 
-    bool      empty() const {
+    bool empty() const {
         return m_node == nullptr;
     }
-    bool      is_immediate() const {
+
+    bool is_immediate() const {
         return Attribute::is_attribute(m_node);
     }
-    bool      is_reference() const {
+
+    bool is_reference() const {
         return !empty() && !is_immediate();
     }
 
-    size_t    pack(unsigned char* buffer) const;
+    size_t pack(unsigned char* buffer) const;
 
     static Entry unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc);
 
-    friend bool operator == (const Entry&, const Entry&);
+    friend bool operator==(const Entry&, const Entry&);
 };
 
-inline bool operator == (const Entry& lhs, const Entry& rhs)
-{
-    bool node_eq = lhs.m_node == rhs.m_node ||
-        (lhs.m_node && rhs.m_node && lhs.m_node->id() == rhs.m_node->id());
+inline bool operator==(const Entry& lhs, const Entry& rhs) {
+    bool node_eq = lhs.m_node == rhs.m_node || (lhs.m_node && rhs.m_node && lhs.m_node->id() == rhs.m_node->id());
     bool is_imm = lhs.is_immediate();
 
     return node_eq && (!is_imm || (is_imm && lhs.m_value == rhs.m_value));
 }
 
-inline bool operator != (const Entry& lhs, const Entry& rhs)
-{
+inline bool operator!=(const Entry& lhs, const Entry& rhs) {
     return !(lhs == rhs);
 }
 

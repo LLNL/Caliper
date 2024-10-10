@@ -22,21 +22,21 @@ namespace cali
 extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 
-}
+} // namespace cali
 
 namespace
 {
 
 class LoopMonitor
 {
-    int       loop_level;
-    int       target_level;
-    int       start_iteration;
-    int       num_iterations;
-    int       num_snapshots;
+    int loop_level;
+    int target_level;
+    int start_iteration;
+    int num_iterations;
+    int num_snapshots;
 
-    int       iteration_interval;
-    double    time_interval;
+    int    iteration_interval;
+    double time_interval;
 
     Attribute num_iterations_attr;
     Attribute start_iteration_attr;
@@ -57,15 +57,13 @@ class LoopMonitor
     }
 
     void snapshot(Caliper* c, Channel* channel) {
-        Entry data[] = {
-            { num_iterations_attr,  Variant(num_iterations)  },
-            { start_iteration_attr, Variant(start_iteration) }
-        };
+        Entry  data[] = { { num_iterations_attr, Variant(num_iterations) },
+                          { start_iteration_attr, Variant(start_iteration) } };
         size_t n = start_iteration >= 0 ? 2 : 1;
         c->push_snapshot(channel, SnapshotView(n, data));
 
         start_iteration = -1;
-        num_iterations  =  0;
+        num_iterations = 0;
         ++num_snapshots;
 
         last_snapshot_time = std::chrono::high_resolution_clock::now();
@@ -109,8 +107,7 @@ class LoopMonitor
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
-        Log(1).stream() << channel->name()
-                        << ": loop_monitor: Triggered " << num_snapshots << " snapshots."
+        Log(1).stream() << channel->name() << ": loop_monitor: Triggered " << num_snapshots << " snapshots."
                         << std::endl;
     }
 
@@ -121,25 +118,20 @@ class LoopMonitor
           num_iterations(0),
           num_snapshots(0),
           iteration_interval(0),
-          time_interval(0.0)
-    {
+          time_interval(0.0) {
         Variant v_true(true);
 
-        num_iterations_attr =
-            c->create_attribute("loop.iterations", CALI_TYPE_INT,
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE     |
-                                CALI_ATTR_AGGREGATABLE);
+        num_iterations_attr = c->create_attribute("loop.iterations",
+                                                  CALI_TYPE_INT,
+                                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
         start_iteration_attr =
-            c->create_attribute("loop.start_iteration", CALI_TYPE_INT,
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE);
+            c->create_attribute("loop.start_iteration", CALI_TYPE_INT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
         ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
 
         iteration_interval = config.get("iteration_interval").to_int();
-        time_interval      = config.get("time_interval").to_double();
-        target_loops       = config.get("target_loops").to_stringlist();
+        time_interval = config.get("time_interval").to_double();
+        target_loops = config.get("target_loops").to_stringlist();
     }
 
 public:
@@ -157,15 +149,12 @@ public:
             [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
                 instance->end_cb(c, channel, attr, val);
             });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
-        Log(1).stream() << channel->name()
-                        << ": Registered loop_monitor service"
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered loop_monitor service" << std::endl;
     }
 };
 
@@ -191,7 +180,7 @@ const char* LoopMonitor::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

@@ -13,8 +13,13 @@ using namespace cali;
 namespace
 {
 
-void extract_cb(const char* name, adiak_category_t cat, const char* subcategory, adiak_value_t* val, adiak_datatype_t* t, void* usr_val) {
-    std::map<std::string, std::string> *res = static_cast< std::map<std::string, std::string>* >(usr_val);
+void extract_cb(const char*       name,
+                adiak_category_t  cat,
+                const char*       subcategory,
+                adiak_value_t*    val,
+                adiak_datatype_t* t,
+                void*             usr_val) {
+    std::map<std::string, std::string>* res = static_cast<std::map<std::string, std::string>*>(usr_val);
 
     switch (t->dtype) {
     case adiak_int:
@@ -28,14 +33,10 @@ void extract_cb(const char* name, adiak_category_t cat, const char* subcategory,
     }
 }
 
-}
+} // namespace
 
-TEST(AdiakServiceTest, AdiakImport)
-{
-    cali_id_t import_chn_id =
-        cali::create_channel("adiak_import", 0, {
-                { "CALI_SERVICES_ENABLE", "adiak_import" }
-            });
+TEST(AdiakServiceTest, AdiakImport) {
+    cali_id_t import_chn_id = cali::create_channel("adiak_import", 0, { { "CALI_SERVICES_ENABLE", "adiak_import" } });
 
     adiak::value("import.int", 42);
     adiak::value("import.str", "import");
@@ -69,14 +70,9 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(c.get(&chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
 }
 
-
 #ifdef ADIAK_HAVE_LONGLONG
-TEST(AdiakServiceTest, AdiakImportLonglong)
-{
-    cali_id_t import_chn_id =
-        cali::create_channel("adiak_import", 0, {
-                { "CALI_SERVICES_ENABLE", "adiak_import" }
-            });
+TEST(AdiakServiceTest, AdiakImportLonglong) {
+    cali_id_t import_chn_id = cali::create_channel("adiak_import", 0, { { "CALI_SERVICES_ENABLE", "adiak_import" } });
 
     long long llv = -9876543210;
 
@@ -110,13 +106,11 @@ TEST(AdiakServiceTest, AdiakImportLonglong)
 }
 #endif
 
-TEST(AdiakServiceTest, AdiakImportCategoryFilter)
-{
-    cali_id_t import_chn_id =
-        cali::create_channel("adiak_import", 0, {
-                { "CALI_SERVICES_ENABLE",         "adiak_import" },
-                { "CALI_ADIAK_IMPORT_CATEGORIES", "424242,12345" }
-            });
+TEST(AdiakServiceTest, AdiakImportCategoryFilter) {
+    cali_id_t import_chn_id = cali::create_channel(
+        "adiak_import",
+        0,
+        { { "CALI_SERVICES_ENABLE", "adiak_import" }, { "CALI_ADIAK_IMPORT_CATEGORIES", "424242,12345" } });
 
     adiak_namevalue("do.not.import", adiak_general, "none", "%d", 23);
     adiak_namevalue("do.import.1", static_cast<adiak_category_t>(424242), "import.category", "%d", 42);
@@ -150,12 +144,8 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
     EXPECT_EQ(c.get(&chn, do_import_attr_2).value().to_string(), std::string("hi"));
 }
 
-TEST(AdiakServiceTest, AdiakExport)
-{
-    cali_id_t export_chn_id =
-        cali::create_channel("adiak_export", 0, {
-                { "CALI_SERVICES_ENABLE", "adiak_export" }
-            });
+TEST(AdiakServiceTest, AdiakExport) {
+    cali_id_t export_chn_id = cali::create_channel("adiak_export", 0, { { "CALI_SERVICES_ENABLE", "adiak_export" } });
 
     cali_set_global_int_byname("export.int", 42);
     cali_set_global_string_byname("export.str", "export");

@@ -12,24 +12,22 @@ using namespace cali;
 namespace
 {
 
-struct EntryInfo  {
+struct EntryInfo {
     std::string key;
     std::string val;
-    bool align_right;
+    bool        align_right;
 };
 
 struct RecordInfo {
     std::vector<EntryInfo> entries;
-    size_t max_key_len;
-    size_t max_right_len;
+    size_t                 max_key_len;
+    size_t                 max_right_len;
 
     void add(const CaliperMetadataAccessInterface& db, cali_id_t attr_id, const Variant& data) {
         Attribute attr = db.get_attribute(attr_id);
 
         bool align_right =
-            attr.type() == CALI_TYPE_DOUBLE ||
-            attr.type() == CALI_TYPE_INT    ||
-            attr.type() == CALI_TYPE_UINT;
+            attr.type() == CALI_TYPE_DOUBLE || attr.type() == CALI_TYPE_INT || attr.type() == CALI_TYPE_UINT;
 
         EntryInfo info { attr.name(), data.to_string(), align_right };
 
@@ -41,13 +39,11 @@ struct RecordInfo {
         entries.push_back(info);
     }
 
-    RecordInfo()
-        : max_key_len { 0 }, max_right_len { 0 }
-        { }
+    RecordInfo() : max_key_len { 0 }, max_right_len { 0 } {
+    }
 };
 
-RecordInfo unpack_record(CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec)
-{
+RecordInfo unpack_record(CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
     RecordInfo info;
 
     for (const Entry& e : rec) {
@@ -62,8 +58,7 @@ RecordInfo unpack_record(CaliperMetadataAccessInterface& db, const std::vector<E
     return info;
 }
 
-std::ostream& write_record_data(const RecordInfo& info, std::ostream& os)
-{
+std::ostream& write_record_data(const RecordInfo& info, std::ostream& os) {
     const size_t MAX_KEY_COL_WIDTH = 24;
     const size_t MAX_VAL_COL_WIDTH = 52;
 
@@ -87,14 +82,15 @@ std::ostream& write_record_data(const RecordInfo& info, std::ostream& os)
     return os << "\n";
 }
 
-} // namespace anonymous
+} // namespace
 
 namespace cali
 {
 
-std::ostream& format_record_as_table(CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec, std::ostream& os)
-{
+std::ostream& format_record_as_table(CaliperMetadataAccessInterface& db,
+                                     const std::vector<Entry>&       rec,
+                                     std::ostream&                   os) {
     return ::write_record_data(::unpack_record(db, rec), os);
 }
 
-}
+} // namespace cali

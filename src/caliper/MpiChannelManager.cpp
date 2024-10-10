@@ -10,16 +10,14 @@
 
 using namespace cali;
 
-
-struct MpiChannelManager::MpiChannelManagerImpl
-{
-    MPI_Comm comm       { MPI_COMM_NULL };
+struct MpiChannelManager::MpiChannelManagerImpl {
+    MPI_Comm comm { MPI_COMM_NULL };
     bool     is_in_comm { false };
 
     // mpi channels are those using collective_flush()
-    std::vector< std::shared_ptr<CollectiveOutputChannel> > mpi_channels;
+    std::vector<std::shared_ptr<CollectiveOutputChannel>> mpi_channels;
     // serial channels just use flush()
-    std::vector< std::shared_ptr<ChannelController      > > ser_channels;
+    std::vector<std::shared_ptr<ChannelController>> ser_channels;
 
     void add(const std::shared_ptr<ChannelController>& src) {
         if (!src)
@@ -63,9 +61,7 @@ struct MpiChannelManager::MpiChannelManagerImpl
             channel->flush();
     }
 
-    MpiChannelManagerImpl(MPI_Comm comm_)
-        : comm { comm_ }
-    {
+    MpiChannelManagerImpl(MPI_Comm comm_) : comm { comm_ } {
         MPI_Group group;
         MPI_Comm_group(comm, &group);
         int rank;
@@ -74,37 +70,30 @@ struct MpiChannelManager::MpiChannelManagerImpl
     }
 };
 
+MpiChannelManager::MpiChannelManager(MPI_Comm comm) : mP { new MpiChannelManagerImpl(comm) } {
+}
 
-MpiChannelManager::MpiChannelManager(MPI_Comm comm)
-    : mP { new MpiChannelManagerImpl(comm) }
-{ }
+MpiChannelManager::~MpiChannelManager() {
+}
 
-MpiChannelManager::~MpiChannelManager()
-{ }
-
-void MpiChannelManager::add(const std::shared_ptr<ChannelController>& src)
-{
+void MpiChannelManager::add(const std::shared_ptr<ChannelController>& src) {
     mP->add(src);
 }
 
-void MpiChannelManager::add(const ConfigManager& mgr)
-{
+void MpiChannelManager::add(const ConfigManager& mgr) {
     auto channels = mgr.get_all_channels();
     for (auto c : channels)
         mP->add(c);
 }
 
-void MpiChannelManager::start()
-{
+void MpiChannelManager::start() {
     mP->start();
 }
 
-void MpiChannelManager::stop()
-{
+void MpiChannelManager::stop() {
     mP->stop();
 }
 
-void MpiChannelManager::collective_flush()
-{
+void MpiChannelManager::collective_flush() {
     mP->flush();
 }

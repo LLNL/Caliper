@@ -24,14 +24,14 @@ class ThreadMonitor
     pthread_t monitor_thread;
     bool      thread_running;
 
-    Channel   channel;
+    Channel channel;
 
-    time_t    sleep_sec;
-    long      sleep_nsec;
+    time_t sleep_sec;
+    long   sleep_nsec;
 
     Attribute monitor_attr;
 
-    int       num_events;
+    int num_events;
 
     void snapshot() {
         Caliper c;
@@ -41,11 +41,13 @@ class ThreadMonitor
 
     // the main monitor loop
     void monitor() {
-        struct timespec req { sleep_sec, sleep_nsec };
+        struct timespec req {
+            sleep_sec, sleep_nsec
+        };
 
         while (true) {
             struct timespec rem = req;
-            int ret = 0;
+            int             ret = 0;
 
             do {
                 ret = nanosleep(&rem, &rem);
@@ -71,8 +73,7 @@ class ThreadMonitor
 
     bool start() {
         if (pthread_create(&monitor_thread, nullptr, thread_fn, this) != 0) {
-            Log(0).stream() << channel.name() << ": monitor(): pthread_create() failed"
-                            << std::endl;
+            Log(0).stream() << channel.name() << ": monitor(): pthread_create() failed" << std::endl;
             return false;
         }
 
@@ -101,55 +102,41 @@ class ThreadMonitor
         if (thread_running)
             cancel();
 
-        Log(1).stream() << channel.name()
-                        << ": monitor: triggered " << num_events << " monitoring events"
-                        << std::endl;
+        Log(1).stream() << channel.name() << ": monitor: triggered " << num_events << " monitoring events" << std::endl;
     }
 
     ThreadMonitor(Caliper* c, Channel* chn)
-        : thread_running(false), channel(*chn), sleep_sec(2), sleep_nsec(0), num_events(0)
-        {
-            monitor_attr =
-                c->create_attribute("monitor.event", CALI_TYPE_INT,
-                                    CALI_ATTR_SCOPE_PROCESS |
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SKIP_EVENTS);
+        : thread_running(false), channel(*chn), sleep_sec(2), sleep_nsec(0), num_events(0) {
+        monitor_attr = c->create_attribute("monitor.event",
+                                           CALI_TYPE_INT,
+                                           CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
-            sleep_sec =
-                channel.config().init("monitor", s_configdata).get("interval").to_uint();
-        }
+        sleep_sec = channel.config().init("monitor", s_configdata).get("interval").to_uint();
+    }
 
 public:
 
     static void create(Caliper* c, Channel* channel) {
         ThreadMonitor* instance = new ThreadMonitor(c, channel);
 
-        channel->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->post_init_cb();
-            });
-        channel->events().finish_evt.connect(
-            [instance](Caliper*, Channel*){
-                instance->finish_cb();
-                delete instance;
-            });
+        channel->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) { instance->post_init_cb(); });
+        channel->events().finish_evt.connect([instance](Caliper*, Channel*) {
+            instance->finish_cb();
+            delete instance;
+        });
 
-        Log(1).stream() << channel->name()
-                        << ": Registered thread_monitor service"
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered thread_monitor service" << std::endl;
     }
-
 };
 
-const ConfigSet::Entry ThreadMonitor::s_configdata[] = {
-    { "interval", CALI_TYPE_INT, "2",
-      "Monitor snapshot interval in seconds.",
-      "Monitor snapshot interval in seconds."
-    },
-    ConfigSet::Terminator
-};
+const ConfigSet::Entry ThreadMonitor::s_configdata[] = { { "interval",
+                                                           CALI_TYPE_INT,
+                                                           "2",
+                                                           "Monitor snapshot interval in seconds.",
+                                                           "Monitor snapshot interval in seconds." },
+                                                         ConfigSet::Terminator };
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

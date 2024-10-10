@@ -7,8 +7,7 @@
 
 using namespace cali;
 
-TEST(ChannelControllerTest, ChannelController)
-{
+TEST(ChannelControllerTest, ChannelController) {
     struct TestCC : public ChannelController {
         bool    saw_create_callback = false;
         Channel the_channel;
@@ -19,11 +18,11 @@ TEST(ChannelControllerTest, ChannelController)
         }
 
         TestCC()
-            : ChannelController("testCC", 0, {
-                    { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                    { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
-                })
-            { }
+            : ChannelController(
+                "testCC",
+                0,
+                { { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }, { "CALI_CHANNEL_CONFIG_CHECK", "false" } }) {
+        }
     };
 
     TestCC testCC;
@@ -46,8 +45,7 @@ TEST(ChannelControllerTest, ChannelController)
     EXPECT_FALSE(testCC.is_active());
 }
 
-TEST(ChannelControllerTest, DestroyChannel)
-{
+TEST(ChannelControllerTest, DestroyChannel) {
     struct DestroyTestCC : public ChannelController {
         void destruct() {
             if (is_active()) {
@@ -61,11 +59,11 @@ TEST(ChannelControllerTest, DestroyChannel)
         }
 
         DestroyTestCC()
-            : ChannelController("DestroyTestCC", 0, {
-                    { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                    { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
-                })
-            { }
+            : ChannelController(
+                "DestroyTestCC",
+                0,
+                { { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }, { "CALI_CHANNEL_CONFIG_CHECK", "false" } }) {
+        }
     };
 
     DestroyTestCC testCC;

@@ -31,33 +31,31 @@ constexpr int spot_format_version = 2;
 // Helper functions
 //
 
-QuerySpec
-parse_spec(const char* query)
-{
+QuerySpec parse_spec(const char* query) {
     CalQLParser parser(query);
 
     if (parser.error())
-        Log(0).stream() << "[spot controller]: Internal query parse error: " << parser.error_msg()
-                        << std::endl;
+        Log(0).stream() << "[spot controller]: Internal query parse error: " << parser.error_msg() << std::endl;
 
     return parser.spec();
 }
 
 /// \brief Perform process-local aggregation of channel data into \a output_agg
-void
-local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMetadataDB& db, Aggregator& output_agg) {
-    QuerySpec      spec(parse_spec(query));
+void local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMetadataDB& db, Aggregator& output_agg) {
+    QuerySpec spec(parse_spec(query));
 
     RecordSelector filter(spec);
     Preprocessor   prp(spec);
     Aggregator     agg(spec);
 
-    c.flush(&channel, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
-            EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
+    c.flush(&channel,
+            SnapshotView(),
+            [&db, &filter, &prp, &agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
+                EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
-            if (filter.pass(db, mrec))
-                agg.add(db, mrec);
-        });
+                if (filter.pass(db, mrec))
+                    agg.add(db, mrec);
+            });
 
     // write intermediate results into output aggregator
     agg.flush(db, output_agg);
@@ -67,9 +65,7 @@ local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMetadata
 // Timeseries processing
 //
 
-void
-convert_timeseries_option(const ConfigManager::Options& opts, const char* ts_opt_name, std::string& target)
-{
+void convert_timeseries_option(const ConfigManager::Options& opts, const char* ts_opt_name, std::string& target) {
     std::string spot_opt_name = "timeseries.";
     spot_opt_name.append(ts_opt_name);
 
@@ -85,9 +81,7 @@ convert_timeseries_option(const ConfigManager::Options& opts, const char* ts_opt
 
 //   Make a config string for the timeseries ConfigManager from the
 // Spot controller's options
-std::string
-get_timeseries_config_string(const ConfigManager::Options& opts)
-{
+std::string get_timeseries_config_string(const ConfigManager::Options& opts) {
     std::string ret = "spot.timeseries(";
     std::string tsopts;
 
@@ -106,12 +100,11 @@ get_timeseries_config_string(const ConfigManager::Options& opts)
 
 struct LoopInfo {
     std::string name;
-    int iterations;
-    int count;
+    int         iterations;
+    int         count;
 };
 
-LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
-{
+LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec) {
     LoopInfo ret { "", 0, 0 };
 
     Attribute loop_a = db.get_attribute("loop");
@@ -119,10 +112,10 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     Attribute lcnt_a = db.get_attribute("max#count");
 
     for (const Entry& e : rec) {
-        if      (e.attribute() == iter_a.id())
+        if (e.attribute() == iter_a.id())
             ret.iterations = e.value().to_int();
         else if (e.attribute() == lcnt_a.id())
-            ret.count      = e.value().to_int();
+            ret.count = e.value().to_int();
         else {
             Variant v_loop = e.value(loop_a);
             if (!v_loop.empty())
@@ -133,10 +126,8 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     return ret;
 }
 
-template<typename T>
-std::vector<T>
-augment_vector(const std::vector<T>& orig, std::initializer_list<T> ilist)
-{
+template <typename T>
+std::vector<T> augment_vector(const std::vector<T>& orig, std::initializer_list<T> ilist) {
     std::vector<T> ret;
     ret.reserve(orig.size() + ilist.size());
     ret.assign(orig.begin(), orig.end());
@@ -150,7 +141,11 @@ class SpotTimeseriesController : public cali::ChannelController
 
 public:
 
-    void timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize, Aggregator& output_agg) {
+    void timeseries_local_aggregation(Caliper&           c,
+                                      CaliperMetadataDB& db,
+                                      const std::string& loopname,
+                                      int                blocksize,
+                                      Aggregator&        output_agg) {
         const char* select =
             " cali.channel"
             ",loop"
@@ -159,15 +154,14 @@ public:
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration.ns,1e9)";
 
-        std::string block =
-            std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+        std::string block = std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
-        std::string query = m_opts.build_query("local", {
-                { "let",      block },
-                { "select",   select },
-                { "group by", "cali.channel,loop,block" },
-                { "where",    std::string("loop.start_iteration,loop=\"") + loopname + "\"" }
-            });
+        std::string query =
+            m_opts.build_query("local",
+                               { { "let", block },
+                                 { "select", select },
+                                 { "group by", "cali.channel,loop,block" },
+                                 { "where", std::string("loop.start_iteration,loop=\"") + loopname + "\"" } });
 
         Channel chn = channel();
         if (chn)
@@ -183,32 +177,31 @@ public:
             ",max(scale#time.duration.ns) as \"Time (s)\" unit sec"
             ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\" unit iter/s";
 
-        std::string query = m_opts.build_query("cross", {
-                { "select",   select },
-                { "group by", "cali.channel,loop,block" }
-            });
+        std::string query =
+            m_opts.build_query("cross", { { "select", select }, { "group by", "cali.channel,loop,block" } });
 
         return parse_spec(query.c_str());
     }
 
-    void flush() { }
+    void flush() {
+    }
 
-    SpotTimeseriesController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : ChannelController(name, 0, initial_cfg),
-          m_opts(opts)
-        {
-            if (m_opts.is_set("iteration_interval"))
-                config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
-            else if (m_opts.is_set("time_interval"))
-                config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
-            else
-                config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
+    SpotTimeseriesController(const char*                         name,
+                             const config_map_t&                 initial_cfg,
+                             const cali::ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg), m_opts(opts) {
+        if (m_opts.is_set("iteration_interval"))
+            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
+        else if (m_opts.is_set("time_interval"))
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
+        else
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
-            if (m_opts.is_set("target_loops"))
-                config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = m_opts.get("target_loops").to_string();
+        if (m_opts.is_set("target_loops"))
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = m_opts.get("target_loops").to_string();
 
-            m_opts.update_channel_config(config());
-        }
+        m_opts.update_channel_config(config());
+    }
 };
 
 const char* spot_timeseries_spec =
@@ -242,9 +235,9 @@ const char* spot_timeseries_spec =
     " ]"
     "}";
 
-cali::ChannelController*
-make_timeseries_controller(const char* name, const config_map_t& cfg, const cali::ConfigManager::Options& opts)
-{
+cali::ChannelController* make_timeseries_controller(const char*                         name,
+                                                    const config_map_t&                 cfg,
+                                                    const cali::ConfigManager::Options& opts) {
     return new SpotTimeseriesController(name, cfg, opts);
 }
 
@@ -260,17 +253,21 @@ class SpotController : public cali::internal::CustomOutputController
 {
     ConfigManager::Options m_opts;
 
-    std::string       m_spot_metrics;
-    std::string       m_spot_timeseries_metrics;
+    std::string m_spot_metrics;
+    std::string m_spot_timeseries_metrics;
 
-    ConfigManager     m_timeseries_mgr;
+    ConfigManager m_timeseries_mgr;
 
     CaliperMetadataDB m_db;
     Attribute         m_channel_attr;
 
-    void process_timeseries(SpotTimeseriesController* tsc, Caliper& c, CaliWriter& writer, const LoopInfo& info, Comm& comm) {
-        int iterations   = comm.bcast_int(info.iterations);
-        int rec_count    = comm.bcast_int(info.count);
+    void process_timeseries(SpotTimeseriesController* tsc,
+                            Caliper&                  c,
+                            CaliWriter&               writer,
+                            const LoopInfo&           info,
+                            Comm&                     comm) {
+        int         iterations = comm.bcast_int(info.iterations);
+        int         rec_count = comm.bcast_int(info.count);
         std::string name = comm.bcast_str(info.name);
 
         if (iterations > 0) {
@@ -297,7 +294,7 @@ class SpotController : public cali::internal::CustomOutputController
                 //   loop, so just clear them before setting them.
                 m_spot_timeseries_metrics.clear();
 
-                for (const auto &op : spec.aggregate.list) {
+                for (const auto& op : spec.aggregate.list) {
                     if (!m_spot_timeseries_metrics.empty())
                         m_spot_timeseries_metrics.append(",");
 
@@ -308,9 +305,10 @@ class SpotController : public cali::internal::CustomOutputController
                 Entry   entry(m_db.make_tree_entry(1, &m_channel_attr, &v_data));
 
                 // --- Write data
-                cross_agg.flush(m_db, [&writer,entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
-                        writer.write_snapshot(in_db, augment_vector( rec, { entry } ));
-                    });
+                cross_agg.flush(m_db,
+                                [&writer, entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
+                                    writer.write_snapshot(in_db, augment_vector(rec, { entry }));
+                                });
             }
         }
     }
@@ -325,10 +323,8 @@ class SpotController : public cali::internal::CustomOutputController
 
         auto tsc = std::dynamic_pointer_cast<SpotTimeseriesController>(p);
 
-        const char* summary_local_query =
-            "aggregate count(),sum(loop.iterations) where loop group by loop";
-        const char* summary_cross_query =
-            "aggregate max(sum#loop.iterations),max(count) group by loop";
+        const char* summary_local_query = "aggregate count(),sum(loop.iterations) where loop group by loop";
+        const char* summary_cross_query = "aggregate max(sum#loop.iterations),max(count) group by loop";
 
         Aggregator summary_cross_agg(CalQLParser(summary_cross_query).spec());
 
@@ -338,9 +334,9 @@ class SpotController : public cali::internal::CustomOutputController
 
         std::vector<LoopInfo> infovec;
 
-        summary_cross_agg.flush(m_db, [&infovec](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
-                infovec.push_back(get_loop_info(in_db, rec));
-            });
+        summary_cross_agg.flush(m_db, [&infovec](CaliperMetadataAccessInterface& in_db, const EntryList& rec) {
+            infovec.push_back(get_loop_info(in_db, rec));
+        });
 
         if (!infovec.empty()) {
             for (const LoopInfo& loopinfo : infovec)
@@ -360,10 +356,7 @@ class SpotController : public cali::internal::CustomOutputController
             ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec"
             ",sum(inclusive#sum#time.duration) as \"Total time\"    unit sec";
 
-        std::string cross_query = m_opts.build_query("cross", {
-                { "select",   cross_select  },
-                { "group by", "path" }
-            });
+        std::string cross_query = m_opts.build_query("cross", { { "select", cross_select }, { "group by", "path" } });
 
         QuerySpec  output_spec(parse_spec(cross_query.c_str()));
         Aggregator output_agg(output_spec);
@@ -374,11 +367,12 @@ class SpotController : public cali::internal::CustomOutputController
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times
         {
-            std::string query = m_opts.build_query("local", {
-                    { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
-                    { "select",   "inclusive_sum(sum#time.duration)" },
-                    { "group by", "path" },
-                });
+            std::string query = m_opts.build_query("local",
+                                                   {
+                                                       { "let", "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
+                                                       { "select", "inclusive_sum(sum#time.duration)" },
+                                                       { "group by", "path" },
+                                                   });
 
             Channel chn = channel();
             local_aggregate(query.c_str(), c, chn, m_db, output_agg);
@@ -391,7 +385,7 @@ class SpotController : public cali::internal::CustomOutputController
             // --- Save the spot metrics
             m_spot_metrics.clear();
 
-            for (const auto &op : output_spec.aggregate.list) {
+            for (const auto& op : output_spec.aggregate.list) {
                 if (!m_spot_metrics.empty())
                     m_spot_metrics.append(",");
 
@@ -402,9 +396,10 @@ class SpotController : public cali::internal::CustomOutputController
             Entry   entry(m_db.make_tree_entry(1, &m_channel_attr, &v_data));
 
             // --- Write region profile
-            output_agg.flush(m_db, [&writer,entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
-                    writer.write_snapshot(in_db, augment_vector( rec, { entry } ));
-                });
+            output_agg.flush(m_db,
+                             [&writer, entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
+                                 writer.write_snapshot(in_db, augment_vector(rec, { entry }));
+                             });
         }
     }
 
@@ -412,7 +407,7 @@ class SpotController : public cali::internal::CustomOutputController
         std::string spot_channels = "regionprofile";
         std::string spot_opts = "";
 
-        for (const auto &o : m_opts.enabled_options()) {
+        for (const auto& o : m_opts.enabled_options()) {
             if (!spot_opts.empty())
                 spot_opts.append(",");
             spot_opts.append(o);
@@ -420,16 +415,11 @@ class SpotController : public cali::internal::CustomOutputController
                 spot_channels.append(",timeseries");
         }
 
-        Attribute mtr_attr =
-            m_db.create_attribute("spot.metrics",  CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
-        Attribute tsm_attr =
-            m_db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
-        Attribute fmt_attr =
-            m_db.create_attribute("spot.format.version",     CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
-        Attribute opt_attr =
-            m_db.create_attribute("spot.options",  CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
-        Attribute chn_attr =
-            m_db.create_attribute("spot.channels", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute mtr_attr = m_db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute tsm_attr = m_db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute fmt_attr = m_db.create_attribute("spot.format.version", CALI_TYPE_INT, CALI_ATTR_GLOBAL);
+        Attribute opt_attr = m_db.create_attribute("spot.options", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute chn_attr = m_db.create_attribute("spot.channels", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
         m_db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
         m_db.set_global(tsm_attr, Variant(m_spot_timeseries_metrics.c_str()));
@@ -440,15 +430,13 @@ class SpotController : public cali::internal::CustomOutputController
 
     void on_create(Caliper*, Channel&) override {
         if (m_timeseries_mgr.error())
-            Log(0).stream() << "[spot controller]: Timeseries config error: "
-                            << m_timeseries_mgr.error_msg()
+            Log(0).stream() << "[spot controller]: Timeseries config error: " << m_timeseries_mgr.error_msg()
                             << std::endl;
 
         m_timeseries_mgr.start();
     }
 
-    OutputStream
-    create_output_stream() {
+    OutputStream create_output_stream() {
         std::string outdir = m_opts.get("outdir", "").to_string();
         std::string output = m_opts.get("output", "").to_string();
 
@@ -457,7 +445,7 @@ class SpotController : public cali::internal::CustomOutputController
         if (!outdir.empty() && output != "stderr" && output != "stdout")
             output = outdir + std::string("/") + output;
 
-        Caliper c;
+        Caliper      c;
         OutputStream stream;
         stream.set_filename(output.c_str(), c, c.get_globals());
 
@@ -466,15 +454,13 @@ class SpotController : public cali::internal::CustomOutputController
 
 public:
 
-    void
-    collective_flush(OutputStream& stream, Comm& comm) override
-    {
+    void collective_flush(OutputStream& stream, Comm& comm) override {
         Log(1).stream() << name() << ": Flushing Caliper data" << std::endl;
 
         if (stream.type() == OutputStream::None)
             stream = create_output_stream();
 
-        Caliper c;
+        Caliper    c;
         CaliWriter writer(stream);
 
         flush_regionprofile(c, writer, comm);
@@ -487,24 +473,18 @@ public:
             save_spot_metadata();
             writer.write_globals(m_db, m_db.get_globals());
 
-            Log(1).stream() << name() << ": Wrote "
-                            << writer.num_written() << " records."
-                            << std::endl;
+            Log(1).stream() << name() << ": Wrote " << writer.num_written() << " records." << std::endl;
         }
     }
 
     SpotController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
-        : cali::internal::CustomOutputController(name, 0, initial_cfg),
-          m_opts(opts)
-    {
-        m_channel_attr =
-            m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        : cali::internal::CustomOutputController(name, 0, initial_cfg), m_opts(opts) {
+        m_channel_attr = m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
-    #ifdef CALIPER_HAVE_ADIAK
+#ifdef CALIPER_HAVE_ADIAK
         config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-        config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
-            opts.get("adiak.import_categories", "2,3").to_string();
-    #endif
+        config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3").to_string();
+#endif
 
         if (opts.is_enabled("timeseries")) {
             m_timeseries_mgr.add_config_spec(spot_timeseries_info);
@@ -516,8 +496,7 @@ public:
     }
 };
 
-std::string
-check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
+std::string check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
     if (opts.is_enabled("timeseries")) {
         // Check if the timeseries options are valid
 
@@ -528,13 +507,11 @@ check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
     } else {
         // Warn when a timeseries option is set but timeseries is disabled
 
-        const char* tsopts[] = {
-            "timeseries.maxrows",
-            "timeseries.iteration_interval",
-            "timeseries.time_interval",
-            "timeseries.target_loops",
-            "timeseries.metrics"
-        };
+        const char* tsopts[] = { "timeseries.maxrows",
+                                 "timeseries.iteration_interval",
+                                 "timeseries.time_interval",
+                                 "timeseries.target_loops",
+                                 "timeseries.metrics" };
 
         for (const char* opt : tsopts)
             if (opts.is_set(opt))
@@ -643,20 +620,19 @@ const char* spot_controller_spec = R"json(
     }
 )json";
 
-
-cali::ChannelController*
-make_spot_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+cali::ChannelController* make_spot_controller(const char*                         name,
+                                              const config_map_t&                 initial_cfg,
+                                              const cali::ConfigManager::Options& opts) {
     return new SpotController(name, initial_cfg, opts);
 }
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info
-{
-    ::spot_controller_spec, ::make_spot_controller, ::check_spot_timeseries_args
-};
+ConfigManager::ConfigInfo spot_controller_info { ::spot_controller_spec,
+                                                 ::make_spot_controller,
+                                                 ::check_spot_timeseries_args };
 
 }

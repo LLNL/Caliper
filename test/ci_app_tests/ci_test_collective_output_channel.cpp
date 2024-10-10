@@ -10,15 +10,14 @@
 #include <iostream>
 #include <tuple>
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     std::shared_ptr<cali::CollectiveOutputChannel> channel;
-    std::string errmsg;
+    std::string                                    errmsg;
 
     std::tie(channel, errmsg) = cali::make_collective_output_channel(argc > 1 ? argv[1] : "");
 

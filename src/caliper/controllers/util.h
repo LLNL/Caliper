@@ -19,6 +19,6 @@ std::string build_tree_format_spec(config_map_t&, const cali::ConfigManager::Opt
 
 }
 
-}
+} // namespace cali
 
 #endif // CALI_CONTROLLERS_UTIL_H

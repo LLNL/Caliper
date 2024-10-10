@@ -23,10 +23,8 @@ public:
     }
 
     void initialize(Caliper* c, Channel*) {
-        m_my_attr =
-            c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
-        m_prop_attr =
-            c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
+        m_my_attr = c->create_attribute("testbinding", CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
+        m_prop_attr = c->create_attribute("testproperty", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
     }
 
     void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
@@ -68,9 +66,7 @@ public:
 
 bool TestBinding::s_verbose = false;
 
-
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     if (argc > 1 && 0 == strcmp(argv[1], "--verbose"))
         TestBinding::set_verbose(true);
 
@@ -79,13 +75,11 @@ int main(int argc, const char** argv)
 
     AnnotationBinding::make_binding<TestBinding>(&c, &channel);
 
-    Attribute nested_attr  =
-        c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute default_attr =
-        c.create_attribute("binding.default", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute nested_attr = c.create_attribute("binding.nested", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute default_attr = c.create_attribute("binding.default", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
-    c.begin(nested_attr,  Variant(CALI_TYPE_STRING, "outer",   6));
-    c.begin(nested_attr,  Variant(CALI_TYPE_STRING, "inner",   6));
+    c.begin(nested_attr, Variant(CALI_TYPE_STRING, "outer", 6));
+    c.begin(nested_attr, Variant(CALI_TYPE_STRING, "inner", 6));
     c.begin(default_attr, Variant(CALI_TYPE_STRING, "default", 8));
     c.end(default_attr);
     c.end(nested_attr);

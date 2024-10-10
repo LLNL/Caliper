@@ -181,12 +181,12 @@ const char* mpireport_spec = R"json(
 )json";
 
 cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
-cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
-cali::ConfigManager::ConfigInfo nvtx_controller_info        { nvtx_spec,        nullptr, nullptr };
-cali::ConfigManager::ConfigInfo roctx_controller_info       { roctx_spec,       nullptr, nullptr };
-cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   nullptr, nullptr };
+cali::ConfigManager::ConfigInfo nvprof_controller_info { nvprof_spec, nullptr, nullptr };
+cali::ConfigManager::ConfigInfo nvtx_controller_info { nvtx_spec, nullptr, nullptr };
+cali::ConfigManager::ConfigInfo roctx_controller_info { roctx_spec, nullptr, nullptr };
+cali::ConfigManager::ConfigInfo mpireport_controller_info { mpireport_spec, nullptr, nullptr };
 
-}
+} // namespace
 
 namespace cali
 {
@@ -203,25 +203,23 @@ extern ConfigManager::ConfigInfo runtime_report_controller_info;
 extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
-const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
-    &cuda_activity_profile_controller_info,
-    &cuda_activity_report_controller_info,
-    &::event_trace_controller_info,
-    &::nvprof_controller_info,
-    &::nvtx_controller_info,
-    &::roctx_controller_info,
-    &::mpireport_controller_info,
-    &hatchet_region_profile_controller_info,
-    &hatchet_sample_profile_controller_info,
-    &loop_report_controller_info,
-    &openmp_report_controller_info,
-    &rocm_activity_report_controller_info,
-    &rocm_activity_profile_controller_info,
-    &runtime_report_controller_info,
-    &sample_report_controller_info,
-    &spot_controller_info,
-    nullptr
-};
+const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_profile_controller_info,
+                                                                 &cuda_activity_report_controller_info,
+                                                                 &::event_trace_controller_info,
+                                                                 &::nvprof_controller_info,
+                                                                 &::nvtx_controller_info,
+                                                                 &::roctx_controller_info,
+                                                                 &::mpireport_controller_info,
+                                                                 &hatchet_region_profile_controller_info,
+                                                                 &hatchet_sample_profile_controller_info,
+                                                                 &loop_report_controller_info,
+                                                                 &openmp_report_controller_info,
+                                                                 &rocm_activity_report_controller_info,
+                                                                 &rocm_activity_profile_controller_info,
+                                                                 &runtime_report_controller_info,
+                                                                 &sample_report_controller_info,
+                                                                 &spot_controller_info,
+                                                                 nullptr };
 
 const char* builtin_option_specs = R"json(
     [
@@ -1258,4 +1256,4 @@ const char* builtin_option_specs = R"json(
     ]
 )json";
 
-}
+} // namespace cali

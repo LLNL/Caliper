@@ -6,8 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
     cali::ConfigManager mgr;
@@ -27,7 +26,7 @@ int main(int argc, char* argv[])
 
     int sum = 0;
 
-    #pragma omp parallel for reduction(+:sum)
+#pragma omp parallel for reduction(+ : sum)
     for (int i = 0; i < 42; ++i) {
         sum += i;
     }

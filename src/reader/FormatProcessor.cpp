@@ -21,31 +21,21 @@ namespace
 {
 
 const char* format_kernel_args[] = { "format", "title" };
-const char* tree_kernel_args[]   = { "path-attributes", "column-width", "print-globals" };
-const char* table_kernel_args[]  = { "column-width", "print-globals" };
-const char* json_kernel_args[]   = { "object", "pretty", "quote-all", "separate-nested", "records", "split" };
+const char* tree_kernel_args[] = { "path-attributes", "column-width", "print-globals" };
+const char* table_kernel_args[] = { "column-width", "print-globals" };
+const char* json_kernel_args[] = { "object", "pretty", "quote-all", "separate-nested", "records", "split" };
 
-enum FormatterID {
-    Cali        = 0,
-    Json        = 1,
-    Expand      = 2,
-    Format      = 3,
-    Table       = 4,
-    Tree        = 5,
-    JsonSplit   = 6
-};
+enum FormatterID { Cali = 0, Json = 1, Expand = 2, Format = 3, Table = 4, Tree = 5, JsonSplit = 6 };
 
-const QuerySpec::FunctionSignature formatters[] = {
-    { FormatterID::Cali,      "cali",       0, 0, nullptr },
-    { FormatterID::Json,      "json",       0, 6, json_kernel_args },
-    { FormatterID::Expand,    "expand",     0, 0, nullptr },
-    { FormatterID::Format,    "format",     1, 2, format_kernel_args },
-    { FormatterID::Table,     "table",      0, 2, table_kernel_args  },
-    { FormatterID::Tree,      "tree",       0, 3, tree_kernel_args   },
-    { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
+const QuerySpec::FunctionSignature formatters[] = { { FormatterID::Cali, "cali", 0, 0, nullptr },
+                                                    { FormatterID::Json, "json", 0, 6, json_kernel_args },
+                                                    { FormatterID::Expand, "expand", 0, 0, nullptr },
+                                                    { FormatterID::Format, "format", 1, 2, format_kernel_args },
+                                                    { FormatterID::Table, "table", 0, 2, table_kernel_args },
+                                                    { FormatterID::Tree, "tree", 0, 3, tree_kernel_args },
+                                                    { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
 
-    QuerySpec::FunctionSignatureTerminator
-};
+                                                    QuerySpec::FunctionSignatureTerminator };
 
 class CaliFormatter : public Formatter
 {
@@ -53,9 +43,8 @@ class CaliFormatter : public Formatter
 
 public:
 
-    CaliFormatter(OutputStream& os)
-        : m_writer(CaliWriter(os))
-    { }
+    CaliFormatter(OutputStream& os) : m_writer(CaliWriter(os)) {
+    }
 
     void process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
         m_writer.write_snapshot(db, list);
@@ -66,10 +55,9 @@ public:
     }
 };
 
-}
+} // namespace
 
-struct FormatProcessor::FormatProcessorImpl
-{
+struct FormatProcessor::FormatProcessorImpl {
     Formatter*   m_formatter;
     OutputStream m_stream;
 
@@ -103,44 +91,33 @@ struct FormatProcessor::FormatProcessorImpl
         }
     }
 
-    FormatProcessorImpl(OutputStream& stream, const QuerySpec& spec)
-        : m_formatter(nullptr), m_stream(stream)
-    {
+    FormatProcessorImpl(OutputStream& stream, const QuerySpec& spec) : m_formatter(nullptr), m_stream(stream) {
         create_formatter(spec);
     }
 
-    ~FormatProcessorImpl()
-    {
+    ~FormatProcessorImpl() {
         delete m_formatter;
     }
 };
 
-
 FormatProcessor::FormatProcessor(const QuerySpec& spec, OutputStream& stream)
-    : mP(new FormatProcessorImpl(stream, spec))
-{ }
+    : mP(new FormatProcessorImpl(stream, spec)) {
+}
 
-FormatProcessor::~FormatProcessor()
-{
+FormatProcessor::~FormatProcessor() {
     mP.reset();
 }
 
-const QuerySpec::FunctionSignature*
-FormatProcessor::formatter_defs()
-{
+const QuerySpec::FunctionSignature* FormatProcessor::formatter_defs() {
     return ::formatters;
 }
 
-void
-FormatProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
-{
+void FormatProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec) {
     if (mP->m_formatter)
         mP->m_formatter->process_record(db, rec);
 }
 
-void
-FormatProcessor::flush(CaliperMetadataAccessInterface& db)
-{
+void FormatProcessor::flush(CaliperMetadataAccessInterface& db) {
     if (mP->m_formatter) {
         std::ostream* os = mP->m_stream.stream();
         mP->m_formatter->flush(db, *os);

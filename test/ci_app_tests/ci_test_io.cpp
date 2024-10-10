@@ -7,8 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     const char* cfg = argc > 1 ? argv[1] : "";
 
     cali::ConfigManager mgr;

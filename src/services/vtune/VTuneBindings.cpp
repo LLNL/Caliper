@@ -28,7 +28,7 @@ class ITTBinding : public cali::AnnotationBinding
 
     inline __itt_domain* get_itt_domain(const Attribute& attr) {
         __itt_domain* domain = nullptr;
-        cali_id_t attr_id = attr.id();
+        cali_id_t     attr_id = attr.id();
 
         {
             auto it = s_itt_domains.lower_bound(attr_id);
@@ -49,7 +49,7 @@ class ITTBinding : public cali::AnnotationBinding
 
         {
             const char* str = static_cast<const char*>(val.data());
-            auto it = s_itt_strings.lower_bound(str);
+            auto        it = s_itt_strings.lower_bound(str);
 
             if (it == s_itt_strings.end() || it->first != str) {
                 itt_str = __itt_string_handle_create(str);
@@ -62,10 +62,11 @@ class ITTBinding : public cali::AnnotationBinding
         return itt_str;
     }
 
-
 public:
 
-    const char* service_tag() const { return "vtune"; };
+    const char* service_tag() const {
+        return "vtune";
+    };
 
     void on_begin(Caliper* c, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING)
@@ -78,11 +79,10 @@ public:
     }
 };
 
-thread_local std::map<cali_id_t, __itt_domain*> ITTBinding::s_itt_domains;
+thread_local std::map<cali_id_t, __itt_domain*>          ITTBinding::s_itt_domains;
 thread_local std::map<const char*, __itt_string_handle*> ITTBinding::s_itt_strings;
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {

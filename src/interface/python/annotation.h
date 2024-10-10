@@ -3,34 +3,37 @@
 
 #include "common.h"
 
-namespace cali {
+namespace cali
+{
 
-class PythonAnnotation : public cali::Annotation {
+class PythonAnnotation : public cali::Annotation
+{
 public:
-  PythonAnnotation(const char *name);
 
-  PythonAnnotation(const char *name, cali_attr_properties opt);
+    PythonAnnotation(const char* name);
 
-  PythonAnnotation &begin();
+    PythonAnnotation(const char* name, cali_attr_properties opt);
 
-  PythonAnnotation &begin(int data);
+    PythonAnnotation& begin();
 
-  PythonAnnotation &begin(double data);
+    PythonAnnotation& begin(int data);
 
-  PythonAnnotation &begin(const char *data);
+    PythonAnnotation& begin(double data);
 
-  PythonAnnotation &begin(cali_attr_type type, const std::string &data);
+    PythonAnnotation& begin(const char* data);
 
-  PythonAnnotation &set(int data);
+    PythonAnnotation& begin(cali_attr_type type, const std::string& data);
 
-  PythonAnnotation &set(double data);
+    PythonAnnotation& set(int data);
 
-  PythonAnnotation &set(const char *data);
+    PythonAnnotation& set(double data);
 
-  PythonAnnotation &set(cali_attr_type type, const std::string &data);
+    PythonAnnotation& set(const char* data);
+
+    PythonAnnotation& set(cali_attr_type type, const std::string& data);
 };
 
-void create_caliper_annotation_mod(py::module_ &caliper_annotation_mod);
+void create_caliper_annotation_mod(py::module_& caliper_annotation_mod);
 
 } // namespace cali
 

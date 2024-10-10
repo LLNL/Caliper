@@ -13,36 +13,36 @@
 namespace util
 {
 
-template<class F>
+template <class F>
 class callback
 {
-    std::vector< std::function<F> > mCb;
+    std::vector<std::function<F>> mCb;
 
 public:
 
     void connect(std::function<F> f) {
         mCb.push_back(f);
-    } 
+    }
 
     bool empty() const {
         return mCb.empty();
     }
 
-    template<class... Args>
+    template <class... Args>
     void operator()(Args&&... a) {
-        for ( auto& f : mCb )
+        for (auto& f : mCb)
             f(a...);
     }
 
-    template<class Op, class R, class... Args>
+    template <class Op, class R, class... Args>
     R accumulate(Op op, R init, Args&&... a) {
-        for ( auto& f : mCb )
+        for (auto& f : mCb)
             init = Op(init, f(a...));
 
         return init;
     }
 };
 
-}
+} // namespace util
 
 #endif

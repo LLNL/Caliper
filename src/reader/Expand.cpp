@@ -24,20 +24,18 @@
 using namespace cali;
 using namespace std;
 
-struct Expand::ExpandImpl
-{
-    set<string>  m_selected;
-    set<string>  m_deselected;
+struct Expand::ExpandImpl {
+    set<string> m_selected;
+    set<string> m_deselected;
 
     std::map<string, string> m_aliases;
 
     OutputStream m_os;
 
-    std::mutex   m_os_lock;
+    std::mutex m_os_lock;
 
-    ExpandImpl(OutputStream& os)
-        : m_os(os)
-        { }
+    ExpandImpl(OutputStream& os) : m_os(os) {
+    }
 
     void parse(const string& field_string) {
         vector<string> fields;
@@ -65,19 +63,18 @@ struct Expand::ExpandImpl
             // doesn't make much sense
             break;
         case QuerySpec::AttributeSelection::List:
-            m_selected =
-                std::set<std::string>(spec.select.list.begin(), spec.select.list.end());
+            m_selected = std::set<std::string>(spec.select.list.begin(), spec.select.list.end());
             break;
         }
 
         m_aliases = spec.aliases;
     }
-    
+
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         int nentry = 0;
 
         std::ostringstream os;
-        
+
         for (const Entry& e : list) {
             if (e.is_reference()) {
                 vector<const Node*> nodes;
@@ -94,8 +91,10 @@ struct Expand::ExpandImpl
                 if (nodes.empty())
                     continue;
 
-                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
-	  
+                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) {
+                    return a->attribute() < b->attribute();
+                });
+
                 cali_id_t prev_attr_id = CALI_INV_ID;
 
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
@@ -107,7 +106,7 @@ struct Expand::ExpandImpl
                             if (it != m_aliases.end())
                                 name = it->second;
                         }
-                        
+
                         os << (nentry++ ? "," : "") << name << '=';
                         prev_attr_id = (*it)->attribute();
                     } else {
@@ -130,44 +129,33 @@ struct Expand::ExpandImpl
                 os << (nentry++ ? "," : "") << name << '=' << e.value();
             }
         }
-        
+
         if (nentry > 0) {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
+            std::lock_guard<std::mutex> g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
-            
+
             *real_os << os.str() << endl;
         }
     }
 };
 
-
-Expand::Expand(OutputStream& os, const string& field_string)
-    : mP { new ExpandImpl(os) }
-{
+Expand::Expand(OutputStream& os, const string& field_string) : mP { new ExpandImpl(os) } {
     mP->parse(field_string);
 }
 
-Expand::Expand(OutputStream& os, const QuerySpec& spec)
-    : mP { new ExpandImpl(os) }
-{
+Expand::Expand(OutputStream& os, const QuerySpec& spec) : mP { new ExpandImpl(os) } {
     mP->configure(spec);
 }
 
-Expand::~Expand()
-{
+Expand::~Expand() {
     mP.reset();
 }
 
-void 
-Expand::operator()(CaliperMetadataAccessInterface& db, const EntryList& list) const
-{
+void Expand::operator()(CaliperMetadataAccessInterface& db, const EntryList& list) const {
     mP->print(db, list);
 }
 
-void
-Expand::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
-{
+void Expand::process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
     mP->print(db, list);
 }

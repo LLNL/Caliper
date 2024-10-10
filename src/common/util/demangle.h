@@ -17,6 +17,6 @@ namespace util
 /// \brief Return demangled name for C++ binary identifier \a name
 std::string demangle(const char* name);
 
-}
+} // namespace util
 
 #endif

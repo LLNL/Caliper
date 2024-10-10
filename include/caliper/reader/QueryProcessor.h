@@ -24,7 +24,7 @@ class QueryProcessor
 {
     struct QueryProcessorImpl;
     std::shared_ptr<QueryProcessorImpl> mP;
-    
+
 public:
 
     QueryProcessor(const QuerySpec&, OutputStream& stream);
@@ -40,4 +40,4 @@ public:
     }
 };
 
-}
+} // namespace cali

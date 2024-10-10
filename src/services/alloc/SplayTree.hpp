@@ -6,24 +6,22 @@
 namespace util
 {
 
-template<class T, class Cmp>
-class SplayTree {
-    enum HAND {
-        LEFT = -1, NA = 0, RIGHT = 1
-    };
+template <class T, class Cmp>
+class SplayTree
+{
+    enum HAND { LEFT = -1, NA = 0, RIGHT = 1 };
 
     struct STNode {
         STNode* parent;
         STNode* left;
         STNode* right;
 
-        T       val;
+        T val;
 
-        HAND    handedness;
+        HAND handedness;
 
-        STNode(STNode* p, const T& v, HAND h)
-            : parent(p), left(nullptr), right(nullptr), val(v), handedness(h)
-        { }
+        STNode(STNode* p, const T& v, HAND h) : parent(p), left(nullptr), right(nullptr), val(v), handedness(h) {
+        }
 
         STNode* insert(const T& v) {
             Cmp cmp;
@@ -31,9 +29,9 @@ class SplayTree {
                 if (left)
                     return left->insert(v);
                 else {
-                    left  = new STNode(this, v, LEFT);
+                    left = new STNode(this, v, LEFT);
                     return left;
-                }   
+                }
             } else if (cmp(v, val) > 0) {
                 if (right)
                     return right->insert(v);
@@ -47,13 +45,13 @@ class SplayTree {
             }
         }
 
-        template<class ThreeWayPred> 
+        template <class ThreeWayPred>
         STNode* find(const ThreeWayPred& p) {
             int res = p(val);
 
-            if      (res < 0)
-                return left  ? left->find(p)  : nullptr;
-            else if (res > 0) 
+            if (res < 0)
+                return left ? left->find(p) : nullptr;
+            else if (res > 0)
                 return right ? right->find(p) : nullptr;
 
             return this;
@@ -68,14 +66,14 @@ class SplayTree {
 
     STNode* m_root;
 
-    void rotate_left(STNode *node) {
+    void rotate_left(STNode* node) {
         if (node->left) {
             node->left->parent = node->parent;
             node->left->handedness = RIGHT;
         }
 
-        STNode *npp = node->parent->parent;
-        HAND np_hand = node->parent->handedness;
+        STNode* npp = node->parent->parent;
+        HAND    np_hand = node->parent->handedness;
 
         node->parent->parent = node;
         node->parent->handedness = LEFT;
@@ -86,14 +84,14 @@ class SplayTree {
         node->handedness = (npp ? np_hand : NA);
     }
 
-    void rotate_right(STNode *node) {
+    void rotate_right(STNode* node) {
         if (node->right) {
             node->right->parent = node->parent;
             node->right->handedness = LEFT;
         }
 
-        STNode *npp = node->parent->parent;
-        HAND np_hand = node->parent->handedness;
+        STNode* npp = node->parent->parent;
+        HAND    np_hand = node->parent->handedness;
 
         node->parent->parent = node;
         node->parent->handedness = RIGHT;
@@ -104,7 +102,7 @@ class SplayTree {
         node->handedness = (npp ? np_hand : NA);
     }
 
-    void splay(STNode *node) {
+    void splay(STNode* node) {
         while (node->parent) {
             if (node->parent->parent == nullptr) {
                 // Case: single zig
@@ -138,18 +136,16 @@ class SplayTree {
         m_root = node;
     }
 
-    SplayTree(STNode* p)
-        : m_root(p)
-    { }
-    
-public:
-    
-    constexpr SplayTree()
-        : m_root(nullptr)
-    { }
+    SplayTree(STNode* p) : m_root(p) {
+    }
 
-    ~SplayTree()
-    { }
+public:
+
+    constexpr SplayTree() : m_root(nullptr) {
+    }
+
+    ~SplayTree() {
+    }
 
     void insert(const T& v) {
         if (!m_root)
@@ -160,17 +156,17 @@ public:
         }
     }
 
-    void remove(SplayTree<T,Cmp>& ref) {
+    void remove(SplayTree<T, Cmp>& ref) {
         STNode* node = ref.m_root;
 
         splay(node);
 
-        SplayTree<T,Cmp> ltree(node->left);
-        
+        SplayTree<T, Cmp> ltree(node->left);
+
         if (ltree) {
             ltree.m_root->parent = nullptr;
             ltree.m_root->handedness = NA;
-            STNode *lMax = ltree.m_root->findMax();
+            STNode* lMax = ltree.m_root->findMax();
             ltree.splay(lMax);
             m_root = lMax;
             m_root->right = node->right;
@@ -187,23 +183,23 @@ public:
         delete node;
     }
 
-    template<class ThreeWayPred>
+    template <class ThreeWayPred>
     SplayTree<T, Cmp> find(const ThreeWayPred& p) {
         STNode* ret = nullptr;
 
         if (m_root)
             ret = m_root->find(p);
-        
-        return SplayTree<T,Cmp>(ret);
+
+        return SplayTree<T, Cmp>(ret);
     }
 
-    T& operator * () {
+    T& operator*() {
         return m_root->val;
     }
 
-    operator bool () const {
+    operator bool() const {
         return m_root != nullptr;
     }
 };
 
-}
+} // namespace util

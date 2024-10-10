@@ -11,13 +11,14 @@ using namespace cali;
 namespace
 {
 
-QuerySpec::AggregationOp
-make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr, const char* arg3 = nullptr)
-{
-    QuerySpec::AggregationOp op;
+QuerySpec::AggregationOp make_op(const char* name,
+                                 const char* arg1 = nullptr,
+                                 const char* arg2 = nullptr,
+                                 const char* arg3 = nullptr) {
+    QuerySpec::AggregationOp            op;
     const QuerySpec::FunctionSignature* p = Preprocessor::preprocess_defs();
 
-    for ( ; p && p->name && (0 != strcmp(p->name, name)); ++p )
+    for (; p && p->name && (0 != strcmp(p->name, name)); ++p)
         ;
 
     if (p->name) {
@@ -34,9 +35,7 @@ make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr
     return op;
 }
 
-QuerySpec::PreprocessSpec
-make_spec(const std::string& target, const QuerySpec::AggregationOp& op)
-{
+QuerySpec::PreprocessSpec make_spec(const std::string& target, const QuerySpec::AggregationOp& op) {
     QuerySpec::PreprocessSpec spec;
 
     spec.target = target;
@@ -46,9 +45,11 @@ make_spec(const std::string& target, const QuerySpec::AggregationOp& op)
     return spec;
 }
 
-QuerySpec::PreprocessSpec
-make_spec_with_cond(const std::string& target, const QuerySpec::AggregationOp& op, const QuerySpec::Condition::Op cond, const char* cond_attr, const char* cond_val = nullptr)
-{
+QuerySpec::PreprocessSpec make_spec_with_cond(const std::string&              target,
+                                              const QuerySpec::AggregationOp& op,
+                                              const QuerySpec::Condition::Op  cond,
+                                              const char*                     cond_attr,
+                                              const char*                     cond_val = nullptr) {
     QuerySpec::PreprocessSpec spec;
 
     spec.target = target;
@@ -62,19 +63,16 @@ make_spec_with_cond(const std::string& target, const QuerySpec::AggregationOp& o
     return spec;
 }
 
-std::map<cali_id_t, cali::Entry>
-make_dict_from_entrylist(const EntryList& list)
-{
+std::map<cali_id_t, cali::Entry> make_dict_from_entrylist(const EntryList& list) {
     std::map<cali_id_t, Entry> dict;
 
-    for ( const Entry& e : list )
+    for (const Entry& e : list)
         dict[e.attribute()] = e;
 
     return dict;
 }
 
 } // namespace
-
 
 TEST(PreprocessorTest, Ratio) {
     //
@@ -84,12 +82,9 @@ TEST(PreprocessorTest, Ratio) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute nom =
-        db.create_attribute("nom", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute dnm =
-        db.create_attribute("dnm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute nom = db.create_attribute("nom", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute dnm = db.create_attribute("dnm", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -107,7 +102,7 @@ TEST(PreprocessorTest, Ratio) {
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute d_attr = db.get_attribute("d.ratio");
     Attribute s_attr = db.get_attribute("s.ratio");
@@ -117,17 +112,16 @@ TEST(PreprocessorTest, Ratio) {
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto d_it = res.find(d_attr.id());
     auto s_it = res.find(s_attr.id());
 
     ASSERT_NE(d_it, res.end()) << "d.ratio attribute not found\n";
     ASSERT_NE(s_it, res.end()) << "s.ratio attribute not found\n";
 
-    EXPECT_DOUBLE_EQ(d_it->second.value().to_double(),  6.0);
+    EXPECT_DOUBLE_EQ(d_it->second.value().to_double(), 6.0);
     EXPECT_DOUBLE_EQ(s_it->second.value().to_double(), 12.0);
 }
-
 
 TEST(PreprocessorTest, Scale) {
     //
@@ -137,10 +131,8 @@ TEST(PreprocessorTest, Scale) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -157,7 +149,7 @@ TEST(PreprocessorTest, Scale) {
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute v_attr = db.get_attribute("val");
     Attribute d_attr = db.get_attribute("valx2.0");
@@ -169,7 +161,7 @@ TEST(PreprocessorTest, Scale) {
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto d_it = res.find(d_attr.id());
     auto h_it = res.find(h_attr.id());
 
@@ -180,7 +172,6 @@ TEST(PreprocessorTest, Scale) {
     EXPECT_DOUBLE_EQ(h_it->second.value().to_double(), 21.0);
 }
 
-
 TEST(PreprocessorTest, First) {
     //
     // --- setup
@@ -189,12 +180,9 @@ TEST(PreprocessorTest, First) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute val_b =
-        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b = db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -204,15 +192,15 @@ TEST(PreprocessorTest, First) {
 
     QuerySpec spec;
 
-    spec.preprocess_ops.push_back(::make_spec("val.a.out",  ::make_op("first", "dummy.0", "val.a", "dummy.1")));
-    spec.preprocess_ops.push_back(::make_spec("val.b.out",  ::make_op("first", "val.b",   "val.a", "dummy.0")));
+    spec.preprocess_ops.push_back(::make_spec("val.a.out", ::make_op("first", "dummy.0", "val.a", "dummy.1")));
+    spec.preprocess_ops.push_back(::make_spec("val.b.out", ::make_op("first", "val.b", "val.a", "dummy.0")));
 
     //
     // --- run
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vbo_attr = db.get_attribute("val.b.out");
@@ -222,7 +210,7 @@ TEST(PreprocessorTest, First) {
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
     EXPECT_EQ(vbo_attr.type(), CALI_TYPE_INT);
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto a_it = res.find(vao_attr.id());
     auto b_it = res.find(vbo_attr.id());
 
@@ -233,7 +221,6 @@ TEST(PreprocessorTest, First) {
     EXPECT_EQ(b_it->second.value().to_int(), 24);
 }
 
-
 TEST(PreprocessorTest, Truncate) {
     //
     // --- setup
@@ -242,10 +229,8 @@ TEST(PreprocessorTest, Truncate) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -262,7 +247,7 @@ TEST(PreprocessorTest, Truncate) {
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute v_attr = db.get_attribute("val");
     Attribute t6_attr = db.get_attribute("valt6");
@@ -274,7 +259,7 @@ TEST(PreprocessorTest, Truncate) {
     EXPECT_EQ(td_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(td_attr.store_as_value());
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto t6_it = res.find(t6_attr.id());
     auto td_it = res.find(td_attr.id());
 
@@ -285,7 +270,6 @@ TEST(PreprocessorTest, Truncate) {
     EXPECT_DOUBLE_EQ(td_it->second.value().to_double(), 15.0);
 }
 
-
 TEST(PreprocessorTest, Chain) {
     //
     // --- setup
@@ -294,10 +278,8 @@ TEST(PreprocessorTest, Chain) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -306,7 +288,7 @@ TEST(PreprocessorTest, Chain) {
 
     QuerySpec spec;
 
-    spec.preprocess_ops.push_back(::make_spec("valx2",   ::make_op("scale", "val", "2.0")));
+    spec.preprocess_ops.push_back(::make_spec("valx2", ::make_op("scale", "val", "2.0")));
     spec.preprocess_ops.push_back(::make_spec("valx2t5", ::make_op("truncate", "valx2", "10")));
 
     //
@@ -314,7 +296,7 @@ TEST(PreprocessorTest, Chain) {
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute v_attr = db.get_attribute("val");
     Attribute d_attr = db.get_attribute("valx2");
@@ -326,7 +308,7 @@ TEST(PreprocessorTest, Chain) {
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto d_it = res.find(d_attr.id());
     auto t_it = res.find(t_attr.id());
 
@@ -345,12 +327,9 @@ TEST(PreprocessorTest, Conditions) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute val_b =
-        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b = db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -360,15 +339,17 @@ TEST(PreprocessorTest, Conditions) {
 
     QuerySpec spec;
 
-    spec.preprocess_ops.push_back(::make_spec_with_cond("val.a.out", ::make_op("first", "val.a"), QuerySpec::Condition::Exist, "ctx.1"));
-    spec.preprocess_ops.push_back(::make_spec_with_cond("val.b.out", ::make_op("first", "val.b"), QuerySpec::Condition::NotExist, "ctx.1"));
+    spec.preprocess_ops.push_back(
+        ::make_spec_with_cond("val.a.out", ::make_op("first", "val.a"), QuerySpec::Condition::Exist, "ctx.1"));
+    spec.preprocess_ops.push_back(
+        ::make_spec_with_cond("val.b.out", ::make_op("first", "val.b"), QuerySpec::Condition::NotExist, "ctx.1"));
 
     //
     // --- run
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vbo_attr = db.get_attribute("val.b.out");
@@ -377,7 +358,7 @@ TEST(PreprocessorTest, Conditions) {
     EXPECT_FALSE(vbo_attr);
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto a_it = res.find(vao_attr.id());
 
     ASSERT_NE(a_it, res.end()) << "val.a.out attribute not found\n";
@@ -385,17 +366,13 @@ TEST(PreprocessorTest, Conditions) {
     EXPECT_EQ(a_it->second.value().to_int(), 42);
 }
 
-TEST(PreprocessorTest, SumKernel)
-{
+TEST(PreprocessorTest, SumKernel) {
     CaliperMetadataDB db;
-    IdMap idmap;
+    IdMap             idmap;
 
-    Attribute ctx_a =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_a =
-        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute val_b =
-        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx_a = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a = db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b = db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     EntryList rec;
 
@@ -405,15 +382,15 @@ TEST(PreprocessorTest, SumKernel)
 
     QuerySpec spec;
 
-    spec.preprocess_ops.push_back(::make_spec("val.a.out",  ::make_op("sum", "dummy.0", "val.a", "dummy.1")));
-    spec.preprocess_ops.push_back(::make_spec("val.s.out",  ::make_op("sum", "val.b",   "val.a", "dummy.0")));
+    spec.preprocess_ops.push_back(::make_spec("val.a.out", ::make_op("sum", "dummy.0", "val.a", "dummy.1")));
+    spec.preprocess_ops.push_back(::make_spec("val.s.out", ::make_op("sum", "val.b", "val.a", "dummy.0")));
 
     //
     // --- run
     //
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute vao_attr = db.get_attribute("val.a.out");
     Attribute vso_attr = db.get_attribute("val.s.out");
@@ -423,7 +400,7 @@ TEST(PreprocessorTest, SumKernel)
     EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
     EXPECT_EQ(vso_attr.type(), CALI_TYPE_INT);
 
-    auto res  = ::make_dict_from_entrylist(out);
+    auto res = ::make_dict_from_entrylist(out);
     auto a_it = res.find(vao_attr.id());
     auto s_it = res.find(vso_attr.id());
 
@@ -434,12 +411,10 @@ TEST(PreprocessorTest, SumKernel)
     EXPECT_EQ(s_it->second.value().to_int(), 66);
 }
 
-TEST(PreprocessorTest, LeafKernel)
-{
+TEST(PreprocessorTest, LeafKernel) {
     CaliperMetadataDB db;
 
-    Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx = db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     Attribute a[2] = { ctx, ctx };
     Variant   v[2] = { Variant("foo"), Variant("bar") };
@@ -453,7 +428,7 @@ TEST(PreprocessorTest, LeafKernel)
     spec.preprocess_ops.push_back(::make_spec("leaf", ::make_op("leaf", "ctx")));
 
     Preprocessor pp(spec);
-    EntryList out = pp.process(db, rec);
+    EntryList    out = pp.process(db, rec);
 
     Attribute leaf_attr = db.get_attribute("leaf");
 

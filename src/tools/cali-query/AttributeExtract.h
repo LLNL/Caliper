@@ -29,4 +29,4 @@ public:
     void operator()(CaliperMetadataAccessInterface&, const Node*);
 };
 
-}
+} // namespace cali

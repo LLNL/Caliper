@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #pragma once
@@ -9,7 +9,8 @@
 #include "ConfigManager.h"
 #include "ChannelController.h"
 
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifdef __cplusplus

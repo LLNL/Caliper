@@ -18,20 +18,14 @@
 
 using namespace cali;
 
-
 namespace
 {
 
-Channel make_flush_trigger_channel(Caliper* c)
-{
-    auto services =
-        services::get_available_services();
-    bool have_mpiflush =
-        std::find(services.begin(), services.end(), "mpiflush") != services.end();
+Channel make_flush_trigger_channel(Caliper* c) {
+    auto services = services::get_available_services();
+    bool have_mpiflush = std::find(services.begin(), services.end(), "mpiflush") != services.end();
 
-    std::map<std::string, std::string> cfgmap = {
-            { "CALI_CHANNEL_CONFIG_CHECK", "false" }
-        };
+    std::map<std::string, std::string> cfgmap = { { "CALI_CHANNEL_CONFIG_CHECK", "false" } };
 
     if (have_mpiflush)
         cfgmap["CALI_SERVICES_ENABLE"] = "mpi,mpiflush";
@@ -43,7 +37,7 @@ Channel make_flush_trigger_channel(Caliper* c)
     return c->create_channel("builtin.configmgr", cfg);
 }
 
-}
+} // namespace
 
 namespace cali
 {
@@ -52,8 +46,7 @@ namespace internal
 {
 
 /// \brief Create and configure the builtin ConfigManager, if needed
-void init_builtin_configmanager(Caliper* c)
-{
+void init_builtin_configmanager(Caliper* c) {
     const char* configstr = std::getenv("CALI_CONFIG");
 
     if (!configstr)
@@ -63,8 +56,7 @@ void init_builtin_configmanager(Caliper* c)
     mgr.add(configstr);
 
     if (mgr.error()) {
-        Log(0).stream() << "CALI_CONFIG: error: " << mgr.error_msg()
-                        << std::endl;
+        Log(0).stream() << "CALI_CONFIG: error: " << mgr.error_msg() << std::endl;
         return;
     }
 
@@ -73,29 +65,26 @@ void init_builtin_configmanager(Caliper* c)
     // that case, set the configmgr.flushed attribute to skip flushing at the
     // end of the program.
 
-    Attribute flag_attr =
-        c->create_attribute("cali.configmgr.flushed", CALI_TYPE_BOOL,
-                            CALI_ATTR_SKIP_EVENTS |
-                            CALI_ATTR_HIDDEN      |
-                            CALI_ATTR_ASVALUE);
+    Attribute flag_attr = c->create_attribute("cali.configmgr.flushed",
+                                              CALI_TYPE_BOOL,
+                                              CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN | CALI_ATTR_ASVALUE);
 
     Channel channel = ::make_flush_trigger_channel(c);
 
     mgr.start();
 
-    channel.events().write_output_evt.connect(
-        [mgr,flag_attr](Caliper* c, Channel* channel, SnapshotView) mutable {
-            if (c->get(channel, flag_attr).value().to_bool() == true)
-                return;
+    channel.events().write_output_evt.connect([mgr, flag_attr](Caliper* c, Channel* channel, SnapshotView) mutable {
+        if (c->get(channel, flag_attr).value().to_bool() == true)
+            return;
 
-            mgr.flush();
+        mgr.flush();
 
-            c->set(channel, flag_attr, Variant(true));
-        });
+        c->set(channel, flag_attr, Variant(true));
+    });
 
     Log(1).stream() << "Registered builtin ConfigManager" << std::endl;
 }
 
-} // namespace cali::internal
+} // namespace internal
 
 } // namespace cali

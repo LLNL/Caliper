@@ -18,20 +18,24 @@ namespace
 class ArgumentListParser
 {
     std::string m_error_msg;
-    bool m_error;
+    bool        m_error;
 
 public:
 
-    ArgumentListParser()
-        : m_error_msg {}, m_error { false }
-    { }
+    ArgumentListParser() : m_error_msg {}, m_error { false } {
+    }
 
-    bool error() const { return m_error; }
-    std::string error_msg() const { return m_error_msg; }
+    bool error() const {
+        return m_error;
+    }
+
+    std::string error_msg() const {
+        return m_error_msg;
+    }
 
     std::vector<std::string> parse(std::istream& is) {
         std::vector<std::string> ret;
-        char c = util::read_char(is);
+        char                     c = util::read_char(is);
 
         if (c != '(') {
             is.unget();
@@ -56,14 +60,12 @@ public:
     }
 };
 
-}
+} // namespace
 
-std::pair<std::shared_ptr<RegionFilter::Filter>, std::string>
-RegionFilter::parse_filter_config(std::istream& is)
-{
+std::pair<std::shared_ptr<RegionFilter::Filter>, std::string> RegionFilter::parse_filter_config(std::istream& is) {
     Filter ret;
 
-    bool error = false;
+    bool        error = false;
     std::string error_msg;
 
     char c = 0;
@@ -73,7 +75,7 @@ RegionFilter::parse_filter_config(std::istream& is)
 
         if (word == "match") {
             ::ArgumentListParser argparse;
-            auto args = argparse.parse(is);
+            auto                 args = argparse.parse(is);
             if (!argparse.error()) {
                 ret.match.insert(ret.match.end(), args.begin(), args.end());
             } else {
@@ -82,7 +84,7 @@ RegionFilter::parse_filter_config(std::istream& is)
             }
         } else if (word == "startswith") {
             ::ArgumentListParser argparse;
-            auto args = argparse.parse(is);
+            auto                 args = argparse.parse(is);
             if (!argparse.error()) {
                 ret.startswith.insert(ret.startswith.end(), args.begin(), args.end());
             } else {
@@ -91,10 +93,10 @@ RegionFilter::parse_filter_config(std::istream& is)
             }
         } else if (word == "regex") {
             ::ArgumentListParser argparse;
-            auto args = argparse.parse(is);
+            auto                 args = argparse.parse(is);
             if (!argparse.error()) {
                 try {
-                    for (const auto &s : args)
+                    for (const auto& s : args)
                         ret.regex.push_back(std::regex(s));
                 } catch (const std::regex_error& e) {
                     error = true;
@@ -121,37 +123,33 @@ RegionFilter::parse_filter_config(std::istream& is)
     return std::make_pair(retp, error_msg);
 }
 
-bool
-RegionFilter::match(const Variant& val, const Filter& filter)
-{
+bool RegionFilter::match(const Variant& val, const Filter& filter) {
     //   We assume val is a string. Variant strings aren't
     // 0-terminated, hence the more complicated comparisons
     const char* strp = static_cast<const char*>(val.data());
 
-    for (const auto &w : filter.startswith)
+    for (const auto& w : filter.startswith)
         if (val.size() >= w.size() && w.compare(0, w.size(), strp, w.size()) == 0)
             return true;
 
-    for (const auto &w : filter.match)
+    for (const auto& w : filter.match)
         if (val.size() == w.size() && w.compare(0, w.size(), strp, w.size()) == 0)
             return true;
 
-    for (const auto &r : filter.regex)
+    for (const auto& r : filter.regex)
         if (std::regex_match(std::string(strp, val.size()), r) == true)
             return true;
 
     return false;
 }
 
-std::pair<RegionFilter, std::string>
-RegionFilter::from_config(const std::string& include, const std::string& exclude)
-{
+std::pair<RegionFilter, std::string> RegionFilter::from_config(const std::string& include, const std::string& exclude) {
     std::shared_ptr<Filter> icfg;
     std::shared_ptr<Filter> ecfg;
 
     {
         std::istringstream is(include);
-        auto p = parse_filter_config(is);
+        auto               p = parse_filter_config(is);
 
         if (!p.second.empty())
             return std::make_pair(RegionFilter(), p.second);
@@ -161,7 +159,7 @@ RegionFilter::from_config(const std::string& include, const std::string& exclude
 
     {
         std::istringstream is(exclude);
-        auto p = parse_filter_config(is);
+        auto               p = parse_filter_config(is);
 
         if (!p.second.empty())
             return std::make_pair(RegionFilter(), p.second);

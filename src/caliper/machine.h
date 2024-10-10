@@ -16,9 +16,7 @@ namespace machine
 {
 
 /// \brief Describe the hardware level
-enum MachineLevel {
-    None, Process, Socket, Node
-};
+enum MachineLevel { None, Process, Socket, Node };
 
 /// \brief Determine rank of the calling process/thread on the given \a level
 int get_rank_for(MachineLevel level);

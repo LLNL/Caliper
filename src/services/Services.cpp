@@ -25,8 +25,7 @@ using namespace cali;
 namespace
 {
 
-std::string get_name_from_spec(const char* name_or_spec)
-{
+std::string get_name_from_spec(const char* name_or_spec) {
     // try to parse the given string as spec, otherwise return it as-is
     bool ok = false;
     auto dict = StringConverter(name_or_spec).rec_dict(&ok);
@@ -41,7 +40,8 @@ std::string get_name_from_spec(const char* name_or_spec)
     return std::string { name_or_spec };
 }
 
-class ServicesManager {
+class ServicesManager
+{
     std::map<std::string, CaliperService> m_services;
 
 public:
@@ -57,7 +57,7 @@ public:
     }
 
     bool register_service(const char* name, Caliper* c, Channel* channel) const {
-        for (const auto &p : m_services)
+        for (const auto& p : m_services)
             if (p.first == name && p.second.register_fn) {
                 (*p.second.register_fn)(c, channel);
                 return true;
@@ -139,8 +139,7 @@ public:
     }
 };
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {
@@ -148,16 +147,12 @@ namespace cali
 namespace services
 {
 
-bool register_service(Caliper* c, Channel* channel, const char* name)
-{
+bool register_service(Caliper* c, Channel* channel, const char* name) {
     return ServicesManager::instance()->register_service(name, c, channel);
 }
 
-void register_configured_services(Caliper* c, Channel* channel)
-{
-    const RuntimeConfig::config_entry_list_t configdata {
-        { "enable", "" }
-    };
+void register_configured_services(Caliper* c, Channel* channel) {
+    const RuntimeConfig::config_entry_list_t configdata { { "enable", "" } };
 
     std::vector<std::string> services =
         channel->config().init("services", configdata).get("enable").to_stringlist(",:");
@@ -170,38 +165,33 @@ void register_configured_services(Caliper* c, Channel* channel)
     }
 }
 
-void add_service_specs(const CaliperService* services)
-{
+void add_service_specs(const CaliperService* services) {
     ServicesManager::instance()->add_services(services);
 }
 
-std::vector<std::string> get_available_services()
-{
+std::vector<std::string> get_available_services() {
     return ServicesManager::instance()->get_available_services();
 }
 
-std::ostream& print_service_documentation(std::ostream& os, const std::string& name)
-{
+std::ostream& print_service_documentation(std::ostream& os, const std::string& name) {
     return ServicesManager::instance()->print_service_documentation(os, name);
 }
 
-std::string get_service_description(const std::string& name)
-{
+std::string get_service_description(const std::string& name) {
     return ServicesManager::instance()->get_service_description(name);
 }
 
-ConfigSet init_config_from_spec(RuntimeConfig config, const char* spec)
-{
+ConfigSet init_config_from_spec(RuntimeConfig config, const char* spec) {
     RuntimeConfig::config_entry_list_t list;
 
     auto dict = StringConverter(spec).rec_dict();
     auto spec_itr = dict.find("config");
     if (spec_itr != dict.end()) {
-        for (const auto &e : spec_itr->second.rec_list()) {
+        for (const auto& e : spec_itr->second.rec_list()) {
             auto cfg_dict = e.rec_dict();
 
             std::string key, val;
-            auto itr = cfg_dict.find("name");
+            auto        itr = cfg_dict.find("name");
             assert(itr != cfg_dict.end() && "config entry name missing");
             key = itr->second.to_string();
             itr = cfg_dict.find("value");
