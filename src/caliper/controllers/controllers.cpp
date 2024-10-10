@@ -4,11 +4,11 @@
 #include "caliper/caliper-config.h"
 
 #include "caliper/ConfigManager.h"
+#include <cstring>
 
-namespace
-{
+namespace {
 
-const char* event_trace_spec = R"json(
+const char *event_trace_spec = R"json(
     {
      "name"        : "event-trace",
      "description" : "Record a trace of region enter/exit events in .cali format",
@@ -114,7 +114,7 @@ const char* event_trace_spec = R"json(
     }
 )json";
 
-const char* nvprof_spec = R"json(
+const char *nvprof_spec = R"json(
     {
      "name"        : "nvprof",
      "services"    : [ "nvtx" ],
@@ -123,7 +123,7 @@ const char* nvprof_spec = R"json(
     }
 )json";
 
-const char* nvtx_spec = R"json(
+const char *nvtx_spec = R"json(
     {
      "name"        : "nvtx",
      "services"    : [ "nvtx" ],
@@ -132,7 +132,7 @@ const char* nvtx_spec = R"json(
     }
 )json";
 
-const char* roctx_spec = R"json(
+const char *roctx_spec = R"json(
     {
      "name"        : "roctx",
      "services"    : [ "roctx" ],
@@ -141,7 +141,7 @@ const char* roctx_spec = R"json(
     }
 )json";
 
-const char* mpireport_spec = R"json(
+const char *mpireport_spec = R"json(
     {
      "name"        : "mpi-report",
      "services"    : [ "aggregate", "event", "mpi", "mpireport", "timer" ],
@@ -180,16 +180,20 @@ const char* mpireport_spec = R"json(
     }
 )json";
 
-cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
-cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
-cali::ConfigManager::ConfigInfo nvtx_controller_info        { nvtx_spec,        nullptr, nullptr };
-cali::ConfigManager::ConfigInfo roctx_controller_info       { roctx_spec,       nullptr, nullptr };
-cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   nullptr, nullptr };
+cali::ConfigManager::ConfigInfo event_trace_controller_info{event_trace_spec,
+                                                            nullptr, nullptr};
+cali::ConfigManager::ConfigInfo nvprof_controller_info{nvprof_spec, nullptr,
+                                                       nullptr};
+cali::ConfigManager::ConfigInfo nvtx_controller_info{nvtx_spec, nullptr,
+                                                     nullptr};
+cali::ConfigManager::ConfigInfo roctx_controller_info{roctx_spec, nullptr,
+                                                      nullptr};
+cali::ConfigManager::ConfigInfo mpireport_controller_info{mpireport_spec,
+                                                          nullptr, nullptr};
 
-}
+} // namespace
 
-namespace cali
-{
+namespace cali {
 
 extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
@@ -203,7 +207,7 @@ extern ConfigManager::ConfigInfo runtime_report_controller_info;
 extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
-const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
+const ConfigManager::ConfigInfo *builtin_controllers_table[] = {
     &cuda_activity_profile_controller_info,
     &cuda_activity_report_controller_info,
     &::event_trace_controller_info,
@@ -220,10 +224,9 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &runtime_report_controller_info,
     &sample_report_controller_info,
     &spot_controller_info,
-    nullptr
-};
+    nullptr};
 
-const char* builtin_option_specs = R"json(
+const char *base_builtin_option_specs = R"json(
     [
     {
      "name"        : "profile.mpi",
@@ -1036,6 +1039,52 @@ const char* builtin_option_specs = R"json(
      "inherit"     : [ "mem.read.bandwidth", "mem.write.bandwidth" ],
     },
     {
+     "name"        : "output",
+     "description" : "Output location ('stdout', 'stderr', or filename)",
+     "type"        : "string",
+     "category"    : "output"
+    },
+    {
+     "name"        : "adiak.import_categories",
+     "services"    : [ "adiak_import" ],
+     "description" : "Adiak import categories. Comma-separated list of integers.",
+     "type"        : "string",
+     "category"    : "adiak"
+    },
+    {
+     "name"        : "max_column_width",
+     "type"        : "int",
+     "description" : "Maximum column width in the tree display",
+     "category"    : "treeformatter"
+    },
+    {
+     "name"        : "print.metadata",
+     "type"        : "bool",
+     "description" : "Print program metadata (Caliper globals and Adiak data)",
+     "category"    : "treeformatter"
+    },
+    {
+     "name"        : "order_as_visited",
+     "type"        : "bool",
+     "description" : "Print tree nodes in the original visit order",
+     "category"    : "treeformatter",
+     "query"       :
+     [
+      { "level":     "local",
+        "let":       [ "o_a_v.slot=first(aggregate.slot)" ],
+        "aggregate": [ "min(o_a_v.slot)" ],
+        "order by":  [ "min#o_a_v.slot"  ]
+      },
+      { "level":     "cross",
+        "aggregate": [ "min(min#o_a_v.slot)" ],
+        "order by":  [ "min#min#o_a_v.slot"  ]
+      }
+     ]
+    },
+)json";
+
+const char *default_topdown_option_spec = R"json(
+    {
      "name"        : "topdown.toplevel",
      "description" : "Top-down analysis for Intel CPUs (top level)",
      "type"        : "bool",
@@ -1211,51 +1260,314 @@ const char* builtin_option_specs = R"json(
        ]
       }
      ]
-    },
+    }
+  )json";
+
+const char *get_builtin_option_specs() {
+  const char *terminal = R"json(
+    ]
+  )json";
+  const char *topdown_opts = "";
+#if defined(CALIPER_HAVE_ARCH)
+  if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
+#if defined(CALIPER_WITH_PAPI_RDPMC)
+    topdown_opts = R"json(
     {
-     "name"        : "output",
-     "description" : "Output location ('stdout', 'stderr', or filename)",
-     "type"        : "string",
-     "category"    : "output"
-    },
-    {
-     "name"        : "adiak.import_categories",
-     "services"    : [ "adiak_import" ],
-     "description" : "Adiak import categories. Comma-separated list of integers.",
-     "type"        : "string",
-     "category"    : "adiak"
-    },
-    {
-     "name"        : "max_column_width",
-     "type"        : "int",
-     "description" : "Maximum column width in the tree display",
-     "category"    : "treeformatter"
-    },
-    {
-     "name"        : "print.metadata",
+     "name"        : "topdown.toplevel",
+     "description" : "Top-down analysis for Intel CPUs (top level)",
      "type"        : "bool",
-     "description" : "Print program metadata (Caliper globals and Adiak data)",
-     "category"    : "treeformatter"
-    },
-    {
-     "name"        : "order_as_visited",
-     "type"        : "bool",
-     "description" : "Print tree nodes in the original visit order",
-     "category"    : "treeformatter",
-     "query"       :
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
+     "query"  :
      [
-      { "level":     "local",
-        "let":       [ "o_a_v.slot=first(aggregate.slot)" ],
-        "aggregate": [ "min(o_a_v.slot)" ],
-        "order by":  [ "min#o_a_v.slot"  ]
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\""
+       ]
       },
-      { "level":     "cross",
-        "aggregate": [ "min(min#o_a_v.slot)" ],
-        "order by":  [ "min#min#o_a_v.slot"  ]
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown.all",
+     "description" : "Top-down analysis for Intel CPUs (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\"",
+        "any(topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(topdown.machine_clears) as \"Machine clears\"",
+        "any(topdown.frontend_latency) as \"Frontend latency\"",
+        "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(topdown.memory_bound) as \"Memory bound\"",
+        "any(topdown.core_bound) as \"Core bound\"",
+        "any(topdown.light_ops) as \"Light operations\"",
+        "any(topdown.heavy_ops) as \"Heavy operations\""
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\"",
+        "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(any#topdown.machine_clears) as \"Machine clears\"",
+        "any(any#topdown.frontend_latency) as \"Frontend latency\"",
+        "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(any#topdown.memory_bound) as \"Memory bound\"",
+        "any(any#topdown.core_bound) as \"Core bound\"",
+        "any(any#topdown.light_ops) as \"Light operations\"",
+        "any(any#topdown.heavy_ops) as \"Heavy operations\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.toplevel",
+     "description" : "Raw counter values for Intel top-down analysis (top level)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.all",
+     "description" : "Raw counter values for Intel top-down analysis (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
+       ]
       }
      ]
     }
-    ]
-)json";
-
+  )json";
+#else
+    topdown_opts = R"json(
+    {
+     "name"        : "topdown.toplevel",
+     "description" : "Top-down analysis for Intel CPUs (top level)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\""
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown.all",
+     "description" : "Top-down analysis for Intel CPUs (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "topdown" ],
+     "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "any(topdown.retiring) as \"Retiring\"",
+        "any(topdown.backend_bound) as \"Backend bound\"",
+        "any(topdown.frontend_bound) as \"Frontend bound\"",
+        "any(topdown.bad_speculation) as \"Bad speculation\"",
+        "any(topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(topdown.machine_clears) as \"Machine clears\"",
+        "any(topdown.frontend_latency) as \"Frontend latency\"",
+        "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(topdown.memory_bound) as \"Memory bound\"",
+        "any(topdown.core_bound) as \"Core bound\"",
+        "any(topdown.light_ops) as \"Light operations\"",
+        "any(topdown.heavy_ops) as \"Heavy operations\""
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "any(any#topdown.retiring) as \"Retiring\"",
+        "any(any#topdown.backend_bound) as \"Backend bound\"",
+        "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+        "any(any#topdown.bad_speculation) as \"Bad speculation\"",
+        "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
+        "any(any#topdown.machine_clears) as \"Machine clears\"",
+        "any(any#topdown.frontend_latency) as \"Frontend latency\"",
+        "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
+        "any(any#topdown.memory_bound) as \"Memory bound\"",
+        "any(any#topdown.core_bound) as \"Core bound\"",
+        "any(any#topdown.light_ops) as \"Light operations\"",
+        "any(any#topdown.heavy_ops) as \"Heavy operations\""
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.toplevel",
+     "description" : "Raw counter values for Intel top-down analysis (top level)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.perf::slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.perf::slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
+       ]
+      }
+     ]
+    },
+    {
+     "name"        : "topdown-counters.all",
+     "description" : "Raw counter values for Intel top-down analysis (all levels)",
+     "type"        : "bool",
+     "category"    : "metric",
+     "services"    : [ "papi" ],
+     "config"      :
+     {
+       "CALI_PAPI_COUNTERS":
+         "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700",
+       "CALI_PAPI_DISABLE_MULTIPLEXING": "true"
+     },
+     "query"  :
+     [
+      { "level": "local", "select":
+       [
+        "inclusive_sum(sum#papi.perf::slots) as slots",
+        "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
+        "inclusive_sum(sum#papi.perf_raw::r8400) as topdown_heavy_ops",
+        "inclusive_sum(sum#papi.perf_raw::r8500) as topdown_br_mispredict",
+        "inclusive_sum(sum#papi.perf_raw::r8600) as topdown_fetch_lat",
+        "inclusive_sum(sum#papi.perf_raw::r8700) as topdown_mem_bound"
+       ]
+      },
+      { "level": "cross", "select":
+       [
+        "sum(inclusive#sum#papi.perf::slots) as slots",
+        "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
+        "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
+        "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
+        "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
+        "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
+        "sum(inclusive#sum#papi.perf_raw::r8400) as topdown_heavy_ops",
+        "sum(inclusive#sum#papi.perf_raw::r8500) as topdown_br_mispredict",
+        "sum(inclusive#sum#papi.perf_raw::r8600) as topdown_fetch_lat",
+        "sum(inclusive#sum#papi.perf_raw::r8700) as topdown_mem_bound"
+       ]
+      }
+     ]
+    }
+  )json";
+#endif
+  } else {
+#endif
+    topdown_opts = default_topdown_option_spec;
+#if defined(CALIPER_HAVE_ARCH)
+  }
+#endif
+  char *full_builtin_option_specs =
+      new char[strlen(base_builtin_option_specs) + strlen(topdown_opts) +
+               strlen(terminal) + 1];
+  strcpy(full_builtin_option_specs, base_builtin_option_specs);
+  strcat(full_builtin_option_specs, topdown_opts);
+  strcat(full_builtin_option_specs, terminal);
+  full_builtin_option_specs[strlen(base_builtin_option_specs) +
+                            strlen(topdown_opts) + strlen(terminal)] = '\0';
+  return full_builtin_option_specs;
 }
+
+} // namespace cali
