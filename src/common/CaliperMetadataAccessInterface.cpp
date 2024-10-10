@@ -8,9 +8,7 @@
 
 using namespace cali;
 
-std::vector<Attribute>
-CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const
-{
+std::vector<Attribute> CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const {
     std::vector<Attribute> vec = get_all_attributes();
     std::vector<Attribute> ret;
 
@@ -21,9 +19,7 @@ CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) cons
     return ret;
 }
 
-std::vector<Attribute>
-CaliperMetadataAccessInterface::find_attributes_with_prop(int prop) const
-{
+std::vector<Attribute> CaliperMetadataAccessInterface::find_attributes_with_prop(int prop) const {
     std::vector<Attribute> vec = get_all_attributes();
     std::vector<Attribute> ret;
 
@@ -37,9 +33,7 @@ CaliperMetadataAccessInterface::find_attributes_with_prop(int prop) const
 namespace cali
 {
 
-Entry
-get_path_entry(const CaliperMetadataAccessInterface& db, const Entry& e)
-{
+Entry get_path_entry(const CaliperMetadataAccessInterface& db, const Entry& e) {
     Entry ret;
 
     if (e.is_reference()) {
@@ -53,5 +47,4 @@ get_path_entry(const CaliperMetadataAccessInterface& db, const Entry& e)
     return ret;
 }
 
-}
-
+} // namespace cali

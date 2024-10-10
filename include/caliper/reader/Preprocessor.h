@@ -38,8 +38,7 @@ public:
         push(db, process(db, rec));
     }
 
-    static const QuerySpec::FunctionSignature*
-    preprocess_defs();
+    static const QuerySpec::FunctionSignature* preprocess_defs();
 };
 
 } // namespace cali

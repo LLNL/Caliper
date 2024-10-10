@@ -42,10 +42,8 @@ TEST(ConfigManagerTest, ParseErrors) {
         EXPECT_STREQ(mgr.error_msg().c_str(), "Expected ')'");
     }
 
-    EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(),
-                 "Unknown config or parameter: foo");
-    EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(),
-                 "Unknown config or parameter: ");
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(), "Unknown config or parameter: foo");
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(), "Unknown config or parameter: ");
 }
 
 TEST(ConfigManagerTest, ParseConfig) {
@@ -62,10 +60,11 @@ TEST(ConfigManagerTest, ParseConfig) {
     }
 
     {
-        cali::ConfigManager mgr;
+        cali::ConfigManager           mgr;
         cali::ConfigManager::argmap_t extra_kv_pairs;
 
-        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, aggregate_across_ranks=false, foo=bar , blagarbl ", extra_kv_pairs));
+        EXPECT_TRUE(
+            mgr.add(" event-trace, runtime-report, aggregate_across_ranks=false, foo=bar , blagarbl ", extra_kv_pairs));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -83,7 +82,8 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,aggregate_across_ranks=false ) "));
+        EXPECT_TRUE(mgr.add(
+            " event-trace  ( output = test.cali ),   runtime-report(output=stdout,aggregate_across_ranks=false ) "));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -114,7 +114,6 @@ TEST(ConfigManagerTest, ParseEmptyConfig) {
     }
 }
 
-
 namespace
 {
 
@@ -123,9 +122,7 @@ class TestController : public cali::ChannelController
     cali::ConfigManager::Options opts;
 
     TestController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& o)
-        : ChannelController(name, 0, initial_cfg),
-          opts(o)
-    { 
+        : ChannelController(name, 0, initial_cfg), opts(o) {
     }
 
 public:
@@ -160,12 +157,14 @@ public:
         return cfg[key];
     }
 
-    static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+    static cali::ChannelController* create(const char*                         name,
+                                           const config_map_t&                 initial_cfg,
+                                           const cali::ConfigManager::Options& opts) {
         return new TestController(name, initial_cfg, opts);
     }
 
-    ~TestController()
-        { }
+    ~TestController() {
+    }
 };
 
 const char* testcontroller_spec = R"json(
@@ -241,10 +240,9 @@ const char* test_option_spec = R"json(
     ];
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
-TEST(ConfigManagerTest, Options)
-{
+TEST(ConfigManagerTest, Options) {
     const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
 
     {
@@ -259,8 +257,8 @@ TEST(ConfigManagerTest, Options)
 
         std::string expected_configs[] = { "event-trace", "runtime-report", "testcontroller" };
 
-        EXPECT_TRUE(std::includes(configs.begin(), configs.end(),
-                                std::begin(expected_configs), std::end(expected_configs)));
+        EXPECT_TRUE(
+            std::includes(configs.begin(), configs.end(), std::begin(expected_configs), std::end(expected_configs)));
     }
 
     {
@@ -318,13 +316,12 @@ TEST(ConfigManagerTest, Options)
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
         EXPECT_FALSE(tP->is_enabled("defaultopt"));
-        EXPECT_EQ(tP->get_opt("intopt"),    std::string("42"));
+        EXPECT_EQ(tP->get_opt("intopt"), std::string("42"));
         EXPECT_EQ(tP->get_opt("stringopt"), std::string("set_default_parameter"));
     }
 }
 
-TEST(ConfigManagerTest, VariableOption)
-{
+TEST(ConfigManagerTest, VariableOption) {
     const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
 
     {
@@ -344,8 +341,7 @@ TEST(ConfigManagerTest, VariableOption)
     }
 }
 
-TEST(ConfigManagerTest, BuildQuery)
-{
+TEST(ConfigManagerTest, BuildQuery) {
     const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
 
     {
@@ -360,13 +356,12 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
-        std::string q1 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-                { "let", "a=first(b,c)" },
-                { "where", "xyz=42" },
-                { "group by", "z"}
-            });
+        std::string q1 = tP->get_query("local",
+                                       { { "select", "me" },
+                                         { "format", "expand" },
+                                         { "let", "a=first(b,c)" },
+                                         { "where", "xyz=42" },
+                                         { "group by", "z" } });
         const char* expect =
             " let a=first(b,c),x=scale(y,2)"
             " select me,sum(x) as \"X\" unit \"Foos\""
@@ -378,10 +373,11 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q1.c_str(), expect);
 
-        std::string q2 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-            });
+        std::string q2 = tP->get_query("local",
+                                       {
+                                           { "select", "me" },
+                                           { "format", "expand" },
+                                       });
         expect =
             " let x=scale(y,2)"
             " select me,sum(x) as \"X\" unit \"Foos\""
@@ -392,7 +388,6 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q2.c_str(), expect);
     }
-
 
     {
         ConfigManager mgr;
@@ -406,13 +401,12 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_FALSE(tP->is_enabled("boolopt"));
 
-        std::string q3 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-                { "let", "a=first(b,c)" },
-                { "where", "xyz=42" },
-                { "group by", "z"}
-            });
+        std::string q3 = tP->get_query("local",
+                                       { { "select", "me" },
+                                         { "format", "expand" },
+                                         { "let", "a=first(b,c)" },
+                                         { "where", "xyz=42" },
+                                         { "group by", "z" } });
         const char* expect =
             " let a=first(b,c)"
             " select me"
@@ -422,10 +416,11 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q3.c_str(), expect);
 
-        std::string q4 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-            });
+        std::string q4 = tP->get_query("local",
+                                       {
+                                           { "select", "me" },
+                                           { "format", "expand" },
+                                       });
         expect =
             " select me"
             " format expand";

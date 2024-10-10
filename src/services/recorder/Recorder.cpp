@@ -45,11 +45,10 @@ const char* spec = R"json(
     }
 )json";
 
-void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)
-{
+void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info) {
     ConfigSet cfg = services::init_config_from_spec(chn->config(), spec);
 
-    std::string filename  = cfg.get("filename").to_string();
+    std::string filename = cfg.get("filename").to_string();
     std::string directory = cfg.get("directory").to_string();
 
     if (filename.empty())
@@ -62,18 +61,16 @@ void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)
 
     CaliWriter writer(stream);
 
-    c->flush(chn, flush_info, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-            writer.write_snapshot(db, rec);
-        });
+    c->flush(chn, flush_info, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+        writer.write_snapshot(db, rec);
+    });
 
     writer.write_globals(*c, c->get_globals(*chn));
 
-    Log(1).stream() << chn->name()
-                    << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;
+    Log(1).stream() << chn->name() << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;
 }
 
-void recorder_register(Caliper* c, Channel* chn)
-{
+void recorder_register(Caliper* c, Channel* chn) {
     chn->events().write_output_evt.connect(::write_output_cb);
 }
 

@@ -19,12 +19,9 @@ using namespace cali;
 namespace
 {
 
-enum RecordKind {
-    Snapshot, Globals
-};
+enum RecordKind { Snapshot, Globals };
 
-void write_node_content(std::ostream& os, const cali::Node* node)
-{
+void write_node_content(std::ostream& os, const cali::Node* node) {
     util::write_uint64(os.write("__rec=node,id=", 14), node->id());
     util::write_uint64(os.write(",attr=", 6), node->attribute());
 
@@ -36,8 +33,10 @@ void write_node_content(std::ostream& os, const cali::Node* node)
     os.put('\n');
 }
 
-void write_record_content(std::ostream& os, RecordKind kind, const std::vector<Entry>& ref_entries, const std::vector<Entry>& imm_entries)
-{
+void write_record_content(std::ostream&             os,
+                          RecordKind                kind,
+                          const std::vector<Entry>& ref_entries,
+                          const std::vector<Entry>& imm_entries) {
     if (kind == RecordKind::Snapshot)
         os.write("__rec=ctx", 9);
     else if (kind == RecordKind::Globals)
@@ -64,32 +63,26 @@ void write_record_content(std::ostream& os, RecordKind kind, const std::vector<E
     os.put('\n');
 }
 
-} // namespace [anonymous]
+} // namespace
 
-struct CaliWriter::CaliWriterImpl
-{
-    OutputStream  m_os;
-    std::mutex    m_os_lock;
+struct CaliWriter::CaliWriterImpl {
+    OutputStream m_os;
+    std::mutex   m_os_lock;
 
     std::set<cali_id_t> m_written_nodes;
-    std::mutex    m_written_nodes_lock;
+    std::mutex          m_written_nodes_lock;
 
-    std::size_t   m_num_written;
+    std::size_t m_num_written;
 
+    CaliWriterImpl(OutputStream& os) : m_os(os), m_num_written(0) {
+    }
 
-    CaliWriterImpl(OutputStream& os)
-        : m_os(os),
-          m_num_written(0)
-    { }
-
-    void recursive_write_node(const CaliperMetadataAccessInterface& db, cali_id_t id)
-    {
+    void recursive_write_node(const CaliperMetadataAccessInterface& db, cali_id_t id) {
         if (id < 11) // don't write the hard-coded metadata nodes
             return;
 
         {
-            std::lock_guard<std::mutex>
-                g(m_written_nodes_lock);
+            std::lock_guard<std::mutex> g(m_written_nodes_lock);
 
             if (m_written_nodes.count(id) > 0)
                 return;
@@ -108,8 +101,7 @@ struct CaliWriter::CaliWriterImpl
             recursive_write_node(db, parent->id());
 
         {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
+            std::lock_guard<std::mutex> g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
 
@@ -118,17 +110,13 @@ struct CaliWriter::CaliWriterImpl
         }
 
         {
-            std::lock_guard<std::mutex>
-                g(m_written_nodes_lock);
+            std::lock_guard<std::mutex> g(m_written_nodes_lock);
 
             m_written_nodes.insert(id);
         }
     }
 
-    void write_entrylist(const CaliperMetadataAccessInterface& db,
-                         RecordKind kind,
-                         const std::vector<Entry>& rec)
-    {
+    void write_entrylist(const CaliperMetadataAccessInterface& db, RecordKind kind, const std::vector<Entry>& rec) {
         // write node entries
 
         std::vector<Entry> ref_entries;
@@ -149,8 +137,7 @@ struct CaliWriter::CaliWriterImpl
         // write the record
 
         {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
+            std::lock_guard<std::mutex> g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
 
@@ -160,27 +147,21 @@ struct CaliWriter::CaliWriterImpl
     }
 };
 
+CaliWriter::CaliWriter(OutputStream& os) : mP(new CaliWriterImpl(os)) {
+}
 
-CaliWriter::CaliWriter(OutputStream& os)
-    : mP(new CaliWriterImpl(os))
-{ }
-
-CaliWriter::~CaliWriter()
-{
+CaliWriter::~CaliWriter() {
     mP.reset();
 }
 
-size_t CaliWriter::num_written() const
-{
+size_t CaliWriter::num_written() const {
     return mP ? mP->m_num_written : 0;
 }
 
-void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
-{
+void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list) {
     mP->write_entrylist(db, ::RecordKind::Snapshot, list);
 }
 
-void CaliWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
-{
+void CaliWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list) {
     mP->write_entrylist(db, ::RecordKind::Globals, list);
 }

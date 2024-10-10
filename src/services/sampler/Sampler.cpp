@@ -43,12 +43,12 @@ Attribute timer_attr;
 Attribute sampler_attr;
 Attribute ucursor_attr;
 
-int       nsec_interval       = 0;
+int nsec_interval = 0;
 
-int       n_samples           = 0;
-int       n_processed_samples = 0;
+int n_samples = 0;
+int n_processed_samples = 0;
 
-Channel   channel;
+Channel channel;
 
 const char* spec = R"json(
 {   "name": "sampler",
@@ -63,8 +63,7 @@ const char* spec = R"json(
 }
 )json";
 
-void on_prof(int sig, siginfo_t *info, void *context)
-{
+void on_prof(int sig, siginfo_t* info, void* context) {
     ++n_samples;
 
     Caliper c = Caliper::sigsafe_instance();
@@ -72,12 +71,12 @@ void on_prof(int sig, siginfo_t *info, void *context)
     if (!c)
         return;
 
-    Entry data[2];
+    Entry    data[2];
     unsigned count = 0;
 
 #ifdef CALI_SAMPLER_GET_PC
-    uint64_t  pc = static_cast<uint64_t>( CALI_SAMPLER_GET_PC(context) );
-    Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
+    uint64_t pc = static_cast<uint64_t>(CALI_SAMPLER_GET_PC(context));
+    Variant  v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
     data[count++] = Entry(sampler_attr, v_pc);
 #endif
 
@@ -99,8 +98,7 @@ void on_prof(int sig, siginfo_t *info, void *context)
     ++n_processed_samples;
 }
 
-void setup_signal()
-{
+void setup_signal() {
     sigset_t sigset;
 
     sigemptyset(&sigset);
@@ -112,30 +110,27 @@ void setup_signal()
     memset(&act, 0, sizeof(act));
 
     act.sa_sigaction = on_prof;
-    act.sa_flags     = SA_RESTART | SA_SIGINFO;
+    act.sa_flags = SA_RESTART | SA_SIGINFO;
 
     sigaction(SIGPROF, &act, NULL);
 }
 
-void clear_signal()
-{
+void clear_signal() {
     signal(SIGPROF, SIG_IGN);
 }
 
-struct TimerWrap
-{
+struct TimerWrap {
     timer_t timer;
 };
 
-void setup_settimer(Caliper* c)
-{
+void setup_settimer(Caliper* c) {
     struct sigevent sev;
 
     std::memset(&sev, 0, sizeof(sev));
 
-    sev.sigev_notify   = SIGEV_THREAD_ID;     // Linux-specific!
+    sev.sigev_notify = SIGEV_THREAD_ID; // Linux-specific!
     sev._sigev_un._tid = syscall(SYS_gettid);
-    sev.sigev_signo    = SIGPROF;
+    sev.sigev_signo = SIGPROF;
 
     TimerWrap* twrap = new TimerWrap;
 
@@ -146,10 +141,10 @@ void setup_settimer(Caliper* c)
 
     struct itimerspec spec;
 
-    spec.it_interval.tv_sec  = 0;
+    spec.it_interval.tv_sec = 0;
     spec.it_interval.tv_nsec = nsec_interval;
-    spec.it_value.tv_sec     = 0;
-    spec.it_value.tv_nsec    = nsec_interval;
+    spec.it_value.tv_sec = 0;
+    spec.it_value.tv_nsec = nsec_interval;
 
     if (timer_settime(twrap->timer, 0, &spec, NULL) == -1) {
         Log(0).stream() << "Sampler: timer_settime() failed" << std::endl;
@@ -195,10 +190,8 @@ void pre_finish_cb(Caliper* c, Channel* chn) {
 }
 
 void finish_cb(Caliper* c, Channel* chn) {
-    Log(1).stream() << chn->name()
-                    << ": Sampler: processed " << n_processed_samples << " samples ("
-                    << n_samples << " total, "
-                    << n_samples - n_processed_samples << " dropped)." << endl;
+    Log(1).stream() << chn->name() << ": Sampler: processed " << n_processed_samples << " samples (" << n_samples
+                    << " total, " << n_samples - n_processed_samples << " dropped)." << endl;
 
     n_samples = 0;
     n_processed_samples = 0;
@@ -206,47 +199,40 @@ void finish_cb(Caliper* c, Channel* chn) {
     channel = Channel();
 }
 
-void sampler_register(Caliper* c, Channel* chn)
-{
+void sampler_register(Caliper* c, Channel* chn) {
     if (channel) {
         Log(0).stream() << chn->name() << ": Sampler: Cannot enable sampler service twice!"
-            << " It is already enabled in channel "
-            << channel.name() << std::endl;
+                        << " It is already enabled in channel " << channel.name() << std::endl;
         return;
     }
 
     ConfigSet config = services::init_config_from_spec(chn->config(), spec);
 
     Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
-    Variant v_true(true);
+    Variant   v_true(true);
 
     timer_attr =
-        c->create_attribute(std::string("cali.sampler.timer.")+std::to_string(chn->id()), CALI_TYPE_PTR,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_HIDDEN);
-    sampler_attr =
-        c->create_attribute("cali.sampler.pc", CALI_TYPE_ADDR,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_ASVALUE,
-                            1, &symbol_class_attr, &v_true);
+        c->create_attribute(std::string("cali.sampler.timer.") + std::to_string(chn->id()),
+                            CALI_TYPE_PTR,
+                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
+    sampler_attr = c->create_attribute("cali.sampler.pc",
+                                       CALI_TYPE_ADDR,
+                                       CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE,
+                                       1,
+                                       &symbol_class_attr,
+                                       &v_true);
     ucursor_attr =
-        c->create_attribute("cali.unw_cursor", CALI_TYPE_PTR,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_HIDDEN);
+        c->create_attribute("cali.unw_cursor",
+                            CALI_TYPE_PTR,
+                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
     int frequency = config.get("frequency").to_int();
 
     // some sanity checking
-    frequency     = std::min(std::max(frequency, 1), 10000);
+    frequency = std::min(std::max(frequency, 1), 10000);
     nsec_interval = 1000000000 / frequency;
 
-    c->set(chn, c->create_attribute("sample.frequency", CALI_TYPE_INT, CALI_ATTR_GLOBAL),
-           Variant(frequency));
+    c->set(chn, c->create_attribute("sample.frequency", CALI_TYPE_INT, CALI_ATTR_GLOBAL), Variant(frequency));
 
     chn->events().create_thread_evt.connect(create_thread_cb);
     chn->events().release_thread_evt.connect(release_thread_cb);
@@ -258,8 +244,8 @@ void sampler_register(Caliper* c, Channel* chn)
     setup_signal();
     setup_settimer(c);
 
-    Log(1).stream() << chn->name() << ": Registered sampler service. Using "
-        << frequency << "Hz sampling frequency." << endl;
+    Log(1).stream() << chn->name() << ": Registered sampler service. Using " << frequency << "Hz sampling frequency."
+                    << endl;
 }
 
 } // namespace

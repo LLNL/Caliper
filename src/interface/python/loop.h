@@ -3,23 +3,27 @@
 
 #include "common.h"
 
-namespace cali {
+namespace cali
+{
 
-class PythonLoop {
+class PythonLoop
+{
 public:
-  PythonLoop(const char *name);
 
-  void start_iteration(int i);
+    PythonLoop(const char* name);
 
-  void end_iteration();
+    void start_iteration(int i);
 
-  void end();
+    void end_iteration();
+
+    void end();
 
 private:
-  cali_id_t m_iter_attr;
+
+    cali_id_t m_iter_attr;
 };
 
-void create_caliper_loop_mod(py::module_ &caliper_loop_mod);
+void create_caliper_loop_mod(py::module_& caliper_loop_mod);
 
 } // namespace cali
 

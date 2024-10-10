@@ -40,14 +40,13 @@ class MpiReport
         // check if we can use MPI
 
         int initialized = 0;
-        int finalized   = 0;
+        int finalized = 0;
 
         PMPI_Initialized(&initialized);
         PMPI_Finalized(&finalized);
 
         if (finalized) {
-            Log(0).stream() << channel->name()
-                            << ": mpireport: MPI is already finalized. Cannot aggregate output."
+            Log(0).stream() << channel->name() << ": mpireport: MPI is already finalized. Cannot aggregate output."
                             << std::endl;
             return;
         }
@@ -86,58 +85,45 @@ class MpiReport
         }
 
         events->mpi_finalize_evt.connect(
-            [](Caliper* c, Channel* channel){
-                c->flush_and_write(channel, SnapshotView());
-            });
+            [](Caliper* c, Channel* channel) { c->flush_and_write(channel, SnapshotView()); });
     }
 
-    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename, bool append)
-        : m_cross_spec(cross_spec),
-          m_local_spec(local_spec),
-          m_filename(filename),
-          m_append_to_file(append)
-        { }
+    MpiReport(const QuerySpec& cross_spec, const QuerySpec& local_spec, const std::string& filename, bool append)
+        : m_cross_spec(cross_spec), m_local_spec(local_spec), m_filename(filename), m_append_to_file(append) {
+    }
 
 public:
 
     static const char* s_spec;
 
     static void init(Caliper* c, Channel* chn) {
-        ConfigSet   config = services::init_config_from_spec(chn->config(), s_spec);
+        ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
         std::string cross_cfg = config.get("config").to_string();
         std::string local_cfg = config.get("local_config").to_string();
 
-
         CalQLParser cross_parser(cross_cfg.c_str());
         CalQLParser local_parser(local_cfg.empty() ? cross_cfg.c_str() : local_cfg.c_str());
 
-        for ( const auto *p : { &cross_parser, &local_parser } )
+        for (const auto* p : { &cross_parser, &local_parser })
             if (p->error()) {
-                Log(0).stream() << chn->name() << ": mpireport: config parse error: "
-                                << p->error_msg() << std::endl;
+                Log(0).stream() << chn->name() << ": mpireport: config parse error: " << p->error_msg() << std::endl;
 
                 return;
             }
 
-        MpiReport* instance =
-            new MpiReport(cross_parser.spec(), local_parser.spec(),
-                    config.get("filename").to_string(), config.get("append").to_bool());
+        MpiReport* instance = new MpiReport(cross_parser.spec(),
+                                            local_parser.spec(),
+                                            config.get("filename").to_string(),
+                                            config.get("append").to_bool());
 
         chn->events().write_output_evt.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotView info){
-                instance->write_output_cb(c, chn, info);
-            });
-        chn->events().finish_evt.connect(
-            [instance](Caliper*, Channel*){
-                delete instance;
-            });
+            [instance](Caliper* c, Channel* chn, SnapshotView info) { instance->write_output_cb(c, chn, info); });
+        chn->events().finish_evt.connect([instance](Caliper*, Channel*) { delete instance; });
 
         if (config.get("write_on_finalize").to_bool() == true) {
             chn->events().post_init_evt.connect(
-                [instance](Caliper*, Channel* channel){
-                    instance->connect_mpi_finalize(channel);
-                });
+                [instance](Caliper*, Channel* channel) { instance->connect_mpi_finalize(channel); });
         }
 
         Log(1).stream() << chn->name() << ": Registered mpireport service" << std::endl;
@@ -175,7 +161,7 @@ const char* MpiReport::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

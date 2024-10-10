@@ -11,14 +11,15 @@
 
 namespace util
 {
-    
-class spinlock {
+
+class spinlock
+{
     std::atomic_flag m_lock = ATOMIC_FLAG_INIT;
 
 public:
 
-    spinlock()
-        { }
+    spinlock() {
+    }
 
     void lock() {
         while (m_lock.test_and_set(std::memory_order_acquire))
@@ -30,6 +31,6 @@ public:
     }
 };
 
-} // namespace
+} // namespace util
 
 #endif

@@ -13,9 +13,7 @@ using namespace cali::internal;
 
 CustomOutputController::FlushFn CustomOutputController::s_flush_fn { nullptr };
 
-void
-CustomOutputController::set_flush_fn(FlushFn flush_fn)
-{
+void CustomOutputController::set_flush_fn(FlushFn flush_fn) {
     s_flush_fn = flush_fn;
 }
 
@@ -23,32 +21,26 @@ CustomOutputController::set_flush_fn(FlushFn flush_fn)
 // --- CustomOutputController::Comm
 //
 
-CustomOutputController::Comm::~Comm()
-{
+CustomOutputController::Comm::~Comm() {
 }
 
-int CustomOutputController::Comm::rank() const
-{
+int CustomOutputController::Comm::rank() const {
     return 0;
 }
 
-int CustomOutputController::Comm::bcast_int(int val) const
-{
+int CustomOutputController::Comm::bcast_int(int val) const {
     return val;
 }
 
-std::string CustomOutputController::Comm::bcast_str(const std::string& val) const
-{
+std::string CustomOutputController::Comm::bcast_str(const std::string& val) const {
     return val;
 }
 
-void CustomOutputController::Comm::cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) const
-{
+void CustomOutputController::Comm::cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) const {
     // no-op
 }
 
-void CustomOutputController::flush()
-{
+void CustomOutputController::flush() {
     auto chn = channel();
 
     if (!chn)
@@ -57,11 +49,9 @@ void CustomOutputController::flush()
     if (s_flush_fn) {
         (*s_flush_fn)(this);
     } else {
-        Log(2).stream() << chn.name()
-                        << ": CustomOutputController::flush(): using serial flush"
-                        << std::endl;
+        Log(2).stream() << chn.name() << ": CustomOutputController::flush(): using serial flush" << std::endl;
 
-        Comm comm;
+        Comm         comm;
         OutputStream stream;
 
         collective_flush(stream, comm);
@@ -69,5 +59,5 @@ void CustomOutputController::flush()
 }
 
 CustomOutputController::CustomOutputController(const char* name, int flags, const config_map_t& initial_cfg)
-    : ChannelController(name, flags, initial_cfg)
-{ }
+    : ChannelController(name, flags, initial_cfg) {
+}

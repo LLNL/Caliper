@@ -27,8 +27,7 @@ namespace
 {
 
 #if defined(_WIN32) || (__cplusplus >= 201703L)
-bool check_and_create_directory(const std::filesystem::path& filepath)
-{
+bool check_and_create_directory(const std::filesystem::path& filepath) {
     try {
         auto parent = filepath.parent_path();
         if (parent.empty())
@@ -44,8 +43,7 @@ bool check_and_create_directory(const std::filesystem::path& filepath)
     return true;
 }
 #else
-bool check_and_create_directory(const std::string& filepath)
-{
+bool check_and_create_directory(const std::string& filepath) {
     auto pos = filepath.find_last_of('/');
 
     if (pos == 0 || pos == std::string::npos)
@@ -81,20 +79,19 @@ bool check_and_create_directory(const std::string& filepath)
 }
 #endif
 
-}
+} // namespace
 
-struct OutputStream::OutputStreamImpl
-{
-    StreamType    type;
-    Mode          mode;
+struct OutputStream::OutputStreamImpl {
+    StreamType type;
+    Mode       mode;
 
-    bool          is_initialized;
-    std::mutex    init_mutex;
+    bool       is_initialized;
+    std::mutex init_mutex;
 
 #if defined(_WIN32) || (__cplusplus >= 201703L)
-    std::filesystem::path   filename;
+    std::filesystem::path filename;
 #else
-    std::string             filename;
+    std::string filename;
 #endif
     std::ofstream fs;
 
@@ -104,8 +101,7 @@ struct OutputStream::OutputStreamImpl
         if (is_initialized)
             return;
 
-        std::lock_guard<std::mutex>
-            g(init_mutex);
+        std::lock_guard<std::mutex> g(init_mutex);
 
         is_initialized = true;
 
@@ -148,78 +144,62 @@ struct OutputStream::OutputStreamImpl
         is_initialized = false;
     }
 
-    OutputStreamImpl()
-        : type(StreamType::None), mode(Truncate), is_initialized(false), user_os(nullptr)
-    { }
+    OutputStreamImpl() : type(StreamType::None), mode(Truncate), is_initialized(false), user_os(nullptr) {
+    }
 
     OutputStreamImpl(const char* name)
-        : type(StreamType::None), mode(Truncate), is_initialized(false), filename(name), user_os(nullptr)
-    { }
+        : type(StreamType::None), mode(Truncate), is_initialized(false), filename(name), user_os(nullptr) {
+    }
 };
 
-OutputStream::OutputStream()
-    : mP(new OutputStreamImpl)
-{ }
+OutputStream::OutputStream() : mP(new OutputStreamImpl) {
+}
 
-OutputStream::~OutputStream()
-{
+OutputStream::~OutputStream() {
     mP.reset();
 }
 
-OutputStream::operator bool() const
-{
+OutputStream::operator bool() const {
     return mP->is_initialized;
 }
 
-OutputStream::StreamType
-OutputStream::type() const
-{
+OutputStream::StreamType OutputStream::type() const {
     return mP->type;
 }
 
-std::ostream*
-OutputStream::stream()
-{
+std::ostream* OutputStream::stream() {
     return mP->stream();
 }
 
-void
-OutputStream::set_mode(OutputStream::Mode mode)
-{
+void OutputStream::set_mode(OutputStream::Mode mode) {
     mP->mode = mode;
 }
 
-void
-OutputStream::set_stream(StreamType type)
-{
+void OutputStream::set_stream(StreamType type) {
     mP->reset();
     mP->type = type;
 }
 
-void
-OutputStream::set_stream(std::ostream* os)
-{
+void OutputStream::set_stream(std::ostream* os) {
     mP->reset();
 
-    mP->type    = StreamType::User;
+    mP->type = StreamType::User;
     mP->user_os = os;
 }
 
-void
-OutputStream::set_filename(const char* filename)
-{
+void OutputStream::set_filename(const char* filename) {
     mP->reset();
 
     mP->filename = filename;
-    mP->type     = StreamType::File;
+    mP->type = StreamType::File;
 }
 
-void
-OutputStream::set_filename(const char* formatstr, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec)
-{
+void OutputStream::set_filename(const char*                           formatstr,
+                                const CaliperMetadataAccessInterface& db,
+                                const std::vector<Entry>&             rec) {
     mP->reset();
 
-    if      (strcmp(formatstr, "stdout") == 0)
+    if (strcmp(formatstr, "stdout") == 0)
         mP->type = StreamType::StdOut;
     else if (strcmp(formatstr, "stderr") == 0)
         mP->type = StreamType::StdErr;
@@ -230,6 +210,6 @@ OutputStream::set_filename(const char* formatstr, const CaliperMetadataAccessInt
         formatter.print(fnamestr, db, rec);
 
         mP->filename = fnamestr.str();
-        mP->type     = StreamType::File;
+        mP->type = StreamType::File;
     }
 }

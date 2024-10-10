@@ -20,9 +20,9 @@ class Variant;
 class RegionFilter
 {
     struct Filter {
-        std::vector< std::string > startswith;
-        std::vector< std::string > match;
-        std::vector< std::regex  > regex;
+        std::vector<std::string> startswith;
+        std::vector<std::string> match;
+        std::vector<std::regex>  regex;
     };
 
     std::shared_ptr<Filter> m_include_filters;
@@ -33,9 +33,8 @@ class RegionFilter
     static bool match(const Variant& val, const Filter&);
 
     RegionFilter(std::shared_ptr<Filter> iflt, std::shared_ptr<Filter> eflt)
-        : m_include_filters { iflt },
-          m_exclude_filters { eflt }
-        { }
+        : m_include_filters { iflt }, m_exclude_filters { eflt } {
+    }
 
 public:
 
@@ -53,8 +52,8 @@ public:
         return m_exclude_filters || m_include_filters;
     }
 
-    RegionFilter()
-        { }
+    RegionFilter() {
+    }
 
     static std::pair<RegionFilter, std::string> from_config(const std::string& include, const std::string& exclude);
 };

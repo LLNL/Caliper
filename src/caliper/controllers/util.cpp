@@ -9,8 +9,9 @@
 
 using namespace cali;
 
-std::string util::build_tree_format_spec(config_map_t& config, const ConfigManager::Options& opts, const char* initial)
-{
+std::string util::build_tree_format_spec(config_map_t&                 config,
+                                         const ConfigManager::Options& opts,
+                                         const char*                   initial) {
     std::string format = initial;
 
     if (opts.is_set("max_column_width"))

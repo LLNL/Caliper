@@ -16,8 +16,7 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
-std::ostream&
-format_record_as_table(CaliperMetadataAccessInterface& db, const std::vector<Entry>&, std::ostream& os);
+std::ostream& format_record_as_table(CaliperMetadataAccessInterface& db, const std::vector<Entry>&, std::ostream& os);
 
 } // namespace cali
 

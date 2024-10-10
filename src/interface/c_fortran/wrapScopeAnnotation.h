@@ -15,19 +15,19 @@
 // splicer end class.ScopeAnnotation.CXX_declarations
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // splicer begin class.ScopeAnnotation.C_declarations
 // splicer end class.ScopeAnnotation.C_declarations
 
-cali_ScopeAnnotation * cali_ScopeAnnotation_begin(const char * name,
-    cali_ScopeAnnotation * SHC_rv);
+cali_ScopeAnnotation* cali_ScopeAnnotation_begin(const char* name, cali_ScopeAnnotation* SHC_rv);
 
-void cali_ScopeAnnotation_end(cali_ScopeAnnotation * self);
+void cali_ScopeAnnotation_end(cali_ScopeAnnotation* self);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // WRAPSCOPEANNOTATION_H
+#endif // WRAPSCOPEANNOTATION_H

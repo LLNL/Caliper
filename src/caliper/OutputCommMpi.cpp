@@ -11,8 +11,7 @@
 
 using namespace cali;
 
-struct OutputCommMpi::OutputCommMpiImpl
-{
+struct OutputCommMpi::OutputCommMpiImpl {
     MPI_Comm comm { MPI_COMM_NULL };
     int      rank { 0 };
 
@@ -20,23 +19,20 @@ struct OutputCommMpi::OutputCommMpiImpl
         return comm != MPI_COMM_NULL;
     }
 
-    OutputCommMpiImpl(MPI_Comm comm_)
-    {
+    OutputCommMpiImpl(MPI_Comm comm_) {
         if (comm_ != MPI_COMM_NULL) {
             MPI_Comm_dup(comm_, &comm);
             MPI_Comm_rank(comm, &rank);
         }
     }
 
-    ~OutputCommMpiImpl()
-    {
+    ~OutputCommMpiImpl() {
         if (comm != MPI_COMM_NULL)
             MPI_Comm_free(&comm);
     }
 };
 
-OutputCommMpi::OutputCommMpi()
-{
+OutputCommMpi::OutputCommMpi() {
     int initialized = 0;
     int finalized = 0;
 
@@ -55,28 +51,24 @@ OutputCommMpi::OutputCommMpi()
     mP.reset(new OutputCommMpiImpl(comm));
 }
 
-OutputCommMpi::OutputCommMpi(MPI_Comm comm)
-    : mP { new OutputCommMpiImpl(comm) }
-{ }
+OutputCommMpi::OutputCommMpi(MPI_Comm comm) : mP { new OutputCommMpiImpl(comm) } {
+}
 
-OutputCommMpi::~OutputCommMpi()
-{ }
+OutputCommMpi::~OutputCommMpi() {
+}
 
-int OutputCommMpi::rank() const
-{
+int OutputCommMpi::rank() const {
     return mP->rank;
 }
 
-int OutputCommMpi::bcast_int(int val) const
-{
+int OutputCommMpi::bcast_int(int val) const {
     if (mP->active())
         MPI_Bcast(&val, 1, MPI_INT, 0, mP->comm);
 
     return val;
 }
 
-std::string OutputCommMpi::bcast_str(const std::string& str) const
-{
+std::string OutputCommMpi::bcast_str(const std::string& str) const {
     if (mP->active()) {
         unsigned len = str.length();
 
@@ -93,8 +85,7 @@ std::string OutputCommMpi::bcast_str(const std::string& str) const
     return str;
 }
 
-void OutputCommMpi::cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) const
-{
+void OutputCommMpi::cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) const {
     if (mP->active())
         aggregate_over_mpi(db, agg, mP->comm);
 }

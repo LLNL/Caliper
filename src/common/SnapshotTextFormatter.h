@@ -29,13 +29,11 @@ public:
 
     ~SnapshotTextFormatter();
 
-    void
-    reset(const std::string& format_str);
+    void reset(const std::string& format_str);
 
-    std::ostream&
-    print(std::ostream&, const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
+    std::ostream& print(std::ostream&, const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
 };
 
-}
+} // namespace cali
 
 #endif

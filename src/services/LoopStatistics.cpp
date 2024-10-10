@@ -22,7 +22,7 @@ namespace cali
 extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 
-}
+} // namespace cali
 
 namespace
 {
@@ -33,7 +33,7 @@ class LoopStatisticsService
 
     struct LoopInfo {
         clock::time_point iter_start_time;
-        uint64_t num_iterations;
+        uint64_t          num_iterations;
     };
 
     std::vector<LoopInfo> m_loop_info;
@@ -58,21 +58,21 @@ class LoopStatisticsService
             c->push_snapshot(channel, SnapshotView(e));
             m_loop_info.pop_back();
         } else if (attr.get(class_iteration_attr).to_bool()) {
-            uint64_t t = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                clock::now() - m_loop_info.back().iter_start_time).count();
+            uint64_t t =
+                std::chrono::duration_cast<std::chrono::nanoseconds>(clock::now() - m_loop_info.back().iter_start_time)
+                    .count();
             Entry e { m_iter_duration_attr, Variant(t) };
             c->push_snapshot(channel, SnapshotView(e));
         }
     }
 
-    LoopStatisticsService(Caliper* c, Channel* channel)
-    {
-        m_iter_duration_attr =
-            c->create_attribute("iter.duration.ns", CALI_TYPE_UINT,
-                CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
-        m_iter_count_attr =
-            c->create_attribute("iter.count", CALI_TYPE_UINT,
-                CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+    LoopStatisticsService(Caliper* c, Channel* channel) {
+        m_iter_duration_attr = c->create_attribute("iter.duration.ns",
+                                                   CALI_TYPE_UINT,
+                                                   CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+        m_iter_count_attr = c->create_attribute("iter.count",
+                                                CALI_TYPE_UINT,
+                                                CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
 
         m_loop_info.reserve(4);
     }
@@ -85,17 +85,14 @@ public:
         LoopStatisticsService* instance = new LoopStatisticsService(c, channel);
 
         channel->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data){
-                    instance->begin_cb(c, channel, attr, data);
-                });
+            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data) {
+                instance->begin_cb(c, channel, attr, data);
+            });
         channel->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data){
-                    instance->end_cb(c, channel, attr, data);
-                });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                    delete instance;
-                });
+            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data) {
+                instance->end_cb(c, channel, attr, data);
+            });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) { delete instance; });
 
         Log(1).stream() << channel->name() << ": registered loop_statistics service\n";
     }
@@ -108,7 +105,7 @@ const char* LoopStatisticsService::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

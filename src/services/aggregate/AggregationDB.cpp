@@ -30,23 +30,25 @@ struct AggregateKernel {
 
 #ifdef CALIPER_ENABLE_HISTOGRAMS
     int histogram_max;
-    int histogram[CALI_AGG_HISTOGRAM_BINS] = {0};
+    int histogram[CALI_AGG_HISTOGRAM_BINS] = { 0 };
 
     // Quick way to get expoent out of a double.
     struct getExponent {
-       union {
-          double val;
-          std::uint16_t sh[4];
-       };
+        union {
+            double        val;
+            std::uint16_t sh[4];
+        };
     };
 #endif
 
     AggregateKernel()
         : count(0)
 #ifdef CALIPER_ENABLE_HISTOGRAMS
-          , histogram_max(0)
+          ,
+          histogram_max(0)
 #endif
-        { }
+    {
+    }
 
     inline void update(const Variant& val) {
         Variant::update_minmaxsum(val, min, max, sum);
@@ -63,23 +65,23 @@ struct AggregateKernel {
         //powers of 4 for ease of documentation, we need the bias to
         //be 1024.
         //making bins of size 4x, which means dividing exponent by 2.
-        int exponent = (val_uint+1)/2;
+        int exponent = (val_uint + 1) / 2;
         if (exponent > histogram_max) {
             //shift down values as necessary.
-            int shift = std::min(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
-            for (int ii=1; ii<shift+1; ii++) {
+            int shift = std::min(exponent - histogram_max, CALI_AGG_HISTOGRAM_BINS - 1);
+            for (int ii = 1; ii < shift + 1; ii++) {
                 histogram[0] += histogram[ii];
             }
-            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
-                int jj = ii-shift;
+            for (int ii = shift + 1; ii < CALI_AGG_HISTOGRAM_BINS; ii++) {
+                int jj = ii - shift;
                 histogram[jj] = histogram[ii];
             }
-            for (int jj=CALI_AGG_HISTOGRAM_BINS-shift; jj<CALI_AGG_HISTOGRAM_BINS; jj++) {
-               histogram[jj] = 0;
+            for (int jj = CALI_AGG_HISTOGRAM_BINS - shift; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
+                histogram[jj] = 0;
             }
             histogram_max = exponent;
         }
-        int index = std::max(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
+        int index = std::max(CALI_AGG_HISTOGRAM_BINS - 1 - (histogram_max - exponent), 0);
         histogram[index]++;
 #endif
     }
@@ -94,14 +96,12 @@ struct AggregateEntry {
     size_t next_entry_idx;
 };
 
-} // namespace [anonymous]
+} // namespace
 
+struct AggregationDB::AggregationDBImpl {
+    Node m_aggr_root_node;
 
-struct AggregationDB::AggregationDBImpl
-{
-    Node                         m_aggr_root_node;
-
-    size_t                       m_max_hash_len;
+    size_t m_max_hash_len;
 
     std::vector<AggregateEntry>  m_entries;
     std::vector<Entry>           m_keyents;
@@ -122,13 +122,13 @@ struct AggregationDB::AggregationDBImpl
                 continue;
 
             cali_id_t attr_id = attr.id();
-            size_t count = 0;
+            size_t    count = 0;
 
             for (const Node* node = e.node(); node; node = node->parent())
                 if (node->attribute() == attr_id)
                     ++count;
 
-            const Node* *node_vec = static_cast<const Node**>(alloca(count * sizeof(const Node*)));
+            const Node** node_vec = static_cast<const Node**>(alloca(count * sizeof(const Node*)));
             memset(node_vec, 0, count * sizeof(const Node*));
             size_t n = count;
 
@@ -146,14 +146,17 @@ struct AggregationDB::AggregationDBImpl
         return key_node == &m_aggr_root_node ? nullptr : key_node;
     }
 
-    AggregateEntry* find_or_create_entry(SnapshotView key, std::size_t hash, std::size_t num_aggr_attrs, bool can_alloc) {
+    AggregateEntry* find_or_create_entry(SnapshotView key,
+                                         std::size_t  hash,
+                                         std::size_t  num_aggr_attrs,
+                                         bool         can_alloc) {
         hash = hash % m_hashmap.size();
         size_t key_len = key.size();
         size_t count = 0;
 
         for (std::size_t idx = m_hashmap[hash]; idx != 0; idx = m_entries[idx].next_entry_idx) {
             AggregateEntry* e = &m_entries[idx];
-            if (key_len == e->key_len && std::equal(key.begin(), key.end(), m_keyents.begin()+e->key_idx))
+            if (key_len == e->key_len && std::equal(key.begin(), key.end(), m_keyents.begin() + e->key_idx))
                 return e;
             ++count;
         }
@@ -178,18 +181,18 @@ struct AggregationDB::AggregationDBImpl
 
         AggregateEntry e;
 
-        e.count          = 0;
-        e.key_idx        = key_idx;
-        e.key_len        = key_len;
-        e.kernels_idx    = kernels_idx;
-        e.num_kernels    = num_aggr_attrs;
+        e.count = 0;
+        e.key_idx = key_idx;
+        e.key_len = key_len;
+        e.kernels_idx = kernels_idx;
+        e.num_kernels = num_aggr_attrs;
         e.next_entry_idx = m_hashmap[hash];
 
         size_t entry_idx = m_entries.size();
         m_entries.push_back(e);
         m_hashmap[hash] = entry_idx;
 
-        m_max_hash_len = std::max(m_max_hash_len, count+1);
+        m_max_hash_len = std::max(m_max_hash_len, count + 1);
 
         return &m_entries[entry_idx];
     }
@@ -201,7 +204,7 @@ struct AggregationDB::AggregationDBImpl
         // --- extract key entries
 
         FixedSizeSnapshotRecord<MAX_KEYLEN> key;
-        std::size_t hash = 0;
+        std::size_t                         hash = 0;
 
         if (info.implicit_grouping) {
             for (const Entry& e : rec)
@@ -271,7 +274,7 @@ struct AggregationDB::AggregationDBImpl
             SnapshotView kv(entry.key_len, &m_keyents[entry.key_idx]);
 
             std::vector<Entry> rec;
-            rec.reserve(kv.size() + 4*entry.num_kernels + 2);
+            rec.reserve(kv.size() + 4 * entry.num_kernels + 2);
 
             std::copy(kv.begin(), kv.end(), std::back_inserter(rec));
 
@@ -287,11 +290,12 @@ struct AggregationDB::AggregationDBImpl
                 rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
                 rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
                 rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(avg)));
-    #ifdef CALIPER_ENABLE_HISTOGRAMS
-                for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
-                    rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii], Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+                for (int ii = 0; ii < CALI_AGG_HISTOGRAM_BINS; ii++) {
+                    rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii],
+                                        Variant(cali_make_variant_from_uint(k->histogram[ii]))));
                 }
-    #endif
+#endif
             }
 
             rec.push_back(Entry(info.count_attr, cali_make_variant_from_uint(entry.count)));
@@ -305,95 +309,71 @@ struct AggregationDB::AggregationDBImpl
         return num_written;
     }
 
-    AggregationDBImpl(Caliper* c)
-        : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_max_hash_len(0)
-        {
-            m_kernels.reserve(16384);
-            m_keyents.reserve(16384);
-            m_entries.reserve(4096);
-            m_hashmap.assign(8192, static_cast<std::size_t>(0));
+    AggregationDBImpl(Caliper* c) : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()), m_max_hash_len(0) {
+        m_kernels.reserve(16384);
+        m_keyents.reserve(16384);
+        m_entries.reserve(4096);
+        m_hashmap.assign(8192, static_cast<std::size_t>(0));
 
-            Attribute attr =
-                c->create_attribute("skipped.records", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
-            Node* node =
-                c->make_tree_entry(attr, Variant("SKIPPED"), &m_aggr_root_node);
+        Attribute attr =
+            c->create_attribute("skipped.records", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+        Node* node = c->make_tree_entry(attr, Variant("SKIPPED"), &m_aggr_root_node);
 
-            m_keyents.push_back(Entry(node));
+        m_keyents.push_back(Entry(node));
 
-            AggregateEntry e;
+        AggregateEntry e;
 
-            e.count          = 0;
-            e.key_idx        = 0;
-            e.key_len        = 1;
-            e.kernels_idx    = 0;
-            e.num_kernels    = 0;
-            e.next_entry_idx = 0;
+        e.count = 0;
+        e.key_idx = 0;
+        e.key_len = 1;
+        e.kernels_idx = 0;
+        e.num_kernels = 0;
+        e.next_entry_idx = 0;
 
-            m_entries.push_back(e);
-        }
+        m_entries.push_back(e);
+    }
 };
 
 //
 // --- AggregationDB public interface
 //
 
-AggregationDB::AggregationDB(Caliper* c)
-    : mP(new AggregationDBImpl(c))
-{ }
+AggregationDB::AggregationDB(Caliper* c) : mP(new AggregationDBImpl(c)) {
+}
 
-AggregationDB::~AggregationDB()
-{
+AggregationDB::~AggregationDB() {
     mP.reset();
 }
 
-void
-AggregationDB::process_snapshot(Caliper* c, SnapshotView rec, const AttributeInfo& info)
-{
+void AggregationDB::process_snapshot(Caliper* c, SnapshotView rec, const AttributeInfo& info) {
     mP->process_snapshot(c, rec, info);
 }
 
-void
-AggregationDB::clear()
-{
+void AggregationDB::clear() {
     mP->clear();
 }
 
-size_t
-AggregationDB::flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn)
-{
+size_t AggregationDB::flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
     return mP->flush(info, c, proc_fn);
 }
 
-size_t
-AggregationDB::num_dropped() const
-{
+size_t AggregationDB::num_dropped() const {
     return mP->m_entries[0].count;
 }
 
-size_t
-AggregationDB::max_hash_len() const
-{
+size_t AggregationDB::max_hash_len() const {
     return mP->m_max_hash_len;
 }
 
-size_t
-AggregationDB::num_entries() const
-{
+size_t AggregationDB::num_entries() const {
     return mP->m_entries.size();
 }
 
-size_t
-AggregationDB::num_kernels() const
-{
+size_t AggregationDB::num_kernels() const {
     return mP->m_kernels.size();
 }
 
-size_t
-AggregationDB::bytes_reserved() const
-{
-    return mP->m_hashmap.capacity() * sizeof(size_t)
-        + mP->m_kernels.capacity() * sizeof(AggregateKernel)
-        + mP->m_keyents.capacity() * sizeof(Entry)
-        + mP->m_entries.capacity() * sizeof(AggregateEntry);
+size_t AggregationDB::bytes_reserved() const {
+    return mP->m_hashmap.capacity() * sizeof(size_t) + mP->m_kernels.capacity() * sizeof(AggregateKernel)
+           + mP->m_keyents.capacity() * sizeof(Entry) + mP->m_entries.capacity() * sizeof(AggregateEntry);
 }

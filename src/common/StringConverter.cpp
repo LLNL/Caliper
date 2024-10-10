@@ -12,20 +12,15 @@
 #include <cctype>
 #include <sstream>
 
-
-cali_id_t
-cali::StringConverter::to_id() const
-{
-    bool ok = false;
+cali_id_t cali::StringConverter::to_id() const {
+    bool      ok = false;
     cali_id_t id = to_uint(&ok);
 
     return ok ? id : CALI_INV_ID;
 }
 
-bool
-cali::StringConverter::to_bool(bool* okptr) const
-{
-    bool ok  = false;
+bool cali::StringConverter::to_bool(bool* okptr) const {
+    bool ok = false;
     bool res = false;
 
     // try string
@@ -33,14 +28,13 @@ cali::StringConverter::to_bool(bool* okptr) const
     {
         std::string lower;
 
-        std::transform(m_str.begin(), m_str.end(), std::back_inserter(lower),
-                       ::tolower);
+        std::transform(m_str.begin(), m_str.end(), std::back_inserter(lower), ::tolower);
 
         if (lower == "true" || lower == "t") {
-            ok  = true;
+            ok = true;
             res = true;
         } else if (lower == "false" || lower == "f") {
-            ok  = true;
+            ok = true;
             res = false;
         }
     }
@@ -52,9 +46,9 @@ cali::StringConverter::to_bool(bool* okptr) const
             unsigned long i = std::stoul(m_str);
 
             res = (i != 0);
-            ok  = true;
+            ok = true;
         } catch (...) {
-            ok  = false;
+            ok = false;
         }
     }
 
@@ -64,17 +58,15 @@ cali::StringConverter::to_bool(bool* okptr) const
     return res;
 }
 
-int
-cali::StringConverter::to_int(bool* okptr) const
-{
-    bool ok  = false;
+int cali::StringConverter::to_int(bool* okptr) const {
+    bool ok = false;
     int  res = 0;
 
     try {
         res = std::stoi(m_str);
-        ok  = true;
+        ok = true;
     } catch (...) {
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -83,17 +75,15 @@ cali::StringConverter::to_int(bool* okptr) const
     return res;
 }
 
-int64_t
-cali::StringConverter::to_int64(bool* okptr) const
-{
-    bool    ok  = false;
+int64_t cali::StringConverter::to_int64(bool* okptr) const {
+    bool    ok = false;
     int64_t res = 0;
 
     try {
         res = std::stoll(m_str);
-        ok  = true;
+        ok = true;
     } catch (...) {
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -102,17 +92,15 @@ cali::StringConverter::to_int64(bool* okptr) const
     return res;
 }
 
-uint64_t
-cali::StringConverter::to_uint(bool* okptr, int base) const
-{
-    bool ok = false;
+uint64_t cali::StringConverter::to_uint(bool* okptr, int base) const {
+    bool     ok = false;
     uint64_t res = 0;
 
     try {
         res = std::stoull(m_str, nullptr, base);
-        ok  = true;
+        ok = true;
     } catch (...) {
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -121,17 +109,15 @@ cali::StringConverter::to_uint(bool* okptr, int base) const
     return res;
 }
 
-double
-cali::StringConverter::to_double(bool* okptr) const
-{
-    bool   ok  = false;
+double cali::StringConverter::to_double(bool* okptr) const {
+    bool   ok = false;
     double res = 0;
 
     try {
         res = std::stod(m_str);
-        ok  = true;
+        ok = true;
     } catch (...) {
-        ok  = false;
+        ok = false;
     }
 
     if (okptr)
@@ -140,11 +126,9 @@ cali::StringConverter::to_double(bool* okptr) const
     return res;
 }
 
-std::vector<std::string>
-cali::StringConverter::to_stringlist(const char* separators, bool* okptr) const
-{
+std::vector<std::string> cali::StringConverter::to_stringlist(const char* separators, bool* okptr) const {
     std::vector<std::string> ret;
-    char c;
+    char                     c;
 
     std::istringstream is(m_str);
 
@@ -163,12 +147,10 @@ cali::StringConverter::to_stringlist(const char* separators, bool* okptr) const
     return ret;
 }
 
-std::vector<cali::StringConverter>
-cali::StringConverter::rec_list(bool* okptr) const
-{
+std::vector<cali::StringConverter> cali::StringConverter::rec_list(bool* okptr) const {
     std::vector<StringConverter> ret;
-    bool error = false;
-    char c;
+    bool                         error = false;
+    char                         c;
 
     std::istringstream is(m_str);
 
@@ -228,15 +210,13 @@ cali::StringConverter::rec_list(bool* okptr) const
     return ret;
 }
 
-std::map<std::string, cali::StringConverter>
-cali::StringConverter::rec_dict(bool *okptr) const
-{
+std::map<std::string, cali::StringConverter> cali::StringConverter::rec_dict(bool* okptr) const {
     std::map<std::string, StringConverter> ret;
-    bool error = false;
+    bool                                   error = false;
 
     std::istringstream is(m_str);
 
-    int d = 0;
+    int  d = 0;
     char c = util::read_char(is);
 
     if (c == '{')

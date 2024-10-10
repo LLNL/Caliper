@@ -29,12 +29,11 @@ namespace
 
 struct LoopInfo {
     std::string name;
-    int iterations;
-    int count;
+    int         iterations;
+    int         count;
 };
 
-LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
-{
+LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec) {
     LoopInfo ret { "", 0, 0 };
 
     Attribute loop_a = db.get_attribute("loop");
@@ -42,10 +41,10 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     Attribute lcnt_a = db.get_attribute("max#count");
 
     for (const Entry& e : rec) {
-        if      (e.attribute() == iter_a.id())
+        if (e.attribute() == iter_a.id())
             ret.iterations = e.value().to_int();
         else if (e.attribute() == lcnt_a.id())
-            ret.count      = e.value().to_int();
+            ret.count = e.value().to_int();
         else {
             Variant v_loop = e.value(loop_a);
             if (!v_loop.empty())
@@ -55,7 +54,6 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
 
     return ret;
 }
-
 
 using Comm = cali::internal::CustomOutputController::Comm;
 
@@ -68,13 +66,15 @@ class LoopReportController : public cali::internal::CustomOutputController
         Preprocessor   prp(spec);
         Aggregator     agg(spec);
 
-        Channel        chn(channel());
-        c.flush(&chn, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
-                EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
+        Channel chn(channel());
+        c.flush(&chn,
+                SnapshotView(),
+                [&db, &filter, &prp, &agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec) {
+                    EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
-                if (filter.pass(db, mrec))
-                    agg.add(db, mrec);
-            });
+                    if (filter.pass(db, mrec))
+                        agg.add(db, mrec);
+                });
 
         return agg;
     }
@@ -89,12 +89,12 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(iter_per_sec)"
             ",avg(iter_per_sec)";
 
-        std::string query = m_opts.build_query("local", {
-                { "let",      "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
-                { "select",   select },
-                { "group by", "loop" },
-                { "where",    "loop" }
-            });
+        std::string query =
+            m_opts.build_query("local",
+                               { { "let", "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
+                                 { "select", select },
+                                 { "group by", "loop" },
+                                 { "where", "loop" } });
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
@@ -108,32 +108,34 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
             ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\"";
 
-        std::string query = m_opts.build_query("cross", {
-                { "select",    select },
-                { "aggregate", "max(count)" },
-                { "group by",  "loop" },
-                { "format",    "table" },
-            });
+        std::string query = m_opts.build_query("cross",
+                                               {
+                                                   { "select", select },
+                                                   { "aggregate", "max(count)" },
+                                                   { "group by", "loop" },
+                                                   { "format", "table" },
+                                               });
 
         return CalQLParser(query.c_str()).spec();
     }
 
-    Aggregator timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
+    Aggregator timeseries_local_aggregation(Caliper&           c,
+                                            CaliperMetadataDB& db,
+                                            const std::string& loopname,
+                                            int                blocksize) {
         const char* select =
             " Block"
             ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration.ns,1e9)";
 
-        std::string block =
-            std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+        std::string block = std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
-        std::string query = m_opts.build_query("local", {
-                { "let",      block   },
-                { "select",   select  },
-                { "group by", "Block" },
-                { "where",    std::string("loop=\"")+loopname+"\"" }
-            });
+        std::string query = m_opts.build_query("local",
+                                               { { "let", block },
+                                                 { "select", select },
+                                                 { "group by", "Block" },
+                                                 { "where", std::string("loop=\"") + loopname + "\"" } });
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
@@ -145,11 +147,9 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(scale#time.duration.ns) as \"Time (s)\""
             ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\"";
 
-        std::string query = m_opts.build_query("cross", {
-                { "select",   select  },
-                { "group by", "Block" },
-                { "format",   "table order by Block" }
-            });
+        std::string query =
+            m_opts.build_query("cross",
+                               { { "select", select }, { "group by", "Block" }, { "format", "table order by Block" } });
 
         CalQLParser parser(query.c_str());
 
@@ -160,8 +160,8 @@ class LoopReportController : public cali::internal::CustomOutputController
     }
 
     void process_timeseries(Caliper& c, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info, Comm comm) {
-        int iterations = comm.bcast_int(info.iterations);
-        int rec_count = comm.bcast_int(info.count);
+        int         iterations = comm.bcast_int(info.iterations);
+        int         rec_count = comm.bcast_int(info.count);
         std::string name = comm.bcast_str(info.name);
 
         if (iterations > 0) {
@@ -175,7 +175,7 @@ class LoopReportController : public cali::internal::CustomOutputController
             int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
 
             Aggregator local_agg = timeseries_local_aggregation(c, db, name, std::max(blocksize, 1));
-            QuerySpec  spec      = timeseries_spec();
+            QuerySpec  spec = timeseries_spec();
             Aggregator cross_agg(spec);
 
             local_agg.flush(db, cross_agg);
@@ -195,7 +195,7 @@ class LoopReportController : public cali::internal::CustomOutputController
     OutputStream create_stream() {
         std::string output = m_opts.get("output", "stdout").to_string();
 
-        Caliper c;
+        Caliper      c;
         OutputStream stream;
         stream.set_filename(output.c_str(), c, c.get_globals());
 
@@ -203,10 +203,10 @@ class LoopReportController : public cali::internal::CustomOutputController
     }
 
     void collective_flush(OutputStream& stream, Comm& comm) override {
-        Caliper c;
+        Caliper           c;
         CaliperMetadataDB db;
 
-        Aggregator summary_local_agg  = summary_local_aggregation(c, db);
+        Aggregator summary_local_agg = summary_local_aggregation(c, db);
         QuerySpec  summary_query_spec = summary_query();
         Aggregator summary_cross_agg(summary_query_spec);
 
@@ -240,9 +240,9 @@ class LoopReportController : public cali::internal::CustomOutputController
         if (print_timeseries) {
             std::vector<LoopInfo> infovec;
 
-            summary_cross_agg.flush(db, [&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
-                    infovec.push_back(get_loop_info(db, rec));
-                });
+            summary_cross_agg.flush(db, [&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec) {
+                infovec.push_back(get_loop_info(db, rec));
+            });
 
             if (!infovec.empty()) {
                 for (const LoopInfo& loopinfo : infovec)
@@ -257,9 +257,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 public:
 
     LoopReportController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : cali::internal::CustomOutputController(name, 0, initial_cfg),
-        m_opts(opts)
-    {
+        : cali::internal::CustomOutputController(name, 0, initial_cfg), m_opts(opts) {
         if (opts.is_set("iteration_interval"))
             config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval").to_string();
         else if (opts.is_set("time_interval"))
@@ -268,7 +266,7 @@ public:
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
         if (opts.is_set("target_loops"))
-            config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = opts.get("target_loops").to_string();
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = opts.get("target_loops").to_string();
 
         opts.update_channel_config(config());
         opts.update_channel_metadata(metadata());
@@ -321,19 +319,19 @@ const char* loop_report_controller_spec =
     " ]"
     "}";
 
-cali::ChannelController*
-make_loopreport_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+cali::ChannelController* make_loopreport_controller(const char*                         name,
+                                                    const config_map_t&                 initial_cfg,
+                                                    const cali::ConfigManager::Options& opts) {
     return new LoopReportController(name, initial_cfg, opts);
 }
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo loop_report_controller_info
-{
-    ::loop_report_controller_spec, ::make_loopreport_controller, nullptr
-};
+ConfigManager::ConfigInfo loop_report_controller_info { ::loop_report_controller_spec,
+                                                        ::make_loopreport_controller,
+                                                        nullptr };
 
 }

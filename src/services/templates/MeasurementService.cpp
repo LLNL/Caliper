@@ -26,14 +26,13 @@ using namespace cali;
 namespace
 {
 
-typedef std::chrono::system_clock Clock;
+typedef std::chrono::system_clock      Clock;
 typedef std::chrono::time_point<Clock> TimePoint;
 
 // Our "measurement function"
 std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& name) {
     auto     now = Clock::now();
-    uint64_t val =
-        name.length() * std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
+    uint64_t val = name.length() * std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
 
     return std::make_tuple(true, val);
 }
@@ -53,10 +52,10 @@ class MeasurementTemplateService
         Attribute   prval_attr; // A hidden attribute to store the previous measurement value on the Caliper blackboard
     };
 
-    std::vector<MeasurementInfo>  m_info;       // Data for the configured measurement variables
+    std::vector<MeasurementInfo> m_info; // Data for the configured measurement variables
 
-    unsigned                      m_num_errors; // Number of measurement errors encountered at runtime
-    TimePoint                     m_starttime;  // Initial value for our measurement function
+    unsigned  m_num_errors; // Number of measurement errors encountered at runtime
+    TimePoint m_starttime;  // Initial value for our measurement function
 
     void snapshot_cb(Caliper* c, Channel* /*channel*/, SnapshotView /*trigger_info*/, SnapshotBuilder& rec) {
         //   The snapshot callback triggers performance measurements.
@@ -70,7 +69,7 @@ class MeasurementTemplateService
 
         // Make measurements for all configured variables
         for (const MeasurementInfo& m : m_info) {
-            bool success;
+            bool     success;
             uint64_t val;
 
             std::tie(success, val) = measure(m_starttime, m.name);
@@ -112,8 +111,7 @@ class MeasurementTemplateService
         // the services they rely on may already be destroyed.
 
         if (m_num_errors > 0)
-            Log(0).stream() << channel->name() << ": measurement: "
-                            << m_num_errors << " measurement errors!"
+            Log(0).stream() << channel->name() << ": measurement: " << m_num_errors << " measurement errors!"
                             << std::endl;
     }
 
@@ -134,25 +132,19 @@ class MeasurementTemplateService
         // the Caliper context tree). Use SKIP_EVENTS to avoid triggering
         // events when using set/begin/end on this attribute. This attribute
         // is for absolute measurement values for <name>.
-        m.value_attr =
-            c->create_attribute(std::string("measurement.val.") + name,
-                                CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD |
-                                CALI_ATTR_ASVALUE      |
-                                CALI_ATTR_SKIP_EVENTS);
+        m.value_attr = c->create_attribute(std::string("measurement.val.") + name,
+                                           CALI_TYPE_UINT,
+                                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
         Variant v_true(true);
 
         //   The delta attribute stores the difference of the measurement
         // value since the last snapshot. We add the "aggregatable" property
         // here, which lets Caliper aggregate these values automatically.
-        m.delta_attr =
-            c->create_attribute(std::string("measurement.") + name,
-                        CALI_TYPE_UINT,
-                        CALI_ATTR_SCOPE_THREAD |
-                        CALI_ATTR_ASVALUE      |
-                        CALI_ATTR_SKIP_EVENTS  |
-                        CALI_ATTR_AGGREGATABLE);
+        m.delta_attr = c->create_attribute(std::string("measurement.") + name,
+                                           CALI_TYPE_UINT,
+                                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS
+                                               | CALI_ATTR_AGGREGATABLE);
 
         //   We use a hidden attribute to store the previous measurement
         // for <name> on Caliper's per-thread blackboard. This is a
@@ -163,18 +155,13 @@ class MeasurementTemplateService
         // attribute for this thread info in the service instance.
         m.prval_attr =
             c->create_attribute(std::string("measurement.pv.") + std::to_string(channel->id()) + name,
-                        CALI_TYPE_UINT,
-                        CALI_ATTR_SCOPE_THREAD |
-                        CALI_ATTR_ASVALUE      |
-                        CALI_ATTR_HIDDEN       |
-                        CALI_ATTR_SKIP_EVENTS);
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
 
         return m;
     }
 
-    MeasurementTemplateService(Caliper* c, Channel* channel)
-        : m_num_errors(0)
-    {
+    MeasurementTemplateService(Caliper* c, Channel* channel) : m_num_errors(0) {
         //   Get the service configuration. This reads the configuration
         // variables defined in s_configdata from the environment, config
         // file, or channel setting. We create a "measurement_template"
@@ -190,7 +177,7 @@ class MeasurementTemplateService
         //   Create a MeasurementInfo entry for each of the "measurement
         // variables" in the configuration.
         for (const std::string& name : names)
-            m_info.push_back( create_measurement_info(c, channel, name) );
+            m_info.push_back(create_measurement_info(c, channel, name));
     }
 
 public:
@@ -221,24 +208,20 @@ public:
 
         // Register callback functions using lambdas
         channel->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->post_init_cb(c, channel);
-            });
+            [instance](Caliper* c, Channel* channel) { instance->post_init_cb(c, channel); });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec){
+            [instance](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec) {
                 instance->snapshot_cb(c, channel, trigger_info, rec);
             });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                //   This callback is invoked when the channel is destroyed.
-                // No other callback will be invoked afterwards.
-                // Delete the channel's service instance here!
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            //   This callback is invoked when the channel is destroyed.
+            // No other callback will be invoked afterwards.
+            // Delete the channel's service instance here!
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
-        Log(1).stream() << channel->name() << ": Registered measurement template service"
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered measurement template service" << std::endl;
     }
 };
 
@@ -255,14 +238,12 @@ const char* MeasurementTemplateService::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
 
-CaliperService measurement_template_service = {
-    ::MeasurementTemplateService::s_spec,
-    ::MeasurementTemplateService::register_measurement_template_service
-};
+CaliperService measurement_template_service = { ::MeasurementTemplateService::s_spec,
+                                                ::MeasurementTemplateService::register_measurement_template_service };
 
 } // namespace cali

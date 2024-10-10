@@ -41,7 +41,8 @@ public:
 
     ///   \brief Base class for the communication protocol. Implements serial
     /// (no-op) communication.
-    class Comm {
+    class Comm
+    {
     public:
 
         virtual ~Comm();

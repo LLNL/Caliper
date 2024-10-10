@@ -15,12 +15,14 @@
 // splicer end CXX_declarations
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // typedef cali::cali_id_t
 // splicer begin typedef.cali_id_t
 typedef uint64_t cali_cali_id_t;
+
 // splicer end typedef.cali_id_t
 
 //  cali::cali_attr_properties
@@ -54,9 +56,7 @@ enum cali_cali_attr_type {
 };
 
 //  cali::cali_flush_opts
-enum cali_cali_flush_opts {
-    cali_CALI_FLUSH_CLEAR_BUFFERS = 1
-};
+enum cali_cali_flush_opts { cali_CALI_FLUSH_CLEAR_BUFFERS = 1 };
 
 // splicer begin C_declarations
 // splicer end C_declarations
@@ -65,4 +65,4 @@ enum cali_cali_flush_opts {
 }
 #endif
 
-#endif  // WRAPCALIPER_H
+#endif // WRAPCALIPER_H

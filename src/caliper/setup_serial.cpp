@@ -10,13 +10,11 @@
 namespace cali
 {
 
-void add_submodule_controllers_and_services()
-{
+void add_submodule_controllers_and_services() {
     services::add_default_service_specs();
 }
 
-void init_submodules()
-{
+void init_submodules() {
     add_submodule_controllers_and_services();
 }
 

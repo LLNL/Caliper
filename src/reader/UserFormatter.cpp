@@ -25,29 +25,27 @@
 using namespace cali;
 using namespace std;
 
-struct UserFormatter::FormatImpl
-{
+struct UserFormatter::FormatImpl {
     struct Field {
-        string    prefix;
+        string prefix;
 
         string    attr_name;
         Attribute attr;
 
-        size_t    width;
-        char      align; // 'l', 'r', 'c'
-    }; // for the frmtparse function
+        size_t width;
+        char   align; // 'l', 'r', 'c'
+    };                // for the frmtparse function
 
     vector<Field> m_fields; // for the format strings
     string        m_title;
 
-    std::mutex    m_fields_lock;
+    std::mutex m_fields_lock;
 
-    OutputStream  m_os;
-    std::mutex    m_os_lock;
+    OutputStream m_os;
+    std::mutex   m_os_lock;
 
-    FormatImpl(OutputStream& os)
-        : m_os(os)
-        { }
+    FormatImpl(OutputStream& os) : m_os(os) {
+    }
 
     // based on SnapshotTextFormatter::parse
     void parse(const string& formatstring) {
@@ -71,25 +69,25 @@ struct UserFormatter::FormatImpl
                 // look for width/alignment specification (in [] brackets)
 
                 int wfbegin = -1;
-                int wfend   = -1;
-                int apos    = -1;
+                int wfend = -1;
+                int apos = -1;
 
                 int nfields = field_strings.size();
 
                 for (int i = 0; i < nfields; ++i)
-                    if(field_strings[i] == "[")
+                    if (field_strings[i] == "[")
                         wfbegin = i;
                     else if (field_strings[i] == "]")
                         wfend = i;
 
-                if (wfbegin >= 0 && wfend > wfbegin+1) {
+                if (wfbegin >= 0 && wfend > wfbegin + 1) {
                     // width field specified
-                    field.width = stoi(field_strings[wfbegin+1]);
+                    field.width = stoi(field_strings[wfbegin + 1]);
 
                     if (wfbegin > 0)
                         apos = 0;
-                    else if (wfend+1 < nfields)
-                        apos = wfend+1;
+                    else if (wfend + 1 < nfields)
+                        apos = wfend + 1;
                 } else if (nfields > 0)
                     apos = 0;
 
@@ -116,8 +114,7 @@ struct UserFormatter::FormatImpl
             Attribute attr;
 
             {
-                std::lock_guard<std::mutex>
-                    g(m_fields_lock);
+                std::lock_guard<std::mutex> g(m_fields_lock);
 
                 if (!f.attr)
                     f.attr = db.get_attribute(f.attr_name);
@@ -128,7 +125,7 @@ struct UserFormatter::FormatImpl
             string str;
 
             if (attr)
-                for (const Entry& e: list) {
+                for (const Entry& e : list) {
                     if (e.is_reference()) {
                         for (const Node* node = e.node(); node; node = node->parent())
                             if (node->attribute() == attr.id())
@@ -140,31 +137,27 @@ struct UserFormatter::FormatImpl
                         break;
                 }
 
-            const char whitespace[80+1] =
+            const char whitespace[80 + 1] =
                 "                                        "
                 "                                        ";
 
             size_t len = str.size();
-            size_t w   = len < f.width ? std::min<size_t>(f.width - len, 80) : 0;
+            size_t w = len < f.width ? std::min<size_t>(f.width - len, 80) : 0;
 
-            os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
+            os << f.prefix << str << (w > 0 ? whitespace + (80 - w) : "");
         }
 
         {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
+            std::lock_guard<std::mutex> g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
 
-            *real_os << os.str() <<std::endl;
+            *real_os << os.str() << std::endl;
         }
     }
 };
 
-
-UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec)
-    : mP { new FormatImpl(os) }
-{
+UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec) : mP { new FormatImpl(os) } {
     mP->configure(spec);
 
     {
@@ -176,13 +169,10 @@ UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec)
     }
 }
 
-UserFormatter::~UserFormatter()
-{
+UserFormatter::~UserFormatter() {
     mP.reset();
 }
 
-void
-UserFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
-{
+void UserFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
     mP->print(db, list);
 }

@@ -23,38 +23,41 @@
 
 using namespace cali;
 
-struct TableFormatter::TableImpl
-{
+struct TableFormatter::TableImpl {
     struct Column {
         std::string name;
         std::string display_name;
         std::size_t width;
 
-        Attribute   attr;
+        Attribute attr;
 
-        bool        print; // used for hidden sort columns
+        bool print; // used for hidden sort columns
 
         QuerySpec::SortSpec::Order sort_order;
 
-        Column(const std::string& n, const std::string alias, std::size_t w, const Attribute& a, bool p,
+        Column(const std::string&         n,
+               const std::string          alias,
+               std::size_t                w,
+               const Attribute&           a,
+               bool                       p,
                QuerySpec::SortSpec::Order o = QuerySpec::SortSpec::Order::None)
-            : name(n), display_name(alias), width(w), attr(a), print(p), sort_order(o)
-            { }
+            : name(n), display_name(alias), width(w), attr(a), print(p), sort_order(o) {
+        }
     };
 
-    std::vector<Column>                     m_cols;
-    std::vector< std::vector<std::string> > m_rows;
+    std::vector<Column>                   m_cols;
+    std::vector<std::vector<std::string>> m_rows;
 
-    std::mutex                              m_col_lock;
-    std::mutex                              m_row_lock;
+    std::mutex m_col_lock;
+    std::mutex m_row_lock;
 
-    std::map<std::string, std::string>      m_aliases;
+    std::map<std::string, std::string> m_aliases;
 
-    bool                                    m_auto_column;
+    bool m_auto_column;
 
-    int                                     m_max_column_width;
+    int m_max_column_width;
 
-    bool                                    m_print_globals;
+    bool m_print_globals;
 
     int column_width(int base) const {
         return std::max(m_max_column_width > 0 ? std::min(base, m_max_column_width) : base, 4);
@@ -154,10 +157,9 @@ struct TableFormatter::TableImpl
     }
 
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
-        auto it = std::find_if(m_cols.begin(), m_cols.end(),
-                               [attr_id](const Column& c) {
-                                   return c.sort_order == QuerySpec::SortSpec::None && c.attr.id() == attr_id;
-                               });
+        auto it = std::find_if(m_cols.begin(), m_cols.end(), [attr_id](const Column& c) {
+            return c.sort_order == QuerySpec::SortSpec::None && c.attr.id() == attr_id;
+        });
 
         if (it != m_cols.end())
             return;
@@ -167,7 +169,7 @@ struct TableFormatter::TableImpl
         if (!attr || attr.is_hidden() || attr.is_global())
             return;
 
-        std::string name  = attr.name();
+        std::string name = attr.name();
         std::string alias = name;
 
         {
@@ -186,8 +188,7 @@ struct TableFormatter::TableImpl
     }
 
     std::vector<Column> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::lock_guard<std::mutex>
-            g(m_col_lock);
+        std::lock_guard<std::mutex> g(m_col_lock);
 
         // Auto-generate columns from attributes in the snapshots. Used if no
         // field list was given. Skips some internal attributes.
@@ -211,7 +212,7 @@ struct TableFormatter::TableImpl
     }
 
     void add(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::vector<Column> cols = update_columns(db, list);
+        std::vector<Column>      cols = update_columns(db, list);
         std::vector<std::string> row(cols.size());
 
         bool active = false;
@@ -248,22 +249,20 @@ struct TableFormatter::TableImpl
                 size_t width = val.length();
 
                 if (width > cols[c].width) {
-                    cols[c].width    = width;
+                    cols[c].width = width;
                     update_max_width = true;
                 }
             }
         }
 
         if (active) {
-            std::lock_guard<std::mutex>
-                g(m_row_lock);
+            std::lock_guard<std::mutex> g(m_row_lock);
 
             m_rows.push_back(std::move(row));
         }
 
         if (update_max_width) {
-            std::lock_guard<std::mutex>
-                g(m_col_lock);
+            std::lock_guard<std::mutex> g(m_col_lock);
 
             for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c)
                 if (cols[c].width > m_cols[c].width)
@@ -279,20 +278,24 @@ struct TableFormatter::TableImpl
 
         for (std::vector<Column>::size_type c = 0; c < m_cols.size(); ++c)
             if (m_cols[c].sort_order == QuerySpec::SortSpec::Order::Ascending)
-                std::stable_sort(m_rows.begin(), m_rows.end(),
-                                 [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
+                std::stable_sort(m_rows.begin(),
+                                 m_rows.end(),
+                                 [c, this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs) {
                                      if (c >= lhs.size() || c >= rhs.size())
                                          return lhs.size() < rhs.size();
                                      cali_attr_type type = this->m_cols[c].attr.type();
-                                     return Variant::from_string(type, lhs[c].c_str()) < Variant::from_string(type, rhs[c].c_str());
+                                     return Variant::from_string(type, lhs[c].c_str())
+                                            < Variant::from_string(type, rhs[c].c_str());
                                  });
             else if (m_cols[c].sort_order == QuerySpec::SortSpec::Order::Descending)
-                std::stable_sort(m_rows.begin(), m_rows.end(),
-                                 [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
+                std::stable_sort(m_rows.begin(),
+                                 m_rows.end(),
+                                 [c, this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs) {
                                      if (c >= lhs.size() || c >= rhs.size())
                                          return lhs.size() > rhs.size();
                                      cali_attr_type type = this->m_cols[c].attr.type();
-                                     return Variant::from_string(type, lhs[c].c_str()) > Variant::from_string(type, rhs[c].c_str());
+                                     return Variant::from_string(type, lhs[c].c_str())
+                                            > Variant::from_string(type, rhs[c].c_str());
                                  });
 
         // print header
@@ -314,13 +317,11 @@ struct TableFormatter::TableImpl
 
                 int            width = column_width(m_cols[c].width);
                 std::string    str = util::clamp_string(row[c], width);
-                cali_attr_type t   = m_cols[c].attr.type();
-                bool           align_right = (t == CALI_TYPE_INT  ||
-                                              t == CALI_TYPE_UINT ||
-                                              t == CALI_TYPE_DOUBLE);
+                cali_attr_type t = m_cols[c].attr.type();
+                bool           align_right = (t == CALI_TYPE_INT || t == CALI_TYPE_UINT || t == CALI_TYPE_DOUBLE);
 
                 if (align_right)
-                    util::pad_left (os, str, width);
+                    util::pad_left(os, str, width);
                 else
                     util::pad_right(os, str, width);
             }
@@ -329,37 +330,27 @@ struct TableFormatter::TableImpl
         }
     }
 
-    TableImpl()
-        : m_max_column_width(60), m_print_globals(false)
-        { }
+    TableImpl() : m_max_column_width(60), m_print_globals(false) {
+    }
 };
 
-TableFormatter::TableFormatter(const std::string& fields, const std::string& sort_fields)
-    : mP { new TableImpl }
-{
+TableFormatter::TableFormatter(const std::string& fields, const std::string& sort_fields) : mP { new TableImpl } {
     mP->parse(fields, sort_fields);
 }
 
-TableFormatter::TableFormatter(const QuerySpec& spec)
-    : mP { new TableImpl }
-{
+TableFormatter::TableFormatter(const QuerySpec& spec) : mP { new TableImpl } {
     mP->configure(spec);
 }
 
-TableFormatter::~TableFormatter()
-{
+TableFormatter::~TableFormatter() {
     mP.reset();
 }
 
-void
-TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
-{
+void TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
     mP->add(db, list);
 }
 
-void
-TableFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
-{
+void TableFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os) {
     if (mP->m_print_globals)
         format_record_as_table(db, db.get_globals(), os);
 

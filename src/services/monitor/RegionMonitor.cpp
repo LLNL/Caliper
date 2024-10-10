@@ -25,12 +25,12 @@ class RegionMonitor
         double child_time;
     };
 
-    std::unordered_map<cali_id_t, RegionInfo> m_tracking_regions;
+    std::unordered_map<cali_id_t, RegionInfo>                   m_tracking_regions;
     std::vector<std::chrono::high_resolution_clock::time_point> m_time_stack;
 
-    double   m_min_interval;
-    bool     m_measuring;
-    int      m_skip;
+    double m_min_interval;
+    bool   m_measuring;
+    int    m_skip;
 
     unsigned m_num_measured;
 
@@ -77,7 +77,7 @@ class RegionMonitor
         if (!node)
             return;
 
-        auto now  = std::chrono::high_resolution_clock::now();
+        auto now = std::chrono::high_resolution_clock::now();
         auto prev = m_time_stack.back();
         m_time_stack.pop_back();
 
@@ -110,21 +110,14 @@ class RegionMonitor
     }
 
     void finish_cb(Caliper*, Channel* channel) {
-        Log(1).stream() << channel->name()
-                        << ": " << m_tracking_regions.size()
-                        << " regions marked, "
-                        << m_num_measured << " instances measured."
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": " << m_tracking_regions.size() << " regions marked, " << m_num_measured
+                        << " instances measured." << std::endl;
     }
 
-    RegionMonitor(Caliper*, Channel* channel)
-        : m_measuring(false),
-          m_skip(0),
-          m_num_measured(0)
-        {
-            ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
-            m_min_interval = config.get("time_interval").to_double();
-        }
+    RegionMonitor(Caliper*, Channel* channel) : m_measuring(false), m_skip(0), m_num_measured(0) {
+        ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
+        m_min_interval = config.get("time_interval").to_double();
+    }
 
 public:
 
@@ -141,15 +134,12 @@ public:
             [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
                 instance->pre_end_cb(c, channel, attr, val);
             });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
-        Log(1).stream() << channel->name()
-                        << ": Registered region_monitor service"
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered region_monitor service" << std::endl;
     }
 };
 
@@ -166,7 +156,8 @@ const char* RegionMonitor::s_spec = R"json(
 }
 )json";
 
-}
+} // namespace
+
 namespace cali
 {
 

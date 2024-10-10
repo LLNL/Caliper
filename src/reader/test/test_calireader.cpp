@@ -46,24 +46,21 @@ __rec=node,id=54,attr=51,data=true,parent=53
 __rec=globals,ref=22=54
 )cali";
 
-TEST(CaliReader, BasicRead)
-{
+TEST(CaliReader, BasicRead) {
     CaliperMetadataDB db;
-    CaliReader reader;
+    CaliReader        reader;
 
     std::istringstream is(cali_txt);
 
     unsigned node_count = 0;
     unsigned rec_count = 0;
 
-    NodeProcessFn     node_proc =
-        [&node_count](CaliperMetadataAccessInterface&,const Node*) {
-            ++node_count;
-        };
-    SnapshotProcessFn snap_proc =
-        [&rec_count](CaliperMetadataAccessInterface&,const EntryList&){
-            ++rec_count;
-        };
+    NodeProcessFn node_proc = [&node_count](CaliperMetadataAccessInterface&, const Node*) {
+        ++node_count;
+    };
+    SnapshotProcessFn snap_proc = [&rec_count](CaliperMetadataAccessInterface&, const EntryList&) {
+        ++rec_count;
+    };
 
     reader.read(is, db, node_proc, snap_proc);
 

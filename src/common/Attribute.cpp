@@ -10,15 +10,11 @@
 using namespace cali;
 using namespace std;
 
-Attribute
-Attribute::make_attribute(Node* node)
-{
+Attribute Attribute::make_attribute(Node* node) {
     return node && node->attribute() == NAME_ATTR_ID ? Attribute(node) : Attribute();
 }
 
-std::string
-Attribute::name() const
-{
+std::string Attribute::name() const {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == NAME_ATTR_ID)
             return node->data().to_string();
@@ -26,9 +22,7 @@ Attribute::name() const
     return std::string();
 }
 
-const char*
-Attribute::name_c_str() const
-{
+const char* Attribute::name_c_str() const {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == NAME_ATTR_ID)
             return static_cast<const char*>(node->data().data());
@@ -36,9 +30,7 @@ Attribute::name_c_str() const
     return nullptr;
 }
 
-cali_attr_type
-Attribute::type() const
-{
+cali_attr_type Attribute::type() const {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == TYPE_ATTR_ID)
             return node->data().to_attr_type();
@@ -46,9 +38,7 @@ Attribute::type() const
     return CALI_TYPE_INV;
 }
 
-int
-Attribute::properties() const
-{
+int Attribute::properties() const {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == PROP_ATTR_ID)
             return node->data().to_int();
@@ -56,9 +46,7 @@ Attribute::properties() const
     return CALI_ATTR_DEFAULT;
 }
 
-Variant
-Attribute::get(const Attribute& attr) const
-{
+Variant Attribute::get(const Attribute& attr) const {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == attr.id())
             return node->data();
@@ -66,15 +54,12 @@ Attribute::get(const Attribute& attr) const
     return Variant();
 }
 
-std::ostream&
-cali::operator << (std::ostream& os, const Attribute& a)
-{
+std::ostream& cali::operator<<(std::ostream& os, const Attribute& a) {
     char buf[256];
 
     cali_prop2string(a.properties(), buf, 256);
 
-    return os << "{ \"id\" : " << a.id()
-              << ", \"name\" : \"" << a.name() << "\""
+    return os << "{ \"id\" : " << a.id() << ", \"name\" : \"" << a.name() << "\""
               << ", \"type\" : \"" << cali_type2string(a.type()) << "\""
               << ", \"properties\" : \"" << buf << "\" }";
 }

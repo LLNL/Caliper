@@ -27,7 +27,8 @@ using namespace cali;
 namespace
 {
 
-class RocTracerService {
+class RocTracerService
+{
     Attribute m_api_attr;
 
     Attribute m_activity_start_attr;
@@ -45,72 +46,58 @@ class RocTracerService {
 
     Attribute m_flush_region_attr;
 
-    unsigned  m_num_records;
-    unsigned  m_num_flushed;
-    unsigned  m_num_flushes;
+    unsigned m_num_records;
+    unsigned m_num_flushed;
+    unsigned m_num_flushes;
 
-    unsigned  m_num_correlations_stored;
-    unsigned  m_num_correlations_found;
-    unsigned  m_num_correlations_missed;
+    unsigned m_num_correlations_stored;
+    unsigned m_num_correlations_found;
+    unsigned m_num_correlations_missed;
 
-    std::mutex m_correlation_map_mutex;
+    std::mutex                      m_correlation_map_mutex;
     std::map<uint64_t, cali::Node*> m_correlation_map;
 
     roctracer_pool_t* m_roctracer_pool;
 
-    Channel   m_channel;
+    Channel m_channel;
 
-    bool      m_enable_tracing;
-    bool      m_record_names;
-    bool      m_record_host_duration;
-    bool      m_record_host_timestamp;
+    bool m_enable_tracing;
+    bool m_record_names;
+    bool m_record_host_duration;
+    bool m_record_host_timestamp;
 
     static RocTracerService* s_instance;
 
     void create_callback_attributes(Caliper* c) {
         Attribute subs_attr = c->get_attribute("subscription_event");
-        Variant v_true(true);
+        Variant   v_true(true);
 
-        m_api_attr =
-            c->create_attribute("rocm.api", CALI_TYPE_STRING,
-                                CALI_ATTR_NESTED,
-                                1, &subs_attr, &v_true);
+        m_api_attr = c->create_attribute("rocm.api", CALI_TYPE_STRING, CALI_ATTR_NESTED, 1, &subs_attr, &v_true);
     }
 
     void create_activity_attributes(Caliper* c) {
         m_activity_start_attr =
-            c->create_attribute("rocm.starttime", CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("rocm.starttime", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         m_activity_end_attr =
-            c->create_attribute("rocm.endtime", CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("rocm.endtime", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
         m_activity_duration_attr =
-            c->create_attribute("rocm.activity.duration", CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE     | 
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("rocm.activity.duration",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE);
 
-        m_activity_name_attr =
-            c->create_attribute("rocm.activity", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-        m_activity_queue_id_attr =
-            c->create_attribute("rocm.activity.queue", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        m_activity_device_id_attr =
-            c->create_attribute("rocm.activity.device", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        m_activity_bytes_attr =
-            c->create_attribute("rocm.activity.bytes", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        m_kernel_name_attr =
-            c->create_attribute("rocm.kernel.name", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        m_activity_name_attr = c->create_attribute("rocm.activity", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        m_activity_queue_id_attr = c->create_attribute("rocm.activity.queue", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        m_activity_device_id_attr = c->create_attribute("rocm.activity.device", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        m_activity_bytes_attr = c->create_attribute("rocm.activity.bytes", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        m_kernel_name_attr = c->create_attribute("rocm.kernel.name", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
-        m_flush_region_attr =
-            c->create_attribute("roctracer.flush", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        m_flush_region_attr = c->create_attribute("roctracer.flush", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     }
 
     void create_host_attributes(Caliper* c) {
         m_host_starttime_attr =
-            c->create_attribute("rocm.host.starttime", CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_PROCESS |
-                                CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("rocm.host.starttime", CALI_TYPE_UINT, CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
         if (!(m_record_host_duration || m_record_host_timestamp))
             return;
@@ -118,19 +105,15 @@ class RocTracerService {
         int hide_offset = m_record_host_timestamp ? 0 : CALI_ATTR_HIDDEN;
 
         m_host_timestamp_attr =
-            c->create_attribute("rocm.host.timestamp", CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD |
-                                CALI_ATTR_ASVALUE      |
-                                CALI_ATTR_SKIP_EVENTS  |
-                                hide_offset);
+            c->create_attribute("rocm.host.timestamp",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | hide_offset);
 
         if (m_record_host_duration) {
-            m_host_duration_attr =
-                c->create_attribute("rocm.host.duration", CALI_TYPE_UINT,
-                                    CALI_ATTR_SCOPE_THREAD |
-                                    CALI_ATTR_ASVALUE      |
-                                    CALI_ATTR_SKIP_EVENTS  |
-                                    CALI_ATTR_AGGREGATABLE);
+            m_host_duration_attr = c->create_attribute("rocm.host.duration",
+                                                       CALI_TYPE_UINT,
+                                                       CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE
+                                                           | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE);
         }
     }
 
@@ -139,8 +122,7 @@ class RocTracerService {
     }
 
     void push_correlation(uint64_t id, cali::Node* node) {
-        std::lock_guard<std::mutex>
-            g(m_correlation_map_mutex);
+        std::lock_guard<std::mutex> g(m_correlation_map_mutex);
 
         m_correlation_map[id] = node;
     }
@@ -148,8 +130,7 @@ class RocTracerService {
     cali::Node* pop_correlation(uint64_t id) {
         cali::Node* ret = nullptr;
 
-        std::lock_guard<std::mutex>
-            g(m_correlation_map_mutex);
+        std::lock_guard<std::mutex> g(m_correlation_map_mutex);
 
         auto it = m_correlation_map.find(id);
 
@@ -161,15 +142,13 @@ class RocTracerService {
         return ret;
     }
 
-    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg)
-    {
+    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) {
         // skip unneeded callbacks
-        if (cid == HIP_API_ID___hipPushCallConfiguration ||
-            cid == HIP_API_ID___hipPopCallConfiguration)
+        if (cid == HIP_API_ID___hipPushCallConfiguration || cid == HIP_API_ID___hipPopCallConfiguration)
             return;
 
-        auto instance = static_cast<RocTracerService*>(arg);
-        auto data = static_cast<const hip_api_data_t*>(callback_data);
+        auto    instance = static_cast<RocTracerService*>(arg);
+        auto    data = static_cast<const hip_api_data_t*>(callback_data);
         Caliper c;
 
         if (data->phase == ACTIVITY_API_PHASE_ENTER) {
@@ -183,21 +162,21 @@ class RocTracerService {
                 cali::Node* node = nullptr;
 
                 switch (cid) {
-                    case HIP_API_ID_hipLaunchKernel:
-                    case HIP_API_ID_hipExtLaunchKernel:
+                case HIP_API_ID_hipLaunchKernel:
+                case HIP_API_ID_hipExtLaunchKernel:
                     {
                         Entry e = c.get(instance->m_api_attr);
                         if (e.is_reference())
                             node = e.node();
                         if (instance->m_record_names) {
                             kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
-                                        data->args.hipLaunchKernel.stream);
+                                                           data->args.hipLaunchKernel.stream);
                         }
                     }
                     break;
-                    case HIP_API_ID_hipModuleLaunchKernel:
-                    case HIP_API_ID_hipExtModuleLaunchKernel:
-                    case HIP_API_ID_hipHccModuleLaunchKernel:
+                case HIP_API_ID_hipModuleLaunchKernel:
+                case HIP_API_ID_hipExtModuleLaunchKernel:
+                case HIP_API_ID_hipHccModuleLaunchKernel:
                     {
                         Entry e = c.get(instance->m_api_attr);
                         if (e.is_reference())
@@ -207,60 +186,58 @@ class RocTracerService {
                         }
                     }
                     break;
-                    case HIP_API_ID_hipMemcpy:
-                    case HIP_API_ID_hipMemcpy2D:
-                    case HIP_API_ID_hipMemcpy2DAsync:
-                    case HIP_API_ID_hipMemcpy2DFromArray:
-                    case HIP_API_ID_hipMemcpy2DFromArrayAsync:
-                    case HIP_API_ID_hipMemcpy2DToArray:
-                    case HIP_API_ID_hipMemcpy2DToArrayAsync:
-                    case HIP_API_ID_hipMemcpy3D:
-                    case HIP_API_ID_hipMemcpy3DAsync:
-                    case HIP_API_ID_hipMemcpyAsync:
-                    case HIP_API_ID_hipMemcpyAtoH:
-                    case HIP_API_ID_hipMemcpyDtoD:
-                    case HIP_API_ID_hipMemcpyDtoDAsync:
-                    case HIP_API_ID_hipMemcpyDtoH:
-                    case HIP_API_ID_hipMemcpyDtoHAsync:
-                    case HIP_API_ID_hipMemcpyFromArray:
-                    case HIP_API_ID_hipMemcpyFromSymbol:
-                    case HIP_API_ID_hipMemcpyFromSymbolAsync:
-                    case HIP_API_ID_hipMemcpyHtoA:
-                    case HIP_API_ID_hipMemcpyHtoD:
-                    case HIP_API_ID_hipMemcpyHtoDAsync:
-                    case HIP_API_ID_hipMemcpyParam2D:
-                    case HIP_API_ID_hipMemcpyParam2DAsync:
-                    case HIP_API_ID_hipMemcpyPeer:
-                    case HIP_API_ID_hipMemcpyPeerAsync:
-                    case HIP_API_ID_hipMemcpyToArray:
-                    case HIP_API_ID_hipMemcpyToSymbol:
-                    case HIP_API_ID_hipMemcpyToSymbolAsync:
-                    case HIP_API_ID_hipMemcpyWithStream:
-                    case HIP_API_ID_hipMemset:
-                    case HIP_API_ID_hipMemset2D:
-                    case HIP_API_ID_hipMemset2DAsync:
-                    case HIP_API_ID_hipMemset3D:
-                    case HIP_API_ID_hipMemset3DAsync:
-                    case HIP_API_ID_hipMemsetAsync:
-                    case HIP_API_ID_hipMemsetD16:
-                    case HIP_API_ID_hipMemsetD32:
-                    case HIP_API_ID_hipMemsetD32Async:
-                    case HIP_API_ID_hipMemsetD8:
-                    case HIP_API_ID_hipMemsetD8Async:
+                case HIP_API_ID_hipMemcpy:
+                case HIP_API_ID_hipMemcpy2D:
+                case HIP_API_ID_hipMemcpy2DAsync:
+                case HIP_API_ID_hipMemcpy2DFromArray:
+                case HIP_API_ID_hipMemcpy2DFromArrayAsync:
+                case HIP_API_ID_hipMemcpy2DToArray:
+                case HIP_API_ID_hipMemcpy2DToArrayAsync:
+                case HIP_API_ID_hipMemcpy3D:
+                case HIP_API_ID_hipMemcpy3DAsync:
+                case HIP_API_ID_hipMemcpyAsync:
+                case HIP_API_ID_hipMemcpyAtoH:
+                case HIP_API_ID_hipMemcpyDtoD:
+                case HIP_API_ID_hipMemcpyDtoDAsync:
+                case HIP_API_ID_hipMemcpyDtoH:
+                case HIP_API_ID_hipMemcpyDtoHAsync:
+                case HIP_API_ID_hipMemcpyFromArray:
+                case HIP_API_ID_hipMemcpyFromSymbol:
+                case HIP_API_ID_hipMemcpyFromSymbolAsync:
+                case HIP_API_ID_hipMemcpyHtoA:
+                case HIP_API_ID_hipMemcpyHtoD:
+                case HIP_API_ID_hipMemcpyHtoDAsync:
+                case HIP_API_ID_hipMemcpyParam2D:
+                case HIP_API_ID_hipMemcpyParam2DAsync:
+                case HIP_API_ID_hipMemcpyPeer:
+                case HIP_API_ID_hipMemcpyPeerAsync:
+                case HIP_API_ID_hipMemcpyToArray:
+                case HIP_API_ID_hipMemcpyToSymbol:
+                case HIP_API_ID_hipMemcpyToSymbolAsync:
+                case HIP_API_ID_hipMemcpyWithStream:
+                case HIP_API_ID_hipMemset:
+                case HIP_API_ID_hipMemset2D:
+                case HIP_API_ID_hipMemset2DAsync:
+                case HIP_API_ID_hipMemset3D:
+                case HIP_API_ID_hipMemset3DAsync:
+                case HIP_API_ID_hipMemsetAsync:
+                case HIP_API_ID_hipMemsetD16:
+                case HIP_API_ID_hipMemsetD32:
+                case HIP_API_ID_hipMemsetD32Async:
+                case HIP_API_ID_hipMemsetD8:
+                case HIP_API_ID_hipMemsetD8Async:
                     {
                         Entry e = c.get(instance->m_api_attr);
                         if (e.is_reference())
                             node = e.node();
                     }
-                    default:
+                default:
                     break;
                 }
 
                 if (!kernel.empty()) {
                     kernel = util::demangle(kernel.c_str());
-                    node = c.make_tree_entry(instance->m_kernel_name_attr,
-                                Variant(kernel.c_str()),
-                                node);
+                    node = c.make_tree_entry(instance->m_kernel_name_attr, Variant(kernel.c_str()), node);
                 }
 
                 if (node) {
@@ -277,24 +254,16 @@ class RocTracerService {
         unsigned num_records = 0;
 
         if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
-            Attribute attr[7] = {
-                m_activity_name_attr,
-                m_activity_start_attr,
-                m_activity_end_attr,
-                m_activity_duration_attr,
-                m_activity_device_id_attr,
-                m_activity_queue_id_attr,
-                m_activity_bytes_attr
-            };
-            Variant data[7] = {
-                Variant(roctracer_op_string(record->domain, record->op, record->kind)),
-                Variant(cali_make_variant_from_uint(record->begin_ns)),
-                Variant(cali_make_variant_from_uint(record->end_ns)),
-                Variant(cali_make_variant_from_uint(record->end_ns - record->begin_ns)),
-                Variant(cali_make_variant_from_uint(record->device_id)),
-                Variant(cali_make_variant_from_uint(record->queue_id)),
-                Variant()
-            };
+            Attribute attr[7] = { m_activity_name_attr,     m_activity_start_attr,     m_activity_end_attr,
+                                  m_activity_duration_attr, m_activity_device_id_attr, m_activity_queue_id_attr,
+                                  m_activity_bytes_attr };
+            Variant   data[7] = { Variant(roctracer_op_string(record->domain, record->op, record->kind)),
+                                  Variant(cali_make_variant_from_uint(record->begin_ns)),
+                                  Variant(cali_make_variant_from_uint(record->end_ns)),
+                                  Variant(cali_make_variant_from_uint(record->end_ns - record->begin_ns)),
+                                  Variant(cali_make_variant_from_uint(record->device_id)),
+                                  Variant(cali_make_variant_from_uint(record->queue_id)),
+                                  Variant() };
 
             size_t num = 6;
 
@@ -325,10 +294,8 @@ class RocTracerService {
         unsigned num_flushed = 0;
         unsigned num_records = 0;
 
-        const roctracer_record_t* record =
-            reinterpret_cast<const roctracer_record_t*>(begin);
-        const roctracer_record_t* end_record =
-            reinterpret_cast<const roctracer_record_t*>(end);
+        const roctracer_record_t* record = reinterpret_cast<const roctracer_record_t*>(begin);
+        const roctracer_record_t* end_record = reinterpret_cast<const roctracer_record_t*>(end);
 
         while (record < end_record) {
             num_flushed += flush_record(c, record);
@@ -339,10 +306,8 @@ class RocTracerService {
         }
 
         if (Log::verbosity() >= 2) {
-            Log(2).stream() << m_channel.name() << ": roctracer: Flushed "
-                            << num_records << " records ("
-                            << num_flushed << " flushed, "
-                            << num_records - num_flushed << " skipped).\n";
+            Log(2).stream() << m_channel.name() << ": roctracer: Flushed " << num_records << " records (" << num_flushed
+                            << " flushed, " << num_records - num_flushed << " skipped).\n";
         }
 
         m_num_flushed += num_flushed;
@@ -360,12 +325,12 @@ class RocTracerService {
         uint64_t timestamp = 0;
         roctracer_get_timestamp(&timestamp);
 
-        Variant  v_now(cali_make_variant_from_uint(timestamp));
-        Variant  v_prev = c->exchange(m_host_timestamp_attr, v_now);
+        Variant v_now(cali_make_variant_from_uint(timestamp));
+        Variant v_prev = c->exchange(m_host_timestamp_attr, v_now);
 
         if (m_record_host_duration)
-            snapshot.append(Entry(m_host_duration_attr,
-                                  Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint()))));
+            snapshot.append(
+                Entry(m_host_duration_attr, Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint()))));
     }
 
 #if 0
@@ -393,10 +358,8 @@ class RocTracerService {
         instance->flush_activity_records(&c, begin, end);
 
         if (Log::verbosity() >= 2) {
-            unitfmt_result bytes = unitfmt(end-begin, unitfmt_bytes);
-            Log(2).stream() << instance->m_channel.name()
-                            << ": roctracer: processed "
-                            << bytes.val << bytes.symbol
+            unitfmt_result bytes = unitfmt(end - begin, unitfmt_bytes);
+            Log(2).stream() << instance->m_channel.name() << ": roctracer: processed " << bytes.val << bytes.symbol
                             << " buffer" << std::endl;
         }
     }
@@ -412,36 +375,31 @@ class RocTracerService {
         properties.buffer_callback_arg = this;
 
         if (roctracer_open_pool_expl(&properties, &m_roctracer_pool) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: roctracer_open_pool_expl(): "
-                            << roctracer_error_string()
-                            << std::endl;
+            Log(0).stream() << channel->name()
+                            << ": roctracer: roctracer_open_pool_expl(): " << roctracer_error_string() << std::endl;
             return;
         }
 
         if (roctracer_default_pool_expl(m_roctracer_pool) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: roctracer_default_pool_expl(): "
-                            << roctracer_error_string()
-                            << std::endl;
+            Log(0).stream() << channel->name()
+                            << ": roctracer: roctracer_default_pool_expl(): " << roctracer_error_string() << std::endl;
             return;
         }
 
         if (roctracer_enable_domain_activity_expl(ACTIVITY_DOMAIN_HIP_OPS, m_roctracer_pool) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: roctracer_enable_activity_expl(): "
-                            << roctracer_error_string()
+            Log(0).stream() << channel->name()
+                            << ": roctracer: roctracer_enable_activity_expl(): " << roctracer_error_string()
                             << std::endl;
             return;
         }
         if (roctracer_enable_domain_activity_expl(ACTIVITY_DOMAIN_HCC_OPS, m_roctracer_pool) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: roctracer_enable_activity_expl(): "
-                            << roctracer_error_string()
+            Log(0).stream() << channel->name()
+                            << ": roctracer: roctracer_enable_activity_expl(): " << roctracer_error_string()
                             << std::endl;
             return;
         }
 
-        channel->events().pre_flush_evt.connect(
-            [this](Caliper*, Channel*, SnapshotView){
-                this->pre_flush_cb();
-            });
+        channel->events().pre_flush_evt.connect([this](Caliper*, Channel*, SnapshotView) { this->pre_flush_cb(); });
 
         Log(1).stream() << channel->name() << ": roctracer: Tracing initialized" << std::endl;
     }
@@ -450,8 +408,7 @@ class RocTracerService {
         roctracer_set_properties(ACTIVITY_DOMAIN_HIP_API, NULL);
 
         if (roctracer_enable_domain_callback(ACTIVITY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): "
-                            << roctracer_error_string()
+            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): " << roctracer_error_string()
                             << std::endl;
             return;
         }
@@ -485,10 +442,9 @@ class RocTracerService {
         if (m_record_host_timestamp || m_record_host_duration) {
             c->set(m_host_timestamp_attr, cali_make_variant_from_uint(starttime));
 
-            channel->events().snapshot.connect(
-                [](Caliper* c, Channel* chn,  SnapshotView info, SnapshotBuilder& rec){
-                    s_instance->snapshot_cb(c, chn, info, rec);
-                });
+            channel->events().snapshot.connect([](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
+                s_instance->snapshot_cb(c, chn, info, rec);
+            });
         }
 
         init_callbacks(channel); // apparently must happen before init_tracing()
@@ -506,40 +462,33 @@ class RocTracerService {
 
     void finish_cb(Caliper* c, Channel* channel) {
         if (m_enable_tracing) {
-            Log(1).stream() << channel->name() << ": roctracer: "
-                << m_num_flushes << " activity flushes, "
-                << m_num_records << " records processed, "
-                << m_num_flushed << " records flushed."
-                << std::endl;
+            Log(1).stream() << channel->name() << ": roctracer: " << m_num_flushes << " activity flushes, "
+                            << m_num_records << " records processed, " << m_num_flushed << " records flushed."
+                            << std::endl;
 
             if (Log::verbosity() >= 2) {
-                Log(2).stream() << channel->name() << ": roctracer: "
-                    << m_num_correlations_stored << " correlations stored; "
-                    << m_num_correlations_found  << " correlations found, "
-                    << m_num_correlations_missed << " missed."
-                    << std::endl;
+                Log(2).stream() << channel->name() << ": roctracer: " << m_num_correlations_stored
+                                << " correlations stored; " << m_num_correlations_found << " correlations found, "
+                                << m_num_correlations_missed << " missed." << std::endl;
             }
         }
     }
 
     RocTracerService(Caliper* c, Channel* channel)
-        : m_num_records    { 0 },
-          m_num_flushed    { 0 },
-          m_num_flushes    { 0 },
+        : m_num_records { 0 },
+          m_num_flushed { 0 },
+          m_num_flushes { 0 },
           m_num_correlations_stored { 0 },
-          m_num_correlations_found  { 0 },
+          m_num_correlations_found { 0 },
           m_num_correlations_missed { 0 },
           m_roctracer_pool { nullptr },
-          m_channel        { *channel }
-    {
+          m_channel { *channel } {
         auto config = services::init_config_from_spec(channel->config(), s_spec);
 
         m_enable_tracing = config.get("trace_activities").to_bool();
-        m_record_names   = config.get("record_kernel_names").to_bool();
-        m_record_host_duration  =
-            config.get("snapshot_duration").to_bool();
-        m_record_host_timestamp =
-            config.get("snapshot_timestamps").to_bool();
+        m_record_names = config.get("record_kernel_names").to_bool();
+        m_record_host_duration = config.get("snapshot_duration").to_bool();
+        m_record_host_timestamp = config.get("snapshot_timestamps").to_bool();
 
         create_callback_attributes(c);
         create_activity_attributes(c);
@@ -559,33 +508,23 @@ public:
 
     static void register_roctracer(Caliper* c, Channel* channel) {
         if (s_instance) {
-            Log(0).stream() << channel->name()
-                            << ": roctracer service is already active, disabling!"
-                            << std::endl;
+            Log(0).stream() << channel->name() << ": roctracer service is already active, disabling!" << std::endl;
         }
 
         s_instance = new RocTracerService(c, channel);
 
         channel->events().post_init_evt.connect(
-            [](Caliper* c, Channel* channel){
-                s_instance->post_init_cb(c, channel);
-            });
+            [](Caliper* c, Channel* channel) { s_instance->post_init_cb(c, channel); });
         channel->events().pre_finish_evt.connect(
-            [](Caliper* c, Channel* channel){
-                s_instance->pre_finish_cb(c, channel);
-            });
-        channel->events().finish_evt.connect(
-            [](Caliper* c, Channel* channel){
-                s_instance->finish_cb(c, channel);
-                delete s_instance;
-                s_instance = nullptr;
-            });
+            [](Caliper* c, Channel* channel) { s_instance->pre_finish_cb(c, channel); });
+        channel->events().finish_evt.connect([](Caliper* c, Channel* channel) {
+            s_instance->finish_cb(c, channel);
+            delete s_instance;
+            s_instance = nullptr;
+        });
 
-        Log(1).stream() << channel->name()
-                        << ": Registered roctracer service."
-                        << " Activity tracing is "
-                        << (s_instance->m_enable_tracing ? "on" : "off")
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered roctracer service."
+                        << " Activity tracing is " << (s_instance->m_enable_tracing ? "on" : "off") << std::endl;
     }
 };
 
@@ -619,7 +558,7 @@ const char* RocTracerService::s_spec = R"json(
 
 RocTracerService* RocTracerService::s_instance = nullptr;
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

@@ -19,18 +19,14 @@ using namespace cali;
 namespace
 {
 
-void mpiflush_init(Caliper* c, Channel* channel)
-{
+void mpiflush_init(Caliper* c, Channel* channel) {
     mpiwrap_get_events(channel)->mpi_finalize_evt.connect(
-        [](Caliper* c, Channel* channel){
-            c->flush_and_write(channel, SnapshotView());
-        });
+        [](Caliper* c, Channel* channel) { c->flush_and_write(channel, SnapshotView()); });
 
     Log(1).stream() << channel->name() << ": Registered mpiflush service" << std::endl;
 }
 
-}
-
+} // namespace
 
 namespace cali
 {

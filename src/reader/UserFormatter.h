@@ -20,7 +20,7 @@ struct QuerySpec;
 
 /// \brief Prints snapshot records using a user-defined format string
 /// \ingroup ReaderAPI
-    
+
 class UserFormatter : public Formatter
 {
     struct FormatImpl;

@@ -11,10 +11,8 @@ using namespace cali;
 namespace
 {
 
-void flush_cb(Caliper* c, Channel*, SnapshotView, SnapshotFlushFn flush_fn)
-{
-    Attribute snapshot_attr =
-        c->create_attribute("tps.snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+void flush_cb(Caliper* c, Channel*, SnapshotView, SnapshotFlushFn flush_fn) {
+    Attribute snapshot_attr = c->create_attribute("tps.snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     std::vector<Entry> rec;
     rec.push_back(Entry(snapshot_attr, Variant(49)));
@@ -22,21 +20,17 @@ void flush_cb(Caliper* c, Channel*, SnapshotView, SnapshotFlushFn flush_fn)
     flush_fn(*c, rec);
 }
 
-void postprocess_snapshot_cb(Caliper* c, Channel*, std::vector<Entry>& rec)
-{
-    Attribute val_attr  =
-        c->create_attribute("tps.postprocess.val",  CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute node_attr =
-        c->create_attribute("tps.postprocess.node", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+void postprocess_snapshot_cb(Caliper* c, Channel*, std::vector<Entry>& rec) {
+    Attribute val_attr = c->create_attribute("tps.postprocess.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute node_attr = c->create_attribute("tps.postprocess.node", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
 
     rec.push_back(Entry(val_attr, Variant(42)));
     rec.push_back(Entry(c->make_tree_entry(node_attr, Variant(36))));
 }
 
-}
+} // namespace
 
-TEST(PostprocessSnapshotTest, PostprocessSnapshot)
-{
+TEST(PostprocessSnapshotTest, PostprocessSnapshot) {
     RuntimeConfig cfg;
     cfg.allow_read_env(false);
 
@@ -46,11 +40,11 @@ TEST(PostprocessSnapshotTest, PostprocessSnapshot)
     channel.events().flush_evt.connect(::flush_cb);
     channel.events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
 
-    std::vector< std::vector<Entry> > output;
+    std::vector<std::vector<Entry>> output;
 
-    c.flush(&channel, SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-            output.push_back(rec);
-        });
+    c.flush(&channel, SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+        output.push_back(rec);
+    });
 
     Attribute snapshot_val_attr = c.get_attribute("tps.snapshot.val");
     Attribute post_val_attr = c.get_attribute("tps.postprocess.val");

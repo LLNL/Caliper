@@ -20,7 +20,7 @@ struct QuerySpec;
 
 /// \brief Prints expanded snapshot records in CSV form
 /// \ingroup ReaderAPI
-    
+
 class Expand : public Formatter
 {
     struct ExpandImpl;

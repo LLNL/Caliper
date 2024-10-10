@@ -59,24 +59,29 @@ extern void init_builtin_configmanager(Caliper* c);
 
 }
 
-}
+} // namespace cali
 
 namespace
 {
 
 // --- Siglock
 
-class siglock {
+class siglock
+{
     volatile sig_atomic_t m_lock;
 
 public:
 
-    siglock()
-        : m_lock(0)
-        { }
+    siglock() : m_lock(0) {
+    }
 
-    inline void lock()   { ++m_lock; }
-    inline void unlock() { --m_lock; }
+    inline void lock() {
+        ++m_lock;
+    }
+
+    inline void unlock() {
+        --m_lock;
+    }
 
     inline bool is_locked() const {
         return (m_lock > 0);
@@ -85,17 +90,12 @@ public:
 
 // --- helper functions
 
-void
-log_invalid_cfg_value(const char* var, const char* value, const char* prefix = nullptr)
-{
-    Log(0).stream() << (prefix ? std::string(prefix)+": " : std::string(""))
-                    << "Invalid value \"" << value << "\" for " << var
-                    << std::endl;
+void log_invalid_cfg_value(const char* var, const char* value, const char* prefix = nullptr) {
+    Log(0).stream() << (prefix ? std::string(prefix) + ": " : std::string("")) << "Invalid value \"" << value
+                    << "\" for " << var << std::endl;
 }
 
-std::ostream&
-print_available_services(std::ostream& os)
-{
+std::ostream& print_available_services(std::ostream& os) {
     std::vector<std::string> services = services::get_available_services();
 
     int count = 0;
@@ -108,13 +108,11 @@ print_available_services(std::ostream& os)
     return os;
 }
 
-std::vector<Entry>
-get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
-{
+std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard) {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
     blackboard.snapshot(rec.builder());
 
-    std::vector<Entry> ret;
+    std::vector<Entry>       ret;
     std::vector<const Node*> nodes;
 
     for (const Entry& e : rec.view()) {
@@ -135,16 +133,12 @@ get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
     return ret;
 }
 
-void make_default_channel()
-{
+void make_default_channel() {
     //   Creates default channel (which reads env vars and/or caliper.config)
     // and initializes builtin ConfigManager during initialization
-    RuntimeConfig cfg = RuntimeConfig::get_default_config();
-    const RuntimeConfig::config_entry_list_t configdata {
-        { "enable", "" }
-    };
-    std::vector<std::string> services =
-        cfg.init("services", configdata).get("enable").to_stringlist(",:");
+    RuntimeConfig                            cfg = RuntimeConfig::get_default_config();
+    const RuntimeConfig::config_entry_list_t configdata { { "enable", "" } };
+    std::vector<std::string> services = cfg.init("services", configdata).get("enable").to_stringlist(",:");
 
     Caliper c;
 
@@ -158,98 +152,78 @@ void make_default_channel()
     internal::init_builtin_configmanager(&c);
 }
 
-} // namespace [anonymous]
+} // namespace
 
 //
 // Caliper channel data
 //
 
-struct Channel::ChannelImpl
-{
-    static const ConfigSet::Entry   s_configdata[];
+struct Channel::ChannelImpl {
+    static const ConfigSet::Entry s_configdata[];
 
-    cali_id_t                       id;
-    std::string                     name;
-    bool                            is_active;
+    cali_id_t   id;
+    std::string name;
+    bool        is_active;
 
-    RuntimeConfig                   config;
-    Events                          events;          ///< callbacks
+    RuntimeConfig config;
+    Events        events; ///< callbacks
 
-    bool                            flush_on_exit;
+    bool flush_on_exit;
 
-    Blackboard                      channel_blackboard;
+    Blackboard channel_blackboard;
 
     ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
-        : id(_id),
-          name(_name),
-          is_active(false),
-          config(cfg)
-        {
-            ConfigSet cali_cfg =
-                config.init("channel", s_configdata);
+        : id(_id), name(_name), is_active(false), config(cfg) {
+        ConfigSet cali_cfg = config.init("channel", s_configdata);
 
-            flush_on_exit =
-                cali_cfg.get("flush_on_exit").to_bool();
-        }
+        flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
+    }
 
-    ~ChannelImpl()
-        {
-            if (Log::verbosity() >= 2) {
-                channel_blackboard.print_statistics( Log(2).stream() << name << " channel blackboard: " )
-                    << std::endl;
-            }
+    ~ChannelImpl() {
+        if (Log::verbosity() >= 2) {
+            channel_blackboard.print_statistics(Log(2).stream() << name << " channel blackboard: ") << std::endl;
         }
+    }
 };
 
 const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "config_check", CALI_TYPE_BOOL, "true",
+    { "config_check",
+      CALI_TYPE_BOOL,
+      "true",
       "Perform configuration sanity check at initialization",
-      "Perform configuration sanity check at initialization"
-    },
-    { "flush_on_exit", CALI_TYPE_BOOL, "true",
+      "Perform configuration sanity check at initialization" },
+    { "flush_on_exit",
+      CALI_TYPE_BOOL,
+      "true",
       "Flush Caliper buffers at program exit",
-      "Flush Caliper buffers at program exit"
-    },
+      "Flush Caliper buffers at program exit" },
     ConfigSet::Terminator
 };
 
-Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg)
-    : mP(new ChannelImpl(id, name, cfg))
-{
+Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg) : mP(new ChannelImpl(id, name, cfg)) {
 }
 
-Channel::~Channel()
-{
+Channel::~Channel() {
 }
 
-Channel::Events&
-Channel::events()
-{
+Channel::Events& Channel::events() {
     return mP->events;
 }
 
-RuntimeConfig
-Channel::config()
-{
+RuntimeConfig Channel::config() {
     return mP->config;
 }
 
-std::string
-Channel::name() const
-{
+std::string Channel::name() const {
     return mP->name;
 }
 
-bool
-Channel::is_active() const
-{
+bool Channel::is_active() const {
     return mP && mP->is_active;
 }
 
-cali_id_t
-Channel::id() const
-{
+cali_id_t Channel::id() const {
     return mP->id;
 }
 
@@ -258,39 +232,34 @@ Channel::id() const
 //
 
 /// \brief Per-thread data for the Caliper object
-struct Caliper::ThreadData
-{
-    MetadataTree   tree;
-    ::siglock      lock;
+struct Caliper::ThreadData {
+    MetadataTree tree;
+    ::siglock    lock;
 
     SnapshotRecord snapshot;
 
     // This thread's blackboard
-    Blackboard     thread_blackboard;
+    Blackboard thread_blackboard;
     // copy of the last process blackboard snapshot
     SnapshotRecord process_snapshot;
     // version of the last process blackboard snapshot
-    int            process_bb_count;
+    int process_bb_count;
 
-    bool           is_initial_thread;
-    bool           stack_error;
+    bool is_initial_thread;
+    bool stack_error;
 
     ThreadData(bool initial_thread = false)
-        : process_bb_count(-1),
-          is_initial_thread(initial_thread),
-          stack_error(false)
-        { }
+        : process_bb_count(-1), is_initial_thread(initial_thread), stack_error(false) {
+    }
 
     ~ThreadData() {
         if (Log::verbosity() >= 2)
-            print_detailed_stats( Log(2).stream() );
+            print_detailed_stats(Log(2).stream());
     }
 
     void print_detailed_stats(std::ostream& os) {
-        tree.print_statistics( os << "Releasing Caliper thread data: \n" )
-            << std::endl;
-        thread_blackboard.print_statistics( os << "  Thread blackboard: " )
-            << std::endl;
+        tree.print_statistics(os << "Releasing Caliper thread data: \n") << std::endl;
+        thread_blackboard.print_statistics(os << "  Thread blackboard: ") << std::endl;
     }
 
     void update_process_snapshot(Blackboard& process_blackboard) {
@@ -310,52 +279,44 @@ struct Caliper::ThreadData
     }
 };
 
-
 //
 // --- Caliper Global Data
 //
 
-struct Caliper::GlobalData
-{
+struct Caliper::GlobalData {
     // --- static data
 
-    static volatile sig_atomic_t       s_init_lock;
-    static std::mutex                  s_init_mutex;
+    static volatile sig_atomic_t s_init_lock;
+    static std::mutex            s_init_mutex;
 
-    static const ConfigSet::Entry      s_configdata[];
+    static const ConfigSet::Entry s_configdata[];
 
     // --- data
 
-    mutable std::mutex                 attribute_lock;
-    map<string, Attribute>             attribute_map;
+    mutable std::mutex     attribute_lock;
+    map<string, Attribute> attribute_map;
 
-    map<string, int>                   attribute_prop_presets;
-    int                                attribute_default_scope;
+    map<string, int> attribute_prop_presets;
+    int              attribute_default_scope;
 
-    Blackboard                         process_blackboard;
+    Blackboard process_blackboard;
 
-    vector< Channel >                  all_channels;
-    vector< Channel >                  active_channels;
+    vector<Channel> all_channels;
+    vector<Channel> active_channels;
 
-    size_t                             max_active_channels;
+    size_t max_active_channels;
 
-    vector< ThreadData* >              thread_data;
-    std::mutex                         thread_data_lock;
+    vector<ThreadData*> thread_data;
+    std::mutex          thread_data_lock;
 
     // --- constructor
 
-    GlobalData(ThreadData* sT)
-          : attribute_default_scope { CALI_ATTR_SCOPE_THREAD },
-            max_active_channels { 0 }
-    {
+    GlobalData(ThreadData* sT) : attribute_default_scope { CALI_ATTR_SCOPE_THREAD }, max_active_channels { 0 } {
         // put the attribute [name,type,prop] attributes in the map
 
-        Attribute name_attr =
-            Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
-        Attribute type_attr =
-            Attribute::make_attribute(sT->tree.node(Attribute::TYPE_ATTR_ID));
-        Attribute prop_attr =
-            Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
+        Attribute name_attr = Attribute::make_attribute(sT->tree.node(Attribute::NAME_ATTR_ID));
+        Attribute type_attr = Attribute::make_attribute(sT->tree.node(Attribute::TYPE_ATTR_ID));
+        Attribute prop_attr = Attribute::make_attribute(sT->tree.node(Attribute::PROP_ATTR_ID));
 
         attribute_map.insert(make_pair(name_attr.name(), name_attr));
         attribute_map.insert(make_pair(prop_attr.name(), prop_attr));
@@ -368,18 +329,14 @@ struct Caliper::GlobalData
 
         if (Log::verbosity() >= 2) {
             Log(2).stream() << "Releasing Caliper global data.\n"
-                << "  Max active channels: " << max_active_channels << std::endl;
-            process_blackboard.print_statistics( Log(2).stream() << "Process blackboard: " )
-                << std::endl;
+                            << "  Max active channels: " << max_active_channels << std::endl;
+            process_blackboard.print_statistics(Log(2).stream() << "Process blackboard: ") << std::endl;
         }
 
         {
-            std::lock_guard<std::mutex>
-                g(thread_data_lock);
+            std::lock_guard<std::mutex> g(thread_data_lock);
 
-            std::for_each(thread_data.begin(), thread_data.end(), [](ThreadData* d){
-                    delete d;
-                });
+            std::for_each(thread_data.begin(), thread_data.end(), [](ThreadData* d) { delete d; });
 
             thread_data.clear();
         }
@@ -401,7 +358,7 @@ struct Caliper::GlobalData
             if (p == string::npos)
                 continue;
 
-            int prop = cali_string2prop(s.substr(p+1).c_str());
+            int prop = cali_string2prop(s.substr(p + 1).c_str());
 
             attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
         }
@@ -422,15 +379,14 @@ struct Caliper::GlobalData
         parse_attribute_config(RuntimeConfig::get_default_config().init("caliper", s_configdata));
 
         if (Log::verbosity() >= 2)
-            print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
+            print_available_services(Log(2).stream() << "Available services: ") << std::endl;
 
         Caliper c(this, tObj.t_ptr, false);
 
         init_attribute_classes(&c);
         init_api_attributes(&c);
 
-        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING,
-                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
               Variant(CALIPER_VERSION));
 
         Log(1).stream() << "Initialized" << std::endl;
@@ -439,8 +395,7 @@ struct Caliper::GlobalData
     ThreadData* add_thread_data(ThreadData* t) {
         tObj.t_ptr = t;
 
-        std::lock_guard<std::mutex>
-            g(thread_data_lock);
+        std::lock_guard<std::mutex> g(thread_data_lock);
 
         thread_data.push_back(t);
         return t;
@@ -457,9 +412,8 @@ struct Caliper::GlobalData
     struct S_TLSObject {
         ThreadData* t_ptr;
 
-        S_TLSObject()
-            : t_ptr(nullptr)
-            { }
+        S_TLSObject() : t_ptr(nullptr) {
+        }
 
         ~S_TLSObject() {
             // Only use if we're still active
@@ -508,15 +462,17 @@ struct Caliper::GlobalData
 
 // --- static member initialization
 
-volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
-mutex                  Caliper::GlobalData::s_init_mutex;
+volatile sig_atomic_t Caliper::GlobalData::s_init_lock = 1;
+mutex                 Caliper::GlobalData::s_init_mutex;
 
-Caliper::GlobalData::S_GObject Caliper::GlobalData::gObj;
+Caliper::GlobalData::S_GObject                Caliper::GlobalData::gObj;
 thread_local Caliper::GlobalData::S_TLSObject Caliper::GlobalData::tObj;
 
 const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
-    { "attribute_properties", CALI_TYPE_STRING, "",
+    { "attribute_properties",
+      CALI_TYPE_STRING,
+      "",
       "List of attribute property presets",
       "List of attribute property presets, in the form\n"
       "  attr=prop1:prop2,attr2=prop1:prop2:prop3,attr3=prop1,...\n"
@@ -528,14 +484,14 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  task_scope:    Task-scope attribute (currently not supported)\n"
       "  skip_events:   Do not invoke callback functions for updates\n"
       "  hidden:        Do not include this attribute in snapshots\n"
-      "  nested:        Values are properly nested with the call stack and other nested attributes\n"
-    },
-    { "attribute_default_scope", CALI_TYPE_STRING, "thread",
+      "  nested:        Values are properly nested with the call stack and other nested attributes\n" },
+    { "attribute_default_scope",
+      CALI_TYPE_STRING,
+      "thread",
       "Default scope for attributes",
       "Default scope for attributes. Possible values are\n"
       "  process:   Process scope\n"
-      "  thread:    Thread scope"
-    },
+      "  thread:    Thread scope" },
 
     ConfigSet::Terminator
 };
@@ -543,7 +499,7 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
 namespace
 {
 
-constexpr cali_id_t REGION_KEY    { 1 };
+constexpr cali_id_t REGION_KEY { 1 };
 constexpr cali_id_t UNALIGNED_KEY { 2 };
 
 // Get the blackboard key, which determines the blackboard slot for each
@@ -552,9 +508,7 @@ constexpr cali_id_t UNALIGNED_KEY { 2 };
 // set-type attributes. We skip stack nesting checks for unaligned
 // attributes. Immediate (as_value) and nomerge attributes get
 // their own slots.
-inline cali_id_t
-get_blackboard_key(cali_id_t attr_id, int prop)
-{
+inline cali_id_t get_blackboard_key(cali_id_t attr_id, int prop) {
     if (prop & CALI_ATTR_ASVALUE)
         return attr_id;
     if (prop & CALI_ATTR_UNALIGNED)
@@ -563,23 +517,17 @@ get_blackboard_key(cali_id_t attr_id, int prop)
     return REGION_KEY;
 }
 
-inline cali_id_t
-get_blackboard_key_for_reference_entry(int prop)
-{
+inline cali_id_t get_blackboard_key_for_reference_entry(int prop) {
     return prop & CALI_ATTR_UNALIGNED ? UNALIGNED_KEY : REGION_KEY;
 }
 
-
-void
-log_stack_error(const Node* stack, const Attribute& attr)
-{
+void log_stack_error(const Node* stack, const Attribute& attr) {
     std::string stackstr;
     std::string helpstr;
 
     if (stack) {
-        stackstr =
-            "\n  but current region is\n    \"";
-/*
+        stackstr = "\n  but current region is\n    \"";
+        /*
         const Node* attr_node = tree.node(stack->attribute());
 
         if (attr_node)
@@ -593,19 +541,13 @@ log_stack_error(const Node* stack, const Attribute& attr)
             "\n  Run program with CALI_SERVICES_ENABLE=validator to examine nesting errors, or"
             "\n  run with CALI_CALIPER_ALLOW_REGION_OVERLAP=true to continue region tracking.";
     } else
-        stackstr =
-            "\n  but region stack is empty!";
+        stackstr = "\n  but region stack is empty!";
 
-    Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name() << "\""
-        << stackstr
-        << "\n  Ceasing region tracking!"
-        << helpstr
-        << std::endl;
+    Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name() << "\"" << stackstr
+                    << "\n  Ceasing region tracking!" << helpstr << std::endl;
 }
 
-void
-log_stack_value_error(const Entry& current, Attribute attr, const Variant& expect)
-{
+void log_stack_value_error(const Entry& current, Attribute attr, const Variant& expect) {
     std::string error;
     if (current.empty())
         error = "stack is empty";
@@ -616,21 +558,16 @@ log_stack_value_error(const Entry& current, Attribute attr, const Variant& expec
         error.append(current.value().to_string());
     }
 
-    Log(0).stream() << "Stack value mismatch: Trying to end "
-        << attr.name() << "=" << expect.to_string()
-        << " but " << error
-        << std::endl;
+    Log(0).stream() << "Stack value mismatch: Trying to end " << attr.name() << "=" << expect.to_string() << " but "
+                    << error << std::endl;
 }
 
-struct BlackboardEntry
-{
+struct BlackboardEntry {
     Entry merged_entry;
     Entry entry;
 };
 
-inline BlackboardEntry
-load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard)
-{
+inline BlackboardEntry load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard) {
     Entry merged_entry = blackboard.get(key);
     Entry entry = merged_entry.get(attr);
 
@@ -648,21 +585,26 @@ load_current_entry(const Attribute& attr, cali_id_t key, Blackboard& blackboard)
     return { merged_entry, entry };
 }
 
-inline void
-handle_begin(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
-{
+inline void handle_begin(const Attribute& attr,
+                         const Variant&   value,
+                         int              prop,
+                         Blackboard&      blackboard,
+                         MetadataTree&    tree) {
     if (prop & CALI_ATTR_ASVALUE) {
         blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
     } else {
         cali_id_t key = get_blackboard_key_for_reference_entry(prop);
-        Entry entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
+        Entry     entry = Entry(tree.get_child(attr, value, blackboard.get(key).node()));
         blackboard.set(key, entry, !(prop & CALI_ATTR_HIDDEN));
     }
 }
 
-inline void
-handle_end(const Attribute& attr, int prop, const BlackboardEntry& current, cali_id_t key, Blackboard& blackboard, MetadataTree& tree)
-{
+inline void handle_end(const Attribute&       attr,
+                       int                    prop,
+                       const BlackboardEntry& current,
+                       cali_id_t              key,
+                       Blackboard&            blackboard,
+                       MetadataTree&          tree) {
     if (prop & CALI_ATTR_ASVALUE)
         blackboard.del(key);
     else {
@@ -679,20 +621,21 @@ handle_end(const Attribute& attr, int prop, const BlackboardEntry& current, cali
     }
 }
 
-inline void
-handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& blackboard, MetadataTree& tree)
-{
+inline void handle_set(const Attribute& attr,
+                       const Variant&   value,
+                       int              prop,
+                       Blackboard&      blackboard,
+                       MetadataTree&    tree) {
     if (prop & CALI_ATTR_ASVALUE)
         blackboard.set(attr.id(), Entry(attr, value), !(prop & CALI_ATTR_HIDDEN));
     else {
         cali_id_t key = get_blackboard_key_for_reference_entry(prop);
-        Node* node = blackboard.get(key).node();
+        Node*     node = blackboard.get(key).node();
         blackboard.set(key, tree.replace_first_in_path(node, attr, value), !(prop & CALI_ATTR_HIDDEN));
     }
 }
 
-} // namespace [anonymous]
-
+} // namespace
 
 //
 // Caliper class definition
@@ -700,19 +643,19 @@ handle_set(const Attribute& attr, const Variant& value, int prop, Blackboard& bl
 
 // --- Attribute interface
 
-Attribute
-Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
-                          int n_meta, const Attribute* meta_attr, const Variant* meta_val)
-{
+Attribute Caliper::create_attribute(const std::string& name,
+                                    cali_attr_type     type,
+                                    int                prop,
+                                    int                n_meta,
+                                    const Attribute*   meta_attr,
+                                    const Variant*     meta_val) {
     assert(sG != 0);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     // Check if an attribute with this name already exists
     {
-        std::lock_guard<std::mutex>
-            ga(sG->attribute_lock);
+        std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
         auto it = sG->attribute_map.find(name);
         if (it != sG->attribute_map.end())
@@ -761,8 +704,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         // another thread in the meantime.
         // We've created some redundant nodes then, but that's fine
 
-        std::lock_guard<std::mutex>
-            ga(sG->attribute_lock);
+        std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
         auto it = sG->attribute_map.lower_bound(name);
 
@@ -782,45 +724,31 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     return attr;
 }
 
-bool
-Caliper::attribute_exists(const std::string& name) const
-{
-    std::lock_guard<::siglock>
-        gs(sT->lock);
-    std::lock_guard<std::mutex>
-        ga(sG->attribute_lock);
+bool Caliper::attribute_exists(const std::string& name) const {
+    std::lock_guard<::siglock>  gs(sT->lock);
+    std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
     return (sG->attribute_map.find(name) != sG->attribute_map.end());
 }
 
-Attribute
-Caliper::get_attribute(const std::string& name) const
-{
-    std::lock_guard<::siglock>
-        gs(sT->lock);
-    std::lock_guard<std::mutex>
-        ga(sG->attribute_lock);
+Attribute Caliper::get_attribute(const std::string& name) const {
+    std::lock_guard<::siglock>  gs(sT->lock);
+    std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
     auto it = sG->attribute_map.find(name);
 
     return it != sG->attribute_map.end() ? it->second : Attribute();
 }
 
-Attribute
-Caliper::get_attribute(cali_id_t id) const
-{
+Attribute Caliper::get_attribute(cali_id_t id) const {
     // no signal lock necessary
 
     return Attribute::make_attribute(sT->tree.node(id));
 }
 
-std::vector<Attribute>
-Caliper::get_all_attributes() const
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
-    std::lock_guard<std::mutex>
-        g_a(sG->attribute_lock);
+std::vector<Attribute> Caliper::get_all_attributes() const {
+    std::lock_guard<::siglock>  g(sT->lock);
+    std::lock_guard<std::mutex> g_a(sG->attribute_lock);
 
     std::vector<Attribute> ret;
     ret.reserve(sG->attribute_map.size());
@@ -836,45 +764,39 @@ Caliper::get_all_attributes() const
 //
 
 /// Dispatch memory region annotation across all active channels
-void
-Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
-    size_t nextra, const Attribute* extra_attrs, const Variant* extra_vals)
-{
+void Caliper::memory_region_begin(const void*      ptr,
+                                  const char*      label,
+                                  size_t           elem_size,
+                                  size_t           ndim,
+                                  const size_t     dims[],
+                                  size_t           nextra,
+                                  const Attribute* extra_attrs,
+                                  const Variant*   extra_vals) {
     for (auto& channel : sG->active_channels)
         memory_region_begin(&channel, ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
 }
 
 /// Dispatch memory region annotation end across all active channels
-void
-Caliper::memory_region_end(const void* ptr)
-{
+void Caliper::memory_region_end(const void* ptr) {
     for (auto& channel : sG->active_channels)
         memory_region_end(&channel, ptr);
 }
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the process
 /// blackboard.
-std::vector<Entry>
-Caliper::get_globals()
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+std::vector<Entry> Caliper::get_globals() {
+    std::lock_guard<::siglock> g(sT->lock);
 
     return get_globals_from_blackboard(this, sG->process_blackboard);
 }
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// and the process blackboard.
-std::vector<Entry>
-Caliper::get_globals(const Channel& channel)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+std::vector<Entry> Caliper::get_globals(const Channel& channel) {
+    std::lock_guard<::siglock> g(sT->lock);
 
-    std::vector<Entry> ret =
-        get_globals_from_blackboard(this, sG->process_blackboard);
-    std::vector<Entry> tmp =
-        get_globals_from_blackboard(this, channel.mP->channel_blackboard);
+    std::vector<Entry> ret = get_globals_from_blackboard(this, sG->process_blackboard);
+    std::vector<Entry> tmp = get_globals_from_blackboard(this, channel.mP->channel_blackboard);
 
     ret.insert(ret.end(), tmp.begin(), tmp.end());
 
@@ -883,11 +805,8 @@ Caliper::get_globals(const Channel& channel)
 
 // --- Snapshot interface
 
-void
-Caliper::pull_context(SnapshotBuilder& rec)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::pull_context(SnapshotBuilder& rec) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     // Get thread blackboard data
     sT->thread_blackboard.snapshot(rec);
@@ -897,11 +816,8 @@ Caliper::pull_context(SnapshotBuilder& rec)
     rec.append(sT->process_snapshot.view());
 }
 
-void
-Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     rec.append(trigger_info);
     channel->mP->events.snapshot(this, channel, trigger_info, rec);
@@ -912,11 +828,8 @@ Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuil
     rec.append(sT->process_snapshot.view());
 }
 
-void
-Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     sT->snapshot.reset();
 
@@ -931,33 +844,30 @@ Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
     channel->mP->events.process_snapshot(this, channel, trigger_info, sT->snapshot.view());
 }
 
-void
-Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     chn->mP->events.pre_flush_evt(this, chn, flush_info);
 
     if (chn->mP->events.postprocess_snapshot.empty()) {
         chn->mP->events.flush_evt(this, chn, flush_info, proc_fn);
     } else {
-        chn->mP->events.flush_evt(this, chn, flush_info, [this,chn,proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
-                std::vector<Entry> mrec(rec);
+        chn->mP->events.flush_evt(this,
+                                  chn,
+                                  flush_info,
+                                  [this, chn, proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
+                                      std::vector<Entry> mrec(rec);
 
-                chn->mP->events.postprocess_snapshot(this, chn, mrec);
-                proc_fn(*this, mrec);
-            });
+                                      chn->mP->events.postprocess_snapshot(this, chn, mrec);
+                                      proc_fn(*this, mrec);
+                                  });
     }
 
     chn->mP->events.post_flush_evt(this, chn, flush_info);
 }
 
-void
-Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     SnapshotRecord flush_info;
     flush_info.builder().append(input_flush_info);
@@ -971,31 +881,24 @@ Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info)
     channel->mP->events.write_output_evt(this, channel, flush_info.view());
 }
 
-void
-Caliper::clear(Channel* chn)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::clear(Channel* chn) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     chn->mP->events.clear_evt(this, chn);
 }
 
-
 // --- Annotation interface
 
-void
-Caliper::begin(const Attribute& attr, const Variant& data)
-{
+void Caliper::begin(const Attribute& attr, const Variant& data) {
     if (sT->stack_error)
         return;
 
-    int prop  = attr.properties();
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
     if (run_events)
@@ -1013,18 +916,16 @@ Caliper::begin(const Attribute& attr, const Variant& data)
             channel.mP->events.post_begin_evt(this, &channel, attr, data);
 }
 
-void
-Caliper::end(const Attribute& attr)
-{
+void Caliper::end(const Attribute& attr) {
     if (sT->stack_error)
         return;
 
-    int prop  = attr.properties();
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    cali_id_t key = get_blackboard_key(attr.id(), prop);
+    cali_id_t   key = get_blackboard_key(attr.id(), prop);
     Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
@@ -1034,8 +935,7 @@ Caliper::end(const Attribute& attr)
     else
         return;
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     auto current = load_current_entry(attr, key, *blackboard);
 
@@ -1052,18 +952,16 @@ Caliper::end(const Attribute& attr)
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
 
-void
-Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
-{
+void Caliper::end_with_value_check(const Attribute& attr, const Variant& data) {
     if (sT->stack_error)
         return;
 
-    int prop  = attr.properties();
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    cali_id_t key = get_blackboard_key(attr.id(), prop);
+    cali_id_t   key = get_blackboard_key(attr.id(), prop);
     Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
@@ -1073,8 +971,7 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     else
         return;
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     auto current = load_current_entry(attr, key, *blackboard);
 
@@ -1092,19 +989,16 @@ Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
 
-void
-Caliper::set(const Attribute& attr, const Variant& data)
-{
+void Caliper::set(const Attribute& attr, const Variant& data) {
     if (sT->stack_error)
         return;
 
-    int prop  = attr.properties();
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
     if (run_events)
@@ -1117,14 +1011,11 @@ Caliper::set(const Attribute& attr, const Variant& data)
         handle_set(attr, data, prop, sG->process_blackboard, sT->tree);
 }
 
-void
-Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
-{
-    int prop = attr.properties();
+void Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data) {
+    int  prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
     if (run_events && channel->is_active())
@@ -1137,19 +1028,15 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
         channel->mP->events.post_begin_evt(this, channel, attr, data);
 }
 
-void
-Caliper::end(Channel* channel, const Attribute& attr)
-{
-    int prop = attr.properties();
+void Caliper::end(Channel* channel, const Attribute& attr) {
+    int  prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
-    BlackboardEntry current =
-        load_current_entry(attr, key, channel->mP->channel_blackboard);
+    BlackboardEntry current = load_current_entry(attr, key, channel->mP->channel_blackboard);
 
     if (current.entry.empty()) {
         sT->stack_error = true;
@@ -1163,14 +1050,11 @@ Caliper::end(Channel* channel, const Attribute& attr)
     handle_end(attr, prop, current, key, channel->mP->channel_blackboard, sT->tree);
 }
 
-void
-Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
-{
-    int prop = attr.properties();
+void Caliper::set(Channel* channel, const Attribute& attr, const Variant& data) {
+    int  prop = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
     if (run_events && channel->is_active())
@@ -1181,10 +1065,8 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
 
 // --- Query
 
-Entry
-Caliper::get(const Attribute& attr)
-{
-    int prop  = attr.properties();
+Entry Caliper::get(const Attribute& attr) {
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     Blackboard* blackboard = nullptr;
@@ -1199,31 +1081,24 @@ Caliper::get(const Attribute& attr)
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     return blackboard->get(key).get(attr);
 }
 
-Entry
-Caliper::get(Channel* channel, const Attribute& attr)
-{
+Entry Caliper::get(Channel* channel, const Attribute& attr) {
     cali_id_t key = get_blackboard_key(attr.id(), attr.properties());
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     return channel->mP->channel_blackboard.get(key).get(attr);
 }
 
-Entry
-Caliper::get_path_node()
-{
+Entry Caliper::get_path_node() {
     Entry e;
 
     {
-        std::lock_guard<::siglock>
-            g(sT->lock);
+        std::lock_guard<::siglock> g(sT->lock);
 
         e = sT->thread_blackboard.get(REGION_KEY);
 
@@ -1240,32 +1115,30 @@ Caliper::get_path_node()
 
 // --- Memory region tracking
 
-void
-Caliper::memory_region_begin(Channel* channel, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[],
-    size_t n, const Attribute* extra_attrs, const Variant* extra_vals)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::memory_region_begin(Channel*         channel,
+                                  const void*      ptr,
+                                  const char*      label,
+                                  size_t           elem_size,
+                                  size_t           ndims,
+                                  const size_t     dims[],
+                                  size_t           n,
+                                  const Attribute* extra_attrs,
+                                  const Variant*   extra_vals) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     channel->mP->events.track_mem_evt(this, channel, ptr, label, elem_size, ndims, dims, n, extra_attrs, extra_vals);
 }
 
-void
-Caliper::memory_region_end(Channel* channel, const void* ptr)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::memory_region_end(Channel* channel, const void* ptr) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     channel->mP->events.untrack_mem_evt(this, channel, ptr);
 }
 
 // --- Generic entry API
 
-void
-Caliper::make_record(size_t n, const Attribute attr[], const Variant value[], SnapshotBuilder& rec, Node* parent)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::make_record(size_t n, const Attribute attr[], const Variant value[], SnapshotBuilder& rec, Node* parent) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     Node* node = parent;
 
@@ -1279,44 +1152,31 @@ Caliper::make_record(size_t n, const Attribute attr[], const Variant value[], Sn
         rec.append(Entry(node));
 }
 
-Node*
-Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+Node* Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     return sT->tree.get_path(n, nodelist, parent);
 }
 
-Node*
-Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  parent)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+Node* Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node* parent) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     return sT->tree.get_child(attr, data, parent);
 }
 
-Node*
-Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+Node* Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     return sT->tree.get_path(attr, n, data, parent);
 }
 
-Node*
-Caliper::node(cali_id_t id) const
-{
+Node* Caliper::node(cali_id_t id) const {
     // no siglock necessary
     return sT->tree.node(id);
 }
 
-Variant
-Caliper::exchange(const Attribute& attr, const Variant& data)
-{
-    int prop  = attr.properties();
+Variant Caliper::exchange(const Attribute& attr, const Variant& data) {
+    int prop = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
     Blackboard* blackboard = nullptr;
@@ -1329,8 +1189,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
-    std::lock_guard<::siglock>
-        g(sT->lock);
+    std::lock_guard<::siglock> g(sT->lock);
 
     return blackboard->exchange(key, Entry(attr, data), !(prop & CALI_ATTR_HIDDEN)).value();
 }
@@ -1339,11 +1198,8 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 // --- Channel API
 //
 
-Channel
-Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+Channel Caliper::create_channel(const char* name, const RuntimeConfig& cfg) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     Log(1).stream() << "Creating channel " << name << std::endl;
     static cali_id_t next_id = 0;
@@ -1352,43 +1208,36 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     sG->all_channels.emplace_back(channel);
 
     // Create and set key & version attributes
-    begin(&channel, create_attribute("cali.channel", CALI_TYPE_STRING,
-                        CALI_ATTR_SKIP_EVENTS |
-                        CALI_ATTR_GLOBAL),
-        Variant(name));
+    begin(&channel,
+          create_attribute("cali.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+          Variant(name));
 
     services::register_configured_services(this, &channel);
 
     if (channel.config().get("channel", "config_check").to_bool())
         config_sanity_check(name, channel.config());
     if (Log::verbosity() >= 3)
-        channel.config().print( Log(3).stream() << "Configuration:\n" );
+        channel.config().print(Log(3).stream() << "Configuration:\n");
 
     channel.mP->events.post_init_evt(this, &channel);
 
     return channel;
 }
 
-Channel
-Caliper::get_channel(cali_id_t id)
-{
-    auto it = std::find_if(sG->all_channels.begin(), sG->all_channels.end(),
-        [id](const Channel& channel){ return id == channel.id(); });
+Channel Caliper::get_channel(cali_id_t id) {
+    auto it = std::find_if(sG->all_channels.begin(), sG->all_channels.end(), [id](const Channel& channel) {
+        return id == channel.id();
+    });
 
     return it == sG->all_channels.end() ? Channel() : *it;
 }
 
-std::vector<Channel>
-Caliper::get_all_channels()
-{
+std::vector<Channel> Caliper::get_all_channels() {
     return sG->all_channels;
 }
 
-void
-Caliper::delete_channel(Channel& channel)
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::delete_channel(Channel& channel) {
+    std::lock_guard<::siglock> g(sT->lock);
 
     channel.mP->events.pre_finish_evt(this, &channel);
 
@@ -1404,22 +1253,17 @@ Caliper::delete_channel(Channel& channel)
     channel.mP->events.finish_evt(this, &channel);
 }
 
-void
-Caliper::activate_channel(Channel& channel)
-{
+void Caliper::activate_channel(Channel& channel) {
     channel.mP->is_active = true;
 
     auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
     if (it == sG->active_channels.end())
         sG->active_channels.emplace_back(channel);
 
-    sG->max_active_channels =
-        std::max(sG->max_active_channels, sG->active_channels.size());
+    sG->max_active_channels = std::max(sG->max_active_channels, sG->active_channels.size());
 }
 
-void
-Caliper::deactivate_channel(Channel& channel)
-{
+void Caliper::deactivate_channel(Channel& channel) {
     auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
     if (it != sG->active_channels.end())
         sG->active_channels.erase(it);
@@ -1428,26 +1272,20 @@ Caliper::deactivate_channel(Channel& channel)
 }
 
 /// \brief Release current thread
-void
-Caliper::release_thread()
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::release_thread() {
+    std::lock_guard<::siglock> g(sT->lock);
 
-    for (auto &channel : sG->all_channels)
+    for (auto& channel : sG->all_channels)
         channel.mP->events.release_thread_evt(this, &channel);
 }
 
-void
-Caliper::finalize()
-{
-    std::lock_guard<::siglock>
-        g(sT->lock);
+void Caliper::finalize() {
+    std::lock_guard<::siglock> g(sT->lock);
 
     Log(1).stream() << "Finalizing ... " << std::endl;
 
     auto channels_copy = sG->all_channels;
-    for (auto &channel : channels_copy) {
+    for (auto& channel : channels_copy) {
         if (channel.mP->flush_on_exit)
             flush_and_write(&channel, SnapshotView());
         delete_channel(channel);
@@ -1458,15 +1296,11 @@ Caliper::finalize()
 // --- Caliper constructor & singleton API
 //
 
-Caliper::Caliper()
-    : m_is_signal(false)
-{
+Caliper::Caliper() : m_is_signal(false) {
     *this = Caliper::instance();
 }
 
-Caliper
-Caliper::instance()
-{
+Caliper Caliper::instance() {
     GlobalData* gPtr = nullptr;
     ThreadData* tPtr = nullptr;
 
@@ -1478,8 +1312,7 @@ Caliper::instance()
             // Caliper had been initialized previously; we're past the static destructor
             return Caliper(nullptr, nullptr, true);
 
-        std::lock_guard<std::mutex>
-            g(GlobalData::s_init_mutex);
+        std::lock_guard<std::mutex> g(GlobalData::s_init_mutex);
 
         Log::init();
 
@@ -1513,20 +1346,15 @@ Caliper::instance()
     return Caliper(gPtr, tPtr, false);
 }
 
-Caliper
-Caliper::sigsafe_instance()
-{
+Caliper Caliper::sigsafe_instance() {
     return Caliper(GlobalData::gObj.g_ptr, GlobalData::tObj.t_ptr, true);
 }
 
-Caliper::operator bool() const
-{
+Caliper::operator bool() const {
     return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
-void
-Caliper::release()
-{
+void Caliper::release() {
     Caliper c;
 
     if (c) {
@@ -1536,14 +1364,10 @@ Caliper::release()
     }
 }
 
-bool
-Caliper::is_initialized()
-{
+bool Caliper::is_initialized() {
     return GlobalData::s_init_lock == 0;
 }
 
-void
-Caliper::add_services(const CaliperService* s)
-{
+void Caliper::add_services(const CaliperService* s) {
     services::add_service_specs(s);
 }

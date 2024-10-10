@@ -17,9 +17,9 @@ namespace cali
 class CaliperMetadataAccessInterface;
 struct QuerySpec;
 
-/// \brief Print a set of snapshot records in a tree 
+/// \brief Print a set of snapshot records in a tree
 /// \ingroup ReaderAPI
-    
+
 class TreeFormatter : public Formatter
 {
     struct TreeFormatterImpl;
@@ -37,4 +37,3 @@ public:
 };
 
 } // namespace cali
-

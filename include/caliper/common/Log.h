@@ -57,9 +57,8 @@ public:
     /// \return The log stream's \a std::ostream object
     std::ostream& perror(int errnum, const char* msg = "");
 
-    Log(int level = 1)
-        : m_level { level }
-        { }
+    Log(int level = 1) : m_level { level } {
+    }
 };
 
 } // namespace cali

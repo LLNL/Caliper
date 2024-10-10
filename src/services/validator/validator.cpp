@@ -24,12 +24,10 @@
 
 using namespace cali;
 
-
 namespace
 {
 
-std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
-{
+std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os) {
     FixedSizeSnapshotRecord<120> snapshot;
 
     c->pull_snapshot(chn, SnapshotView(), snapshot.builder());
@@ -51,9 +49,9 @@ class ValidatorService
 
     class StackValidator
     {
-        std::map< Attribute, std::vector<Variant> > m_region_stack;
-        bool m_error_found;
-        Node m_root_node;
+        std::map<Attribute, std::vector<Variant>> m_region_stack;
+        bool                                      m_error_found;
+        Node                                      m_root_node;
 
         void push(Caliper* c, const Attribute& attr, const Variant& value) {
             Variant v_copy = value;
@@ -109,10 +107,11 @@ class ValidatorService
 
                 m_error_found = true;
 
-                print_snapshot(c, chn,
-                               Log(0).stream() << "validator: end(\""
-                               << attr.name() << "\"=\"" << value.to_string() << "\") "
-                               << " has no matching begin().\n    context: " )
+                print_snapshot(c,
+                               chn,
+                               Log(0).stream()
+                                   << "validator: end(\"" << attr.name() << "\"=\"" << value.to_string() << "\") "
+                                   << " has no matching begin().\n    context: ")
                     << std::endl;
             } else {
                 Variant v_stack_attr;
@@ -123,21 +122,21 @@ class ValidatorService
                 if (attr.is_nested() && attr.id() != v_stack_attr.to_id()) {
                     m_error_found = true;
 
-                    print_snapshot(c, chn,
-                                   Log(0).stream() << "validator: incorrect nesting: trying to end \""
-                                   << attr.name() << "\"=\"" << value.to_string()
-                                   << "\" but current attribute is \""
-                                   << c->get_attribute(v_stack_attr.to_id()).name()
-                                   << "\".\n    context: " )
+                    print_snapshot(c,
+                                   chn,
+                                   Log(0).stream()
+                                       << "validator: incorrect nesting: trying to end \"" << attr.name() << "\"=\""
+                                       << value.to_string() << "\" but current attribute is \""
+                                       << c->get_attribute(v_stack_attr.to_id()).name() << "\".\n    context: ")
                         << std::endl;
                 } else if (!(value == v_stack_val)) {
                     m_error_found = true;
 
-                    print_snapshot(c, chn,
-                                   Log(0).stream() << "validator: incorrect nesting: trying to end \""
-                                   << attr.name() << "\"=\"" << value.to_string()
-                                   << "\" but current value is \""
-                                   << v_stack_val.to_string() << "\".\n    context: " )
+                    print_snapshot(c,
+                                   chn,
+                                   Log(0).stream() << "validator: incorrect nesting: trying to end \"" << attr.name()
+                                                   << "\"=\"" << value.to_string() << "\" but current value is \""
+                                                   << v_stack_val.to_string() << "\".\n    context: ")
                         << std::endl;
                 }
             }
@@ -146,15 +145,14 @@ class ValidatorService
         }
 
         bool check_final() {
-            for (auto const &p : m_region_stack) {
+            for (auto const& p : m_region_stack) {
                 if (p.first == s_class_nested_attr)
                     continue;
 
                 if (!p.second.empty()) {
                     std::ostringstream os;
 
-                    os << "validator: Regions not closed: "
-                       << p.first.name() << "=";
+                    os << "validator: Regions not closed: " << p.first.name() << "=";
 
                     int cv = 0;
                     for (const Variant& v : p.second)
@@ -169,34 +167,29 @@ class ValidatorService
             return m_error_found;
         }
 
-        StackValidator()
-            : m_error_found(false), m_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
-            { }
+        StackValidator() : m_error_found(false), m_root_node(CALI_INV_ID, CALI_INV_ID, Variant()) {
+        }
     }; // class StackValidator
 
+    StackValidator* proc_stack = nullptr;
+    std::mutex      proc_stack_mutex;
 
-    StackValidator*   proc_stack = nullptr;
-    std::mutex        proc_stack_mutex;
+    std::atomic<int> global_errors;
 
-    std::atomic<int>  global_errors;
-
-    Attribute         thread_stack_attr;
+    Attribute thread_stack_attr;
 
     std::vector<StackValidator*> thread_stacks;
-    std::mutex        thread_stacks_mutex;
-
+    std::mutex                   thread_stacks_mutex;
 
     StackValidator* aquire_thread_stack(Caliper* c, Channel* chn) {
-        StackValidator* tstack =
-            static_cast<StackValidator*>(c->get(thread_stack_attr).value().get_ptr());
+        StackValidator* tstack = static_cast<StackValidator*>(c->get(thread_stack_attr).value().get_ptr());
 
         if (!tstack) {
             tstack = new StackValidator;
 
             c->set(thread_stack_attr, Variant(cali_make_variant_from_ptr(tstack)));
 
-            std::lock_guard<std::mutex>
-                g(thread_stacks_mutex);
+            std::lock_guard<std::mutex> g(thread_stacks_mutex);
 
             thread_stacks.push_back(tstack);
         }
@@ -206,8 +199,7 @@ class ValidatorService
 
     void finalize_cb(Caliper*, Channel* chn) {
         {
-            std::lock_guard<std::mutex>
-                g(proc_stack_mutex);
+            std::lock_guard<std::mutex> g(proc_stack_mutex);
 
             if (proc_stack->check_final())
                 ++global_errors;
@@ -217,8 +209,7 @@ class ValidatorService
         }
 
         {
-            std::lock_guard<std::mutex>
-                g(thread_stacks_mutex);
+            std::lock_guard<std::mutex> g(thread_stacks_mutex);
 
             for (StackValidator* v : thread_stacks) {
                 if (v->check_final())
@@ -231,17 +222,14 @@ class ValidatorService
         }
 
         if (global_errors.load() > 0)
-            Log(0).stream() << "validator: Annotation nesting errors found"
-                            << std::endl;
+            Log(0).stream() << "validator: Annotation nesting errors found" << std::endl;
         else
-            Log(1).stream() << "validator: No annotation nesting errors found"
-                            << std::endl;
+            Log(1).stream() << "validator: No annotation nesting errors found" << std::endl;
     }
 
-    void begin_cb(Caliper* c, Channel* chn, const Attribute &attr, const Variant& value) {
+    void begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
-            std::lock_guard<std::mutex>
-                g(proc_stack_mutex);
+            std::lock_guard<std::mutex> g(proc_stack_mutex);
 
             if (proc_stack->check_begin(c, attr, value))
                 ++global_errors;
@@ -255,8 +243,7 @@ class ValidatorService
 
     void end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
-            std::lock_guard<std::mutex>
-                g(proc_stack_mutex);
+            std::lock_guard<std::mutex> g(proc_stack_mutex);
 
             if (proc_stack->check_end(c, chn, attr, value))
                 ++global_errors;
@@ -268,17 +255,12 @@ class ValidatorService
         }
     }
 
-    ValidatorService(Caliper* c, Channel* chn)
-            : proc_stack(new StackValidator), global_errors(0)
-        {
-            thread_stack_attr =
-                c->create_attribute(std::string("validator.stack.")+std::to_string(chn->id()),
-                                    CALI_TYPE_PTR,
-                                    CALI_ATTR_SCOPE_THREAD |
-                                    CALI_ATTR_ASVALUE      |
-                                    CALI_ATTR_SKIP_EVENTS  |
-                                    CALI_ATTR_HIDDEN);
-        }
+    ValidatorService(Caliper* c, Channel* chn) : proc_stack(new StackValidator), global_errors(0) {
+        thread_stack_attr =
+            c->create_attribute(std::string("validator.stack.") + std::to_string(chn->id()),
+                                CALI_TYPE_PTR,
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
+    }
 
 public:
 
@@ -290,28 +272,25 @@ public:
         ValidatorService* instance = new ValidatorService(c, chn);
 
         chn->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
                 instance->begin_cb(c, chn, attr, value);
             });
         chn->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
                 instance->end_cb(c, chn, attr, value);
             });
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->finalize_cb(c, chn);
-                delete instance;
-            });
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
+            instance->finalize_cb(c, chn);
+            delete instance;
+        });
 
         Log(1).stream() << chn->name() << ": Registered validator service." << std::endl;
     }
-
 };
 
 Attribute ValidatorService::s_class_nested_attr { Attribute() };
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {

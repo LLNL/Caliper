@@ -26,35 +26,29 @@
 using namespace cali;
 using namespace std;
 
-struct JsonFormatter::JsonFormatterImpl
-{
-    set<string>  m_selected;
-    set<string>  m_deselected;
+struct JsonFormatter::JsonFormatterImpl {
+    set<string> m_selected;
+    set<string> m_deselected;
 
     OutputStream m_os;
 
-    std::mutex   m_os_lock;
+    std::mutex m_os_lock;
 
-    unsigned     m_num_recs = 0;
+    unsigned m_num_recs = 0;
 
-    enum Layout {
-        Records,
-        Split,
-        Object
-    };
+    enum Layout { Records, Split, Object };
 
-    Layout       m_layout         = Records;
+    Layout m_layout = Records;
 
-    bool         m_opt_split      = false;
-    bool         m_opt_pretty     = false;
-    bool         m_opt_quote_all  = false;
-    bool         m_opt_sep_nested = false;
+    bool m_opt_split = false;
+    bool m_opt_pretty = false;
+    bool m_opt_quote_all = false;
+    bool m_opt_sep_nested = false;
 
-    std::map<std::string,std::string> m_aliases;
+    std::map<std::string, std::string> m_aliases;
 
-    JsonFormatterImpl(OutputStream &os)
-        : m_os(os)
-        { }
+    JsonFormatterImpl(OutputStream& os) : m_os(os) {
+    }
 
     void parse(const string& field_string) {
         vector<string> fields;
@@ -71,7 +65,6 @@ struct JsonFormatter::JsonFormatterImpl
                 m_selected.insert(s);
         }
     }
-
 
     void configure(const QuerySpec& spec) {
         for (auto p : spec.format.kwargs) {
@@ -98,8 +91,7 @@ struct JsonFormatter::JsonFormatterImpl
             // doesn't make much sense
             break;
         case QuerySpec::AttributeSelection::List:
-            m_selected =
-                std::set<std::string>(spec.select.list.begin(), spec.select.list.end());
+            m_selected = std::set<std::string>(spec.select.list.begin(), spec.select.list.end());
             break;
         }
 
@@ -109,8 +101,7 @@ struct JsonFormatter::JsonFormatterImpl
     inline std::string get_key(const Attribute& attr) {
         std::string name = attr.name();
 
-        bool selected =
-            m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
+        bool selected = m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
 
         if (!selected && (!m_selected.empty() || attr.is_hidden() || attr.is_global()))
             return "";
@@ -159,7 +150,7 @@ struct JsonFormatter::JsonFormatterImpl
                         it->second = node->data().to_string().append("/").append(it->second);
                 }
             } else if (e.is_immediate()) {
-                Attribute attr = db.get_attribute(e.attribute());
+                Attribute   attr = db.get_attribute(e.attribute());
                 std::string key = get_key(attr);
 
                 if (key.empty())
@@ -178,8 +169,7 @@ struct JsonFormatter::JsonFormatterImpl
         // write the key-value pairs
         //
 
-        std::lock_guard<std::mutex>
-            g(m_os_lock);
+        std::lock_guard<std::mutex> g(m_os_lock);
 
         std::ostream* real_os = m_os.stream();
 
@@ -190,15 +180,13 @@ struct JsonFormatter::JsonFormatterImpl
             *real_os << (m_num_recs > 0 ? ",\n" : "") << "{";
 
             int count = 0;
-            for (auto &p : quote_kvs) {
-                *real_os << (count++ > 0 ? "," : "")
-                         << (m_opt_pretty ? "\n\t" : "");
+            for (auto& p : quote_kvs) {
+                *real_os << (count++ > 0 ? "," : "") << (m_opt_pretty ? "\n\t" : "");
                 util::write_json_esc_string(*real_os << "\"", p.first) << "\":";
                 util::write_json_esc_string(*real_os << "\"", p.second) << "\"";
             }
-            for (auto &p : noquote_kvs) {
-                *real_os << (count++ > 0 ? "," : "")
-                         << (m_opt_pretty ? "\n\t" : "");
+            for (auto& p : noquote_kvs) {
+                *real_os << (count++ > 0 ? "," : "") << (m_opt_pretty ? "\n\t" : "");
                 util::write_json_esc_string(*real_os << "\"", p.first) << "\":";
                 util::write_json_esc_string(*real_os, p.second);
             }
@@ -220,23 +208,20 @@ struct JsonFormatter::JsonFormatterImpl
 
         // remove nested and hidden attributes
         if (!m_opt_sep_nested)
-            attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
-                                       [](const Attribute& a){ return a.is_nested(); }),
+            attrs.erase(std::remove_if(attrs.begin(), attrs.end(), [](const Attribute& a) { return a.is_nested(); }),
                         attrs.end());
 
-        attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
-                                   [](const Attribute& a){ return a.is_hidden(); }),
+        attrs.erase(std::remove_if(attrs.begin(), attrs.end(), [](const Attribute& a) { return a.is_hidden(); }),
                     attrs.end());
 
         // write "attr1": { "prop": "value", ... } , "attr2" : ...
 
         int count = 0;
         for (const Attribute& a : attrs) {
-            os << (count++ > 0 ? ",\n" : "\n") << (m_opt_pretty ? "\t" : "")
-               << '\"' << a.name() << "\": {";
+            os << (count++ > 0 ? ",\n" : "\n") << (m_opt_pretty ? "\t" : "") << '\"' << a.name() << "\": {";
 
             // encode some properties
-            os << "\"is_global\": "  << (a.is_global() ? "true" : "false")
+            os << "\"is_global\": " << (a.is_global() ? "true" : "false")
                << ",\"is_nested\": " << (a.is_nested() ? "true" : "false");
 
             // print meta-info
@@ -269,7 +254,7 @@ struct JsonFormatter::JsonFormatterImpl
                 global_vals[e.attribute()] = e.value().to_string();
 
         int count = 0;
-        for (auto &p : global_vals) {
+        for (auto& p : global_vals) {
             if (count++ > 0)
                 os << ",\n";
             if (m_opt_pretty)
@@ -301,24 +286,18 @@ struct JsonFormatter::JsonFormatterImpl
     }
 };
 
-JsonFormatter::JsonFormatter(OutputStream &os, const QuerySpec& spec)
-    : mP { new JsonFormatterImpl(os) }
-{
+JsonFormatter::JsonFormatter(OutputStream& os, const QuerySpec& spec) : mP { new JsonFormatterImpl(os) } {
     mP->configure(spec);
 }
 
-JsonFormatter::~JsonFormatter()
-{
+JsonFormatter::~JsonFormatter() {
     mP.reset();
 }
 
-void
-JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
-{
+void JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
     mP->print(db, list);
 }
 
-void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
-{
+void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&) {
     mP->flush(db);
 }

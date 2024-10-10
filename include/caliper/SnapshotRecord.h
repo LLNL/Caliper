@@ -19,31 +19,45 @@ class CaliperMetadataAccessInterface;
 class SnapshotView
 {
     const Entry* m_data;
-    size_t m_len;
+    size_t       m_len;
 
 public:
 
-    SnapshotView()
-        : m_data { nullptr }, m_len { 0 }
-    { }
-    SnapshotView(size_t len, const Entry* data)
-        : m_data { data }, m_len { len }
-    { }
-    SnapshotView(const Entry& e)
-        : m_data { &e }, m_len { 1 }
-    { }
+    SnapshotView() : m_data { nullptr }, m_len { 0 } {
+    }
+
+    SnapshotView(size_t len, const Entry* data) : m_data { data }, m_len { len } {
+    }
+
+    SnapshotView(const Entry& e) : m_data { &e }, m_len { 1 } {
+    }
 
     using iterator = Entry*;
     using const_iterator = const Entry*;
 
-    const_iterator begin() const { return m_data;       }
-    const_iterator end()   const { return m_data+m_len; }
+    const_iterator begin() const {
+        return m_data;
+    }
 
-    size_t size()  const { return m_len;      }
-    const Entry* data() const { return m_data;     }
-    bool   empty() const { return m_len == 0; }
+    const_iterator end() const {
+        return m_data + m_len;
+    }
 
-    const Entry& operator[](std::size_t n) const { return m_data[n]; }
+    size_t size() const {
+        return m_len;
+    }
+
+    const Entry* data() const {
+        return m_data;
+    }
+
+    bool empty() const {
+        return m_len == 0;
+    }
+
+    const Entry& operator[](std::size_t n) const {
+        return m_data[n];
+    }
 
     Entry get(const Attribute& attr) const {
         for (const Entry& e : *this) {
@@ -76,22 +90,30 @@ class SnapshotBuilder
 
 public:
 
-    SnapshotBuilder()
-        : m_data { nullptr}, m_capacity { 0 }, m_len { 0 }, m_skipped { 0 }
-    { }
+    SnapshotBuilder() : m_data { nullptr }, m_capacity { 0 }, m_len { 0 }, m_skipped { 0 } {
+    }
+
     SnapshotBuilder(size_t capacity, Entry* data)
-        : m_data { data }, m_capacity { capacity }, m_len { 0 }, m_skipped { 0 }
-    { }
+        : m_data { data }, m_capacity { capacity }, m_len { 0 }, m_skipped { 0 } {
+    }
 
     SnapshotBuilder(SnapshotBuilder&&) = default;
     SnapshotBuilder(const SnapshotBuilder&) = delete;
 
-    SnapshotBuilder& operator = (SnapshotBuilder&&) = default;
-    SnapshotBuilder& operator = (const SnapshotBuilder&) = delete;
+    SnapshotBuilder& operator=(SnapshotBuilder&&) = default;
+    SnapshotBuilder& operator=(const SnapshotBuilder&) = delete;
 
-    size_t capacity() const { return m_capacity; }
-    size_t size() const     { return m_len;      }
-    size_t skipped() const  { return m_skipped;  }
+    size_t capacity() const {
+        return m_capacity;
+    }
+
+    size_t size() const {
+        return m_len;
+    }
+
+    size_t skipped() const {
+        return m_skipped;
+    }
 
     void append(const Entry& e) {
         if (m_len < m_capacity)
@@ -102,9 +124,9 @@ public:
 
     void append(size_t n, const Entry* entries) {
         size_t num_copied = std::min(n, m_capacity - m_len);
-        std::copy_n(entries, num_copied, m_data+m_len);
+        std::copy_n(entries, num_copied, m_data + m_len);
         m_len += num_copied;
-        m_skipped += n-num_copied;
+        m_skipped += n - num_copied;
     }
 
     void append(const Attribute& attr, const Variant& val) {
@@ -124,20 +146,24 @@ public:
 template <std::size_t N>
 class FixedSizeSnapshotRecord
 {
-    Entry m_data[N];
+    Entry           m_data[N];
     SnapshotBuilder m_builder;
 
 public:
 
-    FixedSizeSnapshotRecord()
-        : m_builder { N, m_data }
-    { }
+    FixedSizeSnapshotRecord() : m_builder { N, m_data } {
+    }
 
     FixedSizeSnapshotRecord(const FixedSizeSnapshotRecord<N>&) = delete;
-    FixedSizeSnapshotRecord<N> operator = (const FixedSizeSnapshotRecord<N>&) = delete;
+    FixedSizeSnapshotRecord<N> operator=(const FixedSizeSnapshotRecord<N>&) = delete;
 
-    SnapshotBuilder& builder() { return m_builder; }
-    SnapshotView view() const  { return m_builder.view(); }
+    SnapshotBuilder& builder() {
+        return m_builder;
+    }
+
+    SnapshotView view() const {
+        return m_builder.view();
+    }
 
     void reset() {
         m_builder = SnapshotBuilder(N, m_data);

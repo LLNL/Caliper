@@ -41,7 +41,7 @@ class SymbolLookup
         Attribute sym_node_attr;
 
         std::unordered_map<uint64_t, Node*> lookup_cache;
-        std::mutex lookup_cache_mutex;
+        std::mutex                          lookup_cache_mutex;
     };
 
     Node m_root_node;
@@ -53,11 +53,11 @@ class SymbolLookup
     bool m_lookup_mod;
 
     std::map<Attribute, std::shared_ptr<SymbolAttributeInfo>> m_sym_attr_map;
-    std::mutex m_sym_attr_mutex;
+    std::mutex                                                m_sym_attr_mutex;
 
     std::vector<std::string> m_addr_attr_names;
 
-    Lookup   m_lookup;
+    Lookup m_lookup;
 
     unsigned m_num_lookups;
     unsigned m_num_cached;
@@ -69,8 +69,7 @@ class SymbolLookup
 
     void make_symbol_attributes(Caliper* c, const Attribute& attr) {
         {
-            std::lock_guard<std::mutex>
-                g(m_sym_attr_mutex);
+            std::lock_guard<std::mutex> g(m_sym_attr_mutex);
 
             if (m_sym_attr_map.count(attr) > 0)
                 return;
@@ -80,26 +79,19 @@ class SymbolLookup
 
         sym_attribs->target_attr = attr;
         sym_attribs->file_attr =
-            c->create_attribute("source.file#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("source.file#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         sym_attribs->line_attr =
-            c->create_attribute("source.line#" + attr.name(),
-                                CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute("source.line#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         sym_attribs->func_attr =
-            c->create_attribute("source.function#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-        sym_attribs->loc_attr  =
-            c->create_attribute("sourceloc#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-        sym_attribs->mod_attr  =
-            c->create_attribute("module#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-        sym_attribs->sym_node_attr =
-            c->create_attribute("symbollookup.node#" + attr.name(),
-                                CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
+            c->create_attribute("source.function#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        sym_attribs->loc_attr =
+            c->create_attribute("sourceloc#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        sym_attribs->mod_attr = c->create_attribute("module#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        sym_attribs->sym_node_attr = c->create_attribute("symbollookup.node#" + attr.name(),
+                                                         CALI_TYPE_UINT,
+                                                         CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
 
-        std::lock_guard<std::mutex>
-            g(m_sym_attr_mutex);
+        std::lock_guard<std::mutex> g(m_sym_attr_mutex);
 
         m_sym_attr_map.insert(std::make_pair(attr, sym_attribs));
     }
@@ -116,14 +108,12 @@ class SymbolLookup
                 if (attr)
                     vec.push_back(attr);
                 else
-                    Log(0).stream() << "Symbollookup: Address attribute \""
-                                    << s << "\" not found!" << std::endl;
+                    Log(0).stream() << "Symbollookup: Address attribute \"" << s << "\" not found!" << std::endl;
             }
         }
 
         if (vec.empty())
-            Log(1).stream() << "Symbollookup: No address attributes found."
-                            << std::endl;
+            Log(1).stream() << "Symbollookup: No address attributes found." << std::endl;
 
         for (const Attribute& a : vec)
             make_symbol_attributes(c, a);
@@ -138,8 +128,7 @@ class SymbolLookup
         uintptr_t addr = e.value().to_uint();
 
         {
-            std::lock_guard<std::mutex>
-                g(sym_info.lookup_cache_mutex);
+            std::lock_guard<std::mutex> g(sym_info.lookup_cache_mutex);
 
             auto it = sym_info.lookup_cache.find(addr);
             if (it != sym_info.lookup_cache.end()) {
@@ -167,7 +156,7 @@ class SymbolLookup
 
         // We go from coarse grained to fine grained info here to speed up tree creation
         if (m_lookup_mod)
-            node = c->make_tree_entry(sym_info.mod_attr,  Variant(result.module.c_str()), node);
+            node = c->make_tree_entry(sym_info.mod_attr, Variant(result.module.c_str()), node);
         if (m_lookup_file)
             node = c->make_tree_entry(sym_info.file_attr, Variant(result.file.c_str()), node);
         if (m_lookup_functions)
@@ -183,8 +172,7 @@ class SymbolLookup
             return nullptr;
 
         {
-            std::lock_guard<std::mutex>
-                g(sym_info.lookup_cache_mutex);
+            std::lock_guard<std::mutex> g(sym_info.lookup_cache_mutex);
             sym_info.lookup_cache[addr] = node;
         }
 
@@ -231,8 +219,7 @@ class SymbolLookup
         std::map<Attribute, std::shared_ptr<SymbolAttributeInfo>> sym_map;
 
         {
-            std::lock_guard<std::mutex>
-                g(m_sym_attr_mutex);
+            std::lock_guard<std::mutex> g(m_sym_attr_mutex);
 
             sym_map = m_sym_attr_map;
         }
@@ -242,7 +229,7 @@ class SymbolLookup
 
         for (auto& it : sym_map) {
             SnapshotView v(rec.size(), rec.data());
-            Entry e = get_symbol_entry(c, v.get(it.first), *(it.second));
+            Entry        e = get_symbol_entry(c, v.get(it.first), *(it.second));
 
             if (!e.empty())
                 result.push_back(e);
@@ -253,34 +240,27 @@ class SymbolLookup
 
     // some final log output; print warning if we didn't find an address attribute
     void finish_log(Caliper* c, Channel* chn) {
-        Log(1).stream() << chn->name()   << ": Symbollookup: Performed "
-                        << m_num_lookups << " address lookups, "
-                        << m_num_cached  << " cached, "
-                        << m_num_failed  << " failed."
-                        << std::endl;
+        Log(1).stream() << chn->name() << ": Symbollookup: Performed " << m_num_lookups << " address lookups, "
+                        << m_num_cached << " cached, " << m_num_failed << " failed." << std::endl;
     }
 
     void init_lookup() {
         m_num_lookups = 0;
-        m_num_failed  = 0;
+        m_num_failed = 0;
     }
 
     SymbolLookup(Caliper* c, Channel* chn)
-        : m_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_num_lookups(0),
-          m_num_cached(0),
-          m_num_failed(0)
-        {
-            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
+        : m_root_node(CALI_INV_ID, CALI_INV_ID, Variant()), m_num_lookups(0), m_num_cached(0), m_num_failed(0) {
+        ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
-            m_addr_attr_names  = config.get("attributes").to_stringlist(",:");
+        m_addr_attr_names = config.get("attributes").to_stringlist(",:");
 
-            m_lookup_functions = config.get("lookup_functions").to_bool();
-            m_lookup_sourceloc = config.get("lookup_sourceloc").to_bool();
-            m_lookup_file      = config.get("lookup_file").to_bool();
-            m_lookup_line      = config.get("lookup_line").to_bool();
-            m_lookup_mod       = config.get("lookup_module").to_bool();
-        }
+        m_lookup_functions = config.get("lookup_functions").to_bool();
+        m_lookup_sourceloc = config.get("lookup_sourceloc").to_bool();
+        m_lookup_file = config.get("lookup_file").to_bool();
+        m_lookup_line = config.get("lookup_line").to_bool();
+        m_lookup_mod = config.get("lookup_module").to_bool();
+    }
 
 public:
 
@@ -289,20 +269,16 @@ public:
     static void symbollookup_register(Caliper* c, Channel* chn) {
         SymbolLookup* instance = new SymbolLookup(c, chn);
 
-        chn->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotView){
-                instance->check_attributes(c);
-                instance->init_lookup();
-            });
+        chn->events().pre_flush_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView) {
+            instance->check_attributes(c);
+            instance->init_lookup();
+        });
         chn->events().postprocess_snapshot.connect(
-            [instance](Caliper* c, Channel* chn, std::vector<Entry>& rec){
-                instance->process_snapshot(c, rec);
-            });
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->finish_log(c, chn);
-                delete instance;
-            });
+            [instance](Caliper* c, Channel* chn, std::vector<Entry>& rec) { instance->process_snapshot(c, rec); });
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
+            instance->finish_log(c, chn);
+            delete instance;
+        });
 
         Log(1).stream() << chn->name() << ": Registered symbollookup service" << std::endl;
     }
@@ -346,8 +322,7 @@ const char* SymbolLookup::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {

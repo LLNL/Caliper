@@ -8,14 +8,14 @@ using namespace cali;
 
 TEST(CalQLParserTest, SelectClause) {
     std::istringstream is("select a,a.a, b , c ");
-    CalQLParser p1(is);
+    CalQLParser        p1(is);
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
 
     QuerySpec q1 = p1.spec();
 
     EXPECT_EQ(q1.select.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q1.aggregate.selection,     QuerySpec::AggregationSelection::None);
+    EXPECT_EQ(q1.aggregate.selection, QuerySpec::AggregationSelection::None);
 
     ASSERT_EQ(q1.select.list.size(), 4);
 
@@ -32,7 +32,7 @@ TEST(CalQLParserTest, SelectClause) {
     QuerySpec q2 = p2.spec();
 
     EXPECT_EQ(q2.select.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q2.aggregate.selection,     QuerySpec::AggregationSelection::None);
+    EXPECT_EQ(q2.aggregate.selection, QuerySpec::AggregationSelection::None);
 
     ASSERT_EQ(q2.select.list.size(), 1);
     EXPECT_EQ(q2.select.list[0], "aa");
@@ -67,7 +67,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     EXPECT_EQ(q1.select.list[1], "count");
     EXPECT_EQ(q1.select.list[2], "sum#bb");
 
-    EXPECT_EQ(q1.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q1.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q1.aggregate.list.size(), 2);
 
     EXPECT_STREQ(q1.aggregate.list[0].op.name, "count");
@@ -87,7 +87,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     EXPECT_EQ(q2.select.list[1], "b");
     EXPECT_EQ(q2.select.list[2], "ccc");
 
-    EXPECT_EQ(q2.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q2.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregate.list.size(), 1);
 
     EXPECT_STREQ(q2.aggregate.list[0].op.name, "count");
@@ -108,7 +108,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     QuerySpec q6 = p6.spec();
 
     EXPECT_EQ(q6.select.selection, QuerySpec::AttributeSelection::All);
-    EXPECT_EQ(q6.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q6.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q6.aggregate.list.size(), 1);
     EXPECT_STREQ(q6.aggregate.list[0].op.name, "count");
 }
@@ -184,13 +184,13 @@ TEST(CalQLParserTest, OrderByClause1) {
     ASSERT_EQ(q1.sort.list.size(), 4);
 
     EXPECT_EQ(q1.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q1.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[0].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q1.sort.list[1].attribute, "b");
-    EXPECT_EQ(q1.sort.list[1].order,     QuerySpec::SortSpec::Descending);
+    EXPECT_EQ(q1.sort.list[1].order, QuerySpec::SortSpec::Descending);
     EXPECT_EQ(q1.sort.list[2].attribute, "c");
-    EXPECT_EQ(q1.sort.list[2].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[2].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q1.sort.list[3].attribute, "ddd");
-    EXPECT_EQ(q1.sort.list[3].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[3].order, QuerySpec::SortSpec::Ascending);
 }
 
 TEST(CalQLParserTest, OrderByClause2) {
@@ -204,9 +204,9 @@ TEST(CalQLParserTest, OrderByClause2) {
     ASSERT_EQ(q.sort.list.size(), 2);
 
     EXPECT_EQ(q.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q.sort.list[0].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q.sort.list[1].attribute, "b with space");
-    EXPECT_EQ(q.sort.list[1].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q.sort.list[1].order, QuerySpec::SortSpec::Ascending);
 
     EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q.format.formatter.name, "table");
@@ -223,7 +223,7 @@ TEST(CalQLParserTest, OrderByClause3) {
     ASSERT_EQ(q.sort.list.size(), 1);
 
     EXPECT_EQ(q.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Descending);
+    EXPECT_EQ(q.sort.list[0].order, QuerySpec::SortSpec::Descending);
 
     EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q.format.formatter.name, "table");
@@ -275,7 +275,7 @@ TEST(CalQLParserTest, FormatSpec) {
 
     {
         CalQLParser p6("FORMAT json(object)");
-        QuerySpec q6 = p6.spec();
+        QuerySpec   q6 = p6.spec();
         EXPECT_FALSE(p6.error()) << "Unexpected parse error: " << p6.error_msg();
         EXPECT_STREQ(q6.format.formatter.name, "json");
         EXPECT_EQ(q6.format.kwargs.size(), 1);
@@ -464,8 +464,7 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q1.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q1.format.formatter.name, "json");
 
-    const char* s2 =
-        " SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group ";
+    const char* s2 = " SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group ";
 
     CalQLParser p2(s2);
 
@@ -513,7 +512,6 @@ TEST(CalQLParserTest, GarbageAtEnd) {
     CalQLParser p2("where bla()");
     EXPECT_TRUE(p2.error());
 }
-
 
 TEST(CalQLParserTest, LetClause) {
     CalQLParser p1("let x=  ratio( a,   \"b\" ) , y=scale(c,42) let z=truncate (  yy )");

@@ -5,51 +5,54 @@
 
 #include <caliper/ConfigManager.h>
 
-namespace cali {
-class PythonConfigManager : public cali::ConfigManager {
+namespace cali
+{
+class PythonConfigManager : public cali::ConfigManager
+{
 public:
-  PythonConfigManager();
 
-  PythonConfigManager(const char *config_str);
+    PythonConfigManager();
 
-  // void add_config_spec(const char *json);
+    PythonConfigManager(const char* config_str);
 
-  void add_config_spec(py::dict json);
+    // void add_config_spec(const char *json);
 
-  // void add_option_spec(const char *json);
+    void add_config_spec(py::dict json);
 
-  void add_option_spec(py::dict json);
+    // void add_option_spec(const char *json);
 
-  void py_add(const char *config_string);
+    void add_option_spec(py::dict json);
 
-  // void load(const char *filename);
+    void py_add(const char* config_string);
 
-  // void set_default_parameter(const char *key, const char *value);
+    // void load(const char *filename);
 
-  // void set_default_parameter_for_config(const char *config, const char *key,
-  //                                       const char *value);
+    // void set_default_parameter(const char *key, const char *value);
 
-  // bool error() const;
+    // void set_default_parameter_for_config(const char *config, const char *key,
+    //                                       const char *value);
 
-  // Set to __repr__
-  // bool error_msg() const;
+    // bool error() const;
 
-  // void start();
+    // Set to __repr__
+    // bool error_msg() const;
 
-  // void stop();
+    // void start();
 
-  // void flush();
+    // void stop();
 
-  void check(const char *config_str);
+    // void flush();
 
-  // std::vector<std::string> available_config_specs() const;
+    void check(const char* config_str);
 
-  // std::string get_documentation_for_spec(const char *name) const;
+    // std::vector<std::string> available_config_specs() const;
 
-  // static std::vector<std::string> get_config_docstrings();
+    // std::string get_documentation_for_spec(const char *name) const;
+
+    // static std::vector<std::string> get_config_docstrings();
 };
 
-void create_caliper_config_manager_mod(py::module_ &caliper_config_manager_mod);
+void create_caliper_config_manager_mod(py::module_& caliper_config_manager_mod);
 
 } // namespace cali
 

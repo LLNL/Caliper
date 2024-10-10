@@ -10,8 +10,7 @@
 
 // test C and C++ macros
 
-void foo(int count, int sleep_usec)
-{
+void foo(int count, int sleep_usec) {
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("pre-loop");
@@ -30,13 +29,11 @@ void foo(int count, int sleep_usec)
     CALI_MARK_LOOP_END(fooloop);
 }
 
-void bar()
-{
+void bar() {
     CALI_CXX_MARK_FUNCTION;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     int sleep_usec = 0;
 
     if (argc > 1)

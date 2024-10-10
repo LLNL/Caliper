@@ -25,29 +25,25 @@ extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 extern Attribute region_attr;
 
-}
+} // namespace cali
 
 // --- Pre-defined Function annotation class
 
-Function::Function(const char* name)
-{
+Function::Function(const char* name) {
     Caliper().begin(region_attr, Variant(name));
 }
 
-Function::~Function()
-{
+Function::~Function() {
     Caliper().end(region_attr);
 }
 
 // --- Pre-defined scope annotation class
 
-ScopeAnnotation::ScopeAnnotation(const char* name)
-{
+ScopeAnnotation::ScopeAnnotation(const char* name) {
     Caliper().begin(region_attr, Variant(name));
 }
 
-ScopeAnnotation::~ScopeAnnotation()
-{
+ScopeAnnotation::~ScopeAnnotation() {
     Caliper().end(region_attr);
 }
 
@@ -58,59 +54,47 @@ struct Loop::Impl {
     std::atomic<int> level;
     std::atomic<int> refcount;
 
-    Impl(const char* name)
-        : level(0), refcount(1) {
+    Impl(const char* name) : level(0), refcount(1) {
         Variant v_true(true);
 
-        iter_attr =
-            Caliper().create_attribute(std::string("iteration#") + name,
-                                       CALI_TYPE_INT,
-                                       CALI_ATTR_ASVALUE,
-                                       1, &class_iteration_attr, &v_true);
+        iter_attr = Caliper().create_attribute(std::string("iteration#") + name,
+                                               CALI_TYPE_INT,
+                                               CALI_ATTR_ASVALUE,
+                                               1,
+                                               &class_iteration_attr,
+                                               &v_true);
     }
 };
 
-Loop::Iteration::Iteration(const Impl* p, int i)
-    : pI(p)
-{
+Loop::Iteration::Iteration(const Impl* p, int i) : pI(p) {
     Caliper().begin(p->iter_attr, Variant(i));
 }
 
-Loop::Iteration::~Iteration()
-{
+Loop::Iteration::~Iteration() {
     Caliper().end(pI->iter_attr);
 }
 
-Loop::Loop(const char* name)
-    : pI(new Impl(name))
-{
+Loop::Loop(const char* name) : pI(new Impl(name)) {
     Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
     ++pI->level;
 }
 
-Loop::Loop(const Loop& loop)
-    : pI(loop.pI)
-{
+Loop::Loop(const Loop& loop) : pI(loop.pI) {
     ++pI->refcount;
 }
 
-Loop::~Loop()
-{
+Loop::~Loop() {
     if (--pI->refcount == 0) {
         end();
         delete pI;
     }
 }
 
-Loop::Iteration
-Loop::iteration(int i) const
-{
+Loop::Iteration Loop::iteration(int i) const {
     return Iteration(pI, i);
 }
 
-void
-Loop::end()
-{
+void Loop::end() {
     if (pI->level > 0) {
         Caliper().end(loop_attr);
         --(pI->level);
@@ -127,36 +111,28 @@ struct Annotation::Impl {
     std::vector<Variant>   m_metadata_values;
     int                    m_opt;
 
-    std::atomic<int>       m_refcount;
+    std::atomic<int> m_refcount;
 
     Impl(const std::string& name, MetadataListType metadata, int opt)
-        : m_attr_node(nullptr),
-          m_name(name),
-          m_opt(opt),
-          m_refcount(1)
-        {
-            Caliper c;
-            Attribute attr = c.get_attribute(name);
+        : m_attr_node(nullptr), m_name(name), m_opt(opt), m_refcount(1) {
+        Caliper   c;
+        Attribute attr = c.get_attribute(name);
 
-            if (!attr) {
-                for(auto kv : metadata) {
-                    m_metadata_keys.push_back(c.create_attribute(kv.first,kv.second.type(),0));
-                    m_metadata_values.push_back(kv.second);
-                }
-            } else {
-                m_attr_node.store(attr.node());
+        if (!attr) {
+            for (auto kv : metadata) {
+                m_metadata_keys.push_back(c.create_attribute(kv.first, kv.second.type(), 0));
+                m_metadata_values.push_back(kv.second);
             }
+        } else {
+            m_attr_node.store(attr.node());
         }
+    }
 
-    Impl(const std::string& name, int opt)
-        : m_attr_node(nullptr),
-          m_name(name),
-          m_opt(opt),
-          m_refcount(1)
-        { }
+    Impl(const std::string& name, int opt) : m_attr_node(nullptr), m_name(name), m_opt(opt), m_refcount(1) {
+    }
 
-    ~Impl()
-        { }
+    ~Impl() {
+    }
 
     void begin(const Variant& data) {
         Caliper   c;
@@ -175,7 +151,7 @@ struct Annotation::Impl {
     }
 
     void end() {
-        Caliper c;
+        Caliper   c;
         Attribute attr = Attribute::make_attribute(m_attr_node.load());
 
         if (attr)
@@ -186,11 +162,12 @@ struct Annotation::Impl {
         cali::Node* attr_node = m_attr_node.load();
 
         if (!attr_node) {
-            Attribute attr =
-                c.create_attribute(m_name, type, m_opt,
-                                   m_metadata_keys.size(),
-                                   m_metadata_keys.data(),
-                                   m_metadata_values.data());
+            Attribute attr = c.create_attribute(m_name,
+                                                type,
+                                                m_opt,
+                                                m_metadata_keys.size(),
+                                                m_metadata_keys.data(),
+                                                m_metadata_values.data());
 
             attr_node = attr.node();
             m_attr_node.store(attr_node);
@@ -212,39 +189,32 @@ struct Annotation::Impl {
     }
 };
 
-
 // --- Guard subclass
 
-Annotation::Guard::Guard(Annotation& a)
-    : pI(a.pI->attach())
-{ }
+Annotation::Guard::Guard(Annotation& a) : pI(a.pI->attach()) {
+}
 
-Annotation::Guard::~Guard()
-{
+Annotation::Guard::~Guard() {
     pI->end();
     pI->detach();
 }
 
 // --- Constructors / destructor
 Annotation::Annotation(const char* name, const MetadataListType& metadata, int opt)
-    : pI(new Impl(name, metadata, opt))
-{ }
+    : pI(new Impl(name, metadata, opt)) {
+}
 
-Annotation::Annotation(const char* name, int opt)
-    : pI(new Impl(name, opt))
-{ }
+Annotation::Annotation(const char* name, int opt) : pI(new Impl(name, opt)) {
+}
 
-Annotation::~Annotation()
-{
+Annotation::~Annotation() {
     pI->detach();
 }
 
-Annotation::Annotation(const Annotation& a)
-    : pI(a.pI->attach())
-{ }
+Annotation::Annotation(const Annotation& a) : pI(a.pI->attach()) {
+}
 
-Annotation& Annotation::operator = (const Annotation& a)
-{
+Annotation& Annotation::operator=(const Annotation& a) {
     if (pI == a.pI)
         return *this;
 
@@ -254,16 +224,13 @@ Annotation& Annotation::operator = (const Annotation& a)
     return *this;
 }
 
-
 // --- begin() overloads
 
-Annotation& Annotation::begin()
-{
+Annotation& Annotation::begin() {
     return begin(Variant(true));
 }
 
-Annotation& Annotation::begin(int data)
-{
+Annotation& Annotation::begin(int data) {
     Attribute attr = Attribute::make_attribute(pI->m_attr_node.load());
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
@@ -275,21 +242,18 @@ Annotation& Annotation::begin(int data)
     return begin(Variant(data));
 }
 
-Annotation& Annotation::begin(double data)
-{
+Annotation& Annotation::begin(double data) {
     return begin(Variant(data));
 }
 
-Annotation& Annotation::begin(const Variant& data)
-{
+Annotation& Annotation::begin(const Variant& data) {
     pI->begin(data);
     return *this;
 }
 
 // --- set() overloads
 
-Annotation& Annotation::set(int data)
-{
+Annotation& Annotation::set(int data) {
     Attribute attr = Attribute::make_attribute(pI->m_attr_node.load());
 
     // special case: allow assignment of int values to 'double' or 'uint' attributes
@@ -301,28 +265,23 @@ Annotation& Annotation::set(int data)
     return set(Variant(data));
 }
 
-Annotation& Annotation::set(double data)
-{
+Annotation& Annotation::set(double data) {
     return set(Variant(data));
 }
 
-Annotation& Annotation::set(const char* data)
-{
+Annotation& Annotation::set(const char* data) {
     return set(Variant(data));
 }
 
-Annotation& Annotation::set(cali_attr_type type, void* data, uint64_t size)
-{
+Annotation& Annotation::set(cali_attr_type type, void* data, uint64_t size) {
     return set(Variant(type, data, size));
 }
 
-Annotation& Annotation::set(const Variant& data)
-{
+Annotation& Annotation::set(const Variant& data) {
     pI->set(data);
     return *this;
 }
 
-void Annotation::end()
-{
+void Annotation::end() {
     pI->end();
 }
