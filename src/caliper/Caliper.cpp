@@ -150,8 +150,10 @@ void make_default_channel()
 
     if (services.empty())
         Log(1).stream() << "No manual config specified, disabling default channel\n";
-    else
-        c.create_channel("default", cfg);
+    else {
+        auto channel = c.create_channel("default", cfg);
+        c.activate_channel(channel);
+    }
 
     internal::init_builtin_configmanager(&c);
 }
@@ -180,7 +182,7 @@ struct Channel::ChannelImpl
     ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
         : id(_id),
           name(_name),
-          is_active(true),
+          is_active(false),
           config(cfg)
         {
             ConfigSet cali_cfg =
@@ -335,13 +337,16 @@ struct Caliper::GlobalData
     vector< Channel >                  all_channels;
     vector< Channel >                  active_channels;
 
+    size_t                             max_active_channels;
+
     vector< ThreadData* >              thread_data;
     std::mutex                         thread_data_lock;
 
     // --- constructor
 
     GlobalData(ThreadData* sT)
-          : attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
+          : attribute_default_scope { CALI_ATTR_SCOPE_THREAD },
+            max_active_channels { 0 }
     {
         // put the attribute [name,type,prop] attributes in the map
 
@@ -362,6 +367,8 @@ struct Caliper::GlobalData
         s_init_lock = 2;
 
         if (Log::verbosity() >= 2) {
+            Log(2).stream() << "Releasing Caliper global data.\n"
+                << "  Max active channels: " << max_active_channels << std::endl;
             process_blackboard.print_statistics( Log(2).stream() << "Process blackboard: " )
                 << std::endl;
         }
@@ -1343,7 +1350,6 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 
     Channel channel(next_id++, name, cfg);
     sG->all_channels.emplace_back(channel);
-    sG->active_channels.emplace_back(channel);
 
     // Create and set key & version attributes
     begin(&channel, create_attribute("cali.channel", CALI_TYPE_STRING,
@@ -1406,6 +1412,9 @@ Caliper::activate_channel(Channel& channel)
     auto it = std::find(sG->active_channels.begin(), sG->active_channels.end(), channel);
     if (it == sG->active_channels.end())
         sG->active_channels.emplace_back(channel);
+
+    sG->max_active_channels =
+        std::max(sG->max_active_channels, sG->active_channels.size());
 }
 
 void

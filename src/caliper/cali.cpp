@@ -708,8 +708,8 @@ cali_create_channel(const char* name, int flags, cali_configset_t cfgset)
 
     if (!channel)
         return CALI_INV_ID;
-    if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
-        c.deactivate_channel(channel);
+    if (!(flags & CALI_CHANNEL_LEAVE_INACTIVE))
+        c.activate_channel(channel);
 
     return channel.id();
 }
@@ -847,8 +847,8 @@ create_channel(const char* name, int flags, const config_map_t& cfgmap)
 
     if (!channel)
         return CALI_INV_ID;
-    if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
-        c.deactivate_channel(channel);
+    if (!(flags & CALI_CHANNEL_LEAVE_INACTIVE))
+        c.activate_channel(channel);
 
     return channel.id();
 }

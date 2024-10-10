@@ -94,9 +94,6 @@ ChannelController::create()
         return Channel();
     }
 
-    if (mP->flags & CALI_CHANNEL_LEAVE_INACTIVE)
-        c.deactivate_channel(mP->channel);
-
     on_create(&c, mP->channel);
     add_channel_metadata(c, mP->channel, mP->metadata);
 
