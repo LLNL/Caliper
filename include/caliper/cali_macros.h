@@ -30,8 +30,7 @@
 /// function, and will automatically "close" the function at any return
 /// point. Will export the annotated function by name in the pre-defined
 /// `function` attribute. Only available in C++.
-#define CALI_CXX_MARK_FUNCTION \
-    cali::Function CALI_CREATE_VAR_NAME(__cali_ann, __func__)(__func__)
+#define CALI_CXX_MARK_FUNCTION cali::Function CALI_CREATE_VAR_NAME(__cali_ann, __func__)(__func__)
 
 /// \brief C++ macro marking a scoped region
 ///
@@ -39,18 +38,15 @@
 /// scope, and will automatically "close" the function at any return
 /// point. Will export the annotated function by name in the pre-defined
 /// `annotation` attribute. Only available in C++.
-#define CALI_CXX_MARK_SCOPE(name) \
-    cali::ScopeAnnotation CALI_CREATE_VAR_NAME(__cali_ann_scope, __LINE__)(name)
+#define CALI_CXX_MARK_SCOPE(name) cali::ScopeAnnotation CALI_CREATE_VAR_NAME(__cali_ann_scope, __LINE__)(name)
 
 /// \brief Mark loop in C++
 /// \copydetails CALI_MARK_LOOP_BEGIN
-#define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) \
-    cali::Loop __cali_loop_##loop_id(name)
+#define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) cali::Loop __cali_loop_##loop_id(name)
 
 /// \brief Mark loop end in C++
 /// \copydetails CALI_MARK_LOOP_END
-#define CALI_CXX_MARK_LOOP_END(loop_id) \
-    __cali_loop_##loop_id.end()
+#define CALI_CXX_MARK_LOOP_END(loop_id) __cali_loop_##loop_id.end()
 
 /// \brief C++ macro for a loop iteration
 ///
@@ -74,7 +70,7 @@
 /// \param loop_id The loop identifier given to \ref CALI_CXX_MARK_LOOP_BEGIN
 /// \param iter    The iteration number. Must be convertible to \c int.
 #define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
-    cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
+    cali::Loop::Iteration __cali_iter_##loop_id(__cali_loop_##loop_id.iteration(static_cast<int>(iter)))
 
 #endif // __cplusplus
 
@@ -88,16 +84,14 @@ extern cali_id_t cali_annotation_attr_id;
 /// placed at \e all function exit points. For C++, we recommend using
 /// \ref CALI_CXX_MARK_FUNCTION instead.
 /// \sa CALI_MARK_FUNCTION_END, CALI_CXX_MARK_FUNCTION
-#define CALI_MARK_FUNCTION_BEGIN \
-    cali_begin_region(__func__)
+#define CALI_MARK_FUNCTION_BEGIN cali_begin_region(__func__)
 
 /// \brief Mark end of a function.
 ///
 /// Must be placed at \e all exit points of a function marked with
 /// \ref CALI_MARK_FUNCTION_BEGIN.
 /// \sa CALI_MARK_FUNCTION_BEGIN
-#define CALI_MARK_FUNCTION_END \
-    cali_end_region(__func__)
+#define CALI_MARK_FUNCTION_END cali_end_region(__func__)
 
 /// \brief Mark a loop
 ///
@@ -109,12 +103,11 @@ extern cali_id_t cali_annotation_attr_id;
 /// \param loop_id A loop identifier. Needed to refer to the loop
 ///   from the \a iteration and \a end annotations.
 /// \param name    Name of the loop.
-#define CALI_MARK_LOOP_BEGIN(loop_id, name) \
-    if (cali_loop_attr_id == CALI_INV_ID) \
-        cali_init(); \
-    cali_begin_string(cali_loop_attr_id, (name));       \
-    cali_id_t __cali_iter_##loop_id = \
-        cali_make_loop_iteration_attribute(name)
+#define CALI_MARK_LOOP_BEGIN(loop_id, name)       \
+    if (cali_loop_attr_id == CALI_INV_ID)         \
+        cali_init();                              \
+    cali_begin_string(cali_loop_attr_id, (name)); \
+    cali_id_t __cali_iter_##loop_id = cali_make_loop_iteration_attribute(name)
 
 /// \brief Mark a loop
 ///
@@ -128,8 +121,7 @@ extern cali_id_t cali_annotation_attr_id;
 /// as well.
 ///
 /// \param loop_id The loop identifier given to \ref CALI_MARK_LOOP_BEGIN.
-#define CALI_MARK_LOOP_END(loop_id) \
-    cali_end(cali_loop_attr_id)
+#define CALI_MARK_LOOP_END(loop_id) cali_end(cali_loop_attr_id)
 
 /// \brief Mark begin of a loop iteration.
 ///
@@ -145,8 +137,7 @@ extern cali_id_t cali_annotation_attr_id;
 ///   convertible to \c int.
 /// \sa CALI_MARK_ITERATION_END, CALI_MARK_LOOP_BEGIN,
 ///    CALI_CXX_MARK_LOOP_ITERATION
-#define CALI_MARK_ITERATION_BEGIN(loop_id, iter) \
-    cali_begin_int( __cali_iter_##loop_id, ((int) (iter)))
+#define CALI_MARK_ITERATION_BEGIN(loop_id, iter) cali_begin_int(__cali_iter_##loop_id, ((int) (iter)))
 
 /// \brief Mark end of a loop iteration.
 ///
@@ -157,8 +148,7 @@ extern cali_id_t cali_annotation_attr_id;
 ///
 /// \param loop_id Loop identifier given in \ref CALI_MARK_LOOP_BEGIN.
 /// \sa CALI_MARK_ITERATION_BEGIN
-#define CALI_MARK_ITERATION_END(loop_id) \
-    cali_end( __cali_iter_##loop_id )
+#define CALI_MARK_ITERATION_END(loop_id) cali_end(__cali_iter_##loop_id)
 
 /// \brief Wrap Caliper annotations around a C/C++ statement.
 ///
@@ -178,9 +168,9 @@ extern cali_id_t cali_annotation_attr_id;
 ///   cannot branch out of the macro (e.g.  with \c goto, \c continue,
 ///   \c break, or \c return).
 ///
-#define CALI_WRAP_STATEMENT(name, statement)     \
-    cali_begin_region((name));  \
-    statement; \
+#define CALI_WRAP_STATEMENT(name, statement) \
+    cali_begin_region((name));               \
+    statement;                               \
     cali_end_region((name))
 
 /// \brief Mark begin of a user-defined code region.
@@ -196,8 +186,7 @@ extern cali_id_t cali_annotation_attr_id;
 ///
 /// \param name The region name. Must be convertible to `const char*`.
 /// \sa CALI_MARK_END
-#define CALI_MARK_BEGIN(name) \
-    cali_begin_region(name)
+#define CALI_MARK_BEGIN(name) cali_begin_region(name)
 
 /// \brief Mark end of a user-defined code region.
 ///
@@ -208,8 +197,7 @@ extern cali_id_t cali_annotation_attr_id;
 ///   The macro will check if the name matches, and report an error
 ///   if it doesn't.
 /// \sa CALI_MARK_BEGIN
-#define CALI_MARK_END(name) \
-    cali_end_region(name)
+#define CALI_MARK_END(name) cali_end_region(name)
 
 /// \brief Mark begin of a phase region
 ///
@@ -217,23 +205,19 @@ extern cali_id_t cali_annotation_attr_id;
 /// regions use the "region" attribute with annotation level 0, phase regions
 /// use the "phase" attribute with annotation level 4. Otherwise phases behave
 /// identical to regular Caliper regions.
-#define CALI_MARK_PHASE_BEGIN(name) \
-    cali_begin_phase(name)
+#define CALI_MARK_PHASE_BEGIN(name) cali_begin_phase(name)
 
 /// \brief Mark end of a phase region
-#define CALI_MARK_PHASE_END(name) \
-    cali_end_phase(name)
+#define CALI_MARK_PHASE_END(name) cali_end_phase(name)
 
 /// \brief Mark begin of a communication region
 ///
 /// A communication region marks communication operations (e.g., MPI calls)
 /// that belong to a single communication pattern.
-#define CALI_MARK_COMM_REGION_BEGIN(name) \
-    cali_begin_comm_region(name)
+#define CALI_MARK_COMM_REGION_BEGIN(name) cali_begin_comm_region(name)
 
 /// \brief Mark end of a communication region
-#define CALI_MARK_COMM_REGION_END(name) \
-    cali_end_comm_region(name)
+#define CALI_MARK_COMM_REGION_END(name) cali_end_comm_region(name)
 /**
  * \} (group)
  */

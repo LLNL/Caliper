@@ -12,17 +12,16 @@
 
 using namespace cali;
 
-struct QueryProcessor::QueryProcessorImpl
-{
-    Aggregator        aggregator;
-    Preprocessor      preprocessor;
-    RecordSelector    filter;
-    FormatProcessor   formatter;
+struct QueryProcessor::QueryProcessorImpl {
+    Aggregator      aggregator;
+    Preprocessor    preprocessor;
+    RecordSelector  filter;
+    FormatProcessor formatter;
 
-    bool              do_aggregate;
+    bool do_aggregate;
 
-    void
-    process_record(CaliperMetadataAccessInterface& db, const EntryList& in_rec) {
+    void process_record(CaliperMetadataAccessInterface& db, const EntryList& in_rec)
+    {
         auto rec = preprocessor.process(db, in_rec);
         if (filter.pass(db, rec)) {
 
@@ -33,41 +32,34 @@ struct QueryProcessor::QueryProcessorImpl
         }
     }
 
-    void
-    flush(CaliperMetadataAccessInterface& db) {
+    void flush(CaliperMetadataAccessInterface& db)
+    {
         aggregator.flush(db, formatter);
         formatter.flush(db);
     }
 
     QueryProcessorImpl(const QuerySpec& spec, OutputStream& stream)
-        : aggregator(spec),
-          preprocessor(spec),
-          filter(spec),
-          formatter(spec, stream)
+        : aggregator(spec), preprocessor(spec), filter(spec), formatter(spec, stream)
     {
         do_aggregate = (spec.aggregate.selection != QuerySpec::AggregationSelection::None);
     }
 };
 
-
-QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream)
-    : mP(new QueryProcessorImpl(spec, stream))
-{ }
+QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream) : mP(new QueryProcessorImpl(spec, stream))
+{}
 
 QueryProcessor::~QueryProcessor()
 {
     mP.reset();
 }
 
-void
-QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
+void QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
 
     mP->process_record(db, rec);
 }
 
-void
-QueryProcessor::flush(CaliperMetadataAccessInterface& db)
+void QueryProcessor::flush(CaliperMetadataAccessInterface& db)
 {
     mP->flush(db);
 }

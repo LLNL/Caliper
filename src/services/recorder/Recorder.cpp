@@ -62,14 +62,13 @@ void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)
 
     CaliWriter writer(stream);
 
-    c->flush(chn, flush_info, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-            writer.write_snapshot(db, rec);
-        });
+    c->flush(chn, flush_info, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+        writer.write_snapshot(db, rec);
+    });
 
     writer.write_globals(*c, c->get_globals(*chn));
 
-    Log(1).stream() << chn->name()
-                    << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;
+    Log(1).stream() << chn->name() << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;
 }
 
 void recorder_register(Caliper* c, Channel* chn)

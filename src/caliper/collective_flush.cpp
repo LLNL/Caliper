@@ -23,38 +23,55 @@ using namespace cali;
 namespace cali
 {
 
-void
-collective_flush(OutputStream& stream, Caliper& c, Channel& channel, SnapshotView flush_info, const QuerySpec& local_query, const QuerySpec& cross_query, MPI_Comm comm)
+void collective_flush(
+    OutputStream&    stream,
+    Caliper&         c,
+    Channel&         channel,
+    SnapshotView     flush_info,
+    const QuerySpec& local_query,
+    const QuerySpec& cross_query,
+    MPI_Comm         comm
+)
 {
     CaliperMetadataDB db;
 
     db.add_attribute_aliases(cross_query.aliases);
     db.add_attribute_units(cross_query.units);
 
-    Aggregator        cross_agg(cross_query);
-    Aggregator        local_agg(local_query);
+    Aggregator cross_agg(cross_query);
+    Aggregator local_agg(local_query);
 
-    Preprocessor      cross_pp(cross_query);
-    Preprocessor      local_pp(local_query);
+    Preprocessor cross_pp(cross_query);
+    Preprocessor local_pp(local_query);
 
-    RecordSelector    cross_filter(cross_query);
-    RecordSelector    local_filter(local_query);
+    RecordSelector cross_filter(cross_query);
+    RecordSelector local_filter(local_query);
 
     // flush this rank's caliper data into local aggregator
-    c.flush(&channel, flush_info, [&db,&local_agg,&local_pp,&local_filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+    c.flush(
+        &channel,
+        flush_info,
+        [&db,
+         &local_agg,
+         &local_pp,
+         &local_filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
             EntryList mrec = local_pp.process(db, db.merge_snapshot(in_db, rec));
 
             if (local_filter.pass(db, mrec))
                 local_agg.add(db, mrec);
-        });
+        }
+    );
 
     // flush local aggregator results into cross-process aggregator
-    local_agg.flush(db, [&cross_agg,&cross_pp,&cross_filter](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+    local_agg.flush(
+        db,
+        [&cross_agg, &cross_pp, &cross_filter](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
             EntryList mrec = cross_pp.process(db, rec);
 
             if (cross_filter.pass(db, mrec))
                 cross_agg.add(db, mrec);
-        });
+        }
+    );
 
     int rank = 0;
 

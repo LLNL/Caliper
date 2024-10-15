@@ -11,26 +11,23 @@
 
 using namespace cali;
 
-void
-cali_datatracker_track(const void *ptr,
-                       const char *label,
-                       size_t size)
+void cali_datatracker_track(const void* ptr, const char* label, size_t size)
 {
     Caliper::instance().memory_region_begin(ptr, label, 1, 1, &size);
 }
 
-void
-cali_datatracker_track_dimensional(const void      *ptr,
-                                   const char      *label,
-                                   size_t           elem_size,
-                                   const size_t    *dimensions,
-                                   size_t           ndims)
+void cali_datatracker_track_dimensional(
+    const void*   ptr,
+    const char*   label,
+    size_t        elem_size,
+    const size_t* dimensions,
+    size_t        ndims
+)
 {
     Caliper::instance().memory_region_begin(ptr, label, elem_size, ndims, dimensions);
 }
 
-void
-cali_datatracker_untrack(const void *ptr)
+void cali_datatracker_untrack(const void* ptr)
 {
     Caliper::instance().memory_region_end(ptr);
 }

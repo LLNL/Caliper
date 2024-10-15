@@ -37,13 +37,13 @@ void begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& va
 void end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << chn->name() << ": Event: pre_end (" << attr.name() << "=" << value << ")" << endl;
 }
 
 void set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << chn->name() << ": Event: pre_set (" << attr.name() << "=" << value << ")" << endl;
 }
 
 void create_thread_cb(Caliper* c, Channel* chn)
@@ -79,12 +79,12 @@ std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView r
 
     return (os << " }");
 }
-    
+
 void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotView rec)
 {
-    lock_guard<mutex> lock(dbg_mutex);    
+    lock_guard<mutex> lock(dbg_mutex);
 
-    print_snapshot_record( c, Log(1).stream() << chn->name() << ": Event: process_snapshot: ", rec ) << std::endl;
+    print_snapshot_record(c, Log(1).stream() << chn->name() << ": Event: process_snapshot: ", rec) << std::endl;
 }
 
 void finish_cb(Caliper* c, Channel* chn)

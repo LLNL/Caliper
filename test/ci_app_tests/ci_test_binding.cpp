@@ -18,25 +18,24 @@ class TestBinding : public AnnotationBinding
 
 public:
 
-    const char* service_tag() const {
-        return "testbinding";
+    const char* service_tag() const { return "testbinding"; }
+
+    void initialize(Caliper* c, Channel*)
+    {
+        m_my_attr   = c->create_attribute("testbinding", CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
+        m_prop_attr = c->create_attribute("testproperty", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
     }
 
-    void initialize(Caliper* c, Channel*) {
-        m_my_attr =
-            c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
-        m_prop_attr =
-            c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    }
-
-    void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
+    void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+    {
         if (s_verbose)
             std::cout << "TestBinding::on_mark_attribute(" << attr.name() << ")" << std::endl;
 
         c->make_tree_entry(m_prop_attr, Variant(4242), c->node(attr.id()));
     }
 
-    void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
+    void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    {
         if (attr == m_my_attr)
             return;
 
@@ -51,7 +50,8 @@ public:
             std::cout << "begin " << s << std::endl;
     }
 
-    void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    {
         if (attr == m_my_attr)
             return;
 
@@ -61,13 +61,10 @@ public:
             std::cout << "end   " << attr.name() << "=" << value.to_string() << std::endl;
     }
 
-    static void set_verbose(bool v) {
-        s_verbose = v;
-    }
+    static void set_verbose(bool v) { s_verbose = v; }
 };
 
 bool TestBinding::s_verbose = false;
-
 
 int main(int argc, const char** argv)
 {
@@ -79,13 +76,11 @@ int main(int argc, const char** argv)
 
     AnnotationBinding::make_binding<TestBinding>(&c, &channel);
 
-    Attribute nested_attr  =
-        c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute default_attr =
-        c.create_attribute("binding.default", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute nested_attr  = c.create_attribute("binding.nested", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute default_attr = c.create_attribute("binding.default", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
-    c.begin(nested_attr,  Variant(CALI_TYPE_STRING, "outer",   6));
-    c.begin(nested_attr,  Variant(CALI_TYPE_STRING, "inner",   6));
+    c.begin(nested_attr, Variant(CALI_TYPE_STRING, "outer", 6));
+    c.begin(nested_attr, Variant(CALI_TYPE_STRING, "inner", 6));
     c.begin(default_attr, Variant(CALI_TYPE_STRING, "default", 8));
     c.end(default_attr);
     c.end(nested_attr);

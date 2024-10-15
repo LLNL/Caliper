@@ -18,24 +18,22 @@
 
 using namespace cali;
 
-
-struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
-{
+struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl {
     struct Field {
         std::string prefix;
 
         std::string attr_name;
         Attribute   attr;
 
-        int         width;
-        char        align; // 'l', 'r', 'c' 
+        int  width;
+        char align; // 'l', 'r', 'c'
     };
 
-    std::vector<Field> m_fields;    
+    std::vector<Field> m_fields;
     std::mutex         m_field_mutex;
 
-    void 
-    parse(const std::string& formatstring) {
+    void parse(const std::string& formatstring)
+    {
         m_fields.clear();
 
         // parse format: "(prefix string) %[<width+alignment(l|r|c)>]attr_name% ... "
@@ -56,29 +54,29 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
                 std::vector<std::string> field_strings;
                 util::tokenize(split_string.front(), "[]", std::back_inserter(field_strings));
-                
+
                 // look for width/alignment specification (in [] brackets)
 
                 int wfbegin = -1;
                 int wfend   = -1;
                 int apos    = -1;
 
-                int nfields = field_strings.size(); 
+                int nfields = field_strings.size();
 
                 for (int i = 0; i < nfields; ++i)
                     if (field_strings[i] == "[")
                         wfbegin = i;
                     else if (field_strings[i] == "]")
-                        wfend   = i;
+                        wfend = i;
 
-                if (wfbegin >= 0 && wfend > wfbegin+1) {
+                if (wfbegin >= 0 && wfend > wfbegin + 1) {
                     // we have a width specification field
-                    field.width = std::stoi(field_strings[wfbegin+1]);
+                    field.width = std::stoi(field_strings[wfbegin + 1]);
 
                     if (wfbegin > 0)
                         apos = 0;
-                    else if (wfend+1 < nfields)
-                        apos = wfend+1;
+                    else if (wfend + 1 < nfields)
+                        apos = wfend + 1;
                 } else if (nfields > 0)
                     apos = 0;
 
@@ -92,13 +90,12 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
         }
     }
 
-    std::ostream& 
-    print(std::ostream& os, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list) {
+    std::ostream& print(std::ostream& os, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+    {
         std::vector<Field> fields;
 
         {
-            std::lock_guard<std::mutex>
-                g(m_field_mutex);
+            std::lock_guard<std::mutex> g(m_field_mutex);
 
             fields.assign(m_fields.begin(), m_fields.end());
         }
@@ -112,11 +109,11 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
                 cali_attr_type type = f.attr.type();
 
-                f.align = (type == CALI_TYPE_DOUBLE ||
-                           type == CALI_TYPE_INT    ||
-                           type == CALI_TYPE_UINT   ||
-                           type == CALI_TYPE_ADDR) ? 'r' : 'l';
-                
+                f.align = (type == CALI_TYPE_DOUBLE || type == CALI_TYPE_INT || type == CALI_TYPE_UINT
+                           || type == CALI_TYPE_ADDR)
+                              ? 'r'
+                              : 'l';
+
                 update = true;
             }
 
@@ -140,7 +137,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
                 }
             }
 
-            static const char whitespace[80+1] = 
+            static const char whitespace[80 + 1] =
                 "                                        "
                 "                                        ";
 
@@ -148,14 +145,13 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             int w   = len < f.width ? std::min<int>(f.width - len, 80) : 0;
 
             if (f.align == 'r')
-                os << f.prefix << (w > 0 ? whitespace+(80-w) : "") << str;
+                os << f.prefix << (w > 0 ? whitespace + (80 - w) : "") << str;
             else
-                os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
+                os << f.prefix << str << (w > 0 ? whitespace + (80 - w) : "");
         }
 
         if (update) {
-            std::lock_guard<std::mutex>
-                g(m_field_mutex);
+            std::lock_guard<std::mutex> g(m_field_mutex);
 
             m_fields.swap(fields);
         }
@@ -164,25 +160,26 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
     }
 };
 
-SnapshotTextFormatter::SnapshotTextFormatter(const std::string& format_str)
-    : mP(new SnapshotTextFormatterImpl)
-{ 
+SnapshotTextFormatter::SnapshotTextFormatter(const std::string& format_str) : mP(new SnapshotTextFormatterImpl)
+{
     mP->parse(format_str);
 }
 
 SnapshotTextFormatter::~SnapshotTextFormatter()
 {
     mP.reset();
-} 
+}
 
-void
-SnapshotTextFormatter::reset(const std::string& format_str)
+void SnapshotTextFormatter::reset(const std::string& format_str)
 {
     mP->parse(format_str);
 }
 
-std::ostream& 
-SnapshotTextFormatter::print(std::ostream& os, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+std::ostream& SnapshotTextFormatter::print(
+    std::ostream&                         os,
+    const CaliperMetadataAccessInterface& db,
+    const std::vector<Entry>&             list
+)
 {
     return mP->print(os, db, list);
 }

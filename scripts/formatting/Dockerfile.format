@@ -1,0 +1,32 @@
+FROM ubuntu:24.04
+
+USER root
+
+ENV LOCAL_USER=jovyan \
+    LOCAL_UID=1001 \
+    HOME=/home/jovyan
+
+RUN apt-get update \
+    && apt-get -qq install -y --no-install-recommends \
+    adduser \
+    build-essential \
+    clang-format-17 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN adduser \
+    --disabled-password \
+    --gecos "Default user" \
+    --uid ${LOCAL_UID} \
+    --home ${HOME} \
+    --force-badname \
+    ${LOCAL_USER}
+
+COPY --chown=${LOCAL_USER} --chmod=777 ./scripts /home/jovyan/
+COPY --chown=${LOCAL_USER} --chmod=666 ./src /home/jovyan/
+COPY --chown=${LOCAL_USER} --chmod=666 ./include /home/jovyan/
+COPY --chown=${LOCAL_USER} --chmod=666 ./examples /home/jovyan/
+COPY --chown=${LOCAL_USER} --chmod=666 ./test /home/jovyan/
+
+USER ${LOCAL_USER}
+
+ENTRYPOINT [ "/home/jovyan/scripts/formatting/autoformat.sh", "/usr/bin/clang-format-17" ]

@@ -69,12 +69,13 @@ class ConfigManager
 
 public:
 
-    typedef std::map<std::string, std::string> argmap_t;
+    typedef std::map<std::string, std::string>               argmap_t;
     typedef std::vector<std::pair<std::string, std::string>> arglist_t;
 
     /// \brief Manages the list of options given to a ConfigManager config controller.
     ///   Internal use.
-    class Options {
+    class Options
+    {
         struct OptionsImpl;
         std::shared_ptr<OptionsImpl> mP;
 
@@ -129,8 +130,7 @@ public:
         /// \param level The aggreatation level ("local" or "cross")
         /// \param in Base CalQL clauses as needed by the controller
         /// \return Complete CalQL query statement
-        std::string
-        build_query(const char* level, const std::map<std::string, std::string>& in) const;
+        std::string build_query(const char* level, const std::map<std::string, std::string>& in) const;
 
         friend class ConfigManager;
     };
@@ -166,21 +166,25 @@ public:
     ///    Options::update_channel_config(config_map_t&) const
     ///    on the ChannelController's config map to apply options.
     /// \return A new ChannelController object.
-    typedef cali::ChannelController* (*CreateConfigFn)(const char* name, const config_map_t& initial_cfg, const Options& opts);
+    typedef cali::ChannelController* (*CreateConfigFn)(
+        const char*         name,
+        const config_map_t& initial_cfg,
+        const Options&      opts
+    );
     /// \brief Callback function to implement custom options checking for a config spec.
-    typedef std::string              (*CheckArgsFn)(const Options& opts);
+    typedef std::string (*CheckArgsFn)(const Options& opts);
 
     /// \brief Define a config spec with custom ChannelController creation
     ///   and option checking functions
     struct ConfigInfo {
         /// \brief JSON config spec. \see ConfigManager::add_config_spec(const char*)
-        const char*    spec;
+        const char* spec;
         /// \brief Optional custom ChannelController creation function,
         ///   or \a nullptr to use the default.
         CreateConfigFn create;
         /// \brief Optional argument checking function, or \a nullptr
         ///   to use the default.
-        CheckArgsFn    check_args;
+        CheckArgsFn check_args;
     };
 
     ConfigManager();
@@ -410,7 +414,7 @@ public:
     std::string error_msg() const;
 
     typedef std::shared_ptr<cali::ChannelController> ChannelPtr;
-    typedef std::vector<ChannelPtr> ChannelList;
+    typedef std::vector<ChannelPtr>                  ChannelList;
 
     /// \brief Parse \a config_string and return the specified configuration
     ///   channels
@@ -431,16 +435,14 @@ public:
     ///
     /// \return An STL container with C++ shared_ptr objects to the
     /// ChannelController instances created from the configuration strings.
-    ChannelList
-    get_all_channels() const;
+    ChannelList get_all_channels() const;
 
     /// \brief Return a channel controller instance for configuration \a name
     ///
     /// Returns a C++ shared pointer containing the channel controller instance
     /// with the given \a name, or an empty shared_ptr object when no such
     /// channel exists.
-    ChannelPtr
-    get_channel(const char* name) const;
+    ChannelPtr get_channel(const char* name) const;
 
     /// \brief Start all configured measurement channels, or re-start
     ///   paused ones
@@ -454,15 +456,13 @@ public:
     /// for (auto& channel : channels)
     ///     channel->start();
     /// \endcode
-    void
-    start();
+    void start();
 
     /// \brief Pause all configured measurement channels
     ///
     /// Invokes the ChannelController::stop() method on all configuration
     /// channel controllers created by the ConfigManager.
-    void
-    stop();
+    void stop();
 
     /// \brief Flush all configured measurement channels
     ///
@@ -473,8 +473,7 @@ public:
     /// for (auto& channel : channels)
     ///     channel->flush();
     /// \endcode
-    void
-    flush();
+    void flush();
 
     /// \brief Check if the given config string is valid.
     ///
@@ -483,8 +482,7 @@ public:
     /// will be marked as errors.
     ///
     /// \return Error message, or empty string if input is valid.
-    std::string
-    check(const char* config_string, bool allow_extra_kv_pairs = false) const;
+    std::string check(const char* config_string, bool allow_extra_kv_pairs = false) const;
 
     /// \brief Return names of available config specs
     ///
@@ -492,26 +490,21 @@ public:
     /// are met in this %Caliper instance.
     ///
     /// \return Names of all available config specs for this ConfigManager.
-    std::vector<std::string>
-    available_config_specs() const;
+    std::vector<std::string> available_config_specs() const;
 
     /// \brief Return short description for the given config spec.
-    std::string
-    get_description_for_spec(const char* name) const;
+    std::string get_description_for_spec(const char* name) const;
 
     /// \brief Return description and options for the given config spec.
-    std::string
-    get_documentation_for_spec(const char* name) const;
+    std::string get_documentation_for_spec(const char* name) const;
 
     /// \brief Return names of global config specs.
     ///
     /// \deprecated Query specific ConfigManager object instead.
-    static std::vector<std::string>
-    available_configs();
+    static std::vector<std::string> available_configs();
 
     /// \brief Return descriptions for available global configs.
-    static std::vector<std::string>
-    get_config_docstrings();
+    static std::vector<std::string> get_config_docstrings();
 
     /// \brief Check if given config string is valid for global config specs.
     ///   Deprecated.
@@ -523,8 +516,7 @@ public:
     /// \deprecated Create a ConfigManager object and use its check() method.
     ///
     /// \return Error message, or empty string if input is valid.
-    static std::string
-    check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
+    static std::string check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
 };
 
 /// \brief Add a set of global ConfigManager configs

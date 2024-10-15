@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file MockupMetadataDB.h 
+/// \file MockupMetadataDB.h
 /// Mockup Caliper metadata access interface for testing
 
 #pragma once
@@ -48,60 +48,53 @@ namespace cali
 /// \brief A simple mockup implementation for CaliperMetadataAccessInterface
 class MockupMetadataDB : public CaliperMetadataAccessInterface
 {
-    std::map<cali_id_t,   Node*>     m_node_map;
-    std::map<cali_id_t,   Attribute> m_attr_map;
+    std::map<cali_id_t, Node*>       m_node_map;
+    std::map<cali_id_t, Attribute>   m_attr_map;
     std::map<std::string, Attribute> m_attr_names;
 
     // gtest FAIL() can only be called in void functions
-    void fail(const char* str) {
-        FAIL() << str;
-    }
-    
+    void fail(const char* str) { FAIL() << str; }
+
 public:
 
-    MockupMetadataDB()
-    { }
+    MockupMetadataDB() {}
 
-    ~MockupMetadataDB()
-    { }
+    ~MockupMetadataDB() {}
 
-    inline void
-    add_node(Node* node) {
-        m_node_map.insert(std::make_pair(node->id(), node));
-    }
+    inline void add_node(Node* node) { m_node_map.insert(std::make_pair(node->id(), node)); }
 
-    inline void
-    add_nodes(size_t n, Node* nodes[]) {
+    inline void add_nodes(size_t n, Node* nodes[])
+    {
         for (size_t i = 0; i < n; ++i)
             add_node(nodes[i]);
     }
-    
-    inline void
-    add_attribute(const Attribute& attr) {
+
+    inline void add_attribute(const Attribute& attr)
+    {
         m_attr_map.insert(std::make_pair(attr.id(), attr));
         m_attr_names.insert(std::make_pair(attr.name(), attr));
     }
-    
-    inline Node*
-    node(cali_id_t id) const {
+
+    inline Node* node(cali_id_t id) const
+    {
         auto it = m_node_map.find(id);
         return it == m_node_map.end() ? nullptr : it->second;
     }
 
-    inline Attribute
-    get_attribute(cali_id_t id) const {
+    inline Attribute get_attribute(cali_id_t id) const
+    {
         auto it = m_attr_map.find(id);
         return it == m_attr_map.end() ? Attribute() : it->second;
     }
 
-    inline Attribute
-    get_attribute(const std::string& name) const {
+    inline Attribute get_attribute(const std::string& name) const
+    {
         auto it = m_attr_names.find(name);
         return it == m_attr_names.end() ? Attribute() : it->second;
     }
 
-    inline std::vector<Attribute>
-    get_all_attributes() const {
+    inline std::vector<Attribute> get_all_attributes() const
+    {
         std::vector<Attribute> vec;
 
         for (auto p : m_attr_map)
@@ -110,23 +103,24 @@ public:
         return vec;
     }
 
-    Attribute
-    create_attribute(const std::string& name,
-                     cali_attr_type     type,
-                     int                prop = CALI_ATTR_DEFAULT,
-                     int                meta = 0,
-                     const Attribute*   meta_attr = nullptr,
-                     const Variant*     meta_data = nullptr) {
+    Attribute create_attribute(
+        const std::string& name,
+        cali_attr_type     type,
+        int                prop      = CALI_ATTR_DEFAULT,
+        int                meta      = 0,
+        const Attribute*   meta_attr = nullptr,
+        const Variant*     meta_data = nullptr
+    )
+    {
         fail("create_attribute() is not implemented in MockupMetadataDB!");
         return Attribute();
     }
 
-    Node*
-    make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent) {
+    Node* make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent)
+    {
         fail("make_tree_entry() is not implemented in MockupMetadataDB!");
         return nullptr;
     }
-
 };
 
-} // namespace
+} // namespace cali

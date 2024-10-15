@@ -13,8 +13,7 @@ using namespace cali::internal;
 
 CustomOutputController::FlushFn CustomOutputController::s_flush_fn { nullptr };
 
-void
-CustomOutputController::set_flush_fn(FlushFn flush_fn)
+void CustomOutputController::set_flush_fn(FlushFn flush_fn)
 {
     s_flush_fn = flush_fn;
 }
@@ -24,8 +23,7 @@ CustomOutputController::set_flush_fn(FlushFn flush_fn)
 //
 
 CustomOutputController::Comm::~Comm()
-{
-}
+{}
 
 int CustomOutputController::Comm::rank() const
 {
@@ -57,11 +55,9 @@ void CustomOutputController::flush()
     if (s_flush_fn) {
         (*s_flush_fn)(this);
     } else {
-        Log(2).stream() << chn.name()
-                        << ": CustomOutputController::flush(): using serial flush"
-                        << std::endl;
+        Log(2).stream() << chn.name() << ": CustomOutputController::flush(): using serial flush" << std::endl;
 
-        Comm comm;
+        Comm         comm;
         OutputStream stream;
 
         collective_flush(stream, comm);
@@ -70,4 +66,4 @@ void CustomOutputController::flush()
 
 CustomOutputController::CustomOutputController(const char* name, int flags, const config_map_t& initial_cfg)
     : ChannelController(name, flags, initial_cfg)
-{ }
+{}

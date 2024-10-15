@@ -47,12 +47,10 @@ public:
     void flush(CaliperMetadataAccessInterface& db);
 
     /// \brief Make FormatProcessor usable as a SnapshotProcessFn.
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
-    }
+    void operator() (CaliperMetadataAccessInterface& db, const EntryList& rec) { process_record(db, rec); }
 
     /// \brief Return all known formatter signatures.
     static const QuerySpec::FunctionSignature* formatter_defs();
 };
 
-}
+} // namespace cali

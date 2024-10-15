@@ -20,21 +20,23 @@ using namespace std;
 namespace
 {
 
-class fast_istringstream {
+class fast_istringstream
+{
     std::string::iterator it_;
     std::string::iterator end_;
 
 public:
 
-    fast_istringstream(std::string::iterator b, std::string::iterator e)
-        : it_ { b }, end_ { e }
-        { }
+    fast_istringstream(std::string::iterator b, std::string::iterator e) : it_ { b }, end_ { e } {}
 
     inline bool good() const { return it_ != end_; }
-    inline char get()   { return *it_++; }
+
+    inline char get() { return *it_++; }
+
     inline void unget() { --it_; }
 
-    inline bool matches(char c) {
+    inline bool matches(char c)
+    {
         if (it_ != end_) {
             if (c == *it_) {
                 ++it_;
@@ -44,9 +46,10 @@ public:
         return false;
     }
 
-    inline bool matches(size_t N, const char* key) {
-        if (it_+N < end_) {
-            if (std::equal(it_, it_+N, key)) {
+    inline bool matches(size_t N, const char* key)
+    {
+        if (it_ + N < end_) {
+            if (std::equal(it_, it_ + N, key)) {
                 it_ += N;
                 return true;
             }
@@ -57,8 +60,7 @@ public:
     std::string context() { return std::string { it_, end_ }; }
 };
 
-inline uint64_t
-read_uint64_element(fast_istringstream& is)
+inline uint64_t read_uint64_element(fast_istringstream& is)
 {
     uint64_t ret = 0;
 
@@ -76,8 +78,7 @@ read_uint64_element(fast_istringstream& is)
     return ret;
 }
 
-inline std::string
-read_escaped_word(fast_istringstream& is)
+inline std::string read_escaped_word(fast_istringstream& is)
 {
     std::string w;
     w.reserve(32);
@@ -104,8 +105,7 @@ read_escaped_word(fast_istringstream& is)
     return w;
 }
 
-inline std::vector<cali_id_t>
-read_id_list(fast_istringstream& is)
+inline std::vector<cali_id_t> read_id_list(fast_istringstream& is)
 {
     std::vector<cali_id_t> ret;
     ret.reserve(8);
@@ -117,8 +117,7 @@ read_id_list(fast_istringstream& is)
     return ret;
 }
 
-inline std::vector<std::string>
-read_string_list(fast_istringstream& is)
+inline std::vector<std::string> read_string_list(fast_istringstream& is)
 {
     std::vector<std::string> ret;
     ret.reserve(8);
@@ -130,28 +129,26 @@ read_string_list(fast_istringstream& is)
     return ret;
 }
 
-} // namespace [anonymous]
+} // namespace
 
-struct CaliReader::CaliReaderImpl
-{
-    bool m_error;
-    std::string m_error_msg;
+struct CaliReader::CaliReaderImpl {
+    bool         m_error;
+    std::string  m_error_msg;
     unsigned int m_num_read;
 
-    CaliReaderImpl()
-        : m_error { false }
-        { }
+    CaliReaderImpl() : m_error { false } {}
 
-    void set_error(const std::string& msg) {
-        m_error = true;
+    void set_error(const std::string& msg)
+    {
+        m_error     = true;
         m_error_msg = msg;
     }
 
     void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
     {
-        cali_id_t attr_id = CALI_INV_ID;
-        cali_id_t node_id = CALI_INV_ID;
-        cali_id_t prnt_id = CALI_INV_ID;
+        cali_id_t   attr_id = CALI_INV_ID;
+        cali_id_t   node_id = CALI_INV_ID;
+        cali_id_t   prnt_id = CALI_INV_ID;
         std::string data_str;
 
         do {
@@ -237,7 +234,13 @@ struct CaliReader::CaliReaderImpl
             db.merge_global(attr[i], data[i], idmap);
     }
 
-    void read_record(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+    void read_record(
+        fast_istringstream& is,
+        CaliperMetadataDB&  db,
+        IdMap&              idmap,
+        NodeProcessFn       node_proc,
+        SnapshotProcessFn   snap_proc
+    )
     {
         if (is.matches(11, "__rec=node,")) {
             read_node(is, db, idmap, node_proc);
@@ -250,10 +253,11 @@ struct CaliReader::CaliReaderImpl
         }
     }
 
-    void read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc) {
+    void read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+    {
         IdMap idmap;
 
-        for (std::string line; std::getline(is, line); ) {
+        for (std::string line; std::getline(is, line);) {
             if (line.empty())
                 continue;
             fast_istringstream isstream { line.begin(), line.end() };
@@ -262,33 +266,33 @@ struct CaliReader::CaliReaderImpl
     }
 };
 
-CaliReader::CaliReader()
-    : mP { new CaliReaderImpl() }
-{ }
+CaliReader::CaliReader() : mP { new CaliReaderImpl() }
+{}
 
 CaliReader::~CaliReader()
-{ }
+{}
 
-bool
-CaliReader::error() const
+bool CaliReader::error() const
 {
     return mP->m_error;
 }
 
-std::string
-CaliReader::error_msg() const
+std::string CaliReader::error_msg() const
 {
     return mP->m_error_msg;
 }
 
-void
-CaliReader::read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+void CaliReader::read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
 {
     mP->read(is, db, node_proc, snap_proc);
 }
 
-void
-CaliReader::read(const std::string& filename, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc)
+void CaliReader::read(
+    const std::string& filename,
+    CaliperMetadataDB& db,
+    NodeProcessFn      node_proc,
+    SnapshotProcessFn  snap_proc
+)
 {
     if (filename.empty())
         mP->read(std::cin, db, node_proc, snap_proc);
@@ -296,7 +300,7 @@ CaliReader::read(const std::string& filename, CaliperMetadataDB& db, NodeProcess
         std::ifstream is(filename.c_str());
 
         if (!is) {
-            mP->m_error = true;
+            mP->m_error     = true;
             mP->m_error_msg = std::string("Cannot open file ") + filename;
             return;
         }

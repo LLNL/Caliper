@@ -24,70 +24,73 @@ class HatchetRegionProfileController : public cali::ChannelController
 {
 public:
 
-    HatchetRegionProfileController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts, const std::string& format)
+    HatchetRegionProfileController(
+        const char*                   name,
+        const config_map_t&           initial_cfg,
+        const ConfigManager::Options& opts,
+        const std::string&            format
+    )
         : ChannelController(name, 0, initial_cfg)
-        {
-            std::string output(opts.get("output", "region_profile").to_string());
+    {
+        std::string output(opts.get("output", "region_profile").to_string());
 
-            if (output != "stdout" && output != "stderr") {
-                auto pos = output.find_last_of('.');
-                std::string ext = (format == "cali" ? ".cali" : ".json");
+        if (output != "stdout" && output != "stderr") {
+            auto        pos = output.find_last_of('.');
+            std::string ext = (format == "cali" ? ".cali" : ".json");
 
-                if (pos == std::string::npos || output.substr(pos) != ext)
-                    output.append(ext);
-            }
-
-            auto avail_services = services::get_available_services();
-            bool have_mpi =
-                std::find(avail_services.begin(), avail_services.end(), "mpireport")    != avail_services.end();
-            bool have_adiak =
-                std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
-
-            bool use_mpi = have_mpi;
-
-            if (opts.is_set("use.mpi"))
-                use_mpi = have_mpi && opts.is_enabled("use.mpi");
-
-            if (have_adiak) {
-                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-                config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
-                    opts.get("adiak.import_categories", "2,3").to_string();
-            }
-
-            if (use_mpi) {
-                config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
-                config()["CALI_AGGREGATE_KEY"     ] = "*,mpi.rank";
-                config()["CALI_MPIREPORT_FILENAME"] = output;
-                config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-                config()["CALI_MPIREPORT_CONFIG"  ] =
-                    opts.build_query("local", {
-                            { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
-                            { "select",   "*,sum(sum#time.duration) as time unit sec" },
-                            { "group by", "path,mpi.rank" },
-                            { "format",   format }
-                        });
-            } else {
-                config()["CALI_SERVICES_ENABLE"   ].append(",report");
-                config()["CALI_REPORT_FILENAME"   ] = output;
-                config()["CALI_REPORT_CONFIG"     ] =
-                    opts.build_query("local", {
-                            { "let",      "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
-                            { "select",   "*,sum(sum#time.duration) as time unit sec" },
-                            { "group by", "path" },
-                            { "format",   format }
-                        });
-            }
-
-            opts.update_channel_config(config());
-            opts.update_channel_metadata(metadata());
+            if (pos == std::string::npos || output.substr(pos) != ext)
+                output.append(ext);
         }
+
+        auto avail_services = services::get_available_services();
+        bool have_mpi = std::find(avail_services.begin(), avail_services.end(), "mpireport") != avail_services.end();
+        bool have_adiak =
+            std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
+
+        bool use_mpi = have_mpi;
+
+        if (opts.is_set("use.mpi"))
+            use_mpi = have_mpi && opts.is_enabled("use.mpi");
+
+        if (have_adiak) {
+            config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+            config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3").to_string();
+        }
+
+        if (use_mpi) {
+            config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
+            config()["CALI_AGGREGATE_KEY"]               = "*,mpi.rank";
+            config()["CALI_MPIREPORT_FILENAME"]          = output;
+            config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
+            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query(
+                "local",
+                { { "let", "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
+                             { "select", "*,sum(sum#time.duration) as time unit sec" },
+                             { "group by", "path,mpi.rank" },
+                             { "format", format } }
+            );
+        } else {
+            config()["CALI_SERVICES_ENABLE"].append(",report");
+            config()["CALI_REPORT_FILENAME"] = output;
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query(
+                "local",
+                { { "let", "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
+                    { "select", "*,sum(sum#time.duration) as time unit sec" },
+                    { "group by", "path" },
+                    { "format", format } }
+            );
+        }
+
+        opts.update_channel_config(config());
+        opts.update_channel_metadata(metadata());
+    }
 };
 
-std::string
-check_args(const cali::ConfigManager::Options& opts) {
+std::string check_args(const cali::ConfigManager::Options& opts)
+{
     // Check if output.format is valid
 
-    std::string format = opts.get("output.format", "json-split").to_string();
+    std::string           format          = opts.get("output.format", "json-split").to_string();
     std::set<std::string> allowed_formats = { "cali", "json", "json-split", "hatchet" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
@@ -96,8 +99,11 @@ check_args(const cali::ConfigManager::Options& opts) {
     return "";
 }
 
-cali::ChannelController*
-make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
+cali::ChannelController* make_controller(
+    const char*                         name,
+    const config_map_t&                 initial_cfg,
+    const cali::ConfigManager::Options& opts
+)
 {
     std::string format = opts.get("output.format", "cali").to_string();
 
@@ -106,8 +112,7 @@ make_controller(const char* name, const config_map_t& initial_cfg, const cali::C
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
         format = "json-split";
-        Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format
-                        << "\". Using json-split."
+        Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format << "\". Using json-split."
                         << std::endl;
     }
 
@@ -158,14 +163,11 @@ const char* controller_spec = R"json(
     }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo hatchet_region_profile_controller_info
-{
-    ::controller_spec, ::make_controller, ::check_args
-};
+ConfigManager::ConfigInfo hatchet_region_profile_controller_info { ::controller_spec, ::make_controller, ::check_args };
 
 }

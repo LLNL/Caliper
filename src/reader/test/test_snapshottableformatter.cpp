@@ -10,18 +10,19 @@
 
 using namespace cali;
 
-TEST(SnapshotTableFormatter, Format) {
+TEST(SnapshotTableFormatter, Format)
+{
     CaliperMetadataDB db;
 
-    Attribute a = db.create_attribute("aaaa", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
-    Attribute b = db.create_attribute("bb",   CALI_TYPE_UINT,   CALI_ATTR_ASVALUE);
-    Attribute s = db.create_attribute("str",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute a = db.create_attribute("aaaa", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute b = db.create_attribute("bb", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+    Attribute s = db.create_attribute("str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     IdMap idmap;
     Node* node = db.merge_node(101, s.id(), CALI_INV_ID, Variant("a string value"), idmap);
 
     std::vector<Entry> rec;
-    rec.push_back(Entry(a,   Variant(42)));
+    rec.push_back(Entry(a, Variant(42)));
     rec.push_back(Entry(b, Variant(4242)));
     rec.push_back(Entry(node));
 

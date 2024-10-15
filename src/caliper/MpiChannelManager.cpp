@@ -10,18 +10,17 @@
 
 using namespace cali;
 
-
-struct MpiChannelManager::MpiChannelManagerImpl
-{
-    MPI_Comm comm       { MPI_COMM_NULL };
+struct MpiChannelManager::MpiChannelManagerImpl {
+    MPI_Comm comm { MPI_COMM_NULL };
     bool     is_in_comm { false };
 
     // mpi channels are those using collective_flush()
-    std::vector< std::shared_ptr<CollectiveOutputChannel> > mpi_channels;
+    std::vector<std::shared_ptr<CollectiveOutputChannel>> mpi_channels;
     // serial channels just use flush()
-    std::vector< std::shared_ptr<ChannelController      > > ser_channels;
+    std::vector<std::shared_ptr<ChannelController>> ser_channels;
 
-    void add(const std::shared_ptr<ChannelController>& src) {
+    void add(const std::shared_ptr<ChannelController>& src)
+    {
         if (!src)
             return;
 
@@ -33,7 +32,8 @@ struct MpiChannelManager::MpiChannelManagerImpl
             ser_channels.push_back(src);
     }
 
-    void start() const {
+    void start() const
+    {
         if (!is_in_comm)
             return;
 
@@ -43,7 +43,8 @@ struct MpiChannelManager::MpiChannelManagerImpl
             channel->start();
     }
 
-    void stop() const {
+    void stop() const
+    {
         if (!is_in_comm)
             return;
 
@@ -53,7 +54,8 @@ struct MpiChannelManager::MpiChannelManagerImpl
             channel->stop();
     }
 
-    void flush() const {
+    void flush() const
+    {
         if (!is_in_comm)
             return;
 
@@ -63,8 +65,7 @@ struct MpiChannelManager::MpiChannelManagerImpl
             channel->flush();
     }
 
-    MpiChannelManagerImpl(MPI_Comm comm_)
-        : comm { comm_ }
+    MpiChannelManagerImpl(MPI_Comm comm_) : comm { comm_ }
     {
         MPI_Group group;
         MPI_Comm_group(comm, &group);
@@ -74,13 +75,11 @@ struct MpiChannelManager::MpiChannelManagerImpl
     }
 };
 
-
-MpiChannelManager::MpiChannelManager(MPI_Comm comm)
-    : mP { new MpiChannelManagerImpl(comm) }
-{ }
+MpiChannelManager::MpiChannelManager(MPI_Comm comm) : mP { new MpiChannelManagerImpl(comm) }
+{}
 
 MpiChannelManager::~MpiChannelManager()
-{ }
+{}
 
 void MpiChannelManager::add(const std::shared_ptr<ChannelController>& src)
 {

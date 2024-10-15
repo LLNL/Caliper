@@ -15,22 +15,21 @@ namespace cali
 namespace symbollookup
 {
 
-class Lookup {
+class Lookup
+{
     struct LookupImpl;
     std::unique_ptr<LookupImpl> mP;
 
 public:
 
-    enum Kind {
-        Name = 1, File = 2, Line = 4, Module = 8
-    };
+    enum Kind { Name = 1, File = 2, Line = 4, Module = 8 };
 
     struct Result {
         std::string name;
         std::string file;
-        int line;
+        int         line;
         std::string module;
-        bool success;
+        bool        success;
     };
 
     Result lookup(uint64_t address, int what) const;

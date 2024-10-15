@@ -23,52 +23,57 @@ using namespace std;
 
 namespace
 {
-    const char*  builtin_profiles =
-        "# [serial-trace]\n"
-        "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
-        "CALI_TIMER_INCLUSIVE_DURATION=true\n"
-        "# [event-trace]\n"
-        "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
-        "# [flat-function-profile]\n"
-        "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
-        "CALI_TIMER_INCLUSIVE_DURATION=true\n"
-        "CALI_AGGREGATE_KEY=event.end#function\n"
-        "CALI_REPORT_CONFIG=\"select event.end#function,sum#time.inclusive.duration where event.end#function format table order by time.inclusive.duration desc\"\n"
-        "# [runtime-report]\n"
-        "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
-        "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
-        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
-        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
-        "CALI_TIMER_UNIT=sec\n"
-        "CALI_REPORT_CONFIG=\"select inclusive_sum(sum#time.duration) as \\\"Inclusive time\\\",sum(sum#time.duration) as \\\"Exclusive time\\\",percent_total(sum#time.duration) as \\\"Time %\\\" group by prop:nested format tree\"\n"
-        "CALI_REPORT_FILENAME=stderr\n"
-        "# [mpi-runtime-report]\n"
-        "CALI_SERVICES_ENABLE=aggregate,event,mpi,mpireport,timestamp\n"
-        "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
-        "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
-        "CALI_TIMER_UNIT=sec\n"
-        "CALI_MPIREPORT_CONFIG=\"select min(sum#time.duration) as \\\"Min time/rank\\\",max(sum#time.duration) as \\\"Max time/rank\\\", avg(sum#time.duration) as \\\"Avg time/rank\\\", percent_total(sum#time.duration) as \\\"Time % (total)\\\" group by prop:nested format tree\"\n"
-        "CALI_MPIREPORT_FILENAME=stderr\n"
-        "# [thread-trace]\n"
-        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
-        "# [mpi-msg-trace]\n"
-        "CALI_SERVICES_ENABLE=event,mpi,recorder,timestamp,trace\n"
-        "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
-        "CALI_MPI_MSG_TRACING=true\n"
-        "CALI_RECORDER_FILENAME=%mpi.rank%.cali\n";
+const char* builtin_profiles =
+    "# [serial-trace]\n"
+    "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
+    "CALI_TIMER_INCLUSIVE_DURATION=true\n"
+    "# [event-trace]\n"
+    "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
+    "# [flat-function-profile]\n"
+    "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
+    "CALI_TIMER_INCLUSIVE_DURATION=true\n"
+    "CALI_AGGREGATE_KEY=event.end#function\n"
+    "CALI_REPORT_CONFIG=\"select event.end#function,sum#time.inclusive.duration where event.end#function format table "
+    "order by time.inclusive.duration desc\"\n"
+    "# [runtime-report]\n"
+    "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
+    "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
+    "CALI_TIMER_SNAPSHOT_DURATION=true\n"
+    "CALI_TIMER_INCLUSIVE_DURATION=false\n"
+    "CALI_TIMER_UNIT=sec\n"
+    "CALI_REPORT_CONFIG=\"select inclusive_sum(sum#time.duration) as \\\"Inclusive time\\\",sum(sum#time.duration) as "
+    "\\\"Exclusive time\\\",percent_total(sum#time.duration) as \\\"Time %\\\" group by prop:nested format tree\"\n"
+    "CALI_REPORT_FILENAME=stderr\n"
+    "# [mpi-runtime-report]\n"
+    "CALI_SERVICES_ENABLE=aggregate,event,mpi,mpireport,timestamp\n"
+    "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
+    "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
+    "CALI_TIMER_UNIT=sec\n"
+    "CALI_MPIREPORT_CONFIG=\"select min(sum#time.duration) as \\\"Min time/rank\\\",max(sum#time.duration) as \\\"Max "
+    "time/rank\\\", avg(sum#time.duration) as \\\"Avg time/rank\\\", percent_total(sum#time.duration) as \\\"Time % "
+    "(total)\\\" group by prop:nested format tree\"\n"
+    "CALI_MPIREPORT_FILENAME=stderr\n"
+    "# [thread-trace]\n"
+    "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
+    "# [mpi-msg-trace]\n"
+    "CALI_SERVICES_ENABLE=event,mpi,recorder,timestamp,trace\n"
+    "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
+    "CALI_MPI_MSG_TRACING=true\n"
+    "CALI_RECORDER_FILENAME=%mpi.rank%.cali\n";
 
-    string config_var_name(const string& name, const string& key) {
-        // make uppercase PREFIX_NAMESPACE_KEY string
+string config_var_name(const string& name, const string& key)
+{
+    // make uppercase PREFIX_NAMESPACE_KEY string
 
-        string str = string("CALI_") + name + string("_") + key;
+    string str = string("CALI_") + name + string("_") + key;
 
-        transform(str.begin(), str.end(), str.begin(), ::toupper);
+    transform(str.begin(), str.end(), str.begin(), ::toupper);
 
-        return str;
-    }
-
-    typedef map< string, string > config_profile_t;
+    return str;
 }
+
+typedef map<string, string> config_profile_t;
+} // namespace
 
 namespace cali
 {
@@ -77,24 +82,30 @@ namespace cali
 // --- ConfigSet implementation
 //
 
-struct ConfigSetImpl
-{
+struct ConfigSetImpl {
     // --- data
 
     std::unordered_map<string, StringConverter> m_dict;
 
     // --- interface
 
-    StringConverter get(const char* key) const {
+    StringConverter get(const char* key) const
+    {
         auto it = m_dict.find(key);
         return (it == m_dict.end() ? StringConverter() : it->second);
     }
 
-    void init(const char* name, const RuntimeConfig::config_entry_list_t& list, bool read_env, const ::config_profile_t& profile, const ::config_profile_t& top_profile)
+    void init(
+        const char*                               name,
+        const RuntimeConfig::config_entry_list_t& list,
+        bool                                      read_env,
+        const ::config_profile_t&                 profile,
+        const ::config_profile_t&                 top_profile
+    )
     {
-        for (const auto &e : list) {
+        for (const auto& e : list) {
             std::string varname { ::config_var_name(name, e.first) };
-            std::string value   { e.second };
+            std::string value { e.second };
 
             // See if there is an entry in the top config profile
             auto topit = top_profile.find(varname);
@@ -120,34 +131,33 @@ struct ConfigSetImpl
     }
 };
 
-
 //
 // --- RuntimeConfig implementation
 //
 
-struct RuntimeConfig::RuntimeConfigImpl
-{
+struct RuntimeConfig::RuntimeConfigImpl {
     // --- data
 
-    bool                                     m_allow_read_env = true;
+    bool m_allow_read_env = true;
 
     // combined profile: initially receives settings made through "add" API,
     // then merges all selected profiles in here
-    ::config_profile_t                       m_combined_profile;
+    ::config_profile_t m_combined_profile;
 
     // top-priority profile: receives all settings made through "set" API
     // that overwrite other settings
-    ::config_profile_t                       m_top_profile;
+    ::config_profile_t m_top_profile;
 
     // the DB of initialized config sets
-    map< string, shared_ptr<ConfigSetImpl> > m_database;
+    map<string, shared_ptr<ConfigSetImpl>> m_database;
 
     // the config profile DB
-    map< string, ::config_profile_t>         m_config_profiles;
+    map<string, ::config_profile_t> m_config_profiles;
 
     // --- helpers
 
-    void read_config_profiles(istream& in) {
+    void read_config_profiles(istream& in)
+    {
         //
         // Parse config file line-by-line
         // * '#' as the first character is a comment, or start of a new
@@ -158,7 +168,7 @@ struct RuntimeConfig::RuntimeConfigImpl
         ::config_profile_t current_profile;
         string             current_profile_name { "default" };
 
-        for (string line; std::getline(in, line); ) {
+        for (string line; std::getline(in, line);) {
             if (line.length() < 1)
                 continue;
 
@@ -167,12 +177,12 @@ struct RuntimeConfig::RuntimeConfigImpl
                 string::size_type b = line.find_first_of('[');
                 string::size_type e = line.find_first_of(']');
 
-                if (b != string::npos && e != string::npos && b+1 < e) {
+                if (b != string::npos && e != string::npos && b + 1 < e) {
                     if (current_profile.size() > 0)
                         m_config_profiles[current_profile_name].insert(current_profile.begin(), current_profile.end());
 
                     current_profile.clear();
-                    current_profile_name = line.substr(b+1, e-b-1);
+                    current_profile_name = line.substr(b + 1, e - b - 1);
                 } else {
                     continue;
                 }
@@ -181,7 +191,7 @@ struct RuntimeConfig::RuntimeConfigImpl
             string::size_type s = line.find_first_of('=');
 
             if (s > 0 && s < line.size()) {
-                std::istringstream is(line.substr(s+1));
+                std::istringstream is(line.substr(s + 1));
                 current_profile[line.substr(0, s)] = util::read_word(is, "");
             }
         }
@@ -190,14 +200,14 @@ struct RuntimeConfig::RuntimeConfigImpl
             m_config_profiles[current_profile_name] = current_profile;
     }
 
-    void read_config_files(const std::vector<std::string>& filenames) {
+    void read_config_files(const std::vector<std::string>& filenames)
+    {
         // read builtin profiles
 
         istringstream is(::builtin_profiles);
         read_config_profiles(is);
 
-
-        for (const auto &s : filenames) {
+        for (const auto& s : filenames) {
             ifstream fs(s.c_str());
 
             if (fs)
@@ -205,11 +215,9 @@ struct RuntimeConfig::RuntimeConfigImpl
         }
     }
 
-    void init_config_database() {
-        const config_entry_list_t configdata {
-            { "profile", "default"        },
-            { "file",    "caliper.config" }
-        };
+    void init_config_database()
+    {
+        const config_entry_list_t configdata { { "profile", "default" }, { "file", "caliper.config" } };
 
         // read pre-init config set to get config file name from env var
         ConfigSetImpl init_config_cfg;
@@ -220,7 +228,7 @@ struct RuntimeConfig::RuntimeConfigImpl
 
         // merge "default" profile into combined profile
         {
-            for ( auto &p : m_config_profiles["default"] )
+            for (auto& p : m_config_profiles["default"])
                 m_combined_profile[p.first] = p.second;
         }
 
@@ -231,8 +239,7 @@ struct RuntimeConfig::RuntimeConfigImpl
         m_database.insert(make_pair("config", config_cfg));
 
         // get the selected config profile names
-        vector<string> profile_names =
-            config_cfg->get("profile").to_stringlist();
+        vector<string> profile_names = config_cfg->get("profile").to_stringlist();
 
         // merge all selected profiles
         for (const std::string& profile_name : profile_names) {
@@ -243,14 +250,15 @@ struct RuntimeConfig::RuntimeConfigImpl
                 continue;
             }
 
-            for (auto &p : it->second)
+            for (auto& p : it->second)
                 m_combined_profile[p.first] = p.second;
         }
     }
 
     // --- interface
 
-    StringConverter get(const char* set, const char* key) {
+    StringConverter get(const char* set, const char* key)
+    {
         if (m_database.empty())
             init_config_database();
 
@@ -258,20 +266,18 @@ struct RuntimeConfig::RuntimeConfigImpl
         return (it == m_database.end() ? StringConverter() : StringConverter(it->second->get(key)));
     }
 
-    void preset(const char* key, const std::string& value) {
-        m_combined_profile[key] = value;
-    }
+    void preset(const char* key, const std::string& value) { m_combined_profile[key] = value; }
 
-    void set(const char* key, const std::string& value) {
-        m_top_profile[key] = value;
-    }
+    void set(const char* key, const std::string& value) { m_top_profile[key] = value; }
 
-    void import(const std::map<std::string, std::string>& values) {
+    void import(const std::map<std::string, std::string>& values)
+    {
         for (auto& p : values)
             m_top_profile[p.first] = p.second;
     }
 
-    shared_ptr<ConfigSetImpl> init_configset(const char* name, const config_entry_list_t& list) {
+    shared_ptr<ConfigSetImpl> init_configset(const char* name, const config_entry_list_t& list)
+    {
         if (m_database.empty())
             init_config_database();
 
@@ -288,27 +294,24 @@ struct RuntimeConfig::RuntimeConfigImpl
         return ret;
     }
 
-    void print(std::ostream& os) const {
-        for ( auto set : m_database )
-            for ( auto entry : set.second->m_dict )
-                os << ::config_var_name(set.first, entry.first)
-                   << '=' << entry.second.to_string() << std::endl;
+    void print(std::ostream& os) const
+    {
+        for (auto set : m_database)
+            for (auto entry : set.second->m_dict)
+                os << ::config_var_name(set.first, entry.first) << '=' << entry.second.to_string() << std::endl;
     }
 };
 
 } // namespace cali
 
-
 //
 // --- ConfigSet public interface
 //
 
-ConfigSet::ConfigSet(const shared_ptr<ConfigSetImpl>& p)
-    : mP { p }
-{ }
+ConfigSet::ConfigSet(const shared_ptr<ConfigSetImpl>& p) : mP { p }
+{}
 
-StringConverter
-ConfigSet::get(const char* key) const
+StringConverter ConfigSet::get(const char* key) const
 {
     if (!mP)
         return StringConverter();
@@ -316,70 +319,59 @@ ConfigSet::get(const char* key) const
     return mP->get(key);
 }
 
-
 //
 // --- RuntimeConfig public interface
 //
 
-RuntimeConfig::RuntimeConfig()
-    : mP(new RuntimeConfigImpl)
-{ }
+RuntimeConfig::RuntimeConfig() : mP(new RuntimeConfigImpl)
+{}
 
-StringConverter
-RuntimeConfig::get(const char* set, const char* key)
+StringConverter RuntimeConfig::get(const char* set, const char* key)
 {
     return mP->get(set, key);
 }
 
-ConfigSet
-RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
+ConfigSet RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
 {
     config_entry_list_t converted_list;
 
     for (const ConfigSet::Entry* e = list; e && e->key; ++e)
-        converted_list.emplace_back( std::make_pair<std::string, std::string>(e->key, e->value) );
+        converted_list.emplace_back(std::make_pair<std::string, std::string>(e->key, e->value));
 
     return ConfigSet(mP->init_configset(name, converted_list));
 }
 
-ConfigSet
-RuntimeConfig::init(const char* name, const config_entry_list_t& list)
+ConfigSet RuntimeConfig::init(const char* name, const config_entry_list_t& list)
 {
     return ConfigSet(mP->init_configset(name, list));
 }
 
-void
-RuntimeConfig::preset(const char* key, const std::string& value)
+void RuntimeConfig::preset(const char* key, const std::string& value)
 {
     mP->preset(key, value);
 }
 
-void
-RuntimeConfig::set(const char* key, const std::string& value)
+void RuntimeConfig::set(const char* key, const std::string& value)
 {
     mP->set(key, value);
 }
 
-void
-RuntimeConfig::import(const std::map<std::string,std::string>& values)
+void RuntimeConfig::import(const std::map<std::string, std::string>& values)
 {
     mP->import(values);
 }
 
-void
-RuntimeConfig::print(ostream& os)
+void RuntimeConfig::print(ostream& os)
 {
     mP->print(os);
 }
 
-bool
-RuntimeConfig::allow_read_env()
+bool RuntimeConfig::allow_read_env()
 {
     return mP->m_allow_read_env;
 }
 
-bool
-RuntimeConfig::allow_read_env(bool allow)
+bool RuntimeConfig::allow_read_env(bool allow)
 {
     mP->m_allow_read_env = allow;
     return mP->m_allow_read_env;
@@ -389,8 +381,7 @@ RuntimeConfig::allow_read_env(bool allow)
 // static interface
 //
 
-RuntimeConfig
-RuntimeConfig::get_default_config()
+RuntimeConfig RuntimeConfig::get_default_config()
 {
     static RuntimeConfig s_default_config;
 

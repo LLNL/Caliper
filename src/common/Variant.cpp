@@ -21,8 +21,7 @@
 
 using namespace cali;
 
-cali_id_t
-Variant::to_id(bool* okptr) const
+cali_id_t Variant::to_id(bool* okptr) const
 {
     bool      ok = false;
     cali_id_t id = to_uint(&ok);
@@ -33,8 +32,7 @@ Variant::to_id(bool* okptr) const
     return ok ? id : CALI_INV_ID;
 }
 
-std::string
-Variant::to_string() const
+std::string Variant::to_string() const
 {
     std::string ret;
 
@@ -42,17 +40,20 @@ Variant::to_string() const
     case CALI_TYPE_INV:
         break;
     case CALI_TYPE_USR:
-    {
-        size_t size = this->size();
-        const void* ptr = data();
+        {
+            size_t      size = this->size();
+            const void* ptr  = data();
 
-        std::ostringstream os;
+            std::ostringstream os;
 
-        std::copy(static_cast<const unsigned char*>(ptr), static_cast<const unsigned char*>(ptr) + size,
-                  std::ostream_iterator<unsigned>(os << std::hex << std::setw(2) << std::setfill('0'), ":"));
+            std::copy(
+                static_cast<const unsigned char*>(ptr),
+                static_cast<const unsigned char*>(ptr) + size,
+                std::ostream_iterator<unsigned>(os << std::hex << std::setw(2) << std::setfill('0'), ":")
+            );
 
-        ret = os.str();
-    }
+            ret = os.str();
+        }
         break;
     case CALI_TYPE_INT:
         ret = std::to_string(m_v.value.v_int);
@@ -61,22 +62,22 @@ Variant::to_string() const
         ret = std::to_string(m_v.value.v_uint);
         break;
     case CALI_TYPE_STRING:
-    {
-        const char* str = static_cast<const char*>(data());
-        std::size_t len = size();
+        {
+            const char* str = static_cast<const char*>(data());
+            std::size_t len = size();
 
-        if (len && str[len-1] == 0)
-            --len;
+            if (len && str[len - 1] == 0)
+                --len;
 
-        ret.assign(str, len);
-    }
+            ret.assign(str, len);
+        }
         break;
     case CALI_TYPE_ADDR:
-    {
-        std::ostringstream os;
-        os << std::hex << to_uint();
-        ret = os.str();
-    }
+        {
+            std::ostringstream os;
+            os << std::hex << to_uint();
+            ret = os.str();
+        }
         break;
     case CALI_TYPE_DOUBLE:
         ret = std::to_string(m_v.value.v_double);
@@ -88,18 +89,17 @@ Variant::to_string() const
         ret = cali_type2string(to_attr_type());
         break;
     case CALI_TYPE_PTR:
-    {
-        std::ostringstream os;
-        os << std::hex << reinterpret_cast<uint64_t>(data());
-        ret = os.str();
-    }
+        {
+            std::ostringstream os;
+            os << std::hex << reinterpret_cast<uint64_t>(data());
+            ret = os.str();
+        }
     }
 
     return ret;
 }
 
-Variant
-Variant::from_string(cali_attr_type type, const char* str)
+Variant Variant::from_string(cali_attr_type type, const char* str)
 {
     switch (type) {
     case CALI_TYPE_INV:
@@ -110,14 +110,14 @@ Variant::from_string(cali_attr_type type, const char* str)
         return Variant(CALI_TYPE_STRING, str, strlen(str));
     case CALI_TYPE_INT:
         {
-            char* str_end = nullptr;
-            long long ll = std::strtoll(str, &str_end, 10);
+            char*     str_end = nullptr;
+            long long ll      = std::strtoll(str, &str_end, 10);
             return str != str_end ? Variant(cali_make_variant_from_int64(ll)) : Variant();
         }
     case CALI_TYPE_ADDR:
         {
-            bool ok = false;
-            uint64_t u = StringConverter(str).to_uint(&ok, 16);
+            bool     ok = false;
+            uint64_t u  = StringConverter(str).to_uint(&ok, 16);
             return ok ? Variant(CALI_TYPE_ADDR, &u, sizeof(uint64_t)) : Variant();
         }
     case CALI_TYPE_UINT:
@@ -127,29 +127,27 @@ Variant::from_string(cali_attr_type type, const char* str)
         }
     case CALI_TYPE_DOUBLE:
         {
-            char* str_end = nullptr;
-            double d = std::strtod(str, &str_end);
+            char*  str_end = nullptr;
+            double d       = std::strtod(str, &str_end);
             return str != str_end ? Variant(d) : Variant();
         }
     case CALI_TYPE_BOOL:
         {
             bool ok = false;
-            bool b = StringConverter(str).to_bool(&ok);
+            bool b  = StringConverter(str).to_bool(&ok);
             return ok ? Variant(b) : Variant();
         }
     case CALI_TYPE_TYPE:
         {
             cali_attr_type type = cali_string2type(str);
             return (type != CALI_TYPE_INV) ? Variant(type) : Variant();
-
         }
     }
 
     return Variant();
 }
 
-std::ostream&
-Variant::write_cali(std::ostream& os)
+std::ostream& Variant::write_cali(std::ostream& os)
 {
     cali_attr_type type = this->type();
 
@@ -178,13 +176,13 @@ Variant::write_cali(std::ostream& os)
     return os;
 }
 
-std::ostream& cali::operator << (std::ostream& os, const Variant& v)
+std::ostream& cali::operator<< (std::ostream& os, const Variant& v)
 {
     os << v.to_string();
     return os;
 }
 
-Variant& Variant::operator += (const Variant& val)
+Variant& Variant::operator+= (const Variant& val)
 {
     cali_attr_type type = this->type();
 

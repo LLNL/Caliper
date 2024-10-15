@@ -7,7 +7,8 @@
 
 using namespace cali;
 
-TEST(SnapshotBufferTest, Append) {
+TEST(SnapshotBufferTest, Append)
+{
     cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
     Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
 
@@ -24,7 +25,7 @@ TEST(SnapshotBufferTest, Append) {
 
     EXPECT_EQ(in_rec_1.append(1, attr_in, data_in), static_cast<size_t>(0));
     EXPECT_EQ(in_rec_1.append(2, node_in), static_cast<size_t>(0));
-    EXPECT_EQ(in_rec_1.append(2, attr_in+1, data_in+1), static_cast<size_t>(0));
+    EXPECT_EQ(in_rec_1.append(2, attr_in + 1, data_in + 1), static_cast<size_t>(0));
 
     ASSERT_EQ(in_rec_1.num_nodes(), static_cast<size_t>(2));
     ASSERT_EQ(in_rec_1.num_immediates(), static_cast<size_t>(3));
@@ -47,7 +48,7 @@ TEST(SnapshotBufferTest, Append) {
     CompressedSnapshotRecordView out_rec[2];
 
     size_t pos = 0;
-    
+
     for (size_t i = 0; i < 2; ++i)
         out_rec[i] = CompressedSnapshotRecordView(in_buf.data() + pos, &pos);
 
@@ -94,7 +95,8 @@ TEST(SnapshotBufferTest, Append) {
     }
 }
 
-TEST(SnapshotBufferTest, Import) {
+TEST(SnapshotBufferTest, Import)
+{
     cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
     Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
 
@@ -111,7 +113,7 @@ TEST(SnapshotBufferTest, Import) {
 
     EXPECT_EQ(in_rec_1.append(1, attr_in, data_in), static_cast<size_t>(0));
     EXPECT_EQ(in_rec_1.append(2, node_in), static_cast<size_t>(0));
-    EXPECT_EQ(in_rec_1.append(2, attr_in+1, data_in+1), static_cast<size_t>(0));
+    EXPECT_EQ(in_rec_1.append(2, attr_in + 1, data_in + 1), static_cast<size_t>(0));
 
     ASSERT_EQ(in_rec_1.num_nodes(), static_cast<size_t>(2));
     ASSERT_EQ(in_rec_1.num_immediates(), static_cast<size_t>(3));
@@ -140,7 +142,7 @@ TEST(SnapshotBufferTest, Import) {
     CompressedSnapshotRecordView out_rec[2];
 
     size_t pos = 0;
-    
+
     for (size_t i = 0; i < 2; ++i)
         out_rec[i] = CompressedSnapshotRecordView(out_buf.data() + pos, &pos);
 

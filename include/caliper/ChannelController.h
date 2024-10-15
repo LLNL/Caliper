@@ -48,23 +48,23 @@ protected:
     config_map_t& config();
 
     /// \brief Provide access to the underlying metadata info map.
-    info_map_t&   metadata();
+    info_map_t& metadata();
 
     /// \brief Create the channel with the controller's
     ///   name, flags, and config map
-    Channel       create();
+    Channel create();
 
     /// \brief Callback function, invoked after the underlying channel
     ///   has been created.
     ///
     ///   This can be used to setup additional functionality, e.g.
     /// registering %Caliper callbacks.
-    virtual void  on_create(Caliper* /*c*/, Channel& /*chn*/) { }
+    virtual void on_create(Caliper* /*c*/, Channel& /*chn*/) {}
 
 public:
 
     /// \brief Return the underlying %Caliper channel object.
-    Channel       channel();
+    Channel channel();
 
     /// \brief Create and activate the %Caliper channel,
     ///   or reactivate a stopped %Caliper channel.
@@ -94,6 +94,6 @@ public:
     virtual ~ChannelController();
 };
 
-} // namespace cali;
+} // namespace cali
 
 #endif

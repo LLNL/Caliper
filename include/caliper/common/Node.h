@@ -24,7 +24,7 @@ namespace cali
 
 class Node : public util::LockfreeIntrusiveTree<Node>
 {
-    cali_id_t m_id;
+    cali_id_t                               m_id;
     util::LockfreeIntrusiveTree<Node>::Node m_treenode;
 
     cali_id_t m_attribute;
@@ -33,28 +33,24 @@ class Node : public util::LockfreeIntrusiveTree<Node>
 public:
 
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
-        : util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode),
-        m_id        { id   },
-        m_attribute { attr },
-        m_data      { data }
-        { }
+        : util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode), m_id { id }, m_attribute { attr }, m_data { data }
+    {}
 
     Node(const Node&) = delete;
 
-    Node& operator = (const Node&) = delete;
+    Node& operator= (const Node&) = delete;
 
     /// \brief Check if the node's attribute and value are equal to
     ///   \a attr and \a v
-    bool equals(cali_id_t attr, const Variant& v) const {
-        return m_data == v && m_attribute == attr;
-    }
+    bool equals(cali_id_t attr, const Variant& v) const { return m_data == v && m_attribute == attr; }
 
     /// \brief Return the node's attribute ID
     cali_id_t attribute() const { return m_attribute; }
-    /// \brief Return the node's data element
-    Variant   data() const      { return m_data;      }
 
-    cali_id_t id() const        { return m_id;        }
+    /// \brief Return the node's data element
+    Variant data() const { return m_data; }
+
+    cali_id_t id() const { return m_id; }
 };
 
 } // namespace cali

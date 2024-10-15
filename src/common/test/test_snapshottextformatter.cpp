@@ -8,16 +8,17 @@
 
 using namespace cali;
 
-TEST(SnapshotTextFormatterTest, FormatTest) {
+TEST(SnapshotTextFormatterTest, FormatTest)
+{
     Node* strtype_attr_n = new Node(3, 9, Variant(CALI_TYPE_STRING));
     Node* inttype_attr_n = new Node(1, 9, Variant(CALI_TYPE_INT));
-    
+
     Node* str_attr = new Node(100, 8, Variant(CALI_TYPE_STRING, "str.attr", 9));
     Node* int_attr = new Node(101, 8, Variant(CALI_TYPE_STRING, "int.attr", 9));
 
     strtype_attr_n->append(str_attr);
     inttype_attr_n->append(int_attr);
-    
+
     MockupMetadataDB db;
 
     db.add_attribute(Attribute::make_attribute(str_attr));
@@ -39,7 +40,7 @@ TEST(SnapshotTextFormatterTest, FormatTest) {
 
         EXPECT_EQ(os.str(), std::string("whoo whee-whee42-whee  -  42-end"));
     }
-    
+
     format.reset("%[1]int.attr%%str.attr%");
 
     {
@@ -47,5 +48,5 @@ TEST(SnapshotTextFormatterTest, FormatTest) {
         format.print(os, db, { Entry(int_node) });
 
         EXPECT_EQ(os.str(), std::string("42whee"));
-    }    
+    }
 }

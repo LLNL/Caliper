@@ -69,7 +69,8 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*! \brief Write 64-bit value into \a buf using variable-length encoding.
@@ -78,14 +79,13 @@ extern "C" {
  * \param  buf  Character buffer. Must be large enough to hold 10 bytes.
  * \return      Number of bytes written.
  */
-inline size_t
-vlenc_u64(uint64_t val, unsigned char* buf)
+inline size_t vlenc_u64(uint64_t val, unsigned char* buf)
 {
     size_t nbytes = 0;
 
     while (val > 0x7F) {
-        *buf++   = (val & 0x7F) | 0x80;
-        val    >>= 7;
+        *buf++ = (val & 0x7F) | 0x80;
+        val >>= 7;
         ++nbytes;
     }
 
@@ -104,16 +104,15 @@ vlenc_u64(uint64_t val, unsigned char* buf)
  * \param  inc  The function increments this value by the number of bytes read.
  * \return      The decoded value.
  */
-inline uint64_t
-vldec_u64(const unsigned char* buf, size_t* inc)
+inline uint64_t vldec_u64(const unsigned char* buf, size_t* inc)
 {
     uint64_t val = 0;
     size_t   p   = 0;
 
-    for ( ; p < 9 && (buf[p] & 0x80); ++p)
-        val |= ((uint64_t) (buf[p] & 0x7F) << (7*p));
+    for (; p < 9 && (buf[p] & 0x80); ++p)
+        val |= ((uint64_t) (buf[p] & 0x7F) << (7 * p));
 
-    val |= ((uint64_t) (buf[p] & 0x7F) << (7*p));
+    val |= ((uint64_t) (buf[p] & 0x7F) << (7 * p));
     ++p;
 
     *inc += p;

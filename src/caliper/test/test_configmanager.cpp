@@ -8,7 +8,8 @@
 
 using namespace cali;
 
-TEST(ConfigManagerTest, ParseErrors) {
+TEST(ConfigManagerTest, ParseErrors)
+{
     {
         cali::ConfigManager mgr;
 
@@ -42,13 +43,12 @@ TEST(ConfigManagerTest, ParseErrors) {
         EXPECT_STREQ(mgr.error_msg().c_str(), "Expected ')'");
     }
 
-    EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(),
-                 "Unknown config or parameter: foo");
-    EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(),
-                 "Unknown config or parameter: ");
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(), "Unknown config or parameter: foo");
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(), "Unknown config or parameter: ");
 }
 
-TEST(ConfigManagerTest, ParseConfig) {
+TEST(ConfigManagerTest, ParseConfig)
+{
     {
         cali::ConfigManager mgr;
 
@@ -62,10 +62,12 @@ TEST(ConfigManagerTest, ParseConfig) {
     }
 
     {
-        cali::ConfigManager mgr;
+        cali::ConfigManager           mgr;
         cali::ConfigManager::argmap_t extra_kv_pairs;
 
-        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, aggregate_across_ranks=false, foo=bar , blagarbl ", extra_kv_pairs));
+        EXPECT_TRUE(
+            mgr.add(" event-trace, runtime-report, aggregate_across_ranks=false, foo=bar , blagarbl ", extra_kv_pairs)
+        );
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -83,7 +85,9 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,aggregate_across_ranks=false ) "));
+        EXPECT_TRUE(mgr.add(
+            " event-trace  ( output = test.cali ),   runtime-report(output=stdout,aggregate_across_ranks=false ) "
+        ));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -98,7 +102,8 @@ TEST(ConfigManagerTest, ParseConfig) {
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,event-trace,foo=bar", true).empty());
 }
 
-TEST(ConfigManagerTest, ParseEmptyConfig) {
+TEST(ConfigManagerTest, ParseEmptyConfig)
+{
     {
         cali::ConfigManager mgr;
         mgr.add("");
@@ -114,7 +119,6 @@ TEST(ConfigManagerTest, ParseEmptyConfig) {
     }
 }
 
-
 namespace
 {
 
@@ -123,26 +127,19 @@ class TestController : public cali::ChannelController
     cali::ConfigManager::Options opts;
 
     TestController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& o)
-        : ChannelController(name, 0, initial_cfg),
-          opts(o)
-    { 
-    }
+        : ChannelController(name, 0, initial_cfg), opts(o)
+    {}
 
 public:
 
-    std::string get_opt(const char* name) {
-        return opts.get(name).to_string();
-    }
+    std::string get_opt(const char* name) { return opts.get(name).to_string(); }
 
-    bool is_set(const char* name) {
-        return opts.is_set(name);
-    }
+    bool is_set(const char* name) { return opts.is_set(name); }
 
-    bool is_enabled(const char* name) {
-        return opts.is_enabled(name);
-    }
+    bool is_enabled(const char* name) { return opts.is_enabled(name); }
 
-    bool enabled_opts_list_matches(const std::vector<std::string> list) {
+    bool enabled_opts_list_matches(const std::vector<std::string> list)
+    {
         std::vector<std::string> a(list);
         std::vector<std::string> b(opts.enabled_options());
         std::sort(a.begin(), a.end());
@@ -150,22 +147,28 @@ public:
         return a == b;
     }
 
-    std::string get_query(const char* level, const std::map<std::string, std::string>& in) const {
+    std::string get_query(const char* level, const std::map<std::string, std::string>& in) const
+    {
         return opts.build_query(level, in);
     }
 
-    std::string get_config(const std::string& key) {
+    std::string get_config(const std::string& key)
+    {
         config_map_t cfg;
         opts.update_channel_config(cfg);
         return cfg[key];
     }
 
-    static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+    static cali::ChannelController* create(
+        const char*                         name,
+        const config_map_t&                 initial_cfg,
+        const cali::ConfigManager::Options& opts
+    )
+    {
         return new TestController(name, initial_cfg, opts);
     }
 
-    ~TestController()
-        { }
+    ~TestController() {}
 };
 
 const char* testcontroller_spec = R"json(
@@ -241,7 +244,7 @@ const char* test_option_spec = R"json(
     ];
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 TEST(ConfigManagerTest, Options)
 {
@@ -259,8 +262,9 @@ TEST(ConfigManagerTest, Options)
 
         std::string expected_configs[] = { "event-trace", "runtime-report", "testcontroller" };
 
-        EXPECT_TRUE(std::includes(configs.begin(), configs.end(),
-                                std::begin(expected_configs), std::end(expected_configs)));
+        EXPECT_TRUE(
+            std::includes(configs.begin(), configs.end(), std::begin(expected_configs), std::end(expected_configs))
+        );
     }
 
     {
@@ -318,7 +322,7 @@ TEST(ConfigManagerTest, Options)
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
         EXPECT_FALSE(tP->is_enabled("defaultopt"));
-        EXPECT_EQ(tP->get_opt("intopt"),    std::string("42"));
+        EXPECT_EQ(tP->get_opt("intopt"), std::string("42"));
         EXPECT_EQ(tP->get_opt("stringopt"), std::string("set_default_parameter"));
     }
 }
@@ -360,13 +364,14 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
-        std::string q1 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-                { "let", "a=first(b,c)" },
-                { "where", "xyz=42" },
-                { "group by", "z"}
-            });
+        std::string q1 = tP->get_query(
+            "local",
+            { { "select", "me" },
+              { "format", "expand" },
+              { "let", "a=first(b,c)" },
+              { "where", "xyz=42" },
+              { "group by", "z" } }
+        );
         const char* expect =
             " let a=first(b,c),x=scale(y,2)"
             " select me,sum(x) as \"X\" unit \"Foos\""
@@ -378,10 +383,13 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q1.c_str(), expect);
 
-        std::string q2 = tP->get_query("local", {
+        std::string q2 = tP->get_query(
+            "local",
+            {
                 { "select", "me" },
                 { "format", "expand" },
-            });
+            }
+        );
         expect =
             " let x=scale(y,2)"
             " select me,sum(x) as \"X\" unit \"Foos\""
@@ -392,7 +400,6 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q2.c_str(), expect);
     }
-
 
     {
         ConfigManager mgr;
@@ -406,13 +413,14 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_FALSE(tP->is_enabled("boolopt"));
 
-        std::string q3 = tP->get_query("local", {
-                { "select", "me" },
-                { "format", "expand" },
-                { "let", "a=first(b,c)" },
-                { "where", "xyz=42" },
-                { "group by", "z"}
-            });
+        std::string q3 = tP->get_query(
+            "local",
+            { { "select", "me" },
+              { "format", "expand" },
+              { "let", "a=first(b,c)" },
+              { "where", "xyz=42" },
+              { "group by", "z" } }
+        );
         const char* expect =
             " let a=first(b,c)"
             " select me"
@@ -422,10 +430,13 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_STREQ(q3.c_str(), expect);
 
-        std::string q4 = tP->get_query("local", {
+        std::string q4 = tP->get_query(
+            "local",
+            {
                 { "select", "me" },
                 { "format", "expand" },
-            });
+            }
+        );
         expect =
             " select me"
             " format expand";
@@ -434,7 +445,8 @@ TEST(ConfigManagerTest, BuildQuery)
     }
 }
 
-TEST(ConfigManagerTest, LoadCmd_SingleConfig) {
+TEST(ConfigManagerTest, LoadCmd_SingleConfig)
+{
     // test parsing of a single config spec with the load() command inside add()
 
     ConfigManager mgr;
@@ -445,7 +457,8 @@ TEST(ConfigManagerTest, LoadCmd_SingleConfig) {
     EXPECT_TRUE(cP);
 }
 
-TEST(ConfigManagerTest, LoadCmd_ConfigList) {
+TEST(ConfigManagerTest, LoadCmd_ConfigList)
+{
     // test parsing of a config spec list with the load() command inside add()
 
     ConfigManager mgr;
@@ -455,7 +468,8 @@ TEST(ConfigManagerTest, LoadCmd_ConfigList) {
     EXPECT_EQ(mgr.get_documentation_for_spec("testcontroller_b"), std::string("testcontroller_b\n Test controller B"));
 }
 
-TEST(ConfigManagerTest, LoadCmd_ConfigAndOptions) {
+TEST(ConfigManagerTest, LoadCmd_ConfigAndOptions)
+{
     // test parsing of a config and options list with load()
 
     ConfigManager mgr;

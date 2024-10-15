@@ -15,48 +15,48 @@
 // splicer end CXX_declarations
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // typedef cali::cali_id_t
 // splicer begin typedef.cali_id_t
 typedef uint64_t cali_cali_id_t;
+
 // splicer end typedef.cali_id_t
 
 //  cali::cali_attr_properties
 enum cali_cali_attr_properties {
-    cali_CALI_ATTR_DEFAULT = 0,
-    cali_CALI_ATTR_ASVALUE = 1,
-    cali_CALI_ATTR_NOMERGE = 2,
+    cali_CALI_ATTR_DEFAULT       = 0,
+    cali_CALI_ATTR_ASVALUE       = 1,
+    cali_CALI_ATTR_NOMERGE       = 2,
     cali_CALI_ATTR_SCOPE_PROCESS = 12,
-    cali_CALI_ATTR_SCOPE_THREAD = 20,
-    cali_CALI_ATTR_SCOPE_TASK = 24,
-    cali_CALI_ATTR_SKIP_EVENTS = 64,
-    cali_CALI_ATTR_HIDDEN = 128,
-    cali_CALI_ATTR_NESTED = 256,
-    cali_CALI_ATTR_GLOBAL = 512,
-    cali_CALI_ATTR_UNALIGNED = 1024,
-    cali_CALI_ATTR_AGGREGATABLE = 2048
+    cali_CALI_ATTR_SCOPE_THREAD  = 20,
+    cali_CALI_ATTR_SCOPE_TASK    = 24,
+    cali_CALI_ATTR_SKIP_EVENTS   = 64,
+    cali_CALI_ATTR_HIDDEN        = 128,
+    cali_CALI_ATTR_NESTED        = 256,
+    cali_CALI_ATTR_GLOBAL        = 512,
+    cali_CALI_ATTR_UNALIGNED     = 1024,
+    cali_CALI_ATTR_AGGREGATABLE  = 2048
 };
 
 //  cali::cali_attr_type
 enum cali_cali_attr_type {
-    cali_CALI_TYPE_INV = 0,
-    cali_CALI_TYPE_USR = 1,
-    cali_CALI_TYPE_INT = 2,
-    cali_CALI_TYPE_UINT = 3,
+    cali_CALI_TYPE_INV    = 0,
+    cali_CALI_TYPE_USR    = 1,
+    cali_CALI_TYPE_INT    = 2,
+    cali_CALI_TYPE_UINT   = 3,
     cali_CALI_TYPE_STRING = 4,
-    cali_CALI_TYPE_ADDR = 5,
+    cali_CALI_TYPE_ADDR   = 5,
     cali_CALI_TYPE_DOUBLE = 6,
-    cali_CALI_TYPE_BOOL = 7,
-    cali_CALI_TYPE_TYPE = 8,
-    cali_CALI_TYPE_PTR = 9
+    cali_CALI_TYPE_BOOL   = 7,
+    cali_CALI_TYPE_TYPE   = 8,
+    cali_CALI_TYPE_PTR    = 9
 };
 
 //  cali::cali_flush_opts
-enum cali_cali_flush_opts {
-    cali_CALI_FLUSH_CLEAR_BUFFERS = 1
-};
+enum cali_cali_flush_opts { cali_CALI_FLUSH_CLEAR_BUFFERS = 1 };
 
 // splicer begin C_declarations
 // splicer end C_declarations
@@ -65,4 +65,4 @@ enum cali_cali_flush_opts {
 }
 #endif
 
-#endif  // WRAPCALIPER_H
+#endif // WRAPCALIPER_H

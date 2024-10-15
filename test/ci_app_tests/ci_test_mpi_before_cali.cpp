@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 
         MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-        int in  = val, out;
+        int in = val, out;
         CALI_MARK_COMM_REGION_BEGIN("reduction");
         MPI_Reduce(&in, &out, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Barrier(MPI_COMM_WORLD);

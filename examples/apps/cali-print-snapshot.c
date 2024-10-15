@@ -39,7 +39,7 @@ int print_entry(void* user_arg, cali_id_t attr_id, cali_variant_t val)
         {
             char   buf[20];
             size_t len = cali_variant_get_size(val);
-            len = (len < 19 ? len : 19);
+            len        = (len < 19 ? len : 19);
 
             strncpy(buf, (char*) cali_variant_get_data(&val), len);
             buf[len] = '\0';
@@ -54,19 +54,17 @@ int print_entry(void* user_arg, cali_id_t attr_id, cali_variant_t val)
     return 1; /* Non-null return value: keep processing. */
 }
 
-
 /*
  * Take and process a snapshot
  */
-void
-snapshot(cali_id_t channel)
+void snapshot(cali_id_t channel)
 {
     /*
      * Take a snapshot, and store it in our buffer
      */
 
     unsigned char buffer[80];
-    size_t len = cali_channel_pull_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, 80, buffer);
+    size_t        len = cali_channel_pull_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, 80, buffer);
 
     if (len == 0) {
         fprintf(stderr, "Could not obtain snapshot!\n");
@@ -91,12 +89,10 @@ snapshot(cali_id_t channel)
     printf(" }. %lu bytes, %d entries.\n", bytes_read, counter);
 }
 
-
 /*
  * Example function: add some annotations and take snapshots
  */
-void
-do_work(cali_id_t channel)
+void do_work(cali_id_t channel)
 {
     CALI_MARK_FUNCTION_BEGIN;
     CALI_MARK_LOOP_BEGIN(loopmarker, "foo");
@@ -113,12 +109,11 @@ do_work(cali_id_t channel)
     CALI_MARK_FUNCTION_END;
 }
 
-
 int main()
 {
-    const char* cfg[][2] = { { NULL, NULL } };
-    cali_configset_t cfgset = cali_create_configset(cfg);
-    cali_id_t channel = cali_create_channel("print-snapshot", 0, cfgset);
+    const char*      cfg[][2] = { { NULL, NULL } };
+    cali_configset_t cfgset   = cali_create_configset(cfg);
+    cali_id_t        channel  = cali_create_channel("print-snapshot", 0, cfgset);
     cali_delete_configset(cfgset);
 
     CALI_MARK_FUNCTION_BEGIN;

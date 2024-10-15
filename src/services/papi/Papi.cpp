@@ -35,46 +35,43 @@ void print_papi_error(const char* function, int code)
     Log(0).stream() << "papi: Error: " << function << ": " << PAPI_strerror(code) << std::endl;
 }
 
-
 class PapiService
 {
     struct event_group_t {
-        std::vector<int> codes;
+        std::vector<int>       codes;
         std::vector<Attribute> attrs;
     };
 
-    typedef std::map< int, std::shared_ptr<event_group_t> >
-        eventset_map_t;
+    typedef std::map<int, std::shared_ptr<event_group_t>> eventset_map_t;
 
     struct ThreadInfo {
         eventset_map_t eventsets;
 
-        ThreadInfo*    next;
-        ThreadInfo*    prev;
+        ThreadInfo* next;
+        ThreadInfo* prev;
 
-        void unlink() {
+        void unlink()
+        {
             if (next)
                 next->prev = prev;
             if (prev)
                 prev->next = next;
         }
 
-        ThreadInfo()
-            : next(nullptr), prev(nullptr)
-            { }
+        ThreadInfo() : next(nullptr), prev(nullptr) {}
     };
 
     Attribute m_thread_attr;
 
-    bool      m_enable_multiplex;
+    bool m_enable_multiplex;
 
-    unsigned  m_num_eventsets;
-    unsigned  m_num_event_mismatch;
-    unsigned  m_num_failed_acquire;
-    unsigned  m_num_failed_read;
-    unsigned  m_num_failed_reset;
-    unsigned  m_num_failed_start;
-    unsigned  m_num_threads;
+    unsigned m_num_eventsets;
+    unsigned m_num_event_mismatch;
+    unsigned m_num_failed_acquire;
+    unsigned m_num_failed_read;
+    unsigned m_num_failed_reset;
+    unsigned m_num_failed_start;
+    unsigned m_num_threads;
 
     // PAPI component id -> event group info map for constructing the per-thread PAPI EventSets
     eventset_map_t m_event_groups;
@@ -84,15 +81,15 @@ class PapiService
 
     static int s_num_instances;
 
-    bool setup_event_info(Caliper* c, const std::vector<std::string>& eventlist) {
+    bool setup_event_info(Caliper* c, const std::vector<std::string>& eventlist)
+    {
         m_event_groups.clear();
 
         int count = 0;
 
-        for (auto &name : eventlist) {
+        for (auto& name : eventlist) {
             if (count >= MAX_COUNTERS) {
-                Log(0).stream() << "papi: Maximum number of counters reached, skipping "
-                                << name << std::endl;
+                Log(0).stream() << "papi: Maximum number of counters reached, skipping " << name << std::endl;
                 continue;
             }
 
@@ -113,19 +110,20 @@ class PapiService
                 continue;
             }
 
-            Attribute attr =
-                c->create_attribute(std::string("papi.")+name, CALI_TYPE_UINT,
-                                    CALI_ATTR_SCOPE_THREAD |
-                                    CALI_ATTR_SKIP_EVENTS  |
-                                    CALI_ATTR_ASVALUE      |
-                                    CALI_ATTR_AGGREGATABLE);
+            Attribute attr = c->create_attribute(
+                std::string("papi.") + name,
+                CALI_TYPE_UINT,
+                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE
+            );
 
             int component = PAPI_get_event_component(code);
 
             // find or create eventset info for this component
             auto it = m_event_groups.find(component);
             if (it == m_event_groups.end()) {
-                auto p = m_event_groups.emplace(std::make_pair(component, std::shared_ptr<event_group_t>(new event_group_t)));
+                auto p =
+                    m_event_groups.emplace(std::make_pair(component, std::shared_ptr<event_group_t>(new event_group_t))
+                    );
                 it = p.first;
             }
 
@@ -137,30 +135,26 @@ class PapiService
 
         bool all_found = (static_cast<int>(eventlist.size()) == count);
 
-        Log(2).stream() << "papi: Found "      << count
-                        << " event codes for " << m_event_groups.size()
-                        << " PAPI component(s)"
-                        << std::endl;
+        Log(2).stream() << "papi: Found " << count << " event codes for " << m_event_groups.size()
+                        << " PAPI component(s)" << std::endl;
 
         if (!all_found)
-            Log(0).stream() << "papi: Unable to process all requested counters"
-                            << std::endl;
+            Log(0).stream() << "papi: Unable to process all requested counters" << std::endl;
 
         return all_found;
     }
 
-    bool setup_thread_eventsets(Caliper* c) {
-        std::map< int, std::shared_ptr<event_group_t> > eventsets;
-        bool ok = true;
+    bool setup_thread_eventsets(Caliper* c)
+    {
+        std::map<int, std::shared_ptr<event_group_t>> eventsets;
+        bool                                          ok = true;
 
-        for (auto &p : m_event_groups) {
+        for (auto& p : m_event_groups) {
             const PAPI_component_info_t* cpi = PAPI_get_component_info(p.first);
 
             if (Log::verbosity() >= 2) {
-                Log(2).stream() << "papi: Creating eventset with " << p.second->codes.size()
-                                << " events for component " << p.first
-                                << " (" << (cpi ? cpi->name : "UKNOWN COMPONENT") << ")"
-                                << std::endl;
+                Log(2).stream() << "papi: Creating eventset with " << p.second->codes.size() << " events for component "
+                                << p.first << " (" << (cpi ? cpi->name : "UKNOWN COMPONENT") << ")" << std::endl;
             }
 
             int eventset = PAPI_NULL;
@@ -176,9 +170,8 @@ class PapiService
 
             if (cpi && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
                 if (Log::verbosity() >= 2)
-                    Log(2).stream() << "papi: Initializing multiplex support for component "
-                                    << p.first << " (" << cpi->name << ")"
-                                    << std::endl;
+                    Log(2).stream() << "papi: Initializing multiplex support for component " << p.first << " ("
+                                    << cpi->name << ")" << std::endl;
 
                 ret = PAPI_assign_eventset_component(eventset, p.first);
                 if (ret != PAPI_OK)
@@ -196,11 +189,8 @@ class PapiService
                 ok = false;
                 break;
             } else if (ret > 0 && ret < num) {
-                Log(0).stream() << "papi: Added " << ret << " of " << num
-                                << " events for component " << p.first
-                                << " (" << (cpi ? cpi->name : "UKNOWN COMPONENT")
-                                << "), skipping " << (num-ret)
-                                << std::endl;
+                Log(0).stream() << "papi: Added " << ret << " of " << num << " events for component " << p.first << " ("
+                                << (cpi ? cpi->name : "UKNOWN COMPONENT") << "), skipping " << (num - ret) << std::endl;
             }
 
             eventsets.emplace(std::make_pair(eventset, p.second));
@@ -208,16 +198,15 @@ class PapiService
 
         if (ok) {
             ThreadInfo* td = new ThreadInfo;
-            td->eventsets = std::move(eventsets);
+            td->eventsets  = std::move(eventsets);
 
             {
-                std::lock_guard<util::spinlock>
-                    g(m_thread_lock);
+                std::lock_guard<util::spinlock> g(m_thread_lock);
 
                 if (m_thread_list)
                     m_thread_list->prev = td;
 
-                td->next = m_thread_list;
+                td->next      = m_thread_list;
                 m_thread_list = td;
 
                 m_num_eventsets += static_cast<int>(td->eventsets.size());
@@ -226,7 +215,7 @@ class PapiService
 
             c->set(m_thread_attr, Variant(cali_make_variant_from_ptr(td)));
         } else {
-            for (const auto &p: eventsets) {
+            for (const auto& p : eventsets) {
                 int eventset = p.first;
                 PAPI_destroy_eventset(&eventset);
             }
@@ -235,8 +224,8 @@ class PapiService
         return ok;
     }
 
-    ThreadInfo*
-    get_thread_info(Caliper* c) {
+    ThreadInfo* get_thread_info(Caliper* c)
+    {
         Entry e = c->get(m_thread_attr);
 
         if (e.empty())
@@ -245,7 +234,8 @@ class PapiService
         return static_cast<ThreadInfo*>(e.value().get_ptr());
     }
 
-    void read_events(int eventset, const event_group_t& grp, SnapshotBuilder& rec) {
+    void read_events(int eventset, const event_group_t& grp, SnapshotBuilder& rec)
+    {
         long long values[MAX_COUNTERS];
 
         int ret = PAPI_read(eventset, values);
@@ -269,8 +259,8 @@ class PapiService
             rec.append(grp.attrs[i], Variant(cali_make_variant_from_uint(values[i])));
     }
 
-    bool
-    start_thread_counting(Caliper* c) {
+    bool start_thread_counting(Caliper* c)
+    {
         ThreadInfo* td = get_thread_info(c);
 
         if (!td) {
@@ -278,7 +268,7 @@ class PapiService
             return false;
         }
 
-        for (const auto &p : td->eventsets) {
+        for (const auto& p : td->eventsets) {
             int ret = PAPI_start(p.first);
             if (ret != PAPI_OK) {
                 ++m_num_failed_start;
@@ -289,9 +279,10 @@ class PapiService
         return true;
     }
 
-    void finish_eventset(int eventset) {
+    void finish_eventset(int eventset)
+    {
         int state = PAPI_NULL;
-        int ret = PAPI_state(eventset, &state);
+        int ret   = PAPI_state(eventset, &state);
         if (ret != PAPI_OK) {
             print_papi_error("PAPI_state()", ret);
             return;
@@ -316,8 +307,8 @@ class PapiService
         }
     }
 
-    void
-    finish_thread_eventsets(Caliper* c) {
+    void finish_thread_eventsets(Caliper* c)
+    {
         ThreadInfo* td = get_thread_info(c);
 
         if (!td) {
@@ -325,14 +316,13 @@ class PapiService
             return;
         }
 
-        for (const auto &p : td->eventsets)
+        for (const auto& p : td->eventsets)
             finish_eventset(p.first);
 
         c->end(m_thread_attr);
 
         {
-            std::lock_guard<util::spinlock>
-                g(m_thread_lock);
+            std::lock_guard<util::spinlock> g(m_thread_lock);
 
             ThreadInfo* tmp = td->next;
             td->unlink();
@@ -344,8 +334,8 @@ class PapiService
         }
     }
 
-    void
-    snapshot(Caliper* c, SnapshotBuilder& rec) {
+    void snapshot(Caliper* c, SnapshotBuilder& rec)
+    {
         ThreadInfo* td = get_thread_info(c);
 
         if (!td)
@@ -355,32 +345,23 @@ class PapiService
             read_events(p.first, *(p.second), rec);
     }
 
-    void
-    finish(Caliper* c, Channel* channel) {
+    void finish(Caliper* c, Channel* channel)
+    {
         Log(1).stream() << channel->name() << ": papi: Finishing" << std::endl;
 
         finish_thread_eventsets(c);
 
         unsigned errors =
-            m_num_event_mismatch +
-            m_num_failed_acquire +
-            m_num_failed_read    +
-            m_num_failed_reset   +
-            m_num_failed_start;
+            m_num_event_mismatch + m_num_failed_acquire + m_num_failed_read + m_num_failed_reset + m_num_failed_start;
 
         if (errors > 0)
-            Log(0).stream() << channel->name() << ": papi: "
-                            << m_num_failed_acquire << " failed thread data accesses, "
-                            << m_num_failed_read    << " failed reads, "
-                            << m_num_failed_reset   << " failed resets, "
-                            << m_num_failed_start   << " failed starts, "
-                            << m_num_event_mismatch << " event count mismatches."
-                            << std::endl;
+            Log(0).stream() << channel->name() << ": papi: " << m_num_failed_acquire << " failed thread data accesses, "
+                            << m_num_failed_read << " failed reads, " << m_num_failed_reset << " failed resets, "
+                            << m_num_failed_start << " failed starts, " << m_num_event_mismatch
+                            << " event count mismatches." << std::endl;
 
-        Log(1).stream() << channel->name() << ": papi: Created "
-                        << m_num_eventsets << " PAPI event set(s) on "
-                        << m_num_threads   << " thread(s)."
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": papi: Created " << m_num_eventsets << " PAPI event set(s) on "
+                        << m_num_threads << " thread(s)." << std::endl;
     }
 
     PapiService(Caliper* c, Channel* channel)
@@ -393,25 +374,24 @@ class PapiService
           m_num_failed_start(0),
           m_num_threads(0),
           m_thread_list(nullptr)
-        {
-            m_thread_attr =
-                c->create_attribute(std::string("papi.data.")+std::to_string(channel->id()),
-                                    CALI_TYPE_PTR, CALI_ATTR_SCOPE_THREAD |
-                                                   CALI_ATTR_HIDDEN       |
-                                                   CALI_ATTR_ASVALUE      |
-                                                   CALI_ATTR_SKIP_EVENTS);
-        }
+    {
+        m_thread_attr = c->create_attribute(
+            std::string("papi.data.") + std::to_string(channel->id()),
+            CALI_TYPE_PTR,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_HIDDEN | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS
+        );
+    }
 
-
-    static bool init_papi_library() {
+    static bool init_papi_library()
+    {
         if (PAPI_is_initialized() == PAPI_THREAD_LEVEL_INITED)
             return true;
 
         int ret = PAPI_library_init(PAPI_VER_CURRENT);
 
         if (ret != PAPI_VER_CURRENT && ret > 0) {
-            Log(0).stream() << "papi: PAPI version mismatch: found "
-                            << ret << ", expected " << PAPI_VER_CURRENT << std::endl;
+            Log(0).stream() << "papi: PAPI version mismatch: found " << ret << ", expected " << PAPI_VER_CURRENT
+                            << std::endl;
             return false;
         }
 
@@ -426,19 +406,20 @@ class PapiService
         return true;
     }
 
-    static void finish_papi_library() {
+    static void finish_papi_library()
+    {
         if (--s_num_instances == 0) {
             Log(1).stream() << "papi: Shutdown" << std::endl;
             PAPI_shutdown();
         }
     }
 
-
 public:
 
-    ~PapiService() {
+    ~PapiService()
+    {
         // clear all trace buffers
-        for (ThreadInfo* td = m_thread_list, *tmp = nullptr; td; td = tmp) {
+        for (ThreadInfo *td = m_thread_list, *tmp = nullptr; td; td = tmp) {
             tmp = td->next;
             delete td;
         }
@@ -446,20 +427,18 @@ public:
 
     static const char* s_spec;
 
-    static void register_papi(Caliper* c, Channel* channel) {
-        auto cfg = services::init_config_from_spec(channel->config(), s_spec);
+    static void register_papi(Caliper* c, Channel* channel)
+    {
+        auto cfg       = services::init_config_from_spec(channel->config(), s_spec);
         auto eventlist = cfg.get("counters").to_stringlist(",");
 
         if (eventlist.empty()) {
-            Log(1).stream() << channel->name()
-                            << ": papi: No counters specified, dropping papi service"
-                            << std::endl;
+            Log(1).stream() << channel->name() << ": papi: No counters specified, dropping papi service" << std::endl;
             return;
         }
 
         if (!init_papi_library()) {
-            Log(0).stream() << channel->name()
-                            << ": papi: PAPI library not initialized, dropping papi service"
+            Log(0).stream() << channel->name() << ": papi: PAPI library not initialized, dropping papi service"
                             << std::endl;
             return;
         }
@@ -470,37 +449,30 @@ public:
         instance->m_enable_multiplex = cfg.get("enable_multiplexing").to_bool();
 
         if (!(instance->setup_event_info(c, eventlist) && instance->setup_thread_eventsets(c))) {
-            Log(0).stream() << channel->name()
-                            << ": papi: Failed to initialize event sets, dropping papi service"
+            Log(0).stream() << channel->name() << ": papi: Failed to initialize event sets, dropping papi service"
                             << std::endl;
 
             finish_papi_library();
             return;
         }
 
-        channel->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel*){
+        channel->events().post_init_evt.connect([instance](Caliper* c, Channel*) { instance->start_thread_counting(c); }
+        );
+        channel->events().create_thread_evt.connect([instance](Caliper* c, Channel*) {
+            if (instance->setup_thread_eventsets(c))
                 instance->start_thread_counting(c);
-            });
-        channel->events().create_thread_evt.connect(
-            [instance](Caliper* c, Channel*){
-                if (instance->setup_thread_eventsets(c))
-                    instance->start_thread_counting(c);
-            });
-        channel->events().release_thread_evt.connect(
-            [instance](Caliper* c, Channel*){
-                instance->finish_thread_eventsets(c);
-            });
-        channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec){
-                instance->snapshot(c, rec);
-            });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish(c, channel);
-                finish_papi_library();
-                delete instance;
-            });
+        });
+        channel->events().release_thread_evt.connect([instance](Caliper* c, Channel*) {
+            instance->finish_thread_eventsets(c);
+        });
+        channel->events().snapshot.connect([instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec) {
+            instance->snapshot(c, rec);
+        });
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish(c, channel);
+            finish_papi_library();
+            delete instance;
+        });
 
         Log(1).stream() << channel->name() << ": Registered papi service" << std::endl;
     }
@@ -527,7 +499,6 @@ const char* PapiService::s_spec = R"json(
 )json";
 
 } // namespace
-
 
 namespace cali
 {

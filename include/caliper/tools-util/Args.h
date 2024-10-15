@@ -17,7 +17,8 @@ namespace util
 
 /// \brief Parse command-line arguments.
 
-class Args {
+class Args
+{
     struct ArgsImpl;
     std::shared_ptr<ArgsImpl> mP;
 
@@ -29,10 +30,10 @@ public:
         const char* longopt;
         char        shortopt;
 
-        bool        has_argument;
+        bool has_argument;
 
         const char* info;
-        const char* argument_info;      
+        const char* argument_info;
     };
 
     static constexpr Table Terminator = { nullptr, nullptr, 0, false, nullptr, nullptr };
@@ -50,7 +51,7 @@ public:
 
     /// Parses command-line options given by \a argc and \a argv.
     /// \return \a argv[] index of first unknown option argument
-    int  parse(int argc, const char* const argv[], int pos = 1);
+    int parse(int argc, const char* const argv[], int pos = 1);
 
     // --- Retrieval
 
@@ -62,11 +63,11 @@ public:
     std::vector<std::string> options() const;
     std::vector<std::string> arguments() const;
 
-    // --- Info 
+    // --- Info
 
     void print_available_options(std::ostream& os) const;
 };
 
-}
+} // namespace util
 
 #endif

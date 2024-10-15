@@ -6,16 +6,17 @@
 
 using namespace cali;
 
-TEST(CalQLParserTest, SelectClause) {
+TEST(CalQLParserTest, SelectClause)
+{
     std::istringstream is("select a,a.a, b , c ");
-    CalQLParser p1(is);
+    CalQLParser        p1(is);
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
 
     QuerySpec q1 = p1.spec();
 
     EXPECT_EQ(q1.select.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q1.aggregate.selection,     QuerySpec::AggregationSelection::None);
+    EXPECT_EQ(q1.aggregate.selection, QuerySpec::AggregationSelection::None);
 
     ASSERT_EQ(q1.select.list.size(), 4);
 
@@ -32,7 +33,7 @@ TEST(CalQLParserTest, SelectClause) {
     QuerySpec q2 = p2.spec();
 
     EXPECT_EQ(q2.select.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q2.aggregate.selection,     QuerySpec::AggregationSelection::None);
+    EXPECT_EQ(q2.aggregate.selection, QuerySpec::AggregationSelection::None);
 
     ASSERT_EQ(q2.select.list.size(), 1);
     EXPECT_EQ(q2.select.list[0], "aa");
@@ -54,7 +55,8 @@ TEST(CalQLParserTest, SelectClause) {
     EXPECT_EQ(q5.aggregate.selection, QuerySpec::AggregationSelection::None);
 }
 
-TEST(CalQLParserTest, SelectClauseWithAggregation) {
+TEST(CalQLParserTest, SelectClauseWithAggregation)
+{
     CalQLParser p1("select aa,count(),sum(bb)");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -67,7 +69,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     EXPECT_EQ(q1.select.list[1], "count");
     EXPECT_EQ(q1.select.list[2], "sum#bb");
 
-    EXPECT_EQ(q1.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q1.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q1.aggregate.list.size(), 2);
 
     EXPECT_STREQ(q1.aggregate.list[0].op.name, "count");
@@ -87,7 +89,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     EXPECT_EQ(q2.select.list[1], "b");
     EXPECT_EQ(q2.select.list[2], "ccc");
 
-    EXPECT_EQ(q2.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q2.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregate.list.size(), 1);
 
     EXPECT_STREQ(q2.aggregate.list[0].op.name, "count");
@@ -108,12 +110,13 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     QuerySpec q6 = p6.spec();
 
     EXPECT_EQ(q6.select.selection, QuerySpec::AttributeSelection::All);
-    EXPECT_EQ(q6.aggregate.selection,     QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q6.aggregate.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q6.aggregate.list.size(), 1);
     EXPECT_STREQ(q6.aggregate.list[0].op.name, "count");
 }
 
-TEST(CalQLParserTest, WhereClause) {
+TEST(CalQLParserTest, WhereClause)
+{
     CalQLParser p1("where a,bbb<17, NOT cc , dd = 5, not eee = foo, ff>42");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -147,7 +150,8 @@ TEST(CalQLParserTest, WhereClause) {
     EXPECT_TRUE(p3.error());
 }
 
-TEST(CalQLParserTest, GroupByClause) {
+TEST(CalQLParserTest, GroupByClause)
+{
     CalQLParser p1("GROUP   By   aa,b, ccc ");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -173,7 +177,8 @@ TEST(CalQLParserTest, GroupByClause) {
     EXPECT_EQ(q2.groupby.use_path, true);
 }
 
-TEST(CalQLParserTest, OrderByClause1) {
+TEST(CalQLParserTest, OrderByClause1)
+{
     CalQLParser p1("Order By aa, b desc , c   asc, ddd ");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -184,16 +189,17 @@ TEST(CalQLParserTest, OrderByClause1) {
     ASSERT_EQ(q1.sort.list.size(), 4);
 
     EXPECT_EQ(q1.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q1.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[0].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q1.sort.list[1].attribute, "b");
-    EXPECT_EQ(q1.sort.list[1].order,     QuerySpec::SortSpec::Descending);
+    EXPECT_EQ(q1.sort.list[1].order, QuerySpec::SortSpec::Descending);
     EXPECT_EQ(q1.sort.list[2].attribute, "c");
-    EXPECT_EQ(q1.sort.list[2].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[2].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q1.sort.list[3].attribute, "ddd");
-    EXPECT_EQ(q1.sort.list[3].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[3].order, QuerySpec::SortSpec::Ascending);
 }
 
-TEST(CalQLParserTest, OrderByClause2) {
+TEST(CalQLParserTest, OrderByClause2)
+{
     CalQLParser p("Order By aa,\"b with space\" format table ");
 
     EXPECT_FALSE(p.error()) << "Unexpected parse error: " << p.error_msg();
@@ -204,15 +210,16 @@ TEST(CalQLParserTest, OrderByClause2) {
     ASSERT_EQ(q.sort.list.size(), 2);
 
     EXPECT_EQ(q.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q.sort.list[0].order, QuerySpec::SortSpec::Ascending);
     EXPECT_EQ(q.sort.list[1].attribute, "b with space");
-    EXPECT_EQ(q.sort.list[1].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q.sort.list[1].order, QuerySpec::SortSpec::Ascending);
 
     EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q.format.formatter.name, "table");
 }
 
-TEST(CalQLParserTest, OrderByClause3) {
+TEST(CalQLParserTest, OrderByClause3)
+{
     CalQLParser p("Order By aa DESC format table ");
 
     EXPECT_FALSE(p.error()) << "Unexpected parse error: " << p.error_msg();
@@ -223,13 +230,14 @@ TEST(CalQLParserTest, OrderByClause3) {
     ASSERT_EQ(q.sort.list.size(), 1);
 
     EXPECT_EQ(q.sort.list[0].attribute, "aa");
-    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Descending);
+    EXPECT_EQ(q.sort.list[0].order, QuerySpec::SortSpec::Descending);
 
     EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q.format.formatter.name, "table");
 }
 
-TEST(CalQLParserTest, FormatSpec) {
+TEST(CalQLParserTest, FormatSpec)
+{
     {
         CalQLParser p1("FORMAT tree(\"a,bb,ccc\")");
 
@@ -275,7 +283,7 @@ TEST(CalQLParserTest, FormatSpec) {
 
     {
         CalQLParser p6("FORMAT json(object)");
-        QuerySpec q6 = p6.spec();
+        QuerySpec   q6 = p6.spec();
         EXPECT_FALSE(p6.error()) << "Unexpected parse error: " << p6.error_msg();
         EXPECT_STREQ(q6.format.formatter.name, "json");
         EXPECT_EQ(q6.format.kwargs.size(), 1);
@@ -283,7 +291,8 @@ TEST(CalQLParserTest, FormatSpec) {
     }
 }
 
-TEST(CalQLParserTest, AggregateClause) {
+TEST(CalQLParserTest, AggregateClause)
+{
     CalQLParser p1(" Aggregate SUM ( aaaa ), Count(  ) ");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -321,7 +330,8 @@ TEST(CalQLParserTest, AggregateClause) {
     EXPECT_TRUE(p4.error());
 }
 
-TEST(CalQLParserTest, AliasAttribute) {
+TEST(CalQLParserTest, AliasAttribute)
+{
     CalQLParser p1("select a  as \"my alias (for a)\", b");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -338,7 +348,8 @@ TEST(CalQLParserTest, AliasAttribute) {
     EXPECT_STREQ(q1.aliases["a"].c_str(), "my alias (for a)");
 }
 
-TEST(CalQLParserTest, AliasAggregate) {
+TEST(CalQLParserTest, AliasAggregate)
+{
     CalQLParser p1("select x,percent_total(a) as \"my alias (for percent_total#a)\" format table");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -362,7 +373,8 @@ TEST(CalQLParserTest, AliasAggregate) {
     EXPECT_STREQ(q1.aliases["percent_total#a"].c_str(), "my alias (for percent_total#a)");
 }
 
-TEST(CalQLParserTest, AttributeUnit) {
+TEST(CalQLParserTest, AttributeUnit)
+{
     CalQLParser p1("select x,scale(a,1e-6) unit \"sec\" format table");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -387,7 +399,8 @@ TEST(CalQLParserTest, AttributeUnit) {
     EXPECT_STREQ(q1.units["scale#a"].c_str(), "sec");
 }
 
-TEST(CalQLParserTest, AttributeAliasAndUnit) {
+TEST(CalQLParserTest, AttributeAliasAndUnit)
+{
     CalQLParser p1("select x,ratio(a,b,1e-6) As \"Read BW\" uNiT \"MB/s\" format table");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -415,14 +428,16 @@ TEST(CalQLParserTest, AttributeAliasAndUnit) {
     EXPECT_STREQ(q1.aliases["ratio#a/b"].c_str(), "Read BW");
 }
 
-TEST(CalQLParserTest, AttributeDoubleAliasParseError) {
+TEST(CalQLParserTest, AttributeDoubleAliasParseError)
+{
     CalQLParser p1("select x,ratio(a,b,1e-6) As \"Read BW\" AS again format table");
 
     EXPECT_TRUE(p1.error());
     EXPECT_STREQ(p1.error_msg().c_str(), "Expected clause keyword, got as");
 }
 
-TEST(CalQLParserTest, FullStatement) {
+TEST(CalQLParserTest, FullStatement)
+{
     const char* s1 =
         "SELECT a,bb, cc, count() where bb< 42, NOT d=\"foo,\"\\ bar, c GROUP BY a, bb,d\n"
         "FORMAT json  ";
@@ -464,8 +479,7 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q1.format.opt, QuerySpec::FormatSpec::User);
     EXPECT_STREQ(q1.format.formatter.name, "json");
 
-    const char* s2 =
-        " SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group ";
+    const char* s2 = " SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group ";
 
     CalQLParser p2(s2);
 
@@ -506,7 +520,8 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q4.format.opt, QuerySpec::FormatSpec::User);
 }
 
-TEST(CalQLParserTest, GarbageAtEnd) {
+TEST(CalQLParserTest, GarbageAtEnd)
+{
     CalQLParser p1(" select a,b,c format tree = where b");
     EXPECT_TRUE(p1.error());
 
@@ -514,8 +529,8 @@ TEST(CalQLParserTest, GarbageAtEnd) {
     EXPECT_TRUE(p2.error());
 }
 
-
-TEST(CalQLParserTest, LetClause) {
+TEST(CalQLParserTest, LetClause)
+{
     CalQLParser p1("let x=  ratio( a,   \"b\" ) , y=scale(c,42) let z=truncate (  yy )");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -545,7 +560,8 @@ TEST(CalQLParserTest, LetClause) {
     EXPECT_EQ(q1.preprocess_ops[2].cond.op, QuerySpec::Condition::None);
 }
 
-TEST(CalQLParserTest, LetIfClause) {
+TEST(CalQLParserTest, LetIfClause)
+{
     CalQLParser p1("let x=  ratio( a,   \"b\" ) if not X, y=scale(c,42) if Y =  foo let z=truncate (  yy ) if not Z>1");
 
     EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
@@ -572,7 +588,8 @@ TEST(CalQLParserTest, LetIfClause) {
     EXPECT_STREQ(q1.preprocess_ops[2].cond.value.c_str(), "1");
 }
 
-TEST(CalQLParserTest, LetClauseErrors) {
+TEST(CalQLParserTest, LetClauseErrors)
+{
     CalQLParser p1("let blagarbl");
 
     EXPECT_TRUE(p1.error());

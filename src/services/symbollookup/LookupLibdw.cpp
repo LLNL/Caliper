@@ -22,34 +22,32 @@ Dwfl_Callbacks* get_dwfl_callbacks()
 {
     static char* debuginfopath = nullptr;
 
-    static bool initialized = false;
+    static bool           initialized = false;
     static Dwfl_Callbacks callbacks;
 
     if (!initialized) {
-        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_elf       = dwfl_linux_proc_find_elf;
         callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
         callbacks.debuginfo_path = &debuginfopath;
-        initialized = true;
+        initialized              = true;
     }
 
     return &callbacks;
 }
 
-} // namespace [anonymous]
+} // namespace
 
-
-struct Lookup::LookupImpl
-{
+struct Lookup::LookupImpl {
     Dwfl* dwfl { nullptr };
 
-    Lookup::Result
-    lookup(uintptr_t address, int what) {
+    Lookup::Result lookup(uintptr_t address, int what)
+    {
         Result result { "UNKNOWN", "UNKNOWN", 0, "UNKNOWN", false };
 
         if (!dwfl)
             return result;
 
-        Dwfl_Module *mod = dwfl_addrmodule (dwfl, address);
+        Dwfl_Module* mod = dwfl_addrmodule(dwfl, address);
 
         if (!mod)
             return result;
@@ -60,10 +58,10 @@ struct Lookup::LookupImpl
             result.name = util::demangle(dwfl_module_addrname(mod, address));
 
         if (what & Kind::File || what & Kind::Line) {
-            Dwfl_Line *line = dwfl_module_getsrc(mod, address);
+            Dwfl_Line* line = dwfl_module_getsrc(mod, address);
 
             if (line) {
-                int lineno, linecol;
+                int         lineno, linecol;
                 const char* src = dwfl_lineinfo(line, &address, &lineno, &linecol, nullptr, nullptr);
 
                 if (src) {
@@ -83,14 +81,14 @@ struct Lookup::LookupImpl
         return result;
     }
 
-    LookupImpl() {
+    LookupImpl()
+    {
         Log(2).stream() << "symbollookup: Loading debug info" << std::endl;
 
         dwfl = dwfl_begin(get_dwfl_callbacks());
 
         if (dwfl_linux_proc_report(dwfl, getpid()) != 0) {
-            Log(0).stream() << "symbollookup: dwfl_linux_proc_report() error: "
-                            << dwfl_errmsg(dwfl_errno())
+            Log(0).stream() << "symbollookup: dwfl_linux_proc_report() error: " << dwfl_errmsg(dwfl_errno())
                             << std::endl;
             dwfl_end(dwfl);
             dwfl = nullptr;
@@ -98,31 +96,22 @@ struct Lookup::LookupImpl
         }
 
         if (dwfl_report_end(dwfl, nullptr, nullptr) != 0) {
-            Log(0).stream() << "symbollookup: dwfl_report_end() error: "
-                            << dwfl_errmsg(dwfl_errno())
-                            << std::endl;
+            Log(0).stream() << "symbollookup: dwfl_report_end() error: " << dwfl_errmsg(dwfl_errno()) << std::endl;
             dwfl_end(dwfl);
             dwfl = nullptr;
         }
     }
 
-    ~LookupImpl() {
-        dwfl_end(dwfl);
-    }
+    ~LookupImpl() { dwfl_end(dwfl); }
 };
 
-
-Lookup::Result
-Lookup::lookup(uint64_t address, int what) const
+Lookup::Result Lookup::lookup(uint64_t address, int what) const
 {
     return mP->lookup(static_cast<uintptr_t>(address), what);
 }
 
-Lookup::Lookup()
-    : mP(new LookupImpl)
-{
-}
+Lookup::Lookup() : mP(new LookupImpl)
+{}
 
 Lookup::~Lookup()
-{
-}
+{}

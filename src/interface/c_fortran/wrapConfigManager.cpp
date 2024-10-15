@@ -10,147 +10,135 @@
 // splicer begin class.ConfigManager.CXX_definitions
 // splicer end class.ConfigManager.CXX_definitions
 
-extern "C" {
-
+extern "C"
+{
 
 // helper ShroudStrToArray
 // Save str metadata into array to allow Fortran to access values.
 // CHARACTER(len=elem_size) src
-static void ShroudStrToArray(cali_SHROUD_array *array, const std::string * src, int idtor)
+static void ShroudStrToArray(cali_SHROUD_array* array, const std::string* src, int idtor)
 {
-    array->cxx.addr = const_cast<std::string *>(src);
+    array->cxx.addr  = const_cast<std::string*>(src);
     array->cxx.idtor = idtor;
     if (src->empty()) {
         array->addr.ccharp = NULL;
-        array->elem_len = 0;
+        array->elem_len    = 0;
     } else {
         array->addr.ccharp = src->data();
-        array->elem_len = src->length();
+        array->elem_len    = src->length();
     }
     array->size = 1;
-    array->rank = 0;  // scalar
+    array->rank = 0; // scalar
 }
+
 // splicer begin class.ConfigManager.C_definitions
 // splicer end class.ConfigManager.C_definitions
 
-cali_ConfigManager * cali_ConfigManager_new(cali_ConfigManager * SHC_rv)
+cali_ConfigManager* cali_ConfigManager_new(cali_ConfigManager* SHC_rv)
 {
     // splicer begin class.ConfigManager.method.new
-    cali::ConfigManager *SHCXX_rv = new cali::ConfigManager();
-    SHC_rv->addr = static_cast<void *>(SHCXX_rv);
-    SHC_rv->idtor = 3;
+    cali::ConfigManager* SHCXX_rv = new cali::ConfigManager();
+    SHC_rv->addr                  = static_cast<void*>(SHCXX_rv);
+    SHC_rv->idtor                 = 3;
     return SHC_rv;
     // splicer end class.ConfigManager.method.new
 }
 
-void cali_ConfigManager_delete(cali_ConfigManager * self)
+void cali_ConfigManager_delete(cali_ConfigManager* self)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.delete
     delete SH_this;
     self->addr = nullptr;
     // splicer end class.ConfigManager.method.delete
 }
 
-void cali_ConfigManager_set_default_parameter(cali_ConfigManager * self,
-    const char * option, const char * val)
+void cali_ConfigManager_set_default_parameter(cali_ConfigManager* self, const char* option, const char* val)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.set_default_parameter
     SH_this->set_default_parameter(option, val);
     // splicer end class.ConfigManager.method.set_default_parameter
 }
 
 void cali_ConfigManager_set_default_parameter_for_config(
-    cali_ConfigManager * self, const char * config, const char * option,
-    const char * val)
+    cali_ConfigManager* self,
+    const char*         config,
+    const char*         option,
+    const char*         val
+)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.set_default_parameter_for_config
     SH_this->set_default_parameter_for_config(config, option, val);
     // splicer end class.ConfigManager.method.set_default_parameter_for_config
 }
 
-void cali_ConfigManager_add_config_spec(cali_ConfigManager * self,
-    const char * spec)
+void cali_ConfigManager_add_config_spec(cali_ConfigManager* self, const char* spec)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.add_config_spec
     SH_this->add_config_spec(spec);
     // splicer end class.ConfigManager.method.add_config_spec
 }
 
-void cali_ConfigManager_add_option_spec(cali_ConfigManager * self,
-    const char * spec)
+void cali_ConfigManager_add_option_spec(cali_ConfigManager* self, const char* spec)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.add_option_spec
     SH_this->add_option_spec(spec);
     // splicer end class.ConfigManager.method.add_option_spec
 }
 
-void cali_ConfigManager_add(cali_ConfigManager * self,
-    const char * config)
+void cali_ConfigManager_add(cali_ConfigManager* self, const char* config)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.add
     SH_this->add(config);
     // splicer end class.ConfigManager.method.add
 }
 
-bool cali_ConfigManager_error(cali_ConfigManager * self)
+bool cali_ConfigManager_error(cali_ConfigManager* self)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.error
     bool SHC_rv = SH_this->error();
     return SHC_rv;
     // splicer end class.ConfigManager.method.error
 }
 
-void cali_ConfigManager_error_msg_bufferify(cali_ConfigManager * self,
-    cali_SHROUD_array *SHT_rv_cdesc)
+void cali_ConfigManager_error_msg_bufferify(cali_ConfigManager* self, cali_SHROUD_array* SHT_rv_cdesc)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.error_msg_bufferify
-    std::string * SHCXX_rv = new std::string;
-    *SHCXX_rv = SH_this->error_msg();
+    std::string* SHCXX_rv = new std::string;
+    *SHCXX_rv             = SH_this->error_msg();
     ShroudStrToArray(SHT_rv_cdesc, SHCXX_rv, 4);
     // splicer end class.ConfigManager.method.error_msg_bufferify
 }
 
-void cali_ConfigManager_start(cali_ConfigManager * self)
+void cali_ConfigManager_start(cali_ConfigManager* self)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.start
     SH_this->start();
     // splicer end class.ConfigManager.method.start
 }
 
-void cali_ConfigManager_stop(cali_ConfigManager * self)
+void cali_ConfigManager_stop(cali_ConfigManager* self)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.stop
     SH_this->stop();
     // splicer end class.ConfigManager.method.stop
 }
 
-void cali_ConfigManager_flush(cali_ConfigManager * self)
+void cali_ConfigManager_flush(cali_ConfigManager* self)
 {
-    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
-        (self->addr);
+    cali::ConfigManager* SH_this = static_cast<cali::ConfigManager*>(self->addr);
     // splicer begin class.ConfigManager.method.flush
     SH_this->flush();
     // splicer end class.ConfigManager.method.flush
 }
 
-}  // extern "C"
+} // extern "C"

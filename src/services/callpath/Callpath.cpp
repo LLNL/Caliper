@@ -28,7 +28,7 @@
 #endif
 
 #define MAX_PATH 40
-#define NAMELEN  100
+#define NAMELEN 100
 
 using namespace cali;
 using namespace std;
@@ -42,25 +42,26 @@ class Callpath
     Attribute callpath_addr_attr;
     Attribute ucursor_attr;
 
-    bool      use_name { false };
-    bool      use_addr { false };
-    bool      skip_internal { false };
+    bool use_name { false };
+    bool use_addr { false };
+    bool skip_internal { false };
 
-    unsigned  skip_frames { 0 };
+    unsigned skip_frames { 0 };
 
-    Node      callpath_root_node;
+    Node callpath_root_node;
 
     uintptr_t caliper_start_addr { 0 };
-    uintptr_t caliper_end_addr   { 0 };
+    uintptr_t caliper_end_addr { 0 };
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot)
+    {
         Variant v_addr[MAX_PATH];
         Variant v_name[MAX_PATH];
 
-        char    strbuf[MAX_PATH][NAMELEN];
+        char strbuf[MAX_PATH][NAMELEN];
 
         // Init unwind context
-        unw_cursor_t  unw_cursor;
+        unw_cursor_t unw_cursor;
 
         Entry e;
         if (ucursor_attr)
@@ -70,11 +71,11 @@ class Callpath
         } else {
             unw_context_t unw_ctx;
 
-            #ifdef __aarch64__
+#ifdef __aarch64__
             unw_getcontext(unw_ctx);
-            #else
+#else
             unw_getcontext(&unw_ctx);
-            #endif
+#endif
 
             if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
                 Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
@@ -103,8 +104,8 @@ class Callpath
 
             // store path from top to bottom
             if (use_addr) {
-                uint64_t uint = ip;
-                v_addr[MAX_PATH-(n+1)] = Variant(CALI_TYPE_ADDR, &uint, sizeof(uint64_t));
+                uint64_t uint              = ip;
+                v_addr[MAX_PATH - (n + 1)] = Variant(CALI_TYPE_ADDR, &uint, sizeof(uint64_t));
             }
             if (use_name) {
                 unw_word_t offs;
@@ -112,7 +113,7 @@ class Callpath
                 if (unw_get_proc_name(&unw_cursor, strbuf[n], NAMELEN, &offs) < 0)
                     strncpy(strbuf[n], "UNKNOWN", NAMELEN);
 
-                v_name[MAX_PATH-(n+1)] = Variant(CALI_TYPE_STRING, strbuf[n], strlen(strbuf[n]));
+                v_name[MAX_PATH - (n + 1)] = Variant(CALI_TYPE_STRING, strbuf[n], strlen(strbuf[n]));
             }
 
             ++n;
@@ -121,22 +122,23 @@ class Callpath
         if (n > 0) {
             if (use_addr)
                 snapshot.append(
-                    Entry(c->make_tree_entry(callpath_addr_attr, n, v_addr+(MAX_PATH-n),
-                                             &callpath_root_node)));
+                    Entry(c->make_tree_entry(callpath_addr_attr, n, v_addr + (MAX_PATH - n), &callpath_root_node))
+                );
             if (use_name)
                 snapshot.append(
-                    Entry(c->make_tree_entry(callpath_name_attr, n, v_name+(MAX_PATH-n),
-                                             &callpath_root_node)));
+                    Entry(c->make_tree_entry(callpath_name_attr, n, v_name + (MAX_PATH - n), &callpath_root_node))
+                );
         }
     }
 
-    void get_caliper_module_addresses() {
+    void get_caliper_module_addresses()
+    {
 #ifdef CALIPER_HAVE_LIBDW
         // initialize dwarf
-        char* debuginfopath = nullptr;
+        char*          debuginfopath = nullptr;
         Dwfl_Callbacks callbacks;
 
-        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_elf       = dwfl_linux_proc_find_elf;
         callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
         callbacks.debuginfo_path = &debuginfopath;
 
@@ -160,82 +162,74 @@ class Callpath
         unw_word_t ip;
         unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
 
-        Dwfl_Module* mod = dwfl_addrmodule(dwfl, ip);
-        Dwarf_Addr start = 0;
-        Dwarf_Addr end = 0;
+        Dwfl_Module* mod   = dwfl_addrmodule(dwfl, ip);
+        Dwarf_Addr   start = 0;
+        Dwarf_Addr   end   = 0;
 
         dwfl_module_info(mod, nullptr, &start, &end, nullptr, nullptr, nullptr, nullptr);
 
         caliper_start_addr = start;
-        caliper_end_addr = end;
+        caliper_end_addr   = end;
 
         if (Log::verbosity() >= 2) {
             std::ostringstream os;
             os << std::hex << caliper_start_addr << ":" << caliper_end_addr;
 
-            Log(2).stream() << "callpath: skipping internal caliper frames ("
-                            << os.str() << ")"
-                            << std::endl;
+            Log(2).stream() << "callpath: skipping internal caliper frames (" << os.str() << ")" << std::endl;
         }
 
         dwfl_end(dwfl);
 #endif
     }
 
-    void post_init_evt(Caliper* c, Channel*) {
-        ucursor_attr = c->get_attribute("cali.unw_cursor");
-    }
+    void post_init_evt(Caliper* c, Channel*) { ucursor_attr = c->get_attribute("cali.unw_cursor"); }
 
-    Callpath(Caliper* c, Channel* chn)
-        : callpath_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
-        {
-            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
+    Callpath(Caliper* c, Channel* chn) : callpath_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
+    {
+        ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
-            use_name      = config.get("use_name").to_bool();
-            use_addr      = config.get("use_address").to_bool();
-            skip_frames   = config.get("skip_frames").to_uint();
-            skip_internal = config.get("skip_internal").to_bool();
+        use_name      = config.get("use_name").to_bool();
+        use_addr      = config.get("use_address").to_bool();
+        skip_frames   = config.get("skip_frames").to_uint();
+        skip_internal = config.get("skip_internal").to_bool();
 
-            Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
-            Variant v_true(true);
+        Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+        Variant   v_true(true);
 
-            callpath_addr_attr =
-                c->create_attribute("callpath.address", CALI_TYPE_ADDR,
-                                    CALI_ATTR_SCOPE_THREAD |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &symbol_class_attr, &v_true);
-            callpath_name_attr =
-                c->create_attribute("callpath.regname", CALI_TYPE_STRING,
-                                    CALI_ATTR_SCOPE_THREAD |
-                                    CALI_ATTR_SKIP_EVENTS);
+        callpath_addr_attr = c->create_attribute(
+            "callpath.address",
+            CALI_TYPE_ADDR,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS,
+            1,
+            &symbol_class_attr,
+            &v_true
+        );
+        callpath_name_attr =
+            c->create_attribute("callpath.regname", CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
 #ifdef CALIPER_HAVE_LIBDW
-            if (skip_internal)
-                get_caliper_module_addresses();
+        if (skip_internal)
+            get_caliper_module_addresses();
 #else
-            skip_internal = false;
+        skip_internal = false;
 #endif
-        }
+    }
 
 public:
 
     static const char* s_spec;
 
-    static void callpath_service_register(Caliper* c, Channel* chn) {
+    static void callpath_service_register(Caliper* c, Channel* chn)
+    {
         Callpath* instance = new Callpath(c, chn);
 
-        chn->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->post_init_evt(c, chn);
-            });
+        chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_evt(c, chn); });
         chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot){
+            [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
                 instance->snapshot_cb(c, chn, info, snapshot);
-            });
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                delete instance;
-            });
+            }
+        );
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) { delete instance; });
 
         Log(1).stream() << chn->name() << ": Registered callpath service" << std::endl;
     }
@@ -270,7 +264,7 @@ const char* Callpath::s_spec = R"json(
 }
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

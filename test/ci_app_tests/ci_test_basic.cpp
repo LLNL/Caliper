@@ -6,9 +6,7 @@
 
 int main(int argc, char* argv[])
 {
-    std::map<const char*, cali::Variant> metadata = {
-        { "meta.int", cali::Variant(42) }
-    };
+    std::map<const char*, cali::Variant> metadata = { { "meta.int", cali::Variant(42) } };
 
     // Test proper escaping
     cali_set_string_byname(" =\\weird \"\"attribute\"=  ", "  \\\\ weird,\" name\",");
@@ -18,7 +16,7 @@ int main(int argc, char* argv[])
         cali_set_string_byname("newline", "A newline:\n!");
 
     cali::Annotation phase_ann("myphase", metadata);
-    std::size_t size = 8;
+    std::size_t      size = 8;
     cali::Annotation size_annot("dgs");
     size_annot.begin(size);
     phase_ann.begin("initialization");
@@ -31,8 +29,7 @@ int main(int argc, char* argv[])
     cali::Annotation iter_ann("iteration", CALI_ATTR_ASVALUE);
     iter_ann.begin(uint64_t(5));
     for (int i = 0; i < count; ++i) {
-        cali::Annotation::Guard
-            g_iter_ann(iter_ann.begin(i));
+        cali::Annotation::Guard g_iter_ann(iter_ann.begin(i));
     }
 
     phase_ann = copy_ann;

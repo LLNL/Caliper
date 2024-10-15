@@ -23,9 +23,7 @@ class MpiTracing
 
 public:
 
-    enum CollectiveType {
-        Unknown, Coll_Barrier, Coll_NxN, Coll_12N, Coll_N21, Coll_Init, Coll_Finalize
-    };
+    enum CollectiveType { Unknown, Coll_Barrier, Coll_NxN, Coll_12N, Coll_N21, Coll_Init, Coll_Finalize };
 
     MpiTracing();
 
@@ -37,11 +35,47 @@ public:
     // --- point-to-point
 
     void handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
-    void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_send_init(
+        Caliper*     c,
+        Channel*     chn,
+        int          count,
+        MPI_Datatype type,
+        int          dest,
+        int          tag,
+        MPI_Comm     comm,
+        MPI_Request* req
+    );
 
-    void handle_recv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
-    void handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
-    void handle_recv_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_recv(
+        Caliper*     c,
+        Channel*     chn,
+        int          count,
+        MPI_Datatype type,
+        int          src,
+        int          tag,
+        MPI_Comm     comm,
+        MPI_Status*  status
+    );
+    void handle_irecv(
+        Caliper*     c,
+        Channel*     chn,
+        int          count,
+        MPI_Datatype type,
+        int          src,
+        int          tag,
+        MPI_Comm     comm,
+        MPI_Request* req
+    );
+    void handle_recv_init(
+        Caliper*     c,
+        Channel*     chn,
+        int          count,
+        MPI_Datatype type,
+        int          src,
+        int          tag,
+        MPI_Comm     comm,
+        MPI_Request* req
+    );
 
     void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs);
     void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses);
@@ -58,4 +92,4 @@ public:
     void handle_finalize(Caliper* c, Channel* chn);
 };
 
-}
+} // namespace cali

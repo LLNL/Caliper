@@ -93,15 +93,15 @@ class KokkosLookup
 {
     static const ConfigSet::Entry s_configdata[];
 
-    unsigned   m_num_spaces = 0;
-    unsigned   m_num_copies = 0;
+    unsigned m_num_spaces = 0;
+    unsigned m_num_copies = 0;
 
-    Attribute  m_space_attr;
-    Attribute  m_size_attr;
-    Attribute  m_dst_attr;
-    Attribute  m_src_attr;
+    Attribute m_space_attr;
+    Attribute m_size_attr;
+    Attribute m_dst_attr;
+    Attribute m_src_attr;
 
-    Channel    m_channel;
+    Channel m_channel;
 
 #if 0
     struct KokkosAttributes {
@@ -244,19 +244,19 @@ class KokkosLookup
 #endif
 
     // some final log output; print warning if we didn't find an address attribute
-    void finish_log(Caliper* c, Channel* chn) {
+    void finish_log(Caliper* c, Channel* chn)
+    {
         // Log(1).stream() << chn->name()   << ": Kokkoslookup: Performed "
         //                 << m_num_lookups << " address lookups, "
         //                 << m_num_failed  << " failed."
         //                 << std::endl;
 
-        Log(1).stream() << chn->name()  << ": KokkosLookup: Tracked "
-                        << m_num_spaces << " spaces, "
-                        << m_num_copies << " copies."
-                        << std::endl;
+        Log(1).stream() << chn->name() << ": KokkosLookup: Tracked " << m_num_spaces << " spaces, " << m_num_copies
+                        << " copies." << std::endl;
     }
 
-    void kokkos_allocate(const cali::kokkos::SpaceHandle handle, const char* name, const void* const ptr, size_t size) {
+    void kokkos_allocate(const cali::kokkos::SpaceHandle handle, const char* name, const void* const ptr, size_t size)
+    {
         Caliper c;
         Variant v_space(handle.name);
 
@@ -264,75 +264,93 @@ class KokkosLookup
         ++m_num_spaces;
     }
 
-    void kokkos_deallocate(const void* const ptr) {
+    void kokkos_deallocate(const void* const ptr)
+    {
         Caliper c;
         c.memory_region_end(&m_channel, ptr);
     }
 
-    void kokkos_deepcopy(const void* dst, const void* src, uint64_t size) {
+    void kokkos_deepcopy(const void* dst, const void* src, uint64_t size)
+    {
         Caliper c;
- 
-        Entry data[] = {
-            { m_dst_attr,  Variant(CALI_TYPE_ADDR, &dst, sizeof(void*)) },
-            { m_src_attr,  Variant(CALI_TYPE_ADDR, &src, sizeof(void*)) },
-            { m_size_attr, Variant(cali_make_variant_from_uint(size))   }
-        };
+
+        Entry data[] = { { m_dst_attr, Variant(CALI_TYPE_ADDR, &dst, sizeof(void*)) },
+                         { m_src_attr, Variant(CALI_TYPE_ADDR, &src, sizeof(void*)) },
+                         { m_size_attr, Variant(cali_make_variant_from_uint(size)) } };
 
         c.push_snapshot(&m_channel, SnapshotView(3, data));
 
         ++m_num_copies;
     }
 
-    void make_attributes(Caliper* c) {
-        m_space_attr =
-            c->create_attribute("kokkos.space", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+    void make_attributes(Caliper* c)
+    {
+        m_space_attr = c->create_attribute("kokkos.space", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
         Attribute class_mem = c->get_attribute("class.memoryaddress");
         Variant   v_true(true);
 
-        m_size_attr =
-            c->create_attribute("kokkos.size", CALI_TYPE_UINT,
-                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+        m_size_attr = c->create_attribute("kokkos.size", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
-        m_src_attr =
-            c->create_attribute("kokkos.src.addr", CALI_TYPE_ADDR,
-                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                1, &class_mem, &v_true);
-        m_dst_attr =
-            c->create_attribute("kokkos.dst.addr", CALI_TYPE_ADDR,
-                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                1, &class_mem, &v_true);
+        m_src_attr = c->create_attribute(
+            "kokkos.src.addr",
+            CALI_TYPE_ADDR,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+            1,
+            &class_mem,
+            &v_true
+        );
+        m_dst_attr = c->create_attribute(
+            "kokkos.dst.addr",
+            CALI_TYPE_ADDR,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+            1,
+            &class_mem,
+            &v_true
+        );
     }
 
-    KokkosLookup(Caliper* c, Channel* chn)
-            : m_channel(*chn)
-        {
-            ConfigSet config =
-                chn->config().init("kokkoslookup", s_configdata);
+    KokkosLookup(Caliper* c, Channel* chn) : m_channel(*chn)
+    {
+        ConfigSet config = chn->config().init("kokkoslookup", s_configdata);
 
-            make_attributes(c);
-        }
+        make_attributes(c);
+    }
 
 public:
 
-    static void kokkoslookup_register(Caliper* c, Channel* chn) {
+    static void kokkoslookup_register(Caliper* c, Channel* chn)
+    {
         auto* instance = new KokkosLookup(c, chn);
 
-        kokkosp_callbacks.kokkosp_allocate_callback.connect([instance](const cali::kokkos::SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
+        kokkosp_callbacks.kokkosp_allocate_callback.connect([instance](
+                                                                const cali::kokkos::SpaceHandle handle,
+                                                                const char*                     name,
+                                                                const void* const               ptr,
+                                                                const uint64_t                  size
+                                                            ) {
             instance->kokkos_allocate(handle, name, ptr, size);
             // tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), std::string(name), size, handle});
         });
 
-        kokkosp_callbacks.kokkosp_deallocate_callback.connect([instance](const cali::kokkos::SpaceHandle, const char*, const void* const ptr, const uint64_t){
-            instance->kokkos_deallocate(ptr);
-            // tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), std::string(name), size, handle});
-        });
+        kokkosp_callbacks.kokkosp_deallocate_callback.connect(
+            [instance](const cali::kokkos::SpaceHandle, const char*, const void* const ptr, const uint64_t) {
+                instance->kokkos_deallocate(ptr);
+                // tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), std::string(name), size, handle});
+            }
+        );
 
-        kokkosp_callbacks.kokkosp_begin_deep_copy_callback.connect([instance](const cali::kokkos::SpaceHandle, const char*, const void* dst_ptr,
-            const cali::kokkos::SpaceHandle, const char*, const void* src_ptr,
-            const uint64_t size){
-                instance->kokkos_deepcopy(dst_ptr, src_ptr, size);
-            });
+        kokkosp_callbacks.kokkosp_begin_deep_copy_callback.connect([instance](
+                                                                       const cali::kokkos::SpaceHandle,
+                                                                       const char*,
+                                                                       const void* dst_ptr,
+                                                                       const cali::kokkos::SpaceHandle,
+                                                                       const char*,
+                                                                       const void*    src_ptr,
+                                                                       const uint64_t size
+                                                                   ) {
+            instance->kokkos_deepcopy(dst_ptr, src_ptr, size);
+        });
 #if 0
         chn->events().pre_flush_evt.connect(
             [instance](Caliper* c, Channel* chn, SnapshotView info){
@@ -343,26 +361,27 @@ public:
                 instance->process_snapshot(c, rec);
             });
 #endif
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->finish_log(c, chn);
-                delete instance;
-            });
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
+            instance->finish_log(c, chn);
+            delete instance;
+        });
 
         Log(1).stream() << chn->name() << ": Registered kokkoslookup service" << std::endl;
     }
 };
 
 const ConfigSet::Entry KokkosLookup::s_configdata[] = {
-    { "attributes", CALI_TYPE_STRING, "",
-      "List of address attributes for which to perform kokkos lookup",
-      "List of address attributes for which to perform kokkos lookup",
+    {
+        "attributes",
+        CALI_TYPE_STRING,
+        "",
+        "List of address attributes for which to perform kokkos lookup",
+        "List of address attributes for which to perform kokkos lookup",
     },
     ConfigSet::Terminator
 };
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {

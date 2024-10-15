@@ -38,11 +38,9 @@ class TimerService
         uint64_t prev_snapshot_timestamp;
 
         // A per-attribute stack of timestamps for computing inclusive times
-        std::map< cali_id_t, std::vector<uint64_t> > inclusive_timer_stack;
+        std::map<cali_id_t, std::vector<uint64_t>> inclusive_timer_stack;
 
-        TimerInfo()
-            : prev_snapshot_timestamp(0)
-        { }
+        TimerInfo() : prev_snapshot_timestamp(0) {}
     };
 
     using clock = std::chrono::steady_clock;
@@ -57,27 +55,26 @@ class TimerService
     Attribute offset_attr;
 
     // Keeps all created timer info objects so we can delete them later
-    std::vector<TimerInfo*>  info_obj_list;
-    std::mutex               info_obj_mutex;
+    std::vector<TimerInfo*> info_obj_list;
+    std::mutex              info_obj_mutex;
 
-    bool      record_inclusive_duration;
+    bool record_inclusive_duration;
 
     Attribute begin_evt_attr;
     Attribute end_evt_attr;
 
-    int       n_stack_errors { 0 };
+    int n_stack_errors { 0 };
 
-    TimerInfo* acquire_timerinfo(Caliper* c) {
-        TimerInfo* ti =
-            static_cast<TimerInfo*>(c->get(timerinfo_attr).value().get_ptr());
+    TimerInfo* acquire_timerinfo(Caliper* c)
+    {
+        TimerInfo* ti = static_cast<TimerInfo*>(c->get(timerinfo_attr).value().get_ptr());
 
         if (!ti && !c->is_signal()) {
             ti = new TimerInfo;
 
             c->set(timerinfo_attr, Variant(cali_make_variant_from_ptr(ti)));
 
-            std::lock_guard<std::mutex>
-                g(info_obj_mutex);
+            std::lock_guard<std::mutex> g(info_obj_mutex);
 
             info_obj_list.push_back(ti);
         }
@@ -85,8 +82,9 @@ class TimerService
         return ti;
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
-        auto now = clock::now();
+    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec)
+    {
+        auto     now  = clock::now();
         uint64_t nsec = chrono::duration_cast<chrono::nanoseconds>(now - tstart).count();
 
         rec.append(offset_attr, Variant(nsec));
@@ -127,7 +125,8 @@ class TimerService
         }
     }
 
-    void post_init_cb(Caliper* c, Channel* chn) {
+    void post_init_cb(Caliper* c, Channel* chn)
+    {
         // Find begin/end event snapshot event info attributes
 
         begin_evt_attr = c->get_attribute("cali.event.begin");
@@ -135,8 +134,10 @@ class TimerService
 
         if (!begin_evt_attr || !end_evt_attr) {
             if (record_inclusive_duration)
-                Log(1).stream() << chn->name() << ": Timestamp: Note: event trigger attributes not registered,\n"
-                    "    disabling phase timers." << std::endl;
+                Log(1).stream() << chn->name()
+                                << ": Timestamp: Note: event trigger attributes not registered,\n"
+                                   "    disabling phase timers."
+                                << std::endl;
 
             record_inclusive_duration = false;
         }
@@ -145,84 +146,77 @@ class TimerService
         acquire_timerinfo(c);
     }
 
-    void finish_cb(Caliper*, Channel* chn) {
+    void finish_cb(Caliper*, Channel* chn)
+    {
         if (n_stack_errors > 0)
-            Log(1).stream() << chn->name() << ": timestamp: Encountered "
-                            << n_stack_errors
-                            << " inclusive time stack errors!"
-                            << std::endl;
+            Log(1).stream() << chn->name() << ": timestamp: Encountered " << n_stack_errors
+                            << " inclusive time stack errors!" << std::endl;
     }
 
-    TimerService(Caliper* c, Channel* chn)
-        : tstart(clock::now())
-        {
-            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
-            record_inclusive_duration = config.get("inclusive_duration").to_bool();
+    TimerService(Caliper* c, Channel* chn) : tstart(clock::now())
+    {
+        ConfigSet config          = services::init_config_from_spec(chn->config(), s_spec);
+        record_inclusive_duration = config.get("inclusive_duration").to_bool();
 
-            Attribute unit_attr =
-                c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-            Variant   nsec_val  = Variant("nsec");
+        Attribute unit_attr = c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        Variant   nsec_val  = Variant("nsec");
 
-            offset_attr =
-                c->create_attribute("time.offset.ns", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &unit_attr, &nsec_val);
-            snapshot_duration_attr =
-                c->create_attribute("time.duration.ns", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS   |
-                                    CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &nsec_val);
-            inclusive_duration_attr =
-                c->create_attribute("time.inclusive.duration.ns", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS   |
-                                    CALI_ATTR_AGGREGATABLE,
-                                    1, &unit_attr, &nsec_val);
-            timerinfo_attr =
-                c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
-                                    CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS   |
-                                    CALI_ATTR_HIDDEN);
-        }
+        offset_attr = c->create_attribute(
+            "time.offset.ns",
+            CALI_TYPE_UINT,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS,
+            1,
+            &unit_attr,
+            &nsec_val
+        );
+        snapshot_duration_attr = c->create_attribute(
+            "time.duration.ns",
+            CALI_TYPE_UINT,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            1,
+            &unit_attr,
+            &nsec_val
+        );
+        inclusive_duration_attr = c->create_attribute(
+            "time.inclusive.duration.ns",
+            CALI_TYPE_UINT,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+            1,
+            &unit_attr,
+            &nsec_val
+        );
+        timerinfo_attr = c->create_attribute(
+            std::string("timer.info.") + std::to_string(chn->id()),
+            CALI_TYPE_PTR,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN
+        );
+    }
 
-        ~TimerService() {
-            std::lock_guard<std::mutex>
-                g(info_obj_mutex);
+    ~TimerService()
+    {
+        std::lock_guard<std::mutex> g(info_obj_mutex);
 
-            for (TimerInfo* ti : info_obj_list)
-                delete ti;
-        }
+        for (TimerInfo* ti : info_obj_list)
+            delete ti;
+    }
 
 public:
 
     static const char* s_spec;
 
-    static void timer_register(Caliper* c, Channel* chn) {
+    static void timer_register(Caliper* c, Channel* chn)
+    {
         TimerService* instance = new TimerService(c, chn);
 
-        chn->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->post_init_cb(c, chn);
-            });
-        chn->events().create_thread_evt.connect(
-            [instance](Caliper* c, Channel*){
-                instance->acquire_timerinfo(c);
-            });
-        chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec){
-                instance->snapshot_cb(c, chn, info, rec);
-            });
-        chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->finish_cb(c, chn);
-                delete instance;
-            });
+        chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_cb(c, chn); });
+        chn->events().create_thread_evt.connect([instance](Caliper* c, Channel*) { instance->acquire_timerinfo(c); });
+        chn->events().snapshot.connect([instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
+            instance->snapshot_cb(c, chn, info, rec);
+        });
+        chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
+            instance->finish_cb(c, chn);
+            delete instance;
+        });
 
         Log(1).stream() << chn->name() << ": Registered timer service" << endl;
     }
@@ -248,13 +242,12 @@ const char* timestamp_spec = R"json(
 }
 )json";
 
-}  // namespace
-
+} // namespace
 
 namespace cali
 {
 
-CaliperService timer_service = { ::TimerService::s_spec, ::TimerService::timer_register };
+CaliperService timer_service     = { ::TimerService::s_spec, ::TimerService::timer_register };
 CaliperService timestamp_service = { timestamp_spec, ::TimerService::timer_register };
 
 } // namespace cali

@@ -10,37 +10,36 @@
 
 namespace trace
 {
-    class TraceBufferChunk {
-        size_t            m_size;
-        size_t            m_pos;
-        size_t            m_nrec;
+class TraceBufferChunk
+{
+    size_t m_size;
+    size_t m_pos;
+    size_t m_nrec;
 
-        unsigned char*    m_data;
+    unsigned char* m_data;
 
-        TraceBufferChunk* m_next;
+    TraceBufferChunk* m_next;
 
-    public:
+public:
 
-        TraceBufferChunk(size_t s)
-            : m_size(s), m_pos(0), m_nrec(0), m_data(new unsigned char[s]), m_next(0)
-            { }
+    TraceBufferChunk(size_t s) : m_size(s), m_pos(0), m_nrec(0), m_data(new unsigned char[s]), m_next(0) {}
 
-        ~TraceBufferChunk();
+    ~TraceBufferChunk();
 
-        void   append(TraceBufferChunk* chunk);
-        void   reset();
+    void append(TraceBufferChunk* chunk);
+    void reset();
 
-        size_t flush(cali::Caliper* c, cali::SnapshotFlushFn proc_fn);
+    size_t flush(cali::Caliper* c, cali::SnapshotFlushFn proc_fn);
 
-        void   save_snapshot(cali::SnapshotView s);
-        bool   fits(cali::SnapshotView s) const;
+    void save_snapshot(cali::SnapshotView s);
+    bool fits(cali::SnapshotView s) const;
 
-        struct UsageInfo {
-            size_t nchunks;
-            size_t reserved;
-            size_t used;
-        };
-
-        UsageInfo info() const;
+    struct UsageInfo {
+        size_t nchunks;
+        size_t reserved;
+        size_t used;
     };
+
+    UsageInfo info() const;
+};
 } // namespace trace

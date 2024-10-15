@@ -27,24 +27,15 @@ class OutputStream
 
 public:
 
-    enum StreamType {
-        None,
-        StdOut,
-        StdErr,
-        File,
-        User
-    };
+    enum StreamType { None, StdOut, StdErr, File, User };
 
-    enum Mode {
-        Truncate,
-        Append
-    };
+    enum Mode { Truncate, Append };
 
     /// \brief Returns \a true if the stream is initialized, otherwise
     ///   returns \a false
-    operator bool() const;
+    operator bool () const;
 
-    StreamType    type() const;
+    StreamType type() const;
 
     /// \brief Return a C++ ostream. Opens/creates the underlying file stream
     ///   if needed.
@@ -55,23 +46,19 @@ public:
     ~OutputStream();
 
     /// \brief Set stream type. (Note: for file streams, use \a set_filename).
-    void
-    set_stream(StreamType type);
+    void set_stream(StreamType type);
 
     /// \brief Assign a user-given stream
-    void
-    set_stream(std::ostream* os);
+    void set_stream(std::ostream* os);
 
     /// \brief Set stream's file name to \a filename
-    void
-    set_filename(const char* filename);
+    void set_filename(const char* filename);
 
     /// \brief Set stream's output mode for files
     ///
     /// Sets the open mode. \a Truncate resets the file, \a Append
     /// appends to it. Only applies to file streams.
-    void
-    set_mode(Mode mode);
+    void set_mode(Mode mode);
 
     /// \brief Create stream's filename from the given format string pattern and
     ///   entry list.
@@ -86,10 +73,7 @@ public:
     ///
     /// The special values "stdout" and "stderr" for \a formatstr will redirect
     /// output to standard out and standard error, respectively.
-    void
-    set_filename(const char* formatstr,
-                 const CaliperMetadataAccessInterface& db,
-                 const std::vector<Entry>& rec);
+    void set_filename(const char* formatstr, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec);
 };
 
-}
+} // namespace cali

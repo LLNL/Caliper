@@ -25,12 +25,13 @@ namespace cali
 
 class SnapshotBuilder;
 
-class Blackboard {
+class Blackboard
+{
     constexpr static size_t Nmax = 1021;
 
     struct blackboard_entry_t {
-        cali_id_t key   { CALI_INV_ID };
-        Entry     value { };
+        cali_id_t key { CALI_INV_ID };
+        Entry     value {};
     };
 
     blackboard_entry_t hashtable[Nmax];
@@ -40,32 +41,34 @@ class Blackboard {
     // it to speed up iterating over all entries in snapshot().
     //   Similarly, toctoc indicates which elements in toc are
     // occupied.
-    int      toc[(Nmax+31)/32];
-    int      toctoc;
+    int toc[(Nmax + 31) / 32];
+    int toctoc;
 
-    size_t   num_entries;
-    size_t   max_num_entries;
+    size_t num_entries;
+    size_t max_num_entries;
 
-    size_t   num_skipped;
+    size_t num_skipped;
 
-    std::atomic<int>   ucount; // update count
+    std::atomic<int> ucount; // update count
 
     mutable util::spinlock lock;
 
-    inline size_t find_existing_entry(cali_id_t key) const {
+    inline size_t find_existing_entry(cali_id_t key) const
+    {
         size_t I = key % Nmax;
 
         while (hashtable[I].key != key && hashtable[I].key != CALI_INV_ID)
-            I = (I+1) % Nmax;
+            I = (I + 1) % Nmax;
 
         return I;
     }
 
-    inline size_t find_free_slot(cali_id_t key) const {
+    inline size_t find_free_slot(cali_id_t key) const
+    {
         size_t I = key % Nmax;
 
         while (hashtable[I].key != CALI_INV_ID)
-            I = (I+1) % Nmax;
+            I = (I + 1) % Nmax;
 
         return I;
     }
@@ -75,19 +78,18 @@ class Blackboard {
 public:
 
     Blackboard()
-        : hashtable       {   },
-          toc             { 0 },
-          toctoc          { 0 },
-          num_entries     { 0 },
+        : hashtable {},
+          toc { 0 },
+          toctoc { 0 },
+          num_entries { 0 },
           max_num_entries { 0 },
-          num_skipped     { 0 },
-          ucount          { 0 }
-        { }
+          num_skipped { 0 },
+          ucount { 0 }
+    {}
 
-    inline Entry
-    get(cali_id_t key) const {
-        std::lock_guard<util::spinlock>
-            g(lock);
+    inline Entry get(cali_id_t key) const
+    {
+        std::lock_guard<util::spinlock> g(lock);
 
         size_t I = find_existing_entry(key);
 
@@ -97,16 +99,16 @@ public:
         return hashtable[I].value;
     }
 
-    void    set(cali_id_t key, const Entry& value, bool include_in_snapshots);
-    void    del(cali_id_t key);
+    void set(cali_id_t key, const Entry& value, bool include_in_snapshots);
+    void del(cali_id_t key);
 
-    Entry   exchange(cali_id_t key, const Entry& value, bool include_in_snapshots);
+    Entry exchange(cali_id_t key, const Entry& value, bool include_in_snapshots);
 
-    void    snapshot(SnapshotBuilder& rec) const;
+    void snapshot(SnapshotBuilder& rec) const;
 
-    size_t  num_skipped_entries() const { return num_skipped; }
+    size_t num_skipped_entries() const { return num_skipped; }
 
-    int     count() const { return ucount.load(); }
+    int count() const { return ucount.load(); }
 
     std::ostream& print_statistics(std::ostream& os) const;
 };

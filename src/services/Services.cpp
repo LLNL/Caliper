@@ -28,7 +28,7 @@ namespace
 std::string get_name_from_spec(const char* name_or_spec)
 {
     // try to parse the given string as spec, otherwise return it as-is
-    bool ok = false;
+    bool ok   = false;
     auto dict = StringConverter(name_or_spec).rec_dict(&ok);
 
     if (!ok)
@@ -41,12 +41,14 @@ std::string get_name_from_spec(const char* name_or_spec)
     return std::string { name_or_spec };
 }
 
-class ServicesManager {
+class ServicesManager
+{
     std::map<std::string, CaliperService> m_services;
 
 public:
 
-    std::vector<std::string> get_available_services() const {
+    std::vector<std::string> get_available_services() const
+    {
         std::vector<std::string> ret;
         ret.reserve(m_services.size());
 
@@ -56,8 +58,9 @@ public:
         return ret;
     }
 
-    bool register_service(const char* name, Caliper* c, Channel* channel) const {
-        for (const auto &p : m_services)
+    bool register_service(const char* name, Caliper* c, Channel* channel) const
+    {
+        for (const auto& p : m_services)
             if (p.first == name && p.second.register_fn) {
                 (*p.second.register_fn)(c, channel);
                 return true;
@@ -66,26 +69,29 @@ public:
         return false;
     }
 
-    void add_services(const CaliperService list[]) {
+    void add_services(const CaliperService list[])
+    {
         for (const CaliperService* s = list; s && s->name_or_spec && s->register_fn; ++s)
             m_services[get_name_from_spec(s->name_or_spec)] = *s;
     }
 
-    std::string get_service_description(const std::string& name) {
+    std::string get_service_description(const std::string& name)
+    {
         auto service_itr = m_services.find(name);
         if (service_itr == m_services.end())
             return std::string();
-        auto dict = StringConverter(service_itr->second.name_or_spec).rec_dict();
+        auto dict     = StringConverter(service_itr->second.name_or_spec).rec_dict();
         auto spec_itr = dict.find("description");
         return spec_itr != dict.end() ? spec_itr->second.to_string() : std::string();
     }
 
-    std::ostream& print_service_documentation(std::ostream& os, const std::string& name) {
+    std::ostream& print_service_documentation(std::ostream& os, const std::string& name)
+    {
         auto service_itr = m_services.find(name);
         if (service_itr == m_services.end())
             return os;
 
-        auto dict = StringConverter(service_itr->second.name_or_spec).rec_dict();
+        auto dict     = StringConverter(service_itr->second.name_or_spec).rec_dict();
         auto spec_itr = dict.find("description");
         if (spec_itr != dict.end())
             os << ' ' << spec_itr->second.to_string() << '\n';
@@ -100,7 +106,7 @@ public:
         auto list = spec_itr->second.rec_list();
         for (const auto& s : list) {
             auto cfg_dict = s.rec_dict();
-            auto it = cfg_dict.find("name");
+            auto it       = cfg_dict.find("name");
             if (it == cfg_dict.end())
                 continue;
 
@@ -133,14 +139,14 @@ public:
         return os;
     }
 
-    static ServicesManager* instance() {
+    static ServicesManager* instance()
+    {
         static std::unique_ptr<ServicesManager> inst { new ServicesManager };
         return inst.get();
     }
 };
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {
@@ -155,9 +161,7 @@ bool register_service(Caliper* c, Channel* channel, const char* name)
 
 void register_configured_services(Caliper* c, Channel* channel)
 {
-    const RuntimeConfig::config_entry_list_t configdata {
-        { "enable", "" }
-    };
+    const RuntimeConfig::config_entry_list_t configdata { { "enable", "" } };
 
     std::vector<std::string> services =
         channel->config().init("services", configdata).get("enable").to_stringlist(",:");
@@ -194,14 +198,14 @@ ConfigSet init_config_from_spec(RuntimeConfig config, const char* spec)
 {
     RuntimeConfig::config_entry_list_t list;
 
-    auto dict = StringConverter(spec).rec_dict();
+    auto dict     = StringConverter(spec).rec_dict();
     auto spec_itr = dict.find("config");
     if (spec_itr != dict.end()) {
-        for (const auto &e : spec_itr->second.rec_list()) {
+        for (const auto& e : spec_itr->second.rec_list()) {
             auto cfg_dict = e.rec_dict();
 
             std::string key, val;
-            auto itr = cfg_dict.find("name");
+            auto        itr = cfg_dict.find("name");
             assert(itr != cfg_dict.end() && "config entry name missing");
             key = itr->second.to_string();
             itr = cfg_dict.find("value");

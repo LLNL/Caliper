@@ -8,7 +8,8 @@
 
 #include <gtest/gtest.h>
 
-TEST(C_Wrapper, BufferedRegionProfile) {
+TEST(C_Wrapper, BufferedRegionProfile)
+{
     cali_BufferedRegionProfile rp;
     cali_BufferedRegionProfile_new(&rp);
 

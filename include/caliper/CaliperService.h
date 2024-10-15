@@ -20,7 +20,7 @@ typedef void (*ServiceRegisterFn)(Caliper* c, Channel* chn);
 /// to Caliper::add_services() _before_ %Caliper is initialized.
 struct CaliperService {
     /// \brief Name (old style) or JSON spec (new) of the service
-    const char*       name_or_spec;
+    const char* name_or_spec;
     /// \brief Registration function
     ServiceRegisterFn register_fn;
 };

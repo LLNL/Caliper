@@ -12,25 +12,24 @@
 using namespace cali;
 using namespace cali::internal;
 
-TEST(MetadataTreeTest, BigTree) {
+TEST(MetadataTreeTest, BigTree)
+{
     // just create a lot of nodes
     Caliper c;
 
-    Attribute str_attr =
-        c.create_attribute("test.metatree.replaceall.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute int_attr =
-        c.create_attribute("test.metatree.replaceall.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute str_attr = c.create_attribute("test.metatree.replaceall.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute int_attr = c.create_attribute("test.metatree.replaceall.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
 
     const std::string chars { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" };
 
     MetadataTree tree;
-    Node* node = tree.root();
+    Node*        node = tree.root();
 
     for (int i = 0; i < 400000; ++i) {
-        std::string sval = chars.substr(i % (chars.length()/2));
-                                        
+        std::string sval = chars.substr(i % (chars.length() / 2));
+
         node = tree.get_child(str_attr, Variant(CALI_TYPE_STRING, sval.data(), sval.size()), node);
-        node = tree.get_child(int_attr, Variant(2*i+1), node);
+        node = tree.get_child(int_attr, Variant(2 * i + 1), node);
 
         ASSERT_NE(node, nullptr);
     }
@@ -38,7 +37,7 @@ TEST(MetadataTreeTest, BigTree) {
     int str_count = 0;
     int int_count = 0;
 
-    for ( ; node; node = node->parent()) {
+    for (; node; node = node->parent()) {
         if (node->attribute() == int_attr.id())
             ++int_count;
         if (node->attribute() == str_attr.id())
@@ -46,18 +45,17 @@ TEST(MetadataTreeTest, BigTree) {
     }
 
     EXPECT_EQ(str_count, 400000);
-    EXPECT_EQ(int_count, 400000);        
-    
+    EXPECT_EQ(int_count, 400000);
+
     tree.print_statistics(std::cout) << std::endl;
 }
 
-TEST(MetadataTreeTest, ReplaceAll) {
+TEST(MetadataTreeTest, ReplaceAll)
+{
     Caliper c;
 
-    Attribute str_attr =
-        c.create_attribute("test.metatree.replaceall.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute int_attr =
-        c.create_attribute("test.metatree.replaceall.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute str_attr = c.create_attribute("test.metatree.replaceall.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute int_attr = c.create_attribute("test.metatree.replaceall.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
 
     MetadataTree tree;
 
@@ -68,10 +66,10 @@ TEST(MetadataTreeTest, ReplaceAll) {
     Node* node = tree.root();
 
     for (int i = 0; i < 20000; ++i) {
-        std::string sval = chars.substr(i % (chars.length()/2));
-        
+        std::string sval = chars.substr(i % (chars.length() / 2));
+
         node = tree.get_child(str_attr, Variant(CALI_TYPE_STRING, sval.data(), sval.size()), node);
-        node = tree.get_child(int_attr, Variant(2*i+1), node);
+        node = tree.get_child(int_attr, Variant(2 * i + 1), node);
 
         ASSERT_NE(node, nullptr);
     }
@@ -97,7 +95,7 @@ TEST(MetadataTreeTest, ReplaceAll) {
     int str_count = 0;
     int int_count = 0;
 
-    for ( ; node; node = node->parent()) {
+    for (; node; node = node->parent()) {
         if (node->attribute() == int_attr.id())
             ++int_count;
         if (node->attribute() == str_attr.id())
