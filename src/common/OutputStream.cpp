@@ -13,8 +13,14 @@
 #include <mutex>
 #include <sstream>
 
-// MSVC has a low value of __cplusplus even though it support C++17
-#if defined(_WIN32) || (__cplusplus >= 201703L)
+// (1) MSVC has a low value of __cplusplus even though it support C++17.
+// (2) std::filesystem support in libstdc++ prior to gcc 9 requires linking
+// an extra libstdc++-fs library. Let's not bother with this.
+#if defined(_WIN32) || (__cplusplus >= 201703L && (!defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE >= 9))
+#define CALI_OSTREAM_USE_STD_FILESYSTEM
+#endif
+
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
 #include <filesystem>
 #else
 #include <errno.h>
@@ -26,7 +32,7 @@ using namespace cali;
 namespace
 {
 
-#if defined(_WIN32) || (__cplusplus >= 201703L)
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
 bool check_and_create_directory(const std::filesystem::path& filepath)
 {
     try {
@@ -90,7 +96,7 @@ struct OutputStream::OutputStreamImpl {
     bool       is_initialized;
     std::mutex init_mutex;
 
-#if defined(_WIN32) || (__cplusplus >= 201703L)
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
     std::filesystem::path filename;
 #else
     std::string filename;
