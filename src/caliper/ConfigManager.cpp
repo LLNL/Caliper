@@ -7,8 +7,8 @@
 
 #include "caliper/common/Log.h"
 
-#include "../src/common/util/parse_util.h"
 #include "../src/common/util/format_util.h"
+#include "../src/common/util/parse_util.h"
 
 #include "../services/Services.h"
 
@@ -23,9 +23,9 @@ namespace cali
 
 // defined in controllers/controllers.cpp
 extern const ConfigManager::ConfigInfo* builtin_controllers_table[];
-extern const char*                      builtin_option_specs;
 
-extern void add_submodule_controllers_and_services();
+extern const char* get_builtin_option_specs();
+extern void        add_submodule_controllers_and_services();
 
 } // namespace cali
 
@@ -94,7 +94,8 @@ ConfigManager::arglist_t merge_new_elements(ConfigManager::arglist_t& to, const 
             return p.first == v.first;
         });
 
-        if (it == to.end() || p.first == "metadata") // hacky but we want to allow multiple entries for metadata
+        if (it == to.end() || p.first == "metadata") // hacky but we want to allow multiple entries
+                                                     // for metadata
             to.push_back(p);
     }
 
@@ -996,8 +997,11 @@ struct ConfigManager::ConfigManagerImpl {
 
         if (m_global_opts.error())
             set_error(m_global_opts.error_msg());
-        if (!ok)
+        if (!ok) {
+            const char* builtin_option_specs = get_builtin_option_specs();
             set_error(std::string("parse error: ") + util::clamp_string(builtin_option_specs, 48));
+            delete[] builtin_option_specs;
+        }
     }
 
     void import_builtin_config_specs()
@@ -1360,7 +1364,12 @@ struct ConfigManager::ConfigManagerImpl {
         return ret;
     }
 
-    ConfigManagerImpl() { add_global_option_specs(builtin_option_specs); }
+    ConfigManagerImpl()
+    {
+        const char* builtin_option_specs = get_builtin_option_specs();
+        add_global_option_specs(builtin_option_specs);
+        delete[] builtin_option_specs;
+    }
 };
 
 ConfigManager::ConfigManager() : mP(new ConfigManagerImpl)
