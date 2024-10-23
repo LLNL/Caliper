@@ -77,7 +77,8 @@ class Node:
         nodelist.reverse()
         for node in nodelist:
             node._expand(record)
-            node.record = record.copy()
+
+        self.record = record
 
     def _expand(self, record):
         attr = self.attribute()
