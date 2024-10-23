@@ -122,33 +122,33 @@ cali::ChannelController* make_controller(
 }
 
 const char* controller_spec = R"json(
-    {
-     "name"        : "rocm-activity-profile",
-     "description" : "Record AMD ROCm activities and a write profile",
-     "categories"  : [ "adiak", "metric", "output", "region", "event" ],
-     "services"    : [ "aggregate", "roctracer", "event", "timer" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
-         "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
-         "CALI_ROCTRACER_TRACE_ACTIVITIES"   : "true",
-         "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true",
-         "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "false"
-       },
-     "defaults"    : { "node.order": "true" },
-     "options":
-     [
-      {
-        "name": "output.format",
-        "type": "string",
-        "description": "Output format ('hatchet', 'cali', 'json')"
-      },
-      {
-        "name": "use.mpi",
-        "type": "bool",
-        "description": "Merge results into a single output stream in MPI programs"
-      }
-     ]
-    }
+{
+ "name"        : "rocm-activity-profile",
+ "description" : "Record AMD ROCm activities and a write profile",
+ "categories"  : [ "adiak", "metric", "output", "region", "event" ],
+ "services"    : [ "aggregate", "roctracer", "event", "timer" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
+  "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
+  "CALI_ROCTRACER_TRACE_ACTIVITIES"   : "true",
+  "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true",
+  "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "false"
+ },
+ "defaults"    : { "node.order": "true" },
+ "options":
+ [
+  {
+   "name": "output.format",
+   "type": "string",
+   "description": "Output format ('hatchet', 'cali', 'json')"
+  },{
+   "name": "use.mpi",
+   "type": "bool",
+   "description": "Merge results into a single output stream in MPI programs"
+  }
+ ]
+}
 )json";
 
 } // namespace

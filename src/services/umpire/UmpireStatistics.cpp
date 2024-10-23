@@ -228,26 +228,27 @@ public:
 };
 
 const char* UmpireService::s_spec = R"json(
-{   "name"        : "umpire",
-    "description" : "Record Umpire memory manager statistics",
-    "config"      :
-    [
-        {   "name"        : "per_allocator_statistics",
-            "description" : "Include statistics for each Umpire allocator",
-            "type"        : "bool",
-            "value"       : "false"
-        },
-        {   "name"        : "allocator_filter",
-            "description" : "Umpire allocators to track",
-            "type"        : "string"
-        },
-        {   "name"        : "record_highwatermarks",
-            "description" : "Record high-watermarks as global attributes",
-            "type"        : "bool",
-            "value"       : "true"
-        }
-    ]
-}
+{
+"name"        : "umpire",
+"description" : "Record Umpire memory manager statistics",
+"config"      :
+[
+ {
+  "name": "per_allocator_statistics",
+  "type": "bool",
+  "description": "Include statistics for each Umpire allocator",
+  "value": "false"
+ },{
+  "name": "allocator_filter",
+  "type": "string"
+  "description": "Umpire allocators to track",
+ },{
+  "name": "record_highwatermarks",
+  "type": "bool",
+  "description": "Record high-watermarks as global attributes",
+  "value": "true"
+ }
+]}
 )json";
 
 } // namespace

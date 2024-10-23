@@ -121,38 +121,35 @@ cali::ChannelController* make_sample_report_controller(
 }
 
 const char* sample_report_spec = R"json(
-    {
-     "name"        : "sample-report",
-     "description" : "Print a sampling profile for the program",
-     "categories"  : [ "output", "sampling", "treeformatter", "region" ],
-     "services"    : [ "sampler", "trace" ],
-     "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
-     "defaults"    : { "source.function": "true", "output.append": "true" },
-     "options":
-     [
-      {
-        "name": "sample.frequency",
-        "type": "int",
-        "description": "Sampling frequency in Hz. Default: 200"
-      },
-      {
-        "name": "callpath",
-        "type": "bool",
-        "description": "Group by function call path instead of instrumented region",
-        "services": [ "callpath", "symbollookup" ]
-      },
-      {
-       "name": "aggregate_across_ranks",
-       "type": "bool",
-       "description": "Aggregate results across MPI ranks"
-      },
-      {
-       "name": "output.append",
-       "type": "bool",
-       "description": "Use append mode when writing to files"
-      }
-     ]
-    }
+{
+ "name"        : "sample-report",
+ "description" : "Print a sampling profile for the program",
+ "categories"  : [ "output", "sampling", "treeformatter", "region" ],
+ "services"    : [ "sampler", "trace" ],
+ "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
+ "defaults"    : { "source.function": "true", "output.append": "true" },
+ "options":
+ [
+  {
+   "name": "sample.frequency",
+   "type": "int",
+   "description": "Sampling frequency in Hz. Default: 200"
+  },{
+   "name": "callpath",
+   "type": "bool",
+   "description": "Group by function call path instead of instrumented region",
+   "services": [ "callpath", "symbollookup" ]
+  },{
+   "name": "aggregate_across_ranks",
+   "type": "bool",
+   "description": "Aggregate results across MPI ranks"
+  },{
+   "name": "output.append",
+   "type": "bool",
+   "description": "Use append mode when writing to files"
+  }
+ ]
+}
 )json";
 
 } // namespace

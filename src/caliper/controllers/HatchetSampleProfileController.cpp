@@ -140,44 +140,41 @@ cali::ChannelController* make_controller(
 }
 
 const char* controller_spec = R"json(
-    {
-     "name"        : "hatchet-sample-profile",
-     "description" : "Record a sampling profile for processing with hatchet",
-     "services"    : [ "sampler", "trace" ],
-     "categories"  : [ "adiak", "metadata", "sampling", "output" ],
-     "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
-     "defaults"    : { "callpath": "true", "source.module": "true" },
-     "options":
-     [
-      {
-        "name": "output.format",
-        "type": "string",
-        "description": "Output format ('hatchet', 'cali', 'json')"
-      },
-      {
-        "name": "sample.frequency",
-        "type": "int",
-        "description": "Sampling frequency in Hz. Default: 200"
-      },
-      {
-        "name": "callpath",
-        "type": "bool",
-        "description": "Perform call-stack unwinding",
-        "services": [ "callpath", "symbollookup" ],
-        "query":
-        [
-         { "level": "local", "group by": "source.function#callpath.address",
-           "select": [ "source.function#callpath.address" ]
-         }
-        ]
-      },
-      {
-        "name": "use.mpi",
-        "type": "bool",
-        "description": "Merge results into a single output stream in MPI programs"
-      }
-     ]
+{
+ "name"        : "hatchet-sample-profile",
+ "description" : "Record a sampling profile for processing with hatchet",
+ "services"    : [ "sampler", "trace" ],
+ "categories"  : [ "adiak", "metadata", "sampling", "output" ],
+ "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
+ "defaults"    : { "callpath": "true", "source.module": "true" },
+ "options":
+ [
+  {
+   "name": "output.format",
+   "type": "string",
+   "description": "Output format ('hatchet', 'cali', 'json')"
+  },{
+   "name": "sample.frequency",
+   "type": "int",
+   "description": "Sampling frequency in Hz. Default: 200"
+  },{
+   "name": "callpath",
+   "type": "bool",
+   "description": "Perform call-stack unwinding",
+   "services": [ "callpath", "symbollookup" ],
+   "query":
+   [
+    { "level": "local", "group by": "source.function#callpath.address",
+      "select": [ "source.function#callpath.address" ]
     }
+   ]
+  },{
+   "name": "use.mpi",
+   "type": "bool",
+   "description": "Merge results into a single output stream in MPI programs"
+  }
+ ]
+}
 )json";
 
 } // namespace

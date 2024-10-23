@@ -345,21 +345,23 @@ public:
 }; // class Trace
 
 const char* Trace::s_spec = R"json(
-{   "name": "trace",
-    "description": "Store snapshots in trace buffer",
-    "config": [
-        {   "name": "buffer_size",
-            "description": "Size of initial per-thread trace buffer in MiB",
-            "type": "uint",
-            "value": "2"
-        },
-        {   "name": "buffer_policy",
-            "description": "What to do when the buffer is full ('flush', 'stop', 'grow')",
-            "type": "string",
-            "value": "grow"
-        }
-    ]
-}
+{
+"name": "trace",
+"description": "Store snapshots in trace buffer",
+"config":
+[
+ {
+  "name": "buffer_size",
+  "description": "Size of initial per-thread trace buffer in MiB",
+  "type": "uint",
+  "value": "2"
+ },{
+  "name": "buffer_policy",
+  "description": "What to do when the buffer is full ('flush', 'stop', 'grow')",
+  "type": "string",
+  "value": "grow"
+ }
+]}
 )json";
 
 } // namespace

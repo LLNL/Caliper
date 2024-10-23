@@ -368,38 +368,40 @@ public:
 };
 
 const char* EventTrigger::s_spec = R"json(
-    {   "name"        : "event",
-        "description" : "Trigger snapshots for Caliper region begin and end events",
-        "config"      :
-        [
-            { "name"        : "trigger",
-              "type"        : "stringlist",
-              "description" : "List of attributes that trigger measurements (optional)"
-            },
-            { "name"        : "region_level",
-              "type"        : "string",
-              "description" : "Minimum region level that triggers snapshots",
-              "value"       : "0"
-            },
-            { "name"        : "enable_snapshot_info",
-              "type"        : "bool",
-              "description" : "If true, add begin/end attributes at each event. Increases overhead.",
-              "value"       : "True"
-            },
-            { "name"        : "include_regions",
-              "type"        : "string",
-              "description" : "Region filter to specify regions that will trigger snapshots"
-            },
-            { "name"        : "exclude_regions",
-              "type"        : "string",
-              "description" : "Region filter to specify regions that won't trigger snapshots"
-            },
-            { "name"        : "include_branches",
-              "type"        : "string",
-              "description" : "Region filter to specify a branch"
-            }
-        ]
-    }
+{
+ "name"        : "event",
+ "description" : "Trigger snapshots for Caliper region begin and end events",
+ "config"      :
+ [
+  {
+   "name": "trigger",
+   "type": "stringlist",
+   "description": "List of attributes that trigger measurements (optional)"
+  },{
+   "name": "region_level",
+   "type": "string",
+   "description": "Minimum region level that triggers snapshots",
+   "value": "0"
+  },{
+   "name": "enable_snapshot_info",
+   "type": "bool",
+   "description": "If true, add begin/end attributes at each event. Increases overhead.",
+   "value": "True"
+  },{
+   "name": "include_regions",
+   "type": "string",
+   "description": "Region filter to specify regions that will trigger snapshots"
+  },{
+   "name": "exclude_regions",
+   "type": "string",
+   "description": "Region filter to specify regions that won't trigger snapshots"
+  },{
+   "name": "include_branches",
+   "type": "string",
+   "description": "Region filter to specify a branch"
+  }
+ ]
+}
 )json";
 
 } // namespace

@@ -557,102 +557,83 @@ std::string check_spot_timeseries_args(const cali::ConfigManager::Options& opts)
 }
 
 const char* spot_controller_spec = R"json(
+{
+ "name"        : "spot",
+ "description" : "Record a time profile for the Spot web visualization framework",
+ "categories"  : [ "adiak", "metadata", "metric", "output", "region", "event" ],
+ "services"    : [ "aggregate", "event", "timer" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
+  "CALI_CHANNEL_CONFIG_CHECK"       : "false",
+  "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
+  "CALI_TIMER_SNAPSHOT_DURATION"    : "true",
+  "CALI_TIMER_INCLUSIVE_DURATION"   : "false"
+ },
+ "defaults"    : { "node.order": "true", "region.count": "true", "time.exclusive" : "true" },
+ "options":
+ [
+  {
+   "name": "time.exclusive",
+   "type": "bool",
+   "category": "metric",
+   "description": "Collect exclusive time per region",
+   "query":
+   [
     {
-     "name"        : "spot",
-     "description" : "Record a time profile for the Spot web visualization framework",
-     "categories"  : [ "adiak", "metadata", "metric", "output", "region", "event" ],
-     "services"    : [ "aggregate", "event", "timer" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
-         "CALI_CHANNEL_CONFIG_CHECK"       : "false",
-         "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
-         "CALI_TIMER_SNAPSHOT_DURATION"    : "true",
-         "CALI_TIMER_INCLUSIVE_DURATION"   : "false",
-         "CALI_TIMER_UNIT"                 : "sec"
-       },
-     "defaults"    :
-     {
-      "node.order"     : "true",
-      "region.count"   : "true",
-      "time.exclusive" : "true"
-     },
-     "options":
+     "level"  : "local",
+     "select" : [ "scale(sum#time.duration.ns,1e-9) as \"Time (exc)\" unit sec" ]
+    },{
+     "level"  : "cross",
+     "select" :
      [
-      {
-       "name": "time.exclusive",
-       "type": "bool",
-       "category": "metric",
-       "description": "Collect exclusive time per region",
-       "query":
-       [
-        {
-         "level"  : "local",
-         "select" :
-         [
-          "scale(sum#time.duration.ns,1e-9) as \"Time (exc)\" unit sec"
-         ]
-        },
-        {
-         "level"  : "cross",
-         "select" :
-         [
-          "min(scale#sum#time.duration.ns) as \"Min time/rank (exc)\" unit sec",
-          "max(scale#sum#time.duration.ns) as \"Max time/rank (exc)\" unit sec",
-          "avg(scale#sum#time.duration.ns) as \"Avg time/rank (exc)\" unit sec",
-          "sum(scale#sum#time.duration.ns) as \"Total time (exc)\" unit sec"
-         ]
-        }
-       ]
-      },
-      {
-       "name": "time.variance",
-       "type": "bool",
-       "category": "metric",
-       "description": "Compute population variance of time across MPI ranks",
-       "query":
-       [
-        {
-         "level": "cross", "select": [ "variance(inclusive#sum#time.duration) as \"Variance time/rank\"" ]
-        }
-       ]
-      },
-      {
-       "name": "timeseries",
-       "type": "bool",
-       "description": "Collect time-series data for annotated loops"
-      },
-      {
-       "name": "timeseries.maxrows",
-       "type": "int",
-       "description": "Max number of rows in timeseries output. Set to 0 to show all. Default: 20."
-      },
-      {
-       "name": "timeseries.iteration_interval",
-       "type": "int",
-       "description": "Measure every N loop iterations in timeseries"
-      },
-      {
-       "name": "timeseries.time_interval",
-       "type": "double",
-       "description": "Measure after t seconds in timeseries"
-      },
-      {
-       "name": "timeseries.target_loops",
-       "type": "string",
-       "description": "List of loops to target for timeseries measurements. Default: any top-level loop."
-      },
-      {
-       "name": "timeseries.metrics",
-       "type": "string",
-       "description": "Metrics to record for timeseries measurements."
-      },
-      {
-       "name": "outdir",
-       "type": "string",
-       "description": "Output directory name"
-      }
+      "min(scale#sum#time.duration.ns) as \"Min time/rank (exc)\" unit sec",
+      "max(scale#sum#time.duration.ns) as \"Max time/rank (exc)\" unit sec",
+      "avg(scale#sum#time.duration.ns) as \"Avg time/rank (exc)\" unit sec",
+      "sum(scale#sum#time.duration.ns) as \"Total time (exc)\" unit sec"
      ]
     }
+   ]
+  },{
+   "name": "time.variance",
+   "type": "bool",
+   "category": "metric",
+   "description": "Compute population variance of time across MPI ranks",
+   "query":
+   [
+    { "level": "cross", "select": [ "variance(inclusive#sum#time.duration) as \"Variance time/rank\"" ] }
+   ]
+  },{
+   "name": "timeseries",
+   "type": "bool",
+   "description": "Collect time-series data for annotated loops"
+  },{
+   "name": "timeseries.maxrows",
+   "type": "int",
+   "description": "Max number of rows in timeseries output. Set to 0 to show all. Default: 20."
+  },{
+   "name": "timeseries.iteration_interval",
+   "type": "int",
+   "description": "Measure every N loop iterations in timeseries"
+  },{
+   "name": "timeseries.time_interval",
+   "type": "double",
+   "description": "Measure after t seconds in timeseries"
+  },{
+   "name": "timeseries.target_loops",
+   "type": "string",
+   "description": "List of loops to target for timeseries measurements. Default: any top-level loop."
+  },{
+   "name": "timeseries.metrics",
+   "type": "string",
+   "description": "Metrics to record for timeseries measurements."
+  },{
+   "name": "outdir",
+   "type": "string",
+   "description": "Output directory name"
+  }
+ ]
+}
 )json";
 
 cali::ChannelController* make_spot_controller(

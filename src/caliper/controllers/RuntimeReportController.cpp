@@ -113,53 +113,50 @@ cali::ChannelController* make_runtime_report_controller(
 }
 
 const char* runtime_report_spec = R"json(
+{
+ "name"        : "runtime-report",
+ "description" : "Print a time profile for annotated regions",
+ "categories"  : [ "metric", "output", "region", "treeformatter", "event" ],
+ "services"    : [ "aggregate", "event", "timer" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT": "false",
+  "CALI_EVENT_ENABLE_SNAPSHOT_INFO": "false",
+  "CALI_TIMER_UNIT": "sec"
+ },
+ "defaults"    : { "order_as_visited": "true", "output.append": "true" },
+ "options"     :
+ [
+  {
+   "name": "calc.inclusive",
+   "type": "bool",
+   "description": "Report inclusive instead of exclusive times"
+  },{
+   "name": "aggregate_across_ranks",
+   "type": "bool",
+   "description": "Aggregate results across MPI ranks"
+  },{
+   "name": "order_by_time",
+   "type": "bool",
+   "description": "Order tree branches by highest exclusive runtime",
+   "query":
+   [
     {
-     "name"        : "runtime-report",
-     "description" : "Print a time profile for annotated regions",
-     "categories"  : [ "metric", "output", "region", "treeformatter", "event" ],
-     "services"    : [ "aggregate", "event", "timer" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
-         "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
-         "CALI_TIMER_UNIT"                 : "sec"
-       },
-     "defaults"    : { "order_as_visited": "true", "output.append": "true" },
-     "options":
-     [
-      {
-       "name": "calc.inclusive",
-       "type": "bool",
-       "description": "Report inclusive instead of exclusive times"
-      },
-      {
-       "name": "aggregate_across_ranks",
-       "type": "bool",
-       "description": "Aggregate results across MPI ranks"
-      },
-      {
-       "name": "order_by_time",
-       "type": "bool",
-       "description": "Order tree branches by highest exclusive runtime",
-       "query":
-       [
-        {
-         "level": "local",
-         "order by": [ "sum#sum#time.duration\ desc" ]
-        },
-        {
-         "level": "cross",
-         "aggregate": "sum(sum#sum#time.duration)",
-         "order by" : [ "sum#sum#sum#time.duration\ desc" ]
-        }
-       ]
-      },
-      {
-       "name": "output.append",
-       "type": "bool",
-       "description": "Use append mode when writing to files"
-      }
-     ]
-    };
+     "level": "local",
+     "order by": [ "sum#sum#time.duration\ desc" ]
+    },{
+     "level": "cross",
+     "aggregate": "sum(sum#sum#time.duration)",
+     "order by" : [ "sum#sum#sum#time.duration\ desc" ]
+    }
+   ]
+  },{
+   "name": "output.append",
+   "type": "bool",
+   "description": "Use append mode when writing to files"
+  }
+ ]
+}
 )json";
 
 } // namespace
