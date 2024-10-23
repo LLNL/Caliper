@@ -278,16 +278,18 @@ void nameval_cb(
 }
 
 const char* spec = R"json(
-    {   "name"        : "adiak_import",
-        "description" : "Import program run metadata from Adiak",
-        "config"      : [
-            { "name"        : "categories",
-              "type"        : "string",
-              "description" : "List of Adiak categories to import",
-              "value"       : "2,3"
-            }
-        ]
-    }
+{
+"name"        : "adiak_import",
+"description" : "Import program run metadata from Adiak",
+"config"      :
+[
+{
+ "name": "categories",
+ "type": "string",
+ "description": "List of Adiak categories to import",
+ "value": "2,3"
+}
+]}
 )json";
 
 void register_adiak_import(Caliper* c, Channel* channel)

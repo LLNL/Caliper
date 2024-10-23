@@ -139,34 +139,36 @@ public:
 };
 
 const char* MpiReport::s_spec = R"json(
-{   "name": "mpireport",
-    "description": "Aggregate data across MPI ranks and write output using CalQL query",
-    "config": [
-        {   "name": "filename",
-            "description": "File name for report stream",
-            "type": "string",
-            "value": "stdout"
-        },
-        {   "name": "append",
-            "description": "Append to file instead of overwriting",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "config",
-            "description": "CalQL query for cross-process aggregation and formatting",
-            "type": "string"
-        },
-        {   "name": "local_config",
-            "description": "CalQL query for process-local aggregation step",
-            "type": "string"
-        },
-        {   "name": "write_on_finalize",
-            "description": "Write output at MPI_Finalize",
-            "type": "bool",
-            "value": "true"
-        }
-    ]
-}
+{
+"name": "mpireport",
+"description": "Aggregate data across MPI ranks and write output using CalQL query",
+"config":
+[
+ {
+  "name": "filename",
+  "description": "File name for report stream",
+  "type": "string",
+  "value": "stdout"
+ },{
+  "name": "append",
+  "description": "Append to file instead of overwriting",
+  "type": "bool",
+  "value": "false"
+ },{
+  "name": "config",
+  "description": "CalQL query for cross-process aggregation and formatting",
+  "type": "string"
+ },{
+  "name": "local_config",
+  "description": "CalQL query for process-local aggregation step",
+  "type": "string"
+ },{
+  "name": "write_on_finalize",
+  "description": "Write output at MPI_Finalize",
+  "type": "bool",
+  "value": "true"
+ }
+]}
 )json";
 
 } // namespace

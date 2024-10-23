@@ -421,14 +421,17 @@ public:
 }; // class Aggregate
 
 const char* Aggregate::s_spec = R"json(
-{   "name"        : "aggregate",
-    "description" : "Aggregate snapshots at runtime",
-    "config" : [
-      { "name"        : "key",
-        "description" : "Attributes in the aggregation key (i.e., group by)",
-        "type"        : "string"
-      }
-    ]
+{
+ "name"        : "aggregate",
+ "description" : "Aggregate snapshots at runtime",
+ "config" :
+ [
+  {
+   "name"        : "key",
+   "description" : "Attributes in the aggregation key (i.e., group by)",
+   "type"        : "string"
+  }
+ ]
 }
 )json";
 

@@ -481,21 +481,22 @@ public:
 int PapiService::s_num_instances = 0;
 
 const char* PapiService::s_spec = R"json(
-{   "name": "papi",
-    "description": "Record PAPI counters",
-    "config": [
-        {   "name": "counters",
-            "description": "List of PAPI events to record",
-            "type": "string"
-        },
-        {
-            "name": "enable_multiplexing",
-            "description": "Always enable multiplexing",
-            "type": "bool",
-            "value": "False"
-        }
-    ]
-}
+{
+"name": "papi",
+"description": "Record PAPI counters",
+"config":
+[
+ {
+  "name": "counters",
+  "description": "List of PAPI events to record",
+  "type": "string"
+ },{
+  "name": "enable_multiplexing",
+  "description": "Always enable multiplexing",
+  "type": "bool",
+  "value": "False"
+ }
+]}
 )json";
 
 } // namespace

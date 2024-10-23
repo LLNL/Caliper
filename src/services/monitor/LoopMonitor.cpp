@@ -170,25 +170,27 @@ public:
 };
 
 const char* LoopMonitor::s_spec = R"json(
-{   "name"        : "loop_monitor",
-    "description" : "Trigger snapshots on loop iterations",
-    "config"      : [
-        {   "name"        : "iteration_interval",
-            "description" : "Trigger snapshots every N iterations",
-            "type"        : "int",
-            "value"       : "0"
-        },
-        {   "name"        : "time_interval",
-            "description" : "Trigger snapshots every t seconds",
-            "type"        : "double",
-            "value"       : "0.0"
-        },
-        {   "name"        : "target_loops",
-            "description" : "List of loops to instrument",
-            "type"        : "string"
-        }
-    ]
-}
+{
+"name"        : "loop_monitor",
+"description" : "Trigger snapshots on loop iterations",
+"config"      :
+[
+ {
+  "name": "iteration_interval",
+  "type": "int",
+  "description": "Trigger snapshots every N iterations",
+  "value": "0"
+ },{
+  "name": "time_interval",
+  "description": "Trigger snapshots every t seconds",
+  "type": "double",
+  "value": "0.0"
+ },{
+  "name": "target_loops",
+  "description": "List of loops to instrument",
+  "type": "string"
+ }
+]}
 )json";
 
 } // namespace

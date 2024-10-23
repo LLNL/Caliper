@@ -299,40 +299,41 @@ public:
 
 const char* SymbolLookup::s_spec = R"json(
 {
-    "name": "symbollookup",
-    "description": "Perform symbol name lookup for source code address attributes",
-    "config": [
-        {   "name": "attributes",
-            "description": "List of address attributes for which to perform symbol lookup",
-            "type": "string"
-        },
-        {   "name": "lookup_functions",
-            "description": "Perform function name lookup",
-            "type": "bool",
-            "value": "true"
-        },
-        {   "name": "lookup_sourceloc",
-            "description": "Perform source location lookup (source file name + line number)",
-            "type": "bool",
-            "value": "true"
-        },
-        {   "name": "lookup_file",
-            "description": "Perform source file name lookup",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "lookup_line",
-            "description": "Perform source line lookup",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "lookup_module",
-            "description": "Perform module lookup",
-            "type": "bool",
-            "value": "true"
-        }
-    ]
-}
+"name"        : "symbollookup",
+"description" : "Perform symbol name lookup for source code address attributes",
+"config":
+[
+ {
+  "name": "attributes",
+  "description": "List of address attributes for which to perform symbol lookup",
+  "type": "string"
+ },{
+  "name": "lookup_functions",
+  "description": "Perform function name lookup",
+  "type": "bool",
+  "value": "true"
+ },{
+  "name": "lookup_sourceloc",
+  "description": "Perform source location lookup (source file name + line number)",
+  "type": "bool",
+  "value": "true"
+ },{
+  "name": "lookup_file",
+  "description": "Perform source file name lookup",
+  "type": "bool",
+  "value": "false"
+ },{
+  "name": "lookup_line",
+  "description": "Perform source line lookup",
+  "type": "bool",
+  "value": "false"
+ },{
+  "name": "lookup_module",
+  "description": "Perform module lookup",
+  "type": "bool",
+  "value": "true"
+ }
+]}
 )json";
 
 } // namespace

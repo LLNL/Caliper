@@ -237,30 +237,33 @@ public:
 }; // class Callpath
 
 const char* Callpath::s_spec = R"json(
-{   "name"        : "callpath",
-    "description" : "Record call stack at each snapshot",
-    "config"      : [
-        { "name"        : "use_name",
-          "type"        : "bool",
-          "description" : "Record function names",
-          "value"       : "false"
-        },
-        { "name"        : "use_address",
-          "type"        : "bool",
-          "description" : "Record function addresses",
-          "value"       : "true"
-        },
-        { "name"        : "skip_frames",
-          "type"        : "uint",
-          "description" : "Skip this number of stack frames",
-          "value"       : "0"
-        },
-        { "name"        : "skip_internal",
-          "type"        : "bool",
-          "description" : "Skip internal (inside Caliper library) stack frames",
-          "value"       : "true"
-        }
-    ]
+{
+ "name"        : "callpath",
+ "description" : "Record call stack at each snapshot",
+ "config"      :
+ [
+  {
+   "name": "use_name",
+   "type": "bool",
+   "description": "Record function names",
+   "value": "false"
+  },{
+   "name": "use_address",
+   "type": "bool",
+   "description": "Record function addresses",
+   "value": "true"
+  },{
+   "name": "skip_frames",
+   "type": "uint",
+   "description": "Skip this number of stack frames",
+   "value": "0"
+  },{
+   "name": "skip_internal",
+   "type": "bool",
+   "description": "Skip internal (inside Caliper library) stack frames",
+   "value": "true"
+  }
+ ]
 }
 )json";
 

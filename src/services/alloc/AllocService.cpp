@@ -504,30 +504,33 @@ public:
 };
 
 const char* AllocService::s_spec = R"json(
-{   "name" : "alloc",
-    "description" : "Track user-defined memory allocations",
-    "config" : [
-        {   "name"        : "resolve_addresses",
-            "type"        : "bool",
-            "description" : "Resolve memory addresses in snapshots",
-            "value"       : "false"
-        },
-        {   "name"        : "track_allocations",
-            "type"        : "bool",
-            "description" : "Record snapshots for annotated memory regions",
-            "value"       : "true"
-        },
-        {   "name"        : "record_active_mem",
-            "type"        : "bool",
-            "description" : "Record the active allocated memory at each snapshot",
-            "value"       : "false"
-        },
-        {   "name"        : "record_highwatermark",
-            "type"        : "bool",
-            "description" : "Record the high water mark of allocated memory at each snapshot",
-            "value"       : "false"
-        }
-    ]
+{
+ "name" : "alloc",
+ "description" : "Track user-defined memory allocations",
+ "config" :
+ [
+  {
+   "name"        : "resolve_addresses",
+   "type"        : "bool",
+   "description" : "Resolve memory addresses in snapshots",
+   "value"       : "false"
+  },{
+   "name"        : "track_allocations",
+   "type"        : "bool",
+   "description" : "Record snapshots for annotated memory regions",
+   "value"       : "true"
+  },{
+   "name"        : "record_active_mem",
+   "type"        : "bool",
+   "description" : "Record the active allocated memory at each snapshot",
+   "value"       : "false"
+  },{
+   "name"        : "record_highwatermark",
+   "type"        : "bool",
+   "description" : "Record the high water mark of allocated memory at each snapshot",
+   "value"       : "false"
+  }
+ ]
 }
 )json";
 

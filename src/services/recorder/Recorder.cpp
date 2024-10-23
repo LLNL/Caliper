@@ -30,19 +30,21 @@ namespace
 {
 
 const char* spec = R"json(
-    {   "name"        : "recorder",
-        "description" : "Write records into .cali file",
-        "config"      : [
-            { "name"        : "filename",
-              "type"        : "string",
-              "description" : "Stream or file name. If empty, auto-generate file."
-            },
-            { "name"        : "directory",
-              "type"        : "string",
-              "description" : "Directory to write .cali files to."
-            }
-        ]
-    }
+{
+"name"        : "recorder",
+"description" : "Write records into .cali file",
+"config"      :
+[
+ {
+  "name": "filename",
+  "type": "string",
+  "description": "Stream or file name. If empty, auto-generate file."
+ },{
+  "name": "directory",
+  "type": "string",
+  "description": "Directory to write .cali files to."
+ }
+]}
 )json";
 
 void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)

@@ -224,21 +224,24 @@ public:
 }; // class TimerService
 
 const char* TimerService::s_spec = R"json(
-{   "name": "timer",
-    "description": "Record timestamps and time durations",
-    "config": [
-        {   "name": "inclusive_duration",
-            "description": "Record inclusive duration of begin/end regions",
-            "type": "bool",
-            "value": "false"
-        }
-    ]
-}
+{
+"name": "timer",
+"description": "Record timestamps and time durations",
+"config":
+[
+ {
+  "name": "inclusive_duration",
+  "type": "bool",
+  "description": "Record inclusive duration of begin/end regions",
+  "value": "false"
+ }
+]}
 )json";
 
 const char* timestamp_spec = R"json(
-{   "name": "timestamp",
-    "description": "Deprecated name for 'timer' service"
+{
+"name": "timestamp",
+"description": "Deprecated name for 'timer' service"
 }
 )json";
 

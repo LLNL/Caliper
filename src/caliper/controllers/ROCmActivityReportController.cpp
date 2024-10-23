@@ -115,37 +115,36 @@ cali::ChannelController* make_controller(
 }
 
 const char* controller_spec = R"json(
-    {
-     "name"        : "rocm-activity-report",
-     "description" : "Record and print AMD ROCm activities (kernel executions, memcopies, etc.)",
-     "categories"  : [ "output", "region", "treeformatter", "event" ],
-     "services"    : [ "aggregate", "roctracer", "event", "timer" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",
-         "CALI_EVENT_ENABLE_SNAPSHOT_INFO"  : "false",
-         "CALI_ROCTRACER_TRACE_ACTIVITIES"  : "true"
-       },
-     "defaults"    : { "order_as_visited": "true", "output.append": "true" },
-     "options":
-     [
-      {
-       "name": "aggregate_across_ranks",
-       "type": "bool",
-       "description": "Aggregate results across MPI ranks"
-      },
-      {
-       "name": "show_kernels",
-       "type": "bool",
-       "config": { "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true" },
-       "description": "Show kernel names"
-      },
-      {
-       "name": "output.append",
-       "type": "bool",
-       "description": "Use append mode when writing to files"
-      }
-     ]
-    }
+{
+ "name"        : "rocm-activity-report",
+ "description" : "Record and print AMD ROCm activities (kernel executions, memcopies, etc.)",
+ "categories"  : [ "output", "region", "treeformatter", "event" ],
+ "services"    : [ "aggregate", "roctracer", "event", "timer" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",
+  "CALI_EVENT_ENABLE_SNAPSHOT_INFO"  : "false",
+  "CALI_ROCTRACER_TRACE_ACTIVITIES"  : "true"
+ },
+ "defaults"    : { "order_as_visited": "true", "output.append": "true" },
+ "options":
+ [
+  {
+   "name": "aggregate_across_ranks",
+   "type": "bool",
+   "description": "Aggregate results across MPI ranks"
+  },{
+   "name": "show_kernels",
+   "type": "bool",
+   "config": { "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true" },
+   "description": "Show kernel names"
+  },{
+   "name": "output.append",
+   "type": "bool",
+   "description": "Use append mode when writing to files"
+  }
+ ]
+}
 )json";
 
 } // namespace

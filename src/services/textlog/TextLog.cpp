@@ -186,24 +186,26 @@ public:
 }; // TextLogService
 
 const char* TextLogService::s_spec = R"json(
-{   "name": "textlog",
-    "description": "Write runtime output for (some) snapshots",
-    "config": [
-        {   "name": "trigger",
-            "type": "string",
-            "description": "List of attributes for which to write text log entries",
-        },
-        {   "name": "formatstring",
-            "description": "Format string for the text log output",
-            "type": "string"
-        },
-        {   "name": "filename",
-            "type": "string",
-            "description": "File or stream to write to",
-            "value": "stdout"
-        }
-    ]
-}
+{
+"name": "textlog",
+"description": "Write runtime output for (some) snapshots",
+"config":
+[
+ {
+  "name": "trigger",
+  "type": "string",
+  "description": "List of attributes for which to write text log entries",
+ },{
+  "name": "formatstring",
+  "description": "Format string for the text log output",
+  "type": "string"
+ },{
+  "name": "filename",
+  "type": "string",
+  "description": "File or stream to write to",
+  "value": "stdout"
+ }
+]}
 )json";
 
 } // namespace

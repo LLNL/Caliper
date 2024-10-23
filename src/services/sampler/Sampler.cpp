@@ -51,16 +51,18 @@ int n_processed_samples = 0;
 Channel channel;
 
 const char* spec = R"json(
-{   "name": "sampler",
-    "description": "Trigger snapshots via sampling timer",
-    "config": [
-        { "name": "frequency",
-          "description": "Sampling frequency in Hz",
-          "type": "int",
-          "value": "50"
-        }
-    ]
-}
+{
+"name": "sampler",
+"description": "Trigger snapshots via sampling timer",
+"config":
+[
+ {
+  "name": "frequency",
+  "description": "Sampling frequency in Hz",
+  "type": "int",
+  "value": "50"
+ }
+]}
 )json";
 
 void on_prof(int sig, siginfo_t* info, void* context)

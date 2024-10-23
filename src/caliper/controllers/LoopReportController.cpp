@@ -293,51 +293,48 @@ public:
     }
 };
 
-const char* loop_report_controller_spec =
-    "{"
-    " \"name\"        : \"loop-report\","
-    " \"description\" : \"Print summary and time-series information for loops\","
-    " \"categories\"  : [ \"metric\", \"output\" ],"
-    " \"services\"    : [ \"loop_monitor\", \"timer\", \"trace\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\","
-    "     \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
-    "     \"CALI_TIMER_UNIT\"            : \"sec\""
-    "   },"
-    " \"options\": "
-    " ["
-    "  {"
-    "   \"name\": \"summary\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Print loop summary\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Print time series\""
-    "  },"
-    "  {"
-    "   \"name\": \"iteration_interval\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Measure every N loop iterations\""
-    "  },"
-    "  {"
-    "   \"name\": \"time_interval\","
-    "   \"type\": \"double\","
-    "   \"description\": \"Measure after t seconds\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.maxrows\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Max number of rows in timeseries display. Set to 0 to show all. Default: 20.\""
-    "  },"
-    "  {"
-    "   \"name\": \"target_loops\","
-    "   \"type\": \"string\","
-    "   \"description\": \"List of loops to target. Default: any top-level loop.\""
-    "  }"
-    " ]"
-    "}";
+const char* loop_report_controller_spec = R"json(
+{
+ "name"        : "loop-report",
+ "description" : "Print summary and time-series information for loops",
+ "categories"  : [ "metric", "output" ],
+ "services"    : [ "loop_monitor", "timer", "trace" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT" : "false",
+  "CALI_CHANNEL_CONFIG_CHECK"  : "false",
+  "CALI_TIMER_UNIT"            : "sec"
+ },
+ "options":
+ [
+  {
+   "name": "summary",
+   "type": "bool",
+   "description": "Print loop summary"
+  },{
+   "name": "timeseries",
+   "type": "bool",
+   "description": "Print time series"
+  },{
+   "name": "iteration_interval",
+   "type": "int",
+   "description": "Measure every N loop iterations"
+  },{
+   "name": "time_interval",
+   "type": "double",
+   "description": "Measure after t seconds"
+  },{
+   "name": "timeseries.maxrows",
+   "type": "int",
+   "description": "Max number of rows in timeseries display. Set to 0 to show all. Default: 20."
+  },{
+   "name": "target_loops",
+   "type": "string",
+   "description": "List of loops to target. Default: any top-level loop."
+  }
+ ]
+}
+)json";
 
 cali::ChannelController* make_loopreport_controller(
     const char*                         name,

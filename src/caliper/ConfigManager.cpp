@@ -23,7 +23,18 @@ namespace cali
 
 // defined in controllers/controllers.cpp
 extern const ConfigManager::ConfigInfo* builtin_controllers_table[];
-extern const char*                      builtin_option_specs;
+
+extern const char* builtin_base_option_specs;
+extern const char* builtin_gotcha_option_specs;
+extern const char* builtin_libdw_option_specs;
+extern const char* builtin_mpi_option_specs;
+extern const char* builtin_openmp_option_specs;
+extern const char* builtin_cuda_option_specs;
+extern const char* builtin_rocm_option_specs;
+extern const char* builtin_pcp_option_specs;
+extern const char* builtin_umpire_option_specs;
+extern const char* builtin_papi_option_specs;
+extern const char* builtin_kokkos_option_specs;
 
 extern void add_submodule_controllers_and_services();
 
@@ -31,6 +42,40 @@ extern void add_submodule_controllers_and_services();
 
 namespace
 {
+
+const char* builtin_option_specs_list[] =
+{
+    builtin_base_option_specs,
+#ifdef CALIPER_HAVE_GOTCHA
+    builtin_gotcha_option_specs,
+#endif
+#ifdef CALIPER_HAVE_MPI
+    builtin_mpi_option_specs,
+#endif
+#ifdef CALIPER_HAVE_OMPT
+    builtin_openmp_option_specs,
+#endif
+#ifdef CALIPER_HAVE_CUPTI
+    builtin_cuda_option_specs,
+#endif
+#if defined(CALIPER_HAVE_ROCTRACER) || defined(CALIPER_HAVE_ROCPROFILER)
+    builtin_rocm_option_specs,
+#endif
+#ifdef CALIPER_HAVE_LIBDW
+    builtin_libdw_option_specs,
+#endif
+#ifdef CALIPER_HAVE_PAPI
+    builtin_papi_option_specs,
+#endif
+#ifdef CALIPER_HAVE_PCP
+    builtin_pcp_option_specs,
+#endif
+#ifdef CALIPER_HAVE_UMPIRE
+    builtin_umpire_option_specs,
+#endif
+    builtin_kokkos_option_specs,
+    nullptr
+};
 
 ChannelController* make_basic_channel_controller(
     const char*                   name,
@@ -997,7 +1042,7 @@ struct ConfigManager::ConfigManagerImpl {
         if (m_global_opts.error())
             set_error(m_global_opts.error_msg());
         if (!ok)
-            set_error(std::string("parse error: ") + util::clamp_string(builtin_option_specs, 48));
+            set_error(std::string("parse error: ") + util::clamp_string(json, 48));
     }
 
     void import_builtin_config_specs()
@@ -1360,7 +1405,11 @@ struct ConfigManager::ConfigManagerImpl {
         return ret;
     }
 
-    ConfigManagerImpl() { add_global_option_specs(builtin_option_specs); }
+    ConfigManagerImpl()
+    {
+        for (const char** spec_p = builtin_option_specs_list; *spec_p; ++spec_p)
+            add_global_option_specs(*spec_p);
+    }
 };
 
 ConfigManager::ConfigManager() : mP(new ConfigManagerImpl)

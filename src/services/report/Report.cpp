@@ -99,25 +99,27 @@ public:
 };
 
 const char* Report::s_spec = R"json(
-{   "name": "report",
-    "description": "Write output using CalQL query",
-    "config": [
-        {   "name": "filename",
-            "description": "File name for report stream",
-            "type": "string",
-            "value": "stdout"
-        },
-        {   "name": "append",
-            "description": "Append to file instead of overwriting",
-            "type": "bool",
-            "value": "false"
-        },
-        {   "name": "config",
-            "description": "CalQL query to generate report",
-            "type": "string"
-        }
-    ]
-}
+{
+"name"        : "report",
+"description" : "Write output using CalQL query",
+"config"      :
+[
+ {
+  "name": "filename",
+  "type": "string",
+  "description": "File name for report stream",
+  "value": "stdout"
+ },{
+  "name": "append",
+  "type": "bool",
+  "description": "Append to file instead of overwriting",
+  "value": "false"
+ },{
+  "name": "config",
+  "type": "string"
+  "description": "CalQL query to generate report",
+ }
+]}
 )json";
 
 } // namespace

@@ -122,31 +122,31 @@ cali::ChannelController* make_controller(
 }
 
 const char* controller_spec = R"json(
-    {
-     "name"        : "cuda-activity-profile",
-     "description" : "Record CUDA activities and a write profile",
-     "categories"  : [ "adiak", "metric", "cuptitrace.metric", "output", "region", "event" ],
-     "services"    : [ "aggregate", "cupti", "cuptitrace", "event" ],
-     "config"      :
-       { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
-         "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
-         "CALI_CUPTITRACE_SNAPSHOT_DURATION" : "true"
-       },
-     "defaults"    : { "node.order": "true" },
-     "options":
-     [
-      {
-        "name": "output.format",
-        "type": "string",
-        "description": "Output format ('hatchet', 'cali', 'json')"
-      },
-      {
-        "name": "use.mpi",
-        "type": "bool",
-        "description": "Merge results into a single output stream in MPI programs"
-      }
-     ]
-    };
+{
+ "name"        : "cuda-activity-profile",
+ "description" : "Record CUDA activities and a write profile",
+ "categories"  : [ "adiak", "metric", "cuptitrace.metric", "output", "region", "event" ],
+ "services"    : [ "aggregate", "cupti", "cuptitrace", "event" ],
+ "config"      :
+ { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
+   "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
+   "CALI_CUPTITRACE_SNAPSHOT_DURATION" : "true"
+ },
+ "defaults"    : { "node.order": "true" },
+ "options":
+ [
+  {
+   "name": "output.format",
+   "type": "string",
+   "description": "Output format ('hatchet', 'cali', 'json')"
+  },
+  {
+   "name": "use.mpi",
+   "type": "bool",
+   "description": "Merge results into a single output stream in MPI programs"
+  }
+ ]
+};
 )json";
 
 } // namespace
