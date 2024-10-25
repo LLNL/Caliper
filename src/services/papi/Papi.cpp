@@ -11,8 +11,8 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/spinlock.hpp"
 
@@ -64,6 +64,7 @@ class PapiService
     Attribute m_thread_attr;
 
     bool m_enable_multiplex;
+    bool m_disable_multiplex;
 
     unsigned m_num_eventsets;
     unsigned m_num_event_mismatch;
@@ -73,7 +74,8 @@ class PapiService
     unsigned m_num_failed_start;
     unsigned m_num_threads;
 
-    // PAPI component id -> event group info map for constructing the per-thread PAPI EventSets
+    // PAPI component id -> event group info map for constructing the per-thread
+    // PAPI EventSets
     eventset_map_t m_event_groups;
 
     ThreadInfo*    m_thread_list;
@@ -168,7 +170,8 @@ class PapiService
 
             int num = static_cast<int>(p.second->codes.size());
 
-            if (cpi && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
+            if (!m_disable_multiplex && cpi
+                && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
                 if (Log::verbosity() >= 2)
                     Log(2).stream() << "papi: Initializing multiplex support for component " << p.first << " ("
                                     << cpi->name << ")" << std::endl;
@@ -366,6 +369,7 @@ class PapiService
 
     PapiService(Caliper* c, Channel* channel)
         : m_enable_multiplex(false),
+          m_disable_multiplex(false),
           m_num_eventsets(0),
           m_num_event_mismatch(0),
           m_num_failed_acquire(0),
@@ -446,7 +450,8 @@ public:
         ++s_num_instances;
         PapiService* instance = new PapiService(c, channel);
 
-        instance->m_enable_multiplex = cfg.get("enable_multiplexing").to_bool();
+        instance->m_enable_multiplex  = cfg.get("enable_multiplexing").to_bool();
+        instance->m_disable_multiplex = cfg.get("disable_multiplexing").to_bool();
 
         if (!(instance->setup_event_info(c, eventlist) && instance->setup_thread_eventsets(c))) {
             Log(0).stream() << channel->name() << ": papi: Failed to initialize event sets, dropping papi service"
@@ -490,13 +495,21 @@ const char* PapiService::s_spec = R"json(
   "name": "counters",
   "description": "List of PAPI events to record",
   "type": "string"
- },{
+ },
+ {
   "name": "enable_multiplexing",
   "description": "Always enable multiplexing",
   "type": "bool",
   "value": "False"
+ },
+ {
+  "name": "disable_multiplexing",
+  "description": "Always disable multiplexing",
+  "type": "bool",
+  "value": "False"
  }
-]}
+]
+}
 )json";
 
 } // namespace

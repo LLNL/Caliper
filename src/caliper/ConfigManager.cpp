@@ -7,8 +7,8 @@
 
 #include "caliper/common/Log.h"
 
-#include "../src/common/util/parse_util.h"
 #include "../src/common/util/format_util.h"
+#include "../src/common/util/parse_util.h"
 
 #include "../services/Services.h"
 
@@ -33,8 +33,10 @@ extern const char* builtin_cuda_option_specs;
 extern const char* builtin_rocm_option_specs;
 extern const char* builtin_pcp_option_specs;
 extern const char* builtin_umpire_option_specs;
-extern const char* builtin_papi_option_specs;
 extern const char* builtin_kokkos_option_specs;
+
+extern const char* builtin_papi_hsw_option_specs;
+extern const char* builtin_papi_spr_option_specs;
 
 extern void add_submodule_controllers_and_services();
 
@@ -42,40 +44,6 @@ extern void add_submodule_controllers_and_services();
 
 namespace
 {
-
-const char* builtin_option_specs_list[] =
-{
-    builtin_base_option_specs,
-#ifdef CALIPER_HAVE_GOTCHA
-    builtin_gotcha_option_specs,
-#endif
-#ifdef CALIPER_HAVE_MPI
-    builtin_mpi_option_specs,
-#endif
-#ifdef CALIPER_HAVE_OMPT
-    builtin_openmp_option_specs,
-#endif
-#ifdef CALIPER_HAVE_CUPTI
-    builtin_cuda_option_specs,
-#endif
-#if defined(CALIPER_HAVE_ROCTRACER) || defined(CALIPER_HAVE_ROCPROFILER)
-    builtin_rocm_option_specs,
-#endif
-#ifdef CALIPER_HAVE_LIBDW
-    builtin_libdw_option_specs,
-#endif
-#ifdef CALIPER_HAVE_PAPI
-    builtin_papi_option_specs,
-#endif
-#ifdef CALIPER_HAVE_PCP
-    builtin_pcp_option_specs,
-#endif
-#ifdef CALIPER_HAVE_UMPIRE
-    builtin_umpire_option_specs,
-#endif
-    builtin_kokkos_option_specs,
-    nullptr
-};
 
 ChannelController* make_basic_channel_controller(
     const char*                   name,
@@ -139,7 +107,8 @@ ConfigManager::arglist_t merge_new_elements(ConfigManager::arglist_t& to, const 
             return p.first == v.first;
         });
 
-        if (it == to.end() || p.first == "metadata") // hacky but we want to allow multiple entries for metadata
+        if (it == to.end() || p.first == "metadata") // hacky but we want to allow multiple entries
+                                                     // for metadata
             to.push_back(p);
     }
 
@@ -903,6 +872,8 @@ struct ConfigManager::ConfigManagerImpl {
     bool        m_error     = false;
     std::string m_error_msg = "";
 
+    std::vector<const char*> builtin_option_specs_list;
+
     std::map<std::string, arglist_t> m_default_parameters_for_spec;
 
     arglist_t m_default_parameters;
@@ -1406,9 +1377,48 @@ struct ConfigManager::ConfigManagerImpl {
     }
 
     ConfigManagerImpl()
+        : builtin_option_specs_list({
+              builtin_base_option_specs,
+#ifdef CALIPER_HAVE_GOTCHA
+                  builtin_gotcha_option_specs,
+#endif
+#ifdef CALIPER_HAVE_MPI
+                  builtin_mpi_option_specs,
+#endif
+#ifdef CALIPER_HAVE_OMPT
+                  builtin_openmp_option_specs,
+#endif
+#ifdef CALIPER_HAVE_CUPTI
+                  builtin_cuda_option_specs,
+#endif
+#if defined(CALIPER_HAVE_ROCTRACER) || defined(CALIPER_HAVE_ROCPROFILER)
+                  builtin_rocm_option_specs,
+#endif
+#ifdef CALIPER_HAVE_LIBDW
+                  builtin_libdw_option_specs,
+#endif
+#ifdef CALIPER_HAVE_PCP
+                  builtin_pcp_option_specs,
+#endif
+#ifdef CALIPER_HAVE_UMPIRE
+                  builtin_umpire_option_specs,
+#endif
+                  builtin_kokkos_option_specs
+          })
     {
-        for (const char** spec_p = builtin_option_specs_list; *spec_p; ++spec_p)
-            add_global_option_specs(*spec_p);
+#ifdef CALIPER_HAVE_PAPI
+#ifdef CALIPER_HAVE_ARCH
+        if (CALIPER_HAVE_ARCH == "sapphirerapids") {
+            builtin_option_specs_list.push_back(builtin_papi_spr_option_specs);
+        } else {
+            builtin_option_specs_list.push_back(builtin_papi_hsw_option_specs);
+        }
+#else
+        builtin_option_specs_list.push_back(builtin_papi_hsw_option_specs);
+#endif
+#endif
+        for (const char* spec_p : builtin_option_specs_list)
+            add_global_option_specs(spec_p);
     }
 };
 
