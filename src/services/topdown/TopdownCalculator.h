@@ -59,9 +59,8 @@ public:
 
     virtual ~TopdownCalculator() = default;
 
-    // Returns true if PAPI multiplexing cannot be used for the
-    // counters and/or architecture needed for the subclass
-    virtual bool check_for_disabled_multiplex() const = 0;
+    // Setup the hardware counters. Returns "true" if successful.
+    virtual bool setup_config(Caliper& c, Channel& channel) const = 0;
 
     // Computes the L1 topdown metrics using the counters contained
     // in the Caliper Entries.

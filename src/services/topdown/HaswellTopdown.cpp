@@ -1,5 +1,10 @@
 #include "HaswellTopdown.h"
 
+#include "../Services.h"
+
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+
 #include <algorithm>
 
 namespace cali
@@ -53,9 +58,17 @@ HaswellTopdown::HaswellTopdown(IntelTopdownLevel level)
     )
 {}
 
-bool HaswellTopdown::check_for_disabled_multiplex() const
+bool HaswellTopdown::setup_config(Caliper& c, Channel& channel) const
 {
-    return false;
+    channel.config().set("CALI_PAPI_COUNTERS", m_level == All ? m_all_counters : m_top_counters);
+    channel.config().set("CALI_PAPI_ENABLE_MULTIPLEXING", "true");
+    if (!cali::services::register_service(&c, &channel, "papi")) {
+        Log(0).stream() << channel.name() << ": topdown: Unable to register papi service, skipping topdown"
+            << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 std::vector<Entry> HaswellTopdown::compute_toplevel(const std::vector<Entry>& rec)
