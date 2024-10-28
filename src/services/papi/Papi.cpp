@@ -170,8 +170,7 @@ class PapiService
 
             int num = static_cast<int>(p.second->codes.size());
 
-            if (!m_disable_multiplex && cpi
-                && (num > 4 /* magic number for Intel counter support :-( */ || m_enable_multiplex)) {
+            if (m_enable_multiplex) {
                 if (Log::verbosity() >= 2)
                     Log(2).stream() << "papi: Initializing multiplex support for component " << p.first << " ("
                                     << cpi->name << ")" << std::endl;
@@ -498,15 +497,9 @@ const char* PapiService::s_spec = R"json(
  },
  {
   "name": "enable_multiplexing",
-  "description": "Always enable multiplexing",
+  "description": "Enable multiplexing",
   "type": "bool",
-  "value": "False"
- },
- {
-  "name": "disable_multiplexing",
-  "description": "Always disable multiplexing",
-  "type": "bool",
-  "value": "False"
+  "value": "false"
  }
 ]
 }

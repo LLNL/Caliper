@@ -20,6 +20,7 @@
 #include "../Services.h"
 
 #include <algorithm>
+#include <memory>
 #include <sstream>
 
 using namespace cali;
@@ -40,13 +41,18 @@ class IntelTopdown
     unsigned num_ret_computed;
     unsigned num_ret_skipped;
 
-    cali::topdown::IntelTopdownLevel m_level;
+    topdown::IntelTopdownLevel m_level;
+    std::shared_ptr<topdown::TopdownCalculator> m_calculator;
 
-    cali::topdown::TopdownCalculator* m_calculator;
+    bool find_counter_attrs(CaliperMetadataAccessInterface& db)
+    {
+        return m_calculator->find_counter_attrs(db);
+    }
 
-    bool find_counter_attrs(CaliperMetadataAccessInterface& db) { return m_calculator->find_counter_attrs(db); }
-
-    void make_result_attrs(CaliperMetadataAccessInterface& db) { m_calculator->make_result_attrs(db); }
+    void make_result_attrs(CaliperMetadataAccessInterface& db)
+    {
+        m_calculator->make_result_attrs(db);
+    }
 
     void postprocess_snapshot_cb(std::vector<Entry>& rec)
     {
@@ -122,7 +128,7 @@ class IntelTopdown
         }
     }
 
-    explicit IntelTopdown(cali::topdown::TopdownCalculator* calculator)
+    explicit IntelTopdown(std::shared_ptr<topdown::TopdownCalculator>& calculator)
         : num_top_computed(0),
           num_top_skipped(0),
           num_be_computed(0),
@@ -133,16 +139,16 @@ class IntelTopdown
           num_bsp_skipped(0),
           m_level(calculator->get_level()),
           m_calculator(calculator)
-    {}
+    {
+    }
 
     ~IntelTopdown()
     {
-        if (m_calculator != nullptr) {
-            delete m_calculator;
-        }
     }
 
 public:
+
+    static const char* s_spec;
 
     static void intel_topdown_register(Caliper* c, Channel* channel)
     {
@@ -159,32 +165,18 @@ public:
             return;
         }
 
-        cali::topdown::TopdownCalculator* calculator;
-
+        std::shared_ptr<topdown::TopdownCalculator> calculator;
 #if defined(CALIPER_HAVE_ARCH)
         if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
-            calculator = new cali::topdown::SapphireRapidsTopdown(level);
+            calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::SapphireRapidsTopdown(level));
         } else {
 #endif
-            calculator = new cali::topdown::HaswellTopdown(level); // Default type of calculation
+            calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::HaswellTopdown(level)); // Default type of calculation
 #if defined(CALIPER_HAVE_ARCH)
         }
 #endif
 
-        channel->config().set("CALI_PAPI_COUNTERS", calculator->get_counters());
-        // Some PAPI counters for topdown (particularly on SPR) don't play nice
-        // with PAPI multiplexing. Ask the TopdownCalculator class whether we need
-        // to disable multiplexing for the corresponding architecture.
-        channel->config().set(
-            "CALI_PAPI_DISABLE_MULTIPLEXING",
-            calculator->check_for_disabled_multiplex() ? "true" : "false"
-        );
-
-        if (!cali::services::register_service(c, channel, "papi")) {
-            Log(0).stream() << channel->name() << ": topdown: Unable to register papi service, skipping topdown"
-                            << std::endl;
-            return;
-        }
+        calculator->setup_config(*c, *channel);
 
         IntelTopdown* instance = new IntelTopdown(calculator);
 
@@ -207,15 +199,18 @@ public:
 };
 
 const char* IntelTopdown::s_spec = R"json(
-{   "name": "topdown",
-    "description": "Record PAPI counters and compute top-down analysis for Intel CPUs",
-    "config": [
-        {   "name": "level",
-            "description": "Top-down analysis level to compute ('all' or 'top')",
-            "type": "string",
-            "value": "top"
-        }
-    ]
+{
+ "name": "topdown",
+ "description": "Record PAPI counters and compute top-down analysis for Intel CPUs",
+ "config":
+ [
+  {
+   "name": "level",
+   "description": "Top-down analysis level to compute ('all' or 'top')",
+   "type": "string",
+   "value": "top"
+  }
+ ]
 }
 )json";
 
