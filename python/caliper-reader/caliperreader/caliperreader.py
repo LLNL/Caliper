@@ -27,8 +27,6 @@ class CaliperReader:
         self.records = []
         self.globals = {}
 
-        self.num_records = {}
-
 
     def read(self, filename_or_stream):
         """ Read a .cali file or stream.
@@ -47,7 +45,6 @@ class CaliperReader:
 
         self.db = sr.db
         self.globals = sr.globals
-        self.num_records = sr.num_records
 
 
     def attributes(self):

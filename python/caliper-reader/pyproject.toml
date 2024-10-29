@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "caliper-reader"
-version = "0.4.0"
+version = "0.4.1"
 description = "A Python library for reading Caliper .cali files"
 authors = [
   { name="David Boehme", email="boehme3@llnl.gov" },

@@ -97,6 +97,7 @@ class Node:
             if attr.is_nested():
                 record['path'] = record.get('path', []) + [ self.data ]
 
+
 class Attribute:
     """ A Caliper attribute key.
 
