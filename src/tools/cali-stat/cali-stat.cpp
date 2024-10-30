@@ -5,7 +5,7 @@
 
 #include "caliper/Annotation.h"
 
-#include "caliper/tools-util/Args.h"
+#include "../util/Args.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliReader.h"

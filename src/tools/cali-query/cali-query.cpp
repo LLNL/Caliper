@@ -8,7 +8,7 @@
 #include "AttributeExtract.h"
 #include "query_common.h"
 
-#include "caliper/tools-util/Args.h"
+#include "../util/Args.h"
 
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"

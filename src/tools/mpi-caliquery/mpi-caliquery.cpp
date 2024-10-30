@@ -7,7 +7,7 @@
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
-#include "caliper/tools-util/Args.h"
+#include "../util/Args.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliReader.h"

@@ -9,7 +9,7 @@
 #include "caliper/reader/Preprocessor.h"
 #include "caliper/reader/RecordSelector.h"
 
-#include "caliper/tools-util/Args.h"
+#include "../util/Args.h"
 
 #include "caliper/common/Log.h"
 

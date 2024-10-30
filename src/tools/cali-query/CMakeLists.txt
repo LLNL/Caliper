@@ -1,8 +1,3 @@
-include_directories ("../../common")
-include_directories ("../../reader")
-include_directories ("../util")
-include_directories ("../../caliper")
-
 set(CALIPER_QUERY_COMMON_SOURCES
   query_common.cpp)
 
@@ -15,9 +10,10 @@ target_compile_features(query-common PUBLIC cxx_std_11)
 
 add_executable(cali-query
   $<TARGET_OBJECTS:query-common>
+  $<TARGET_OBJECTS:caliper-tools-util>
   ${CALIPER_QUERY_SOURCES})
 
-target_link_libraries(cali-query caliper-tools-util caliper)
+target_link_libraries(cali-query caliper)
 target_link_libraries(cali-query Threads::Threads)
 
 install(TARGETS cali-query DESTINATION ${CMAKE_INSTALL_BINDIR})
