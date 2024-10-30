@@ -1,10 +1,10 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "caliper/tools-util/Args.h"
-
 #include <caliper/cali.h>
 #include <caliper/cali_datatracker.h>
+
+#include "../../src/tools/util/Args.h"
 
 #include <numeric>
 
@@ -67,9 +67,9 @@ void do_work(size_t M, size_t W, size_t N)
     CALI_MARK_END("sum");
     CALI_MARK_BEGIN("free");
 
-    CALI_DATATRACKER_FREE(matA);
-    CALI_DATATRACKER_FREE(matB);
-    CALI_DATATRACKER_FREE(matC);
+    CALI_DATATRACKER_UNTRACK(matA);
+    CALI_DATATRACKER_UNTRACK(matB);
+    CALI_DATATRACKER_UNTRACK(matC);
 
     CALI_MARK_END("free");
 }
@@ -84,7 +84,7 @@ int main(int argc, const char* argv[])
         { "n_size", "n_size", 'n', true, "Height of input matrix B", "elements" },
         { "iterations", "iterations", 'i', true, "Number of iterations", "iterations" },
 
-        util::Args::Table::Terminator
+        util::Args::Terminator
     };
 
     util::Args args(option_table);
@@ -92,7 +92,7 @@ int main(int argc, const char* argv[])
     int lastarg = args.parse(argc, argv);
 
     if (lastarg < argc) {
-        std::cerr << "cali-throughput-thread: unknown option: " << argv[lastarg] << '\n' << "  Available options: ";
+        std::cerr << "cali-memtracking-macros: unknown option: " << argv[lastarg] << '\n' << "  Available options: ";
 
         args.print_available_options(std::cerr);
 

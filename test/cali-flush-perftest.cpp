@@ -17,7 +17,8 @@
 #include <caliper/Caliper.h>
 
 #include <caliper/cali.h>
-#include <caliper/tools-util/Args.h>
+
+#include "../src/tools/util/Args.h"
 
 #include <chrono>
 #include <iostream>

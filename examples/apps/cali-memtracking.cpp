@@ -1,12 +1,10 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "caliper/tools-util/Args.h"
+#include <caliper/cali.h>
+#include <caliper/cali_datatracker.h>
 
-#include "caliper/cali_datatracker.h"
-
-#include <caliper/Annotation.h>
-#include <caliper/Caliper.h>
+#include "../../src/tools/util/Args.h"
 
 #include <numeric>
 
@@ -19,18 +17,22 @@ void do_work(size_t M, size_t W, size_t N)
 {
     size_t i, j, k;
 
-    cali::Annotation alloc_phase(cali::Annotation("phase").begin("allocate"));
-
     const size_t dimA[] = { M, W };
     const size_t dimB[] = { W, N };
     const size_t dimC[] = { M, N };
 
-    double* matA = (double*) cali_datatracker_allocate_dimensional("A", sizeof(double), dimA, 2);
-    double* matB = (double*) cali_datatracker_allocate_dimensional("B", sizeof(double), dimB, 2);
-    double* matC = (double*) cali_datatracker_allocate_dimensional("C", sizeof(double), dimC, 2);
+    CALI_MARK_BEGIN("allocate");
 
-    alloc_phase.end();
-    cali::Annotation init_phase(cali::Annotation("phase").begin("initialize_values"));
+    double* matA = new double[dimA[0]*dimA[1]];
+    double* matB = new double[dimB[0]*dimB[1]];
+    double* matC = new double[dimC[0]*dimC[1]];
+
+    cali_datatracker_track_dimensional(matA, "A", sizeof(double), dimA, 2);
+    cali_datatracker_track_dimensional(matB, "B", sizeof(double), dimB, 2);
+    cali_datatracker_track_dimensional(matC, "C", sizeof(double), dimC, 2);
+
+    CALI_MARK_END("allocate");
+    CALI_MARK_BEGIN("initialize_values");
 
     // Initialize A and B randomly
     for (i = 0; i < M; i++)
@@ -41,8 +43,8 @@ void do_work(size_t M, size_t W, size_t N)
         for (j = 0; j < N; j++)
             matB[row_major(k, j, W)] = rand();
 
-    init_phase.end();
-    cali::Annotation mul_phase(cali::Annotation("phase").begin("multiply"));
+    CALI_MARK_END("initialize_values");
+    CALI_MARK_BEGIN("multiply");
 
     // AB = C
     for (i = 0; i < M; i++)
@@ -50,8 +52,8 @@ void do_work(size_t M, size_t W, size_t N)
             for (k = 0; k < W; k++)
                 matC[row_major(i, j, M)] += matA[row_major(i, k, M)] * matB[row_major(k, j, W)];
 
-    mul_phase.end();
-    cali::Annotation sum_phase(cali::Annotation("phase").begin("sum"));
+    CALI_MARK_END("multiply");
+    CALI_MARK_BEGIN("sum");
 
     // Print sum of elems in C
     double cSum = 0;
@@ -61,18 +63,24 @@ void do_work(size_t M, size_t W, size_t N)
 
     std::cout << "cSum = " << cSum << std::endl;
 
-    sum_phase.end();
-    cali::Annotation free_phase(cali::Annotation("phase").begin("free"));
+    CALI_MARK_END("sum");
+    CALI_MARK_BEGIN("free");
 
-    cali_datatracker_free(matA);
-    cali_datatracker_free(matB);
-    cali_datatracker_free(matC);
+    cali_datatracker_untrack(matA);
+    cali_datatracker_untrack(matB);
+    cali_datatracker_untrack(matC);
 
-    free_phase.end();
+    delete[] matA;
+    delete[] matB;
+    delete[] matC;
+
+    CALI_MARK_END("free");
 }
 
 int main(int argc, const char* argv[])
 {
+    CALI_CXX_MARK_FUNCTION;
+
     // parse command line arguments
 
     const util::Args::Table option_table[] = {
@@ -81,7 +89,7 @@ int main(int argc, const char* argv[])
         { "n_size", "n_size", 'n', true, "Height of input matrix B", "elements" },
         { "iterations", "iterations", 'i', true, "Number of iterations", "iterations" },
 
-        util::Args::Table::Terminator
+        util::Args::Terminator
     };
 
     util::Args args(option_table);
@@ -89,10 +97,8 @@ int main(int argc, const char* argv[])
     int lastarg = args.parse(argc, argv);
 
     if (lastarg < argc) {
-        std::cerr << "cali-throughput-thread: unknown option: " << argv[lastarg] << '\n' << "  Available options: ";
-
+        std::cerr << "cali-memtracking: unknown option: " << argv[lastarg] << '\n' << "  Available options: ";
         args.print_available_options(std::cerr);
-
         return -1;
     }
 
@@ -101,15 +107,10 @@ int main(int argc, const char* argv[])
     size_t n_size         = std::stoul(args.get("n_size", "512"));
     size_t num_iterations = std::stoul(args.get("iterations", "4"));
 
-    cali::Annotation phase_annotation("phase", CALI_ATTR_SCOPE_PROCESS);
-
-    phase_annotation.begin("benchmark");
-
-    cali::Loop loop("loop");
+    CALI_CXX_MARK_LOOP_BEGIN(loop, "loop");
     for (size_t i = 0; i < num_iterations; i++) {
-        cali::Loop::Iteration iteration(loop.iteration((int) i));
+        CALI_CXX_MARK_LOOP_ITERATION(loop, i);
         do_work(m_size, w_size, n_size);
     }
-
-    phase_annotation.end();
+    CALI_CXX_MARK_LOOP_END(loop);
 }
