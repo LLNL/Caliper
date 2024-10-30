@@ -88,7 +88,6 @@ if (WITH_PAPI_RDPMC)
   set(CALIPER_WITH_PAPI_RDPMC TRUE)
 endif ()
 
-
 set(WITH_ARCH "" CACHE STRING "Enable features specific to the provided archspec CPU architecture name")
 if (NOT WITH_ARCH STREQUAL "")
   string(TOLOWER ${WITH_ARCH} LOWER_WITH_ARCH)
