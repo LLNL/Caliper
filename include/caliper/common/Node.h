@@ -9,8 +9,6 @@
 #ifndef CALI_NODE_H
 #define CALI_NODE_H
 
-#include "cali_types.h"
-
 #include "lockfree-tree.hpp"
 #include "Variant.h"
 

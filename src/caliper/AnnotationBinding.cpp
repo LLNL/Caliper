@@ -10,6 +10,8 @@
 
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+
 
 using namespace cali;
 
@@ -17,7 +19,15 @@ using namespace cali;
 // --- Static data
 //
 
-const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
+namespace cali
+{
+extern Attribute subscription_event_attr;
+}
+
+namespace
+{
+
+const cali::ConfigSet::Entry annotation_binding_configdata[] = {
     {
         "include_regions",
         CALI_TYPE_STRING,
@@ -39,14 +49,6 @@ const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
       "List of attributes that trigger the annotation binding" },
     cali::ConfigSet::Terminator
 };
-
-namespace cali
-{
-extern Attribute subscription_event_attr;
-}
-
-namespace
-{
 
 bool has_marker(const Attribute& attr, const Attribute& marker_attr)
 {
@@ -133,11 +135,11 @@ void AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
     const char* tag     = service_tag();
     std::string cfgname = std::string(tag) + "_binding";
 
-    m_config = chn->config().init(cfgname.c_str(), s_configdata);
+    auto cfg = chn->config().init(cfgname.c_str(), ::annotation_binding_configdata);
 
     {
-        std::string i_filter = m_config.get("include_regions").to_string();
-        std::string e_filter = m_config.get("exclude_regions").to_string();
+        std::string i_filter = cfg.get("include_regions").to_string();
+        std::string e_filter = cfg.get("exclude_regions").to_string();
 
         auto p = RegionFilter::from_config(i_filter, e_filter);
 
@@ -148,7 +150,7 @@ void AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
         }
     }
 
-    m_trigger_attr_names = m_config.get("trigger_attributes").to_stringlist(",:");
+    m_trigger_attr_names = cfg.get("trigger_attributes").to_stringlist(",:");
 
     std::string marker_attr_name("cali.binding.");
     marker_attr_name.append(tag);

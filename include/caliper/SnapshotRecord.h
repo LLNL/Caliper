@@ -24,22 +24,17 @@ class SnapshotView
 public:
 
     SnapshotView() : m_data { nullptr }, m_len { 0 } {}
-
     SnapshotView(size_t len, const Entry* data) : m_data { data }, m_len { len } {}
-
     SnapshotView(const Entry& e) : m_data { &e }, m_len { 1 } {}
 
     using iterator       = Entry*;
     using const_iterator = const Entry*;
 
     const_iterator begin() const { return m_data; }
-
     const_iterator end() const { return m_data + m_len; }
 
     size_t size() const { return m_len; }
-
     const Entry* data() const { return m_data; }
-
     bool empty() const { return m_len == 0; }
 
     const Entry& operator[] (std::size_t n) const { return m_data[n]; }
@@ -78,7 +73,6 @@ class SnapshotBuilder
 public:
 
     SnapshotBuilder() : m_data { nullptr }, m_capacity { 0 }, m_len { 0 }, m_skipped { 0 } {}
-
     SnapshotBuilder(size_t capacity, Entry* data)
         : m_data { data }, m_capacity { capacity }, m_len { 0 }, m_skipped { 0 }
     {}
@@ -90,9 +84,7 @@ public:
     SnapshotBuilder& operator= (const SnapshotBuilder&) = delete;
 
     size_t capacity() const { return m_capacity; }
-
     size_t size() const { return m_len; }
-
     size_t skipped() const { return m_skipped; }
 
     void append(const Entry& e)
@@ -112,7 +104,6 @@ public:
     }
 
     void append(const Attribute& attr, const Variant& val) { append(Entry(attr, val)); }
-
     void append(SnapshotView view) { append(view.size(), view.data()); }
 
     SnapshotView view() const { return SnapshotView { m_len, m_data }; }
@@ -133,7 +124,6 @@ public:
     FixedSizeSnapshotRecord<N> operator= (const FixedSizeSnapshotRecord<N>&) = delete;
 
     SnapshotBuilder& builder() { return m_builder; }
-
     SnapshotView view() const { return m_builder.view(); }
 
     void reset() { m_builder = SnapshotBuilder(N, m_data); }

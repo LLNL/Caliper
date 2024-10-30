@@ -9,6 +9,7 @@
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/StringConverter.h"
 
 #include "../../services/Services.h"
 
@@ -31,7 +32,7 @@ public:
     )
         : ChannelController(name, 0, initial_cfg)
     {
-        double freq = std::max(1.0, std::stod(opts.get("sample.frequency", "200").to_string()));
+        double freq = std::max(1.0, std::stod(opts.get("sample.frequency", "200")));
 
         config()["CALI_SAMPLER_FREQUENCY"] = std::to_string(freq);
 
@@ -67,8 +68,8 @@ public:
 
         if (use_mpi) {
             config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
-            config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr").to_string();
-            config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append").to_string();
+            config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr");
+            config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append");
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
             config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                 opts.build_query("local", { { "select", local_select }, { "group by", groupby } });
@@ -78,8 +79,8 @@ public:
             );
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
-            config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr").to_string();
-            config()["CALI_REPORT_APPEND"]   = opts.get("output.append").to_string();
+            config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr");
+            config()["CALI_REPORT_APPEND"]   = opts.get("output.append");
             config()["CALI_REPORT_CONFIG"]   = opts.build_query(
                 "local",
                 { { "select", local_select }, { "group by", groupby }, { "format", format } }
@@ -101,7 +102,7 @@ bool use_mpi(const cali::ConfigManager::Options& opts)
     bool use_mpi = have_mpireport;
 
     if (opts.is_set("aggregate_across_ranks"))
-        use_mpi = opts.get("aggregate_across_ranks").to_bool();
+        use_mpi = StringConverter(opts.get("aggregate_across_ranks")).to_bool();
 
     if (use_mpi && !have_mpireport) {
         use_mpi = false;

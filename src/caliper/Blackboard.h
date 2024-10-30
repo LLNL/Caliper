@@ -6,12 +6,7 @@
 #ifndef CALI_BLACKBOARD_H
 #define CALI_BLACKBOARD_H
 
-#include "caliper/common/Attribute.h"
 #include "caliper/common/Entry.h"
-#include "caliper/common/Node.h"
-#include "caliper/common/Variant.h"
-
-#include "caliper/caliper-config.h"
 
 #include "../common/util/spinlock.hpp"
 

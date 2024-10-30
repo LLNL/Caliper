@@ -5,10 +5,6 @@
 
 #include "caliper/Caliper.h"
 
-#include "caliper/common/Attribute.h"
-
-#include "caliper/common/cali_types.h"
-
 cali_id_t cali_class_aggregatable_attr_id  = CALI_INV_ID;
 cali_id_t cali_class_symboladdress_attr_id = CALI_INV_ID;
 cali_id_t cali_class_memoryaddress_attr_id = CALI_INV_ID;

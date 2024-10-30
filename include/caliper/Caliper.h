@@ -10,10 +10,7 @@
 
 #include "SnapshotRecord.h"
 
-#include "common/Attribute.h"
 #include "common/CaliperMetadataAccessInterface.h"
-#include "common/Entry.h"
-#include "common/Variant.h"
 #include "common/callback.hpp"
 
 #include <memory>

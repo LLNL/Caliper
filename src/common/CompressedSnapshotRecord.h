@@ -7,7 +7,6 @@
 #pragma once
 
 #include "caliper/common/Entry.h"
-#include "caliper/common/Variant.h"
 
 #include <vector>
 

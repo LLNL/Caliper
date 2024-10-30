@@ -3,10 +3,8 @@
 
 #pragma once
 
-#include "caliper/common/Attribute.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/Variant.h"
 
 #include "MemoryPool.h"
 
@@ -15,6 +13,9 @@
 
 namespace cali
 {
+
+class Attribute;
+class Variant;
 
 namespace internal
 {

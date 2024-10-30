@@ -7,11 +7,7 @@
 
 #include "MetadataTree.h"
 
-#include "MemoryPool.h"
-
 #include "caliper/common/Attribute.h"
-#include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
 #include "../common/util/spinlock.hpp"

@@ -6,10 +6,8 @@
 #include "caliper/Annotation.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/cali.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/Variant.h"
 
 #include <atomic>
 #include <cstring>

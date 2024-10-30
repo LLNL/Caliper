@@ -5,15 +5,16 @@
 /// %Caliper ConfigManager class definition
 
 #pragma once
+#ifndef CALI_CONFIGMANAGER_H
+#define CALI_CONFIGMANAGER_H
+
+#include "ChannelController.h"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "ChannelController.h"
-
-#include "common/StringConverter.h"
 
 namespace cali
 {
@@ -96,7 +97,7 @@ public:
 
         /// \brief Return the value for \a option, or \a default_value
         ///   if it is not set in the options list.
-        StringConverter get(const char* option, const char* default_value = "") const;
+        std::string get(const char* option, const char* default_value = "") const;
 
         /// \brief Perform a validity check.
         std::string check() const;
@@ -524,3 +525,5 @@ public:
 void add_global_config_specs(const ConfigManager::ConfigInfo** configs);
 
 } // namespace cali
+
+#endif

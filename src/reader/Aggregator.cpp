@@ -12,8 +12,6 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 
-#include "caliper/common/cali_types.h"
-
 #include "../common/util/vlenc.h"
 
 #include <algorithm>

@@ -6,6 +6,7 @@
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/StringConverter.h"
 
 #include "../src/common/util/format_util.h"
 #include "../src/common/util/parse_util.h"
@@ -60,7 +61,7 @@ ChannelController* make_basic_channel_controller(
         {
             // Hacky way to handle "output" option
             if (opts.is_set("output")) {
-                std::string output = opts.get("output").to_string();
+                std::string output = opts.get("output");
 
                 config()["CALI_RECORDER_FILENAME"]  = output;
                 config()["CALI_REPORT_FILENAME"]    = output;
@@ -829,7 +830,7 @@ std::vector<std::string> ConfigManager::Options::enabled_options() const
     return ret;
 }
 
-StringConverter ConfigManager::Options::get(const char* option, const char* default_val) const
+std::string ConfigManager::Options::get(const char* option, const char* default_val) const
 {
     std::string ostr(option);
     auto it = std::find_if(mP->args.begin(), mP->args.end(), [&ostr](const std::pair<std::string, std::string>& p) {
@@ -837,9 +838,9 @@ StringConverter ConfigManager::Options::get(const char* option, const char* defa
     });
 
     if (it != mP->args.end())
-        return StringConverter(it->second);
+        return it->second;
 
-    return StringConverter(default_val);
+    return std::string(default_val);
 }
 
 std::string ConfigManager::Options::check() const
@@ -1378,7 +1379,6 @@ struct ConfigManager::ConfigManagerImpl {
 
     ConfigManagerImpl()
         : builtin_option_specs_list({
-              builtin_base_option_specs,
 #ifdef CALIPER_HAVE_GOTCHA
                   builtin_gotcha_option_specs,
 #endif
@@ -1403,7 +1403,10 @@ struct ConfigManager::ConfigManagerImpl {
 #ifdef CALIPER_HAVE_UMPIRE
                   builtin_umpire_option_specs,
 #endif
-                  builtin_kokkos_option_specs
+#ifdef CALIPER_HAVE_KOKKOS
+                  builtin_kokkos_option_specs,
+#endif
+              builtin_base_option_specs
           })
     {
 #ifdef CALIPER_HAVE_PAPI

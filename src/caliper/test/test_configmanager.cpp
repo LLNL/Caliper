@@ -132,7 +132,7 @@ class TestController : public cali::ChannelController
 
 public:
 
-    std::string get_opt(const char* name) { return opts.get(name).to_string(); }
+    std::string get_opt(const char* name) { return opts.get(name); }
 
     bool is_set(const char* name) { return opts.is_set(name); }
 
