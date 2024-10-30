@@ -1408,7 +1408,7 @@ struct ConfigManager::ConfigManagerImpl {
     {
 #ifdef CALIPER_HAVE_PAPI
 #ifdef CALIPER_HAVE_ARCH
-        if (CALIPER_HAVE_ARCH == "sapphirerapids") {
+        if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
             builtin_option_specs_list.push_back(builtin_papi_spr_option_specs);
         } else {
             builtin_option_specs_list.push_back(builtin_papi_hsw_option_specs);

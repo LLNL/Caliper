@@ -64,7 +64,6 @@ class PapiService
     Attribute m_thread_attr;
 
     bool m_enable_multiplex;
-    bool m_disable_multiplex;
 
     unsigned m_num_eventsets;
     unsigned m_num_event_mismatch;
@@ -366,9 +365,8 @@ class PapiService
                         << m_num_threads << " thread(s)." << std::endl;
     }
 
-    PapiService(Caliper* c, Channel* channel)
-        : m_enable_multiplex(false),
-          m_disable_multiplex(false),
+    PapiService(Caliper* c, Channel* channel, bool use_multiplex)
+        : m_enable_multiplex(use_multiplex),
           m_num_eventsets(0),
           m_num_event_mismatch(0),
           m_num_failed_acquire(0),
@@ -385,7 +383,7 @@ class PapiService
         );
     }
 
-    static bool init_papi_library()
+    static bool init_papi_library(bool use_multiplex)
     {
         if (PAPI_is_initialized() == PAPI_THREAD_LEVEL_INITED)
             return true;
@@ -398,7 +396,13 @@ class PapiService
             return false;
         }
 
-        PAPI_multiplex_init();
+        if (use_multiplex) {
+            Log(2).stream() << "papi: Enabling multiplexing\n";
+            PAPI_multiplex_init();
+        } else {
+            Log(2).stream() << "papi: Disabling multiplexing\n";
+        }
+
         PAPI_thread_init(pthread_self);
 
         if (PAPI_is_initialized() == PAPI_NOT_INITED) {
@@ -435,28 +439,28 @@ public:
         auto cfg       = services::init_config_from_spec(channel->config(), s_spec);
         auto eventlist = cfg.get("counters").to_stringlist(",");
 
+        bool use_multiplex = cfg.get("enable_multiplexing").to_bool();
+
         if (eventlist.empty()) {
             Log(1).stream() << channel->name() << ": papi: No counters specified, dropping papi service" << std::endl;
             return;
         }
 
-        if (!init_papi_library()) {
+        if (!init_papi_library(use_multiplex)) {
             Log(0).stream() << channel->name() << ": papi: PAPI library not initialized, dropping papi service"
                             << std::endl;
             return;
         }
 
         ++s_num_instances;
-        PapiService* instance = new PapiService(c, channel);
-
-        instance->m_enable_multiplex  = cfg.get("enable_multiplexing").to_bool();
-        instance->m_disable_multiplex = cfg.get("disable_multiplexing").to_bool();
+        PapiService* instance = new PapiService(c, channel, use_multiplex);
 
         if (!(instance->setup_event_info(c, eventlist) && instance->setup_thread_eventsets(c))) {
             Log(0).stream() << channel->name() << ": papi: Failed to initialize event sets, dropping papi service"
                             << std::endl;
 
             finish_papi_library();
+            delete instance;
             return;
         }
 
