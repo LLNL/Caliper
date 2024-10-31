@@ -9,7 +9,7 @@
 #ifndef CALI_OUTPUT_COMM_MPI_H
 #define CALI_OUTPUT_COMM_MPI_H
 
-#include "../caliper/CustomOutputController.h"
+#include "CustomOutputController.h"
 
 #include <mpi.h>
 

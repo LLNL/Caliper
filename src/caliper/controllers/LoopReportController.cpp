@@ -185,7 +185,7 @@ class LoopReportController : public cali::internal::CustomOutputController
             int nblocks = 20;
 
             if (m_opts.is_set("timeseries.maxrows"))
-                nblocks = m_opts.get("timeseries.maxrows").to_int();
+                nblocks = StringConverter(m_opts.get("timeseries.maxrows")).to_int();
             if (nblocks <= 0)
                 nblocks = rec_count;
 
@@ -211,7 +211,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 
     OutputStream create_stream()
     {
-        std::string output = m_opts.get("output", "stdout").to_string();
+        std::string output = m_opts.get("output", "stdout");
 
         Caliper      c;
         OutputStream stream;
@@ -241,7 +241,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 
             bool print_summary = true;
             if (m_opts.is_set("summary"))
-                print_summary = m_opts.get("summary").to_bool();
+                print_summary = StringConverter(m_opts.get("summary")).to_bool();
 
             if (print_summary) {
                 *os << "\nLoop summary:\n------------\n\n";
@@ -254,7 +254,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 
         bool print_timeseries = true;
         if (m_opts.is_set("timeseries"))
-            print_timeseries = m_opts.get("timeseries").to_bool();
+            print_timeseries = StringConverter(m_opts.get("timeseries")).to_bool();
 
         if (print_timeseries) {
             std::vector<LoopInfo> infovec;
@@ -279,14 +279,14 @@ public:
         : cali::internal::CustomOutputController(name, 0, initial_cfg), m_opts(opts)
     {
         if (opts.is_set("iteration_interval"))
-            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval").to_string();
+            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval");
         else if (opts.is_set("time_interval"))
-            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = opts.get("time_interval").to_string();
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = opts.get("time_interval");
         else
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
         if (opts.is_set("target_loops"))
-            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = opts.get("target_loops").to_string();
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = opts.get("target_loops");
 
         opts.update_channel_config(config());
         opts.update_channel_metadata(metadata());

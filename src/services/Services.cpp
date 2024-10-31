@@ -9,8 +9,6 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/StringConverter.h"
 
 #include <cassert>
 #include <cctype>

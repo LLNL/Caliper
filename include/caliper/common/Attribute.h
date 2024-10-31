@@ -6,10 +6,9 @@
  * \brief Attribute class declaration
  */
 
+#pragma once
 #ifndef CALI_ATTRIBUTE_H
 #define CALI_ATTRIBUTE_H
-
-#include "caliper/common/cali_types.h"
 
 #include "caliper/common/Node.h"
 #include "caliper/common/Variant.h"
@@ -45,9 +44,7 @@ public:
 
     std::string name() const;
     const char* name_c_str() const;
-
     cali_attr_type type() const;
-
     int properties() const;
 
     /// \brief Return the context tree node pointer that represents
@@ -57,15 +54,10 @@ public:
     Variant get(const Attribute& attr) const;
 
     bool store_as_value() const { return properties() & CALI_ATTR_ASVALUE; }
-
     bool is_autocombineable() const { return !store_as_value() && !(properties() & CALI_ATTR_NOMERGE); }
-
     bool skip_events() const { return properties() & CALI_ATTR_SKIP_EVENTS; }
-
     bool is_hidden() const { return properties() & CALI_ATTR_HIDDEN; }
-
     bool is_nested() const { return properties() & CALI_ATTR_NESTED; }
-
     bool is_global() const { return properties() & CALI_ATTR_GLOBAL; }
 
     int level() const { return (properties() & CALI_ATTR_LEVEL_MASK) >> 16; }

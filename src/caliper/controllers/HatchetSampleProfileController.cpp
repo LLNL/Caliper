@@ -7,7 +7,6 @@
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/StringConverter.h"
 
 #include "../../services/Services.h"
 
@@ -32,7 +31,7 @@ public:
     )
         : ChannelController(name, 0, initial_cfg)
     {
-        std::string freqstr = opts.get("sample.frequency", "200").to_string();
+        std::string freqstr = opts.get("sample.frequency", "200");
 
         config()["CALI_SAMPLER_FREQUENCY"] = freqstr;
 
@@ -45,7 +44,7 @@ public:
             select.append(") as time unit sec");
         }
 
-        std::string output(opts.get("output", "sample_profile").to_string());
+        std::string output(opts.get("output", "sample_profile"));
 
         if (output != "stdout" && output != "stderr") {
             auto        pos = output.find_last_of('.');
@@ -68,7 +67,7 @@ public:
 
         if (have_adiak) {
             config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-            config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3").to_string();
+            config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3");
         }
 
         if (have_pthread)
@@ -110,7 +109,7 @@ std::string check_args(const cali::ConfigManager::Options& opts)
     // Check if output.format is valid
     //
 
-    std::string           format          = opts.get("output.format", "json-split").to_string();
+    std::string           format          = opts.get("output.format", "json-split");
     std::set<std::string> allowed_formats = { "cali", "json", "json-split" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
@@ -125,7 +124,7 @@ cali::ChannelController* make_controller(
     const cali::ConfigManager::Options& opts
 )
 {
-    std::string format = opts.get("output.format", "cali").to_string();
+    std::string format = opts.get("output.format", "cali");
 
     if (format == "hatchet")
         format = "cali";

@@ -9,6 +9,7 @@
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/StringConverter.h"
 
 #include "../../services/Services.h"
 
@@ -60,8 +61,8 @@ public:
 
         if (use_mpi) {
             config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
-            config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr").to_string();
-            config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append").to_string();
+            config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr");
+            config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append");
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
             config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                 opts.build_query("local", { { "let", local_let }, { "select", local_select }, { "group by", "path" } });
@@ -69,8 +70,8 @@ public:
                 opts.build_query("cross", { { "select", cross_select }, { "group by", "path" }, { "format", format } });
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
-            config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr").to_string();
-            config()["CALI_REPORT_APPEND"]   = opts.get("output.append").to_string();
+            config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr");
+            config()["CALI_REPORT_APPEND"]   = opts.get("output.append");
             config()["CALI_REPORT_CONFIG"]   = opts.build_query(
                 "local",
                 { { "let", local_let }, { "select", serial_select }, { "group by", "path" }, { "format", format } }
@@ -92,7 +93,7 @@ bool use_mpi(const cali::ConfigManager::Options& opts)
     bool use_mpi = have_mpireport;
 
     if (opts.is_set("aggregate_across_ranks"))
-        use_mpi = opts.get("aggregate_across_ranks").to_bool();
+        use_mpi = StringConverter(opts.get("aggregate_across_ranks")).to_bool();
 
     if (use_mpi && !have_mpireport) {
         use_mpi = false;

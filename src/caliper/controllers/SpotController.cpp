@@ -80,7 +80,7 @@ void convert_timeseries_option(const ConfigManager::Options& opts, const char* t
 
         target.append(ts_opt_name);
         target.append("=");
-        target.append(opts.get(spot_opt_name.c_str()).to_string());
+        target.append(opts.get(spot_opt_name.c_str()));
     }
 }
 
@@ -92,7 +92,7 @@ std::string get_timeseries_config_string(const ConfigManager::Options& opts)
     std::string tsopts;
 
     if (opts.is_set("timeseries.metrics"))
-        tsopts.append(opts.get("timeseries.metrics").to_string());
+        tsopts.append(opts.get("timeseries.metrics"));
 
     convert_timeseries_option(opts, "iteration_interval", tsopts);
     convert_timeseries_option(opts, "time_interval", tsopts);
@@ -206,14 +206,14 @@ public:
         : ChannelController(name, 0, initial_cfg), m_opts(opts)
     {
         if (m_opts.is_set("iteration_interval"))
-            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
+            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval");
         else if (m_opts.is_set("time_interval"))
-            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval");
         else
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
         if (m_opts.is_set("target_loops"))
-            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = m_opts.get("target_loops").to_string();
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = m_opts.get("target_loops");
 
         m_opts.update_channel_config(config());
     }
@@ -295,7 +295,7 @@ class SpotController : public cali::internal::CustomOutputController
             int nblocks = 20;
 
             if (m_opts.is_set("timeseries.maxrows"))
-                nblocks = m_opts.get("timeseries.maxrows").to_int();
+                nblocks = StringConverter(m_opts.get("timeseries.maxrows")).to_int();
             if (nblocks <= 0)
                 nblocks = rec_count;
 
@@ -469,8 +469,8 @@ class SpotController : public cali::internal::CustomOutputController
 
     OutputStream create_output_stream()
     {
-        std::string outdir = m_opts.get("outdir", "").to_string();
-        std::string output = m_opts.get("output", "").to_string();
+        std::string outdir = m_opts.get("outdir");
+        std::string output = m_opts.get("output");
 
         if (output.empty())
             output = cali::util::create_filename();
@@ -517,7 +517,7 @@ public:
 
 #ifdef CALIPER_HAVE_ADIAK
         config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-        config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3").to_string();
+        config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3");
 #endif
 
         if (opts.is_enabled("timeseries")) {

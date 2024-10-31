@@ -14,7 +14,7 @@ std::string util::build_tree_format_spec(config_map_t& config, const ConfigManag
     std::string format = initial;
 
     if (opts.is_set("max_column_width"))
-        format.append("column-width=").append(opts.get("max_column_width").to_string());
+        format.append("column-width=").append(opts.get("max_column_width"));
     if (opts.is_enabled("print.metadata")) {
         auto avail_services = services::get_available_services();
         bool have_adiak =

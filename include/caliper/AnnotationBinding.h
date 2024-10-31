@@ -6,13 +6,10 @@
 
 #pragma once
 
+#include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
 
-#include "caliper/caliper-config.h"
-#include "caliper/Caliper.h"
-
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <iostream>
 #include <memory>
@@ -72,14 +69,10 @@ class Node;
 
 class AnnotationBinding
 {
-    ConfigSet m_config;
     Attribute m_marker_attr;
 
     std::unique_ptr<RegionFilter> m_filter;
-
     std::vector<std::string> m_trigger_attr_names;
-
-    static const ConfigSet::Entry s_configdata[];
 
     void mark_attribute(Caliper*, Channel*, const Attribute&);
     void check_attribute(Caliper*, Channel*, const Attribute&);

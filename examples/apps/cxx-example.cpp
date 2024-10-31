@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
     //   The ConfigManager manages built-in or custom Caliper measurement
     // configurations, and provides an API to control performance profiling.
     cali::ConfigManager mgr;
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
 
     //   Parse command-line arguments. Let users choose a Caliper performance
     // profiling configuration via the "-P" command-line argument.

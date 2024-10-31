@@ -49,7 +49,6 @@ public:
 class RuntimeConfig
 {
     struct RuntimeConfigImpl;
-
     std::shared_ptr<RuntimeConfigImpl> mP;
 
 public:
