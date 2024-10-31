@@ -52,16 +52,18 @@ preferred-citation:
     given-names: "Matthew"
   - family-names: "Pearce"
     given-names: "Olga"
+    orcid: "https://orcid.org/0000-0002-1904-9627"
   - family-names: "Schulz"
     given-names: "Martin"
     orcid: "https://orcid.org/0000-0001-9013-435X"
   title: "Caliper: Performance Introspection for HPC Software Stacks"
   url: "http://dl.acm.org/citation.cfm?id=3014904.3014967"
   conference:
-    name: "Supercomputing 2016 (SC'16)"
+    name: "International Conference for High Performance Computing, Networking, Storage and Analysis (SC'16)"
     city: "Salt Lake City"
     region: "Utah"
     country: "USA"
-  month: November 13-18
+    date-start: 2016-11-13
+    date-end: 2016-11-18
   year: 2016
   notes: LLNL-CONF-699263
