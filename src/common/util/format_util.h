@@ -55,12 +55,14 @@ inline std::ostream& write_cali_esc_string(std::ostream& os, const char* str, st
     for (size_t i = 0; i < size; ++i) {
         const char c = str[i];
 
-        if (c == '\n') { // handle newline in string
-            os.put('\\');
-            os.put('n');
-        }
-        if (c < 0x20) // skip control characters
+        if (c < 0x20) {
+            if (c == '\n') { // handle newline in string
+                os.put('\\');
+                os.put('n');
+            }
+            // skip control characters
             continue;
+        }
         if (c == '\\' || c == ',' || c == '=')
             os.put('\\');
 
