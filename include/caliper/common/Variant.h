@@ -97,7 +97,7 @@ public:
 
     static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok = nullptr)
     {
-        return Variant(cali_variant_unpack(buf, inc, ok));
+        return {cali_variant_unpack(buf, inc, ok)};
     }
 
     static Variant from_string(cali_attr_type type, const char* str);
