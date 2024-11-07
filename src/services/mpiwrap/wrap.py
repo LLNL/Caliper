@@ -908,7 +908,8 @@ def handle_list(list_name, list, args):
     else:
         len(args) == 1 or syntax_error("Wrong number of args for list expression.")
         try:
-            return list[int(args[0])]
+            index = int(args[0])
+            return list[index]
         except ValueError:
             syntax_error("Invald index value: '%s'" % args[0])
         except IndexError:
@@ -1144,7 +1145,7 @@ class Chunk:
 
     def iwrite(self, file, level, text):
         """Write indented text."""
-        for x in xrange(level):
+        for x in range(level):
             file.write("  ")
         file.write(text)
 
@@ -1268,7 +1269,7 @@ class Parser:
 
         if not accept_body_macros and self.is_body_macro(chunk.macro):
             syntax_error("Cannot use body macros in expression context: '%s'" % chunk.macro)
-            eys.exit(1)
+            sys.exit(1)
 
         while True:
             if self.accept(LBRACE):
@@ -1331,7 +1332,7 @@ output_filename = None
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "Gfsgdwc:o:i:I:")
 except getopt.GetoptError as err:
-    sys.stderr.write(err + "\n")
+    sys.stderr.write(str(err) + "\n")
     usage()
 
 for opt, arg in opts:
@@ -1348,7 +1349,7 @@ for opt, arg in opts:
         if stripped: includes.append(stripped)
     if opt == "-i":
         if not arg in pmpi_init_bindings:
-            sys.stderr.write("ERROR: PMPI_Init binding must be one of:\n    %s\n" % " ".join(possible_bindings))
+            sys.stderr.write("ERROR: PMPI_Init binding must be one of:\n    %s\n" % " ".join(pmpi_init_bindings))
             usage()
         else:
             pmpi_init_binding = arg
@@ -1377,8 +1378,8 @@ if dump_prototypes: sys.exit(0)
 if output_filename:
     try:
         output = open(output_filename, "w")
-    except IOError:
-        sys.stderr.write("Error: couldn't open file " + arg + " for writing.\n")
+    except:
+        sys.stderr.write("Error: couldn't open file " + output_filename + " for writing.\n")
         sys.exit(1)
 
 try:
