@@ -61,12 +61,12 @@ public:
         typedef util::callback<void(Caliper*, Channel*, const Attribute&, const Variant&)> update_cbvec;
         typedef util::callback<void(Caliper*, Channel*)>                                   caliper_cbvec;
 
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                   event_cbvec;
         typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
         typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
         typedef util::callback<void(Caliper*, Channel*, std::vector<Entry>&)>            edit_snapshot_cbvec;
 
         typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotFlushFn)> flush_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                  write_cbvec;
 
         typedef util::callback<
             void(Caliper*, Channel*, const void*, const char*, size_t, size_t, const size_t*, size_t, const Attribute*, const Variant*)>
@@ -84,6 +84,8 @@ public:
         update_cbvec pre_set_evt;
         /// \brief Invoked on region end, \e before it has been removed from the blackboard.
         update_cbvec pre_end_evt;
+        /// \brief Invoked for asynchronous events
+        event_cbvec  async_event;
 
         /// \brief Invoked when a new thread context is being created.
         caliper_cbvec create_thread_evt;
@@ -115,11 +117,11 @@ public:
         process_snapshot_cbvec process_snapshot;
 
         /// \brief Invoked before flush.
-        write_cbvec pre_flush_evt;
+        event_cbvec pre_flush_evt;
         /// \brief Flush all snapshot records.
         flush_cbvec flush_evt;
         /// \brief Invoked after flush.
-        write_cbvec post_flush_evt;
+        event_cbvec post_flush_evt;
 
         /// \brief Modify snapshot records during flush.
         edit_snapshot_cbvec postprocess_snapshot;
@@ -129,7 +131,7 @@ public:
         /// This is invoked by the Caliper::flush_and_write() API call, and
         /// causes output services (e.g., report or recorder) to trigger a
         /// flush.
-        write_cbvec write_output_evt;
+        event_cbvec write_output_evt;
 
         /// \brief Invoked at a memory region begin.
         track_mem_cbvec track_mem_evt;
@@ -264,7 +266,7 @@ public:
     /// \param attr Attribute key.
     void end_with_value_check(const Attribute& attr, const Variant& data);
 
-    /// \brief Set attribute:value pair on the process or thread blackboard.
+    /// \brief Set attribute:value pair on the process or thread blackboard
     ///
     /// Set the given attribute/value pair on the blackboard. Overwrites
     /// the previous values of the same attribute.
@@ -277,6 +279,11 @@ public:
     /// \param attr Attribute key
     /// \param data Value to set
     void set(const Attribute& attr, const Variant& data);
+
+    /// \brief Mark an asynchronous event with the given info.
+    ///
+    /// This function invokes the async_event callback on all active channels.
+    void async_event(SnapshotView info);
 
     /// \}
     /// \name Memory region tracking (across channels)

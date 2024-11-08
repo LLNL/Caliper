@@ -13,7 +13,7 @@ const char* event_trace_spec = R"json(
 {
  "name"        : "event-trace",
  "description" : "Record a trace of region enter/exit events in .cali format",
- "services"    : [ "event", "recorder", "timer", "trace" ],
+ "services"    : [ "async_event", "event", "recorder", "timer", "trace" ],
  "categories"  : [ "output", "metadata", "event" ],
  "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
  "options":
@@ -321,6 +321,42 @@ const char* builtin_base_option_specs = R"json(
     "min(min#ls.min) as \"Time/iter (min)\" unit sec",
     "avg(avg#ls.avg) as \"Time/iter (avg)\" unit sec",
     "max(max#ls.max) as \"Time/iter (max)\" unit sec"
+   ]
+  }
+ ]
+},{
+ "name"        : "async_events",
+ "description" : "Report timed asynchronous events",
+ "type"        : "bool",
+ "category"    : "metric",
+ "services"    : [ "async_event" ],
+ "query":
+ [
+  {
+   "level"    : "local",
+   "group by" : "async.end",
+   "let"      :
+   [
+    "as.min=scale(min#event.duration.ns,1e-9)",
+    "as.avg=scale(avg#event.duration.ns,1e-9)",
+    "as.max=scale(max#event.duration.ns,1e-9)"
+   ],
+   "select":
+   [
+    "async.end as \"Event\"",
+    "min(as.min) as \"Event time (min)\"",
+    "avg(as.avg) as \"Event time (avg)\"",
+    "max(as.max) as \"Event time (max)\""
+   ]
+  },{
+   "level"    : "cross",
+   "group by" : "async.end",
+   "select":
+   [
+    "async.end as \"Event\"",
+    "min(min#as.min) as \"Event time (min)\"",
+    "avg(avg#as.avg) as \"Event time (avg)\"",
+    "max(max#as.max) as \"Event time (max)\""
    ]
   }
  ]

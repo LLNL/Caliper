@@ -1065,6 +1065,14 @@ void Caliper::set(const Attribute& attr, const Variant& data)
         handle_set(attr, data, prop, sG->process_blackboard, sT->tree);
 }
 
+void Caliper::async_event(SnapshotView info)
+{
+    std::lock_guard<::siglock> g(sT->lock);
+
+    for (auto& channel : sG->active_channels)
+        channel.mP->events.async_event(this, &channel, info);
+}
+
 void Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 {
     int  prop       = attr.properties();
