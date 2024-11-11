@@ -167,7 +167,7 @@ void aggregate_over_mpi(CaliperMetadataDB& metadb, Aggregator& aggr, MPI_Comm co
     MPI_Comm_size(comm, &commsize);
     MPI_Comm_rank(comm, &rank);
 
-    for (int step = 0, steppow2 = 1; steppow2 < commsize; ++step, steppow2 *= 2) {
+    for (int steppow2 = 1; steppow2 < commsize; steppow2 *= 2) {
         // receive and merge
         if (rank % (2 * steppow2) == 0 && rank + steppow2 < commsize)
             ::receive_and_merge(rank + steppow2, metadb, aggr, comm);

@@ -592,7 +592,7 @@ void cali_configset_set(cali_configset_t cfg, const char* key, const char* value
  *
  * \return ID of the created channel.
  */
-cali_id_t cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
+cali_id_t cali_create_channel(const char* name, int flags, cali_configset_t cfg);
 
 /**
  * \brief Delete a channel. Frees associated resources, e.g. blackboards,

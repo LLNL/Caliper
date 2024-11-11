@@ -35,7 +35,7 @@ usage_string = \
 '''Usage: wrap.py [-Gfgd] [-i pmpi_init] [-c mpicc_name] [-o file] wrapper.w [...]
  Python script for creating PMPI wrappers. Roughly follows the syntax of
    the Argonne PMPI wrapper generator, with some enhancements.
- Options:"
+ Options:
    -d             Just dump function declarations parsed out of mpi.h
    -G             Generate GOTCHA instead of PMPI wrappers
    -f             Generate fortran wrappers in addition to C wrappers.
@@ -74,7 +74,7 @@ pmpi_init_bindings = ["PMPI_INIT", "pmpi_init", "pmpi_init_", "pmpi_init__"]
 # In general, all MPI calls we care about return int.  We include double
 # to grab MPI_Wtick and MPI_Wtime, but we'll ignore the f2c and c2f calls
 # that return MPI_Datatypes and other such things.
-# MPI_Aint_add and MPI_Aint_diff return MPI_Aint, so include that too. 
+# MPI_Aint_add and MPI_Aint_diff return MPI_Aint, so include that too.
 rtypes = ['int', 'double', 'MPI_Aint' ]
 
 # If we find these strings in a declaration, exclude it from consideration.
@@ -82,21 +82,21 @@ exclude_strings = [ "c2f", "f2c", "f082c", "f082f", "f2f08", "f90", "typedef", "
 
 # Regular expressions for start and end of declarations in mpi.h. These are
 # used to get the declaration strings out for parsing with formal_re below.
-begin_decl_re = re.compile("(" + "|".join(rtypes) + ")\s+(MPI_\w+)\s*\(")
+begin_decl_re = re.compile("(" + "|".join(rtypes) + r")\s+(MPI_\w+)\s*\(")
 exclude_re =    re.compile("|".join(exclude_strings))
-end_decl_re =   re.compile("\).*\;")
+end_decl_re =   re.compile(r"\).*\;")
 
 # Regular Expression for splitting up args. Matching against this
 # returns three groups: type info, arg name, and array info
 formal_re = re.compile(
-    "\s*(" +                       # Start type
-    "(?:const)?\s*" +              # Initial const
-    "\w+"                          # Type name (note: doesn't handle 'long long', etc. right now)
-    ")\s*(" +                      # End type, begin pointers
-    "(?:\s*\*(?:\s*const)?)*" +    # Look for 0 or more pointers with optional 'const'
-    ")\s*"                         # End pointers
-    "(?:(\w+)\s*)?" +              # Argument name. Optional.
-     "(\[.*\])?\s*$"               # Array type.  Also optional. Works for multidimensions b/c it's greedy.
+    r"\s*(" +                       # Start type
+    r"(?:const)?\s*" +              # Initial const
+    r"\w+"                          # Type name (note: doesn't handle 'long long', etc. right now)
+    r")\s*(" +                      # End type, begin pointers
+    r"(?:\s*\*(?:\s*const)?)*" +    # Look for 0 or more pointers with optional 'const'
+    r")\s*"                         # End pointers
+    r"(?:(\w+)\s*)?" +              # Argument name. Optional.
+    r"(\[.*\])?\s*$"                # Array type.  Also optional. Works for multidimensions b/c it's greedy.
     )
 
 # Fortran wrapper suffix
@@ -145,15 +145,15 @@ _EXTERN_C_ void pmpi_init__(WRAP_PY_MPI_Fint *ierr);
 #undef WRAP_PY_MPI_Fint
 '''
 
-gotcha_wrapper_includes = ''' 
+gotcha_wrapper_includes = '''
 #include <gotcha/gotcha.h>
 
-''' 
+'''
 
 # Macros used to suppress MPI deprecation warnings.
 wrapper_diagnosics_macros = '''
 /* Macros to enable and disable compiler warnings for deprecated functions.
- * These macros will be used to silent warnings about deprecated MPI functions,
+ * These macros will be used to silence warnings about deprecated MPI functions,
  * as these should be wrapped, even if they are deprecated.
  *
  * Note: The macros support GCC and clang compilers only. For other compilers
@@ -185,7 +185,7 @@ mpi_handle_types = set(["MPI_Comm", "MPI_Errhandler", "MPI_File", "MPI_Group", "
                         "MPI_Op", "MPI_Request", "MPI_Status", "MPI_Datatype", "MPI_Win" ])
 
 # MPI Calls that have array parameters, and mappings from the array parameter positions to the position
-# of the 'count' paramters that determine their size
+# of the 'count' parameters that determine their size
 mpi_array_calls = {
     "MPI_Startall"           : { 1:0 },
     "MPI_Testall"            : { 1:0, 3:0 },
@@ -225,10 +225,10 @@ def find_matching_paren(string, index, lparen='(', rparen=')'):
         return -1
 
 
-def isindex(str):
+def isindex(string):
     """True if a string is something we can index an array with."""
     try:
-        int(str)
+        int(string)
         return True
     except ValueError:
         return False
@@ -246,9 +246,9 @@ def conversion_prefix(handle_type):
         return handle_type
 
 # Special join function for joining lines together.  Puts "\n" at the end too.
-def joinlines(list, sep="\n"):
-    if list:
-        return sep.join(list) + sep
+def joinlines(lines, sep="\n"):
+    if lines:
+        return sep.join(lines) + sep
     else:
         return ""
 
@@ -257,16 +257,16 @@ LBRACE, RBRACE, TEXT, IDENTIFIER = range(4)
 
 class Token:
     """Represents tokens; generated from input by lexer and fed to parse()."""
-    def __init__(self, type, value, line=0):
-        self.type = type    # Type of token
+    def __init__(self, ctype, value, line=0):
+        self.type = ctype   # Type of token
         self.value = value  # Text value
         self.line = line
 
     def __str__(self):
         return "'%s'" % re.sub(r'\n', "\\\\n", self.value)
 
-    def isa(self, type):
-        return self.type == type
+    def isa(self, ctype):
+        return self.type == ctype
 
 
 class LineTrackingLexer(object):
@@ -275,8 +275,8 @@ class LineTrackingLexer(object):
         self.line_no = -1
         self.scanner = re.Scanner(lexicon)
 
-    def make_token(self, type, value):
-        token = Token(type, value, self.line_no)
+    def make_token(self, ctype, value):
+        token = Token(ctype, value, self.line_no)
         self.line_no += value.count("\n")
         return token
 
@@ -371,9 +371,9 @@ class Scope:
     def __setitem__(self, key, value):
         self.map[key] = value
 
-    def include(self, map):
+    def include(self, new_elements):
         """Add entire contents of the map (or scope) to this scope."""
-        self.map.update(map)
+        self.map.update(new_elements)
 
 ################################################################################
 # MPI Semantics:
@@ -388,12 +388,12 @@ class Param:
        Doesn't represent a full parse, only the initial type information,
        name, and array info of the argument split up into strings.
     """
-    def __init__(self, type, pointers, name, array, pos):
-        self.type = type               # Name of arg's type (might include things like 'const')
+    def __init__(self, ctype, pointers, name, array, pos):
+        self.type = ctype              # Name of arg's type (might include things like 'const')
         self.pointers = pointers       # Pointers
         self.name = name               # Formal parameter name (from header or autogenerated)
         self.array = array             # Any array type information after the name
-        self.pos = pos                 # Position of arg in declartion
+        self.pos = pos                 # Position of arg in declaration
         self.decl = None               # This gets set later by Declaration
 
     def setDeclaration(self, decl):
@@ -465,7 +465,7 @@ class Param:
             if arr.count('[') > 1:
                 pointers += '(*)'   # need extra parens for, e.g., int[][3] -> int(*)[3]
             else:
-                pointers += '*'     # justa single array; can pass pointer.
+                pointers += '*'     # just a single array; can pass pointer.
             arr = arr.replace('[]', '')
         return "%s%s%s" % (self.type, pointers, arr)
 
@@ -572,7 +572,7 @@ def enumerate_mpi_declarations(mpicc, includes):
 
     # Run the mpicc -E on the temp file and pipe the output
     # back to this process for parsing.
-    string_includes = ["-I"+dir for dir in includes]
+    string_includes = ["-I" + path for path in includes]
     mpicc_cmd = "%s -E %s" % (mpicc, " ".join(string_includes))
     try:
         popen = subprocess.Popen("%s %s" % (mpicc_cmd, tmpname), shell=True,
@@ -621,13 +621,13 @@ def enumerate_mpi_declarations(mpicc, includes):
                         sys.stderr.write("MATCH FAILED FOR: '%s' in %s\n" % (arg, fn_name))
                         sys.exit(1)
 
-                    type, pointers, name, array = match.groups()
-                    types.add(type)
+                    ctype, pointers, name, array = match.groups()
+                    types.add(ctype)
                     all_pointers.add(pointers)
                     # If there's no name, make one up.
                     if not name: name = "arg_" + str(arg_num)
 
-                    decl.addArgument(Param(type.strip(), pointers, name, array, arg_num))
+                    decl.addArgument(Param(ctype.strip(), pointers, name, array, arg_num))
                 arg_num += 1
 
             yield decl
@@ -676,7 +676,7 @@ def write_gotcha_c_wrapper(out, decl, return_val, write_body):
 def write_pmpi_c_wrapper(out, decl, return_val, write_body):
     """Write the C wrapper for an MPI function."""
     # Write the PMPI prototype here in case mpi.h doesn't define it
-    # (sadly the case with some MPI implementaitons)
+    # (sadly the case with some MPI implementations)
     out.write(decl.pmpi_prototype(default_modifiers))
     out.write(";\n")
 
@@ -732,9 +732,9 @@ class FortranDelegation:
         self.actuals = []
         self.mpich_actuals = []
 
-    def addTemp(self, type, name):
+    def addTemp(self, ctype, name):
         """Adds a temp var with a particular name.  Adds the same var only once."""
-        temp = "    %s %s;" % (type, name)
+        temp = "    %s %s;" % (ctype, name)
         self.temps.add(temp)
 
     def addActual(self, actual):
@@ -897,20 +897,21 @@ def macro(macro_name, **attrs):
         return fun
     return decorate
 
-def handle_list(list_name, list, args):
+def handle_list(list_name, array, args):
     """This function handles indexing lists used as macros in the wrapper generator.
        There are two syntaxes:
        {{<list_name>}}          Evaluates to the whole list, e.g. 'foo, bar, baz'
        {{<list_name> <index>}}  Evaluates to a particular element of a list.
     """
     if not args:
-        return list
+        return array
     else:
         len(args) == 1 or syntax_error("Wrong number of args for list expression.")
         try:
-            return list[int(args[0])]
+            index = int(args[0])
+            return array[index]
         except ValueError:
-            syntax_error("Invald index value: '%s'" % args[0])
+            syntax_error("Invalid index value: '%s'" % args[0])
         except IndexError:
             syntax_error("Index out of range in '%s': %d" % (list_name, index))
 
@@ -923,9 +924,9 @@ class TypeApplier:
 
     def __call__(self, out, scope, args, children):
         len(args) == 2 or syntax_error("Wrong number of args in apply macro.")
-        type, macro_name = args
+        ctype, macro_name = args
         for arg in self.decl.args:
-            if arg.cType() == type:
+            if arg.cType() == ctype:
                 out.write("%s(%s);\n" % (macro_name, arg.name))
 
 def include_decl(scope, decl):
@@ -951,7 +952,7 @@ def all_but(fn_list):
     """Return a list of all mpi functions except those in fn_list"""
     all_mpi = set(mpi_functions.keys())
     diff = all_mpi - set(fn_list)
-    return [x for x in sorted(diff)]
+    return list(sorted(diff))
 
 @macro("foreachfn", has_body=True)
 def foreachfn(out, scope, args, children):
@@ -1144,7 +1145,7 @@ class Chunk:
 
     def iwrite(self, file, level, text):
         """Write indented text."""
-        for x in xrange(level):
+        for x in range(level):
             file.write("  ")
         file.write(text)
 
@@ -1228,9 +1229,9 @@ class Parser:
         self.tokens = itertools.chain(iter(iterable), iter([self.next]), self.tokens)
         self.gettok()
 
-    def accept(self, id):
+    def accept(self, idx):
         """Puts the next symbol in self.token if we like it.  Then calls gettok()"""
-        if self.next.isa(id):
+        if self.next.isa(idx):
             self.token = self.next
             self.gettok()
             return True
@@ -1239,9 +1240,9 @@ class Parser:
     def unexpected_token(self):
         syntax_error("Unexpected token: %s." % self.next)
 
-    def expect(self, id):
+    def expect(self, idx):
         """Like accept(), but fails if we don't like the next token."""
-        if self.accept(id):
+        if self.accept(idx):
             return True
         else:
             if self.next:
@@ -1268,7 +1269,7 @@ class Parser:
 
         if not accept_body_macros and self.is_body_macro(chunk.macro):
             syntax_error("Cannot use body macros in expression context: '%s'" % chunk.macro)
-            eys.exit(1)
+            sys.exit(1)
 
         while True:
             if self.accept(LBRACE):
@@ -1331,7 +1332,7 @@ output_filename = None
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "Gfsgdwc:o:i:I:")
 except getopt.GetoptError as err:
-    sys.stderr.write(err + "\n")
+    sys.stderr.write(str(err) + "\n")
     usage()
 
 for opt, arg in opts:
@@ -1348,7 +1349,7 @@ for opt, arg in opts:
         if stripped: includes.append(stripped)
     if opt == "-i":
         if not arg in pmpi_init_bindings:
-            sys.stderr.write("ERROR: PMPI_Init binding must be one of:\n    %s\n" % " ".join(possible_bindings))
+            sys.stderr.write("ERROR: PMPI_Init binding must be one of:\n    %s\n" % " ".join(pmpi_init_bindings))
             usage()
         else:
             pmpi_init_binding = arg
@@ -1371,14 +1372,15 @@ if not mpi_functions:
     sys.exit(1)
 
 # If we're just dumping prototypes, we can just exit here.
-if dump_prototypes: sys.exit(0)
+if dump_prototypes:
+    sys.exit(0)
 
 # Open the output file here if it was specified
 if output_filename:
     try:
         output = open(output_filename, "w")
-    except IOError:
-        sys.stderr.write("Error: couldn't open file " + arg + " for writing.\n")
+    except:
+        sys.stderr.write("Error: couldn't open file " + output_filename + " for writing.\n")
         sys.exit(1)
 
 try:
@@ -1396,9 +1398,8 @@ try:
     # Parse each file listed on the command line and execute
     # it once it's parsed.
     fileno = 0
-    for f in args:
-        cur_filename = f
-        file = open(cur_filename)
+    for cur_filename in args:
+        f = open(cur_filename)
 
         # Outer scope contains fileno and the fundamental macros.
         outer_scope = Scope()
@@ -1406,11 +1407,12 @@ try:
         outer_scope.include(macros)
 
         parser = Parser(macros)
-        chunks = parser.parse(file.read())
+        chunks = parser.parse(f.read())
 
         for chunk in chunks:
             chunk.evaluate(output, Scope(outer_scope))
         fileno += 1
+        f.close()
 
 except WrapSyntaxError:
     output.close()
