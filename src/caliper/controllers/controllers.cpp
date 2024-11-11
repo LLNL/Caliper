@@ -503,11 +503,17 @@ const char* builtin_mpi_option_specs = R"json(
  "description" : "MPI message statistics in marked communication regions",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "mpi" ],
+ "services"    : [ "async_event", "mpi" ],
  "config"      : { "CALI_MPI_MSG_PATTERN": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
  "query"       :
  [
   { "level"    : "local",
+    "let"      :
+    [
+     "cs.irecv_gap.min=scale(min#event.duration.ns,1e-9) if async.end=irecv.req_wait_gap",
+     "cs.irecv_gap.max=scale(max#event.duration.ns,1e-9) if async.end=irecv.req_wait_gap",
+     "cs.irecv_gap.avg=scale(avg#event.duration.ns,1e-9) if async.end=irecv.req_wait_gap"
+    ],
     "select"   :
     [
       "min(min#total.send.count) as \"Sends (min)\"",
@@ -528,7 +534,10 @@ const char* builtin_mpi_option_specs = R"json(
       "sum(sum#mpi.send.size) as \"Bytes sent (total)\"",
       "min(min#mpi.recv.size) as \"Bytes recv (min)\"",
       "max(max#mpi.recv.size) as \"Bytes recv (max)\"",
-      "sum(sum#mpi.recv.size) as \"Bytes recv (total)\""
+      "sum(sum#mpi.recv.size) as \"Bytes recv (total)\"",
+      "min(cs.irecv_gap.min) as \"Irecv gap (min)\"",
+      "avg(cs.irecv_gap.avg) as \"Irecv gap (avg)\"",
+      "max(cs.irecv_gap.max) as \"Irecv gap (max)\""
     ]
   },
   { "level"    : "cross",
@@ -552,7 +561,10 @@ const char* builtin_mpi_option_specs = R"json(
       "sum(sum#sum#mpi.send.size) as \"Bytes sent (total)\"",
       "min(min#min#mpi.recv.size) as \"Bytes recv (min)\"",
       "max(max#max#mpi.recv.size) as \"Bytes recv (max)\"",
-      "sum(sum#sum#mpi.recv.size) as \"Bytes recv (total)\""
+      "sum(sum#sum#mpi.recv.size) as \"Bytes recv (total)\"",
+      "min(min#cs.irecv_gap.min) as \"Irecv gap (min)\"",
+      "avg(avg#cs.irecv_gap.avg) as \"Irecv gap (avg)\"",
+      "max(max#cs.irecv_gap.max) as \"Irecv gap (max)\""
     ]
   }
  ]

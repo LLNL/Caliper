@@ -78,6 +78,7 @@ public:
     );
 
     void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs);
+    void handle_pre_completion(Caliper *c, Channel* chn, int nreq, MPI_Request* reqs);
     void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses);
 
     void handle_comm_begin(Caliper* c, Channel* chn); //region_begin
