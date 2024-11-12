@@ -710,34 +710,29 @@ FILE* wrapped_fopen(const char* path, const char* mode)
     // Get the handle for the original function
     fopen_f orig_fopen = (fopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FOPEN_ID].handle);
 
-    // NOTE: calling realpath on pathname before passing it to curious_get_filesystem
-    //       might be necessary in order to handle relative paths_
-
-    curious_metadata_record_t io_args = {
-        .call_count  = 0,
-        .function_id = CURIOUS_FOPEN_ID,
-    };
-
-    curious_get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-
-    // Only call callbacks the first time around
     if (1 == wrapper_call_depth && wrappers_enabled) {
+        // NOTE: calling realpath on pathname before passing it to curious_get_filesystem
+        //       might be necessary in order to handle relative paths_
+        curious_metadata_record_t io_args = {
+            .call_count  = 0,
+            .function_id = CURIOUS_FOPEN_ID,
+        };
+
+        curious_get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
         curious_call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    }
 
-    // Call the original, saving the result...
-    FILE* file = orig_fopen(path, mode);
+        // Call the original, saving the result...
+        FILE* file = orig_fopen(path, mode);
 
-    if (NULL != file) {
-        curious_register_file_by_fd(fileno(file));
-    }
+        if (NULL != file) {
+            curious_register_file_by_fd(fileno(file));
+        }
 
-    // Only call callbacks the first time around
-    if (1 == wrapper_call_depth && wrappers_enabled) {
         curious_call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+        WRAPPER_RETURN(file, fopen);
+    } else {
+        WRAPPER_RETURN(orig_fopen(path, mode), fopen);
     }
-
-    WRAPPER_RETURN(file, fopen);
 }
 
 FILE* wrapped_fdopen(int fd, const char* mode)
@@ -790,33 +785,30 @@ FILE* wrapped_freopen(const char* path, const char* mode, FILE* stream)
     // Get the handle for the original function
     freopen_f orig_freopen = (freopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FREOPEN_ID].handle);
 
-    // NOTE: calling realpath on pathname before passing it to curious_get_filesystem
-    //       might be necessary in order to handle relative paths_
-
-    curious_metadata_record_t io_args = {
-        .call_count  = 0,
-        .function_id = CURIOUS_FREOPEN_ID,
-    };
-
-    curious_get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-
-    // Only call callbacks the first time around
     if (1 == wrapper_call_depth && wrappers_enabled) {
+        // NOTE: calling realpath on pathname before passing it to curious_get_filesystem
+        //       might be necessary in order to handle relative paths_
+
+        curious_metadata_record_t io_args = {
+            .call_count  = 0,
+            .function_id = CURIOUS_FREOPEN_ID,
+        };
+
+        curious_get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
         curious_call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    }
 
-    // Call the original, saving the result...
-    FILE* file = orig_freopen(path, mode, stream);
+        // Call the original, saving the result...
+        FILE* file = orig_freopen(path, mode, stream);
 
-    if (NULL != file) {
-        curious_register_file_by_fd(fileno(file));
-    }
-    // Only call callbacks the first time around
-    if (1 == wrapper_call_depth && wrappers_enabled) {
+        if (NULL != file) {
+            curious_register_file_by_fd(fileno(file));
+        }
+
         curious_call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+        WRAPPER_RETURN(file, freopen);
+    } else {
+        WRAPPER_RETURN(orig_freopen(path, mode, stream), freopen);
     }
-
-    WRAPPER_RETURN(file, freopen);
 }
 
 int wrapped_fclose(FILE* fp)
