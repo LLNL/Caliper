@@ -41,8 +41,11 @@ void* thread_wrapper(void* arg)
     uint64_t id = static_cast<uint64_t>(pthread_self());
     Caliper  c;
 
-    c.set(master_attr, Variant(false));
-    c.set(id_attr, Variant(cali_make_variant_from_uint(id)));
+    // Check if Caliper is still initialized - it's possible we're past finalization
+    if (c) {
+        c.set(master_attr, Variant(false));
+        c.set(id_attr, Variant(cali_make_variant_from_uint(id)));
+    }
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
     void*         ret  = (*(wrap->fn))(wrap->arg);
