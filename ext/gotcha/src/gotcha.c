@@ -40,7 +40,7 @@ static void setBindingAddressPointer(struct gotcha_binding_t *in, void *value) {
   writeAddress(target, value);
 }
 
-static void **getInternalBindingAddressPointer(struct internal_binding_t **in) {
+void **getInternalBindingAddressPointer(struct internal_binding_t **in) {
   return (void **)&((*in)->wrappee_pointer);
 }
 
