@@ -25,7 +25,7 @@ class CaliperMetadataAccessInterface;
 /// a _reference entry_ (reference into the context tree) or an
 /// _immediate entry_ (explicit key:value pair). Reference entries are
 /// stored as context tree node pointer, immediate entries are stored as
-/// (attribute, value) pair.
+/// (attribute node pointer, value) pair.
 
 class Entry
 {
@@ -34,12 +34,16 @@ class Entry
 
 public:
 
+    /// @brief Maximum size in bytes of a packed entry
     constexpr static size_t MAX_PACKED_SIZE = 30;
 
+    /// @brief Construct an empty Entry
     constexpr Entry() : m_node(nullptr) {}
 
+    /// @brief Construct a reference entry from \a node
     Entry(Node* node) : m_node(node), m_value(node->data()) {}
 
+    /// @brief Construct an immediate entry from \a attr, \a val
     Entry(const Attribute& attr, const Variant& val) : m_node(attr.node()), m_value(val) {}
 
     /// \brief Return context tree node pointer for reference entries.
@@ -79,8 +83,16 @@ public:
 
     bool is_reference() const { return !empty() && !is_immediate(); }
 
+    /// @brief Write a compact binary serialization of the entry into \a buffer
+    /// @param buffer The target buffer. Must have at least \ref MAX_PACKED_SIZE bytes of free space.
+    /// @return The actual number of bytes written into \a buffer
     size_t pack(unsigned char* buffer) const;
 
+    /// @brief Deserialize a packed entry from \a buffer
+    /// @param db The %Caliper metadata (context tree nodes, attributes) associated with this entry.
+    /// @param buffer The source buffer. Must point to a packed entry.
+    /// @param inc Returns the number of bytes read from the source buffer.
+    /// @return The deserialized entry.
     static Entry unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc);
 
     friend bool operator== (const Entry&, const Entry&);
