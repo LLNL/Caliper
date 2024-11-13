@@ -99,7 +99,7 @@ void make_strings(const Config& cfg)
         }
 }
 
-void record_globals(const Config& cfg, int threads, const cali::ConfigManager::argmap_t& extra_kv)
+void record_globals(const Config& cfg, int threads)
 {
 #ifdef CALIPER_HAVE_ADIAK
     adiak::value("perftest.tree_width", cfg.tree_width);
@@ -117,9 +117,6 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
     adiak::cmdline();
     adiak::clustername();
     adiak::hostname();
-
-    for (auto& p : extra_kv)
-        adiak::value(p.first, p.second);
 
     for (size_t p = 0; cali_perftest_build_metadata[p][0]; ++p)
         adiak::value(cali_perftest_build_metadata[p][0], cali_perftest_build_metadata[p][1]);
@@ -180,11 +177,9 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    cali::ConfigManager::argmap_t extra_kv;
-
     cali::ConfigManager mgr;
     mgr.set_default_parameter("aggregate_across_ranks", "false");
-    mgr.add(args.get("profile", "").c_str(), extra_kv);
+    mgr.add(args.get("profile", "").c_str());
 
     if (mgr.error())
         std::cerr << "Profiling config error: " << mgr.error_msg() << std::endl;
@@ -206,7 +201,7 @@ int main(int argc, char* argv[])
     cfg.channels   = std::max(std::stoi(args.get("channels", "1")), 1);
 
     // set global attributes before other Caliper initialization
-    record_globals(cfg, threads, extra_kv);
+    record_globals(cfg, threads);
 
     make_strings(cfg);
 
