@@ -44,8 +44,8 @@ public:
 
         // Config for second aggregation step in MPI mode (cross-process aggregation)
         std::string cross_select =
-            " avg(inclusive#scale#time.duration.ns) as \"Avg Host Time\""
-            ",max(inclusive#scale#time.duration.ns) as \"Max Host Time\""
+            " avg(iscale#sum#time.duration.ns) as \"Avg Host Time\""
+            ",max(iscale#sum#time.duration.ns) as \"Max Host Time\""
             ",avg(iscale#sum#rocm.activity.duration) as \"Avg GPU Time\""
             ",max(iscale#sum#rocm.activity.duration) as \"Max GPU Time\""
             ",ratio(iscale#sum#rocm.activity.duration,iscale#sum#time.duration.ns,100.0) as \"GPU %\"";
