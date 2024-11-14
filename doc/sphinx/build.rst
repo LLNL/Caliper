@@ -88,6 +88,10 @@ WITH_ROCTRACER
   Enable support for ROCm/HIP performance analysis (runtime API profiling and
   GPU activity tracing).
 
+WITH_ROCPROFILER
+  Enable roctx adapters and support for ROCm/HIP performance analysis with the
+  rocprofiler-sdk API (available with ROCm 6.2 and higher).
+
 WITH_SAMPLER
   Enable time-based sampling on Linux.
 
@@ -142,8 +146,6 @@ The CMake package defines the following variables and targets:
 | ${caliper_INCLUDE_DIR}     | Caliper include directory (variable)     |
 +----------------------------+------------------------------------------+
 | caliper                    | The Caliper runtime library (target)     |
-+----------------------------+------------------------------------------+
-| caliper-tools-util         | Utilities for caliper tools (target)     |
 +----------------------------+------------------------------------------+
 
 In most cases, just link the "caliper" target.

@@ -7,15 +7,13 @@ Caliper: A Performance Analysis Toolbox in a Library
 
 Caliper is a performance instrumentation and profiling library for HPC
 (high-performance computing) programs. It provides source-code annotation
-APIs for marking regions of interest in C, C++, and Fortran code, as well as
-a set of built-in performance measurement recipes for a wide range of
-performance engineering use cases, such as lightweight always-on profiling,
-event tracing, or performance monitoring. Alternatively, users can create
-custom measurement configurations for specialized use cases.
+APIs for marking regions of interest in C, C++, Fortran, and Python codes,
+as well as measurement functionality for a wide range of runtime profiling,
+event tracing, and performance monitoring use cases.
 
-Caliper can either generate simple human-readable reports or machine-readable
-JSON or .cali files for automated data processing with user-provided scripts
-or analysis frameworks like [Hatchet](https://github.com/LLNL/hatchet)
+Caliper can generate simple human-readable reports or files for
+performance data analysis frameworks like
+[Hatchet](https://github.com/LLNL/hatchet)
 and [Thicket](https://github.com/LLNL/thicket).
 It can also generate detailed event traces for timeline visualizations with
 [Perfetto](https://perfetto.dev) and the Google Chrome trace viewer.
@@ -23,21 +21,54 @@ It can also generate detailed event traces for timeline visualizations with
 Features include:
 
 * Low-overhead source-code annotation API
-* Configuration API to control performance measurements from
-  within an application
 * Recording program metadata for analyzing collections of runs
-* Flexible key:value data model to capture application-specific
-  features for performance analysis
-* Fully threadsafe implementation, support for parallel programming
-  models like MPI
-* Event-based as well as sample-based performance measurements
+* Fully threadsafe implementation
+* Support for parallel programming models like MPI, OpenMP, Kokkos, CUDA, and ROCm
+* Event-based and sample-based performance measurements
 * Trace and profile recording
 * Connection to third-party tools, e.g. NVidia's NSight tools, AMD
   ROCProf, or Intel(R) VTune(tm)
-* Measurement and profiling functionality such as timers, PAPI
-  hardware counters, and Linux perf_events
-* Memory annotations to associate performance measurements
-  with memory regions
+
+Overview
+------------------------------------------
+
+Caliper is primarily a source-code instrumentation library. To use it, insert
+Caliper instrumentation markers around source-code regions of interest in the
+target program, like the C++ function and region markers in the example below:
+
+```C++
+#include <caliper/cali.h>
+
+int get_answer() {
+    CALI_CXX_MARK_FUNCTION;
+
+    CALI_MARK_BEGIN("computing");
+    int ret = 2 * 3 * 7;
+    CALI_MARK_END("computing");
+    return ret;
+}
+```
+
+There are annotation APIs for C, C++, Fortran, and Python codes.
+To take performance measurements, Caliper provides built-in profiling recipes for
+a wide range of performance engineering use cases. Available functionality includes
+MPI function and message profiling, CUDA and HIP API as well as GPU activity
+profiling, loop profiling, call-path sampling, and much more.
+As a simple example, the ``runtime-report`` recipe prints the time spent in the
+annotated regions on screen:
+
+    $ CALI_CONFIG=runtime-report ./answer
+    Path          Time (E) Time (I) Time % (E) Time % (I)
+    main          0.000072 0.000083  17.469875  20.188570
+      get_answer  0.000008 0.000011   1.864844   2.718695
+        computing 0.000004 0.000004   0.853851   0.853851
+
+Aside from simple text reports, Caliper can generate machine-readable output in JSON
+or its own custom .cali file format, which can be analyzed with the Caliper-provided
+``cali-query`` tool and CalQL query language, or imported into Python analysis
+scripts with the [caliper-reader](python/caliper-reader/) Python module.
+In addition, Caliper can collect data for [Thicket](https://github.com/LLNL/thicket),
+a Python-based toolkit for Exploratory Data Analysis of parallel performance data.
 
 Documentation
 ------------------------------------------
@@ -48,19 +79,19 @@ https://software.llnl.gov/Caliper/
 Usage examples of the C++, C, and Fortran annotation and ConfigManager
 APIs are provided in the [examples](examples/apps) directory.
 
-See the "Getting started" section below for a brief tutorial.
+A basic tutorial is available here:
+https://github.com/daboehme/caliper-tutorial
 
 Building and installing
 ------------------------------------------
 
-You can install Caliper with the [spack](https://github.com/spack/spack)
+Caliper can be installed with the [spack](https://github.com/spack/spack)
 package manager:
 
     $ spack install caliper
 
-To build Caliper manually, you need cmake 3.12+ and a current
-C++11-compatible Compiler. Clone Caliper from github and proceed
-as follows:
+Building Caliper manually requires cmake 3.12+ and a C++11-compatible
+Compiler. Clone Caliper from github and proceed as follows:
 
     $ git clone https://github.com/LLNL/Caliper.git
     $ cd Caliper
@@ -77,137 +108,6 @@ There are many build flags to enable optional features, such as `-DWITH_MPI`
 for MPI support.
 See the "Build and install" section in the documentation for further
 information.
-
-Getting started
-------------------------------------------
-
-Typically, we integrate Caliper into a program by marking source-code
-sections of interest with descriptive annotations. Performance profiling can
-then be enabled through the Caliper ConfigManager API or environment
-variables. Alternatively, third-party tools can connect to Caliper and access
-information provided by the source-code annotations.
-
-### Source-code annotations
-
-Caliper's source-code annotation API allows you to mark source-code regions
-of interest in your program. Much of Caliper's functionality depends on these
-region annotations.
-
-Caliper provides macros and functions for C, C++, and Fortran to mark
-functions, loops, or sections of source-code. For example, use
-`CALI_CXX_MARK_FUNCTION` to mark a function in C++:
-
-```C++
-#include <caliper/cali.h>
-
-void foo()
-{
-    CALI_CXX_MARK_FUNCTION;
-    // ...
-}
-```
-
-You can mark arbitrary code regions with the `CALI_MARK_BEGIN` and
-`CALI_MARK_END` macros or the corresponding `cali_begin_region()`
-and `cali_end_region()` functions:
-
-```C++
-#include <caliper/cali.h>
-
-// ...
-CALI_MARK_BEGIN("my region");
-// ...
-CALI_MARK_END("my region");
-```
-
-The [cxx-example](examples/apps/cxx-example.cpp),
-[c-example](examples/apps/c-example.c), and
-[fortran-example](examples/apps/fortran-example.f) example apps show how to use
-Caliper in C++, C, and Fortran, respectively.
-
-### Recording performance data
-
-With the source-code annotations in place, we can run performance measurements.
-By default, Caliper does not record data - we have to activate performance
-profiling at runtime.
-An easy way to do this is to use one of Caliper's built-in measurement
-recipes. For example, the `runtime-report` config prints out the time
-spent in the annotated regions. You can activate built-in measurement
-configurations with the ConfigManager API or with the `CALI_CONFIG`
-environment variable. Let's try this on Caliper's cxx-example program:
-
-    $ cd Caliper/build
-    $ make cxx-example
-    $ CALI_CONFIG=runtime-report ./examples/apps/cxx-example
-    Path       Min time/rank Max time/rank Avg time/rank Time %
-    main            0.000119      0.000119      0.000119  7.079120
-      mainloop      0.000067      0.000067      0.000067  3.985723
-        foo         0.000646      0.000646      0.000646 38.429506
-      init          0.000017      0.000017      0.000017  1.011303
-
-The runtime-report config works for MPI and non-MPI programs. It reports the
-minimum, maximum, and average exclusive time (seconds) spent in each marked
-code region across MPI ranks (the values are identical in non-MPI programs).
-
-You can customize the report with additional options. Some options enable
-additional Caliper functionality, such as profiling MPI and CUDA functions in
-addition to the user-defined regions, or additional metrics like memory usage.
-Other measurement configurations besides runtime-report include:
-
-* loop-report: Print summary and time-series information for loops.
-* mpi-report: Print time spent in MPI functions.
-* callpath-sample-report: Print a time spent in functions using call-path sampling.
-* event-trace: Record a trace of region enter/exit events in .cali format.
-* hatchet-region-profile: Record a region time profile for processing with
-  [Hatchet](https://github.com/LLNL/hatchet) or cali-query.
-
-See the "Builtin configurations" section in the documentation to learn more
-about different configurations and their options.
-
-You can also create entirely custom measurement configurations by selecting and
-configuring Caliper services manually. See the "Manual configuration" section
-in the documentation to learn more.
-
-#### ConfigManager API
-
-A distinctive Caliper feature is the ability to enable performance
-measurements programmatically with the ConfigManager API. For example, we often
-let users activate performance measurements with a command-line argument.
-
-With the C++ ConfigManager API, built-in performance measurement and
-reporting configurations can be activated within a program using a short
-configuration string. This configuration string can be hard-coded in the
-program or provided by the user in some form, e.g. as a command-line
-parameter or in the programs's configuration file.
-
-To use the ConfigManager API, create a `cali::ConfigManager` object, add a
-configuration string with `add()`, start the requested configuration
-channels with `start()`, and trigger output with `flush()`:
-
-```C++
-#include <caliper/cali-manager.h>
-// ...
-cali::ConfigManager mgr;
-mgr.add("runtime-report");
-// ...
-mgr.start(); // start requested performance measurement channels
-// ... (program execution)
-mgr.flush(); // write performance results
-```
-
-The `cxx-example` program uses the ConfigManager API to let users specify a
-Caliper configuration with the `-P` command-line argument, e.g.
-``-P runtime-report``:
-
-    $ ./examples/apps/cxx-example -P runtime-report
-    Path       Min time/rank Max time/rank Avg time/rank Time %
-    main            0.000129      0.000129      0.000129  5.952930
-      mainloop      0.000080      0.000080      0.000080  3.691740
-        foo         0.000719      0.000719      0.000719 33.179511
-      init          0.000021      0.000021      0.000021  0.969082
-
-See the [Caliper documentation](https://software.llnl.gov/Caliper) for more
-examples and the full API and configuration reference.
 
 Authors
 ------------------------------------------

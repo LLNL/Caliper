@@ -267,8 +267,8 @@ following example shows both::
                     num_dimensions);
             ...
 
-        CALI_DATATRACKER_FREE(arrayA);
-        CALI_DATATRACKER_FREE(matA);
+        CALI_DATATRACKER_UNTRACK(arrayA);
+        CALI_DATATRACKER_UNTRACK(matA);
     }
 
 API Reference
