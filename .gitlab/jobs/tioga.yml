@@ -14,14 +14,38 @@
 variables:
   INCLUDED_FILE_CANNOT_BE_EMPTY: "True"
 
-# The correct way is now to use rocmcc compiler directly as done in shared spec
-### Template for extra jobs defined by the project.
-#clang13.0.1-rocm5.4.1:
-#  variables:
-#    SPEC: "%clang@13.0.1 +rocm amdgpu_target=gfx90a ^hip@5.4.1"
-#  extends: .job_on_tioga
+########################
+# Overridden shared jobs
+########################
+# We duplicate the shared jobs description and add necessary changes for this
+# project. We keep ${PROJECT_<MACHINE>_VARIANTS} and ${PROJECT_<MACHINE>_DEPS}
+# So that the comparison with the original job is easier.
 
+# This compiler is not considered reliable per issue in RAJA
+# https://github.com/LLNL/RAJA/pull/1712#issuecomment-2316335119
+# We allow failure and keep the cce 17.0.1 job below.
+cce_18_0_0:
+  variables:
+    SPEC: "${PROJECT_TIOGA_VARIANTS} %cce@=18.0.0 ${PROJECT_TIOGA_DEPS}"
+  extends: .job_on_tioga
+  allow_failure: true
+
+############
+# Extra jobs
+############
+# We do not recommend using ${PROJECT_<MACHINE>_VARIANTS} and
+# ${PROJECT_<MACHINE>_DEPS} in the extra jobs. There is no reason not to fully
+# describe the spec here.
+# The correct way is now to use rocmcc compiler directly as done in shared spec
+
+# As long as cce 18 fails, we keep this one.
+cce_17_0_1:
+  variables:
+    SPEC: "${PROJECT_TIOGA_VARIANTS} %cce@=17.0.1 ${PROJECT_TIOGA_DEPS}"
+  extends: .job_on_tioga
+
+# TODO: update cce when vetted
 master:
   variables:
-    SPEC: " +tests %cce@18.0.0"
+    SPEC: " +tests %cce@17.0.1"
   extends: .job_on_tioga
