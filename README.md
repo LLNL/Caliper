@@ -34,7 +34,7 @@ Overview
 
 Caliper is primarily a source-code instrumentation library. To use it, insert
 Caliper instrumentation markers around source-code regions of interest in the
-target program:
+target program, like the C++ function and region markers in the example below:
 
 ```C++
 #include <caliper/cali.h>
@@ -53,8 +53,8 @@ There are annotation APIs for C, C++, Fortran, and Python codes.
 To take performance measurements, Caliper provides built-in profiling recipes for
 a wide range of performance engineering use cases. Available functionality includes
 MPI function and message profiling, CUDA and HIP API as well as GPU activity
-(kernel executions and memory copies) profiling, call-path sampling, and much more.
-As a simple example, the `runtime-report` recipe prints the time spent in the
+profiling, loop profiling, call-path sampling, and much more.
+As a simple example, the ``runtime-report`` recipe prints the time spent in the
 annotated regions on screen:
 
     $ CALI_CONFIG=runtime-report ./answer
@@ -65,7 +65,7 @@ annotated regions on screen:
 
 Aside from simple text reports, Caliper can generate machine-readable output in JSON
 or its own custom .cali file format, which can be analyzed with the Caliper-provided
-`cali-query` tool and CalQL query language, or imported into Python analysis
+``cali-query`` tool and CalQL query language, or imported into Python analysis
 scripts with the [caliper-reader](python/caliper-reader/) Python module.
 In addition, Caliper can collect data for [Thicket](https://github.com/LLNL/thicket),
 a Python-based toolkit for Exploratory Data Analysis of parallel performance data.
