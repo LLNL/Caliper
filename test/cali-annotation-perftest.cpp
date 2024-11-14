@@ -28,7 +28,8 @@
 #include <caliper/common/RuntimeConfig.h>
 
 #include <caliper/cali.h>
-#include <caliper/tools-util/Args.h>
+
+#include "../src/tools/util/Args.h"
 
 #include <chrono>
 #include <iostream>
@@ -46,8 +47,7 @@ std::vector<std::string> annotation_strings;
 
 extern const char* cali_perftest_build_metadata[][2];
 
-struct Config
-{
+struct Config {
     int tree_width;
     int tree_depth;
 
@@ -56,23 +56,21 @@ struct Config
     int channels;
 };
 
-
 int foo(int d, int w, const Config& cfg)
 {
     if (d <= 0)
         return 0;
 
-    cali::Annotation::Guard
-        g_a(test_annotation.begin(annotation_strings[d*cfg.tree_width+w].c_str()));
+    cali::Annotation::Guard g_a(test_annotation.begin(annotation_strings[d * cfg.tree_width + w].c_str()));
 
-    return 2 + foo(d-1, w, cfg);
+    return 2 + foo(d - 1, w, cfg);
 }
 
 int run(const Config& cfg)
 {
     int n_updates = 0;
 
-#pragma omp parallel for schedule(static) reduction(+:n_updates)
+#pragma omp parallel for schedule(static) reduction(+ : n_updates)
     for (int i = 0; i < cfg.iter; ++i) {
         n_updates += foo(cfg.tree_depth, i % cfg.tree_width, cfg);
     }
@@ -97,21 +95,20 @@ void make_strings(const Config& cfg)
             str.append(".");
             str.append(std::to_string(w));
 
-            annotation_strings[d*width+w] = std::move(str);
+            annotation_strings[d * width + w] = std::move(str);
         }
 }
 
-void record_globals(const Config& cfg, int threads, const cali::ConfigManager::argmap_t& extra_kv)
+void record_globals(const Config& cfg, int threads)
 {
 #ifdef CALIPER_HAVE_ADIAK
     adiak::value("perftest.tree_width", cfg.tree_width);
     adiak::value("perftest.tree_depth", cfg.tree_depth);
     adiak::value("perftest.iterations", cfg.iter);
-    adiak::value("perftest.threads",    threads);
-    adiak::value("perftest.channels",   cfg.channels);
+    adiak::value("perftest.threads", threads);
+    adiak::value("perftest.channels", cfg.channels);
 
-    adiak::value("perftest.services",
-                 cali::RuntimeConfig::get_default_config().get("services", "enable").to_string());
+    adiak::value("perftest.services", cali::RuntimeConfig::get_default_config().get("services", "enable").to_string());
 
     adiak::user();
     adiak::launchdate();
@@ -121,9 +118,6 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
     adiak::clustername();
     adiak::hostname();
 
-    for (auto &p : extra_kv)
-        adiak::value(p.first, p.second);
-
     for (size_t p = 0; cali_perftest_build_metadata[p][0]; ++p)
         adiak::value(cali_perftest_build_metadata[p][0], cali_perftest_build_metadata[p][1]);
 
@@ -131,36 +125,31 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
     cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
     cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);
     cali_set_global_int_byname("perftest.iterations", cfg.iter);
-    cali_set_global_int_byname("perftest.threads",    threads);
-    cali_set_global_int_byname("perftest.channels",   cfg.channels);
+    cali_set_global_int_byname("perftest.threads", threads);
+    cali_set_global_int_byname("perftest.channels", cfg.channels);
 #endif
 }
 
 const util::Args::Table option_table[] = {
-    { "width",       "tree-width",  'w', true,
-        "Context tree width", "WIDTH"
-    },
-    { "depth",       "tree-width",  'd', true,
-        "Context tree depth", "DEPTH"
-    },
-    { "iterations",  "iterations",  'i', true,
-        "Iterations",         "ITERATIONS"
-    },
-    { "csv",         "print-csv",   'c', false,
-        "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime.",
-        nullptr
-    },
-    { "channels",     "channels",   'x', true,
-        "Number of replicated channel instances",
-        "CHANNELS"
-    },
-    { "profile",       "profile",   'P', true,
-        "Caliper profiling config (for profiling cali-annotation-perftest)",
-        "CONFIGSTRING"
-    },
+    { "width", "tree-width", 'w', true, "Context tree width", "WIDTH" },
+    { "depth", "tree-width", 'd', true, "Context tree depth", "DEPTH" },
+    { "iterations", "iterations", 'i', true, "Iterations", "ITERATIONS" },
+    { "csv",
+      "print-csv",
+      'c',
+      false,
+      "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime.",
+      nullptr },
+    { "channels", "channels", 'x', true, "Number of replicated channel instances", "CHANNELS" },
+    { "profile",
+      "profile",
+      'P',
+      true,
+      "Caliper profiling config (for profiling cali-annotation-perftest)",
+      "CONFIGSTRING" },
 
     { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
-    { "help",  "help",  'h', false, "Print help",         nullptr },
+    { "help", "help", 'h', false, "Print help", nullptr },
 
     util::Args::Terminator
 };
@@ -176,8 +165,7 @@ int main(int argc, char* argv[])
     int lastarg = args.parse(argc, argv);
 
     if (lastarg < argc) {
-        std::cerr << "cali-annotation-perftest: unknown option: " << argv[lastarg] << '\n'
-                  << "Available options: ";
+        std::cerr << "cali-annotation-perftest: unknown option: " << argv[lastarg] << '\n' << "Available options: ";
 
         args.print_available_options(std::cerr);
 
@@ -189,11 +177,9 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    cali::ConfigManager::argmap_t extra_kv;
-
     cali::ConfigManager mgr;
     mgr.set_default_parameter("aggregate_across_ranks", "false");
-    mgr.add(args.get("profile", "").c_str(), extra_kv);
+    mgr.add(args.get("profile", "").c_str());
 
     if (mgr.error())
         std::cerr << "Profiling config error: " << mgr.error_msg() << std::endl;
@@ -209,13 +195,13 @@ int main(int argc, char* argv[])
 
     Config cfg;
 
-    cfg.tree_width  = std::stoi(args.get("width", "20"));
-    cfg.tree_depth  = std::stoi(args.get("depth", "10"));
-    cfg.iter        = std::stoi(args.get("iterations", "100000"));
-    cfg.channels    = std::max(std::stoi(args.get("channels", "1")), 1);
+    cfg.tree_width = std::stoi(args.get("width", "20"));
+    cfg.tree_depth = std::stoi(args.get("depth", "10"));
+    cfg.iter       = std::stoi(args.get("iterations", "100000"));
+    cfg.channels   = std::max(std::stoi(args.get("channels", "1")), 1);
 
     // set global attributes before other Caliper initialization
-    record_globals(cfg, threads, extra_kv);
+    record_globals(cfg, threads);
 
     make_strings(cfg);
 
@@ -226,10 +212,8 @@ int main(int argc, char* argv[])
 
     if (!quiet && !print_csv)
         std::cout << "cali-annotation-perftest:"
-                  << "\n    Channels:   " << cfg.channels
-                  << "\n    Tree width: " << cfg.tree_width
-                  << "\n    Tree depth: " << cfg.tree_depth
-                  << "\n    Iterations: " << cfg.iter
+                  << "\n    Channels:   " << cfg.channels << "\n    Tree width: " << cfg.tree_width
+                  << "\n    Tree depth: " << cfg.tree_depth << "\n    Iterations: " << cfg.iter
 #ifdef _OPENMP
                   << "\n    Threads:    " << omp_get_max_threads()
 #endif
@@ -280,10 +264,10 @@ int main(int argc, char* argv[])
 
     CALI_MARK_END("perftest.timing");
 
-    auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
+    auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(etime - stime).count();
 
-    double usec_per_update = (updates > 0 ? (1000.0*msec*threads)/updates : 0.0);
-    double updates_per_sec = (msec    > 0 ?  1000.0*updates/msec          : 0.0);
+    double usec_per_update = (updates > 0 ? (1000.0 * msec * threads) / updates : 0.0);
+    double updates_per_sec = (msec > 0 ? 1000.0 * updates / msec : 0.0);
 
 #ifdef CALIPER_HAVE_ADIAK
     adiak::value("perftest.usec_per_update", usec_per_update);
@@ -293,20 +277,12 @@ int main(int argc, char* argv[])
 
     if (!quiet) {
         if (print_csv)
-            std::cout << cfg.channels
-                    << "," << cfg.tree_depth
-                    << "," << cfg.tree_width
-                    << "," << updates
-                    << "," << threads
-                    << "," << msec/1000.0
-                    << std::endl;
+            std::cout << cfg.channels << "," << cfg.tree_depth << "," << cfg.tree_width << "," << updates << ","
+                      << threads << "," << msec / 1000.0 << std::endl;
         else
-            std::cout << "  " << updates << " annotation updates in "
-                    << msec/1000.0     << " sec ("
-                    << updates/threads << " per thread), "
-                    << updates_per_sec << " updates/sec, "
-                    << usec_per_update << " usec/update"
-                    << std::endl;
+            std::cout << "  " << updates << " annotation updates in " << msec / 1000.0 << " sec (" << updates / threads
+                      << " per thread), " << updates_per_sec << " updates/sec, " << usec_per_update << " usec/update"
+                      << std::endl;
     }
 
     CALI_MARK_FUNCTION_END;

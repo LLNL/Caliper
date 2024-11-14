@@ -14,8 +14,7 @@
 
 using namespace cali;
 
-Variant
-SnapshotTreeNode::min_val(const Attribute& key)
+Variant SnapshotTreeNode::min_val(const Attribute& key)
 {
     {
         auto it = m_v_min.find(key);
@@ -26,9 +25,9 @@ SnapshotTreeNode::min_val(const Attribute& key)
     Variant val;
 
     for (const auto& rec : m_records) {
-        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute,Variant>& p){
-                return p.first == key;
-            });
+        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute, Variant>& p) {
+            return p.first == key;
+        });
 
         if (it != rec.end())
             val = val ? std::min(val, (*it).second) : (*it).second;
@@ -41,8 +40,7 @@ SnapshotTreeNode::min_val(const Attribute& key)
     return val;
 }
 
-Variant
-SnapshotTreeNode::max_val(const Attribute& key)
+Variant SnapshotTreeNode::max_val(const Attribute& key)
 {
     {
         auto it = m_v_max.find(key);
@@ -53,9 +51,9 @@ SnapshotTreeNode::max_val(const Attribute& key)
     Variant val;
 
     for (const auto& rec : m_records) {
-        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute,Variant>& p){
-                return p.first == key;
-            });
+        auto it = std::find_if(rec.begin(), rec.end(), [key](const std::pair<Attribute, Variant>& p) {
+            return p.first == key;
+        });
 
         if (it != rec.end())
             val = val ? std::max(val, (*it).second) : (*it).second;
@@ -68,31 +66,30 @@ SnapshotTreeNode::max_val(const Attribute& key)
     return val;
 }
 
-void
-SnapshotTreeNode::sort(const Attribute& key, bool ascending)
+void SnapshotTreeNode::sort(const Attribute& key, bool ascending)
 {
-    std::stable_sort(m_records.begin(), m_records.end(), [key,ascending](const Record& lhs, const Record& rhs){
-            auto find_key = [key](const std::pair<Attribute,Variant>& p){
-                    return p.first == key;
-                };
+    std::stable_sort(m_records.begin(), m_records.end(), [key, ascending](const Record& lhs, const Record& rhs) {
+        auto find_key = [key](const std::pair<Attribute, Variant>& p) {
+            return p.first == key;
+        };
 
-            auto l_it = std::find_if(lhs.begin(), lhs.end(), find_key);
-            auto r_it = std::find_if(rhs.begin(), rhs.end(), find_key);
+        auto l_it = std::find_if(lhs.begin(), lhs.end(), find_key);
+        auto r_it = std::find_if(rhs.begin(), rhs.end(), find_key);
 
-            if (r_it == rhs.end())
-                return true;
-            if (l_it == lhs.end())
-                return false;
+        if (r_it == rhs.end())
+            return true;
+        if (l_it == lhs.end())
+            return false;
 
-            return ascending ? l_it->second < r_it->second : l_it->second > r_it->second;
-        });
+        return ascending ? l_it->second < r_it->second : l_it->second > r_it->second;
+    });
 }
 
-struct SnapshotTree::SnapshotTreeImpl
-{
+struct SnapshotTree::SnapshotTreeImpl {
     SnapshotTreeNode* m_root;
 
-    void recursive_delete(SnapshotTreeNode* node) {
+    void recursive_delete(SnapshotTreeNode* node)
+    {
         if (node) {
             recursive_delete(node->first_child());
             recursive_delete(node->next_sibling());
@@ -101,18 +98,19 @@ struct SnapshotTree::SnapshotTreeImpl
         }
     }
 
-    const SnapshotTreeNode*
-    add_snapshot(const CaliperMetadataAccessInterface& db,
-                 const EntryList&  list,
-                 IsPathPredicateFn is_path)
+    const SnapshotTreeNode* add_snapshot(
+        const CaliperMetadataAccessInterface& db,
+        const EntryList&                      list,
+        IsPathPredicateFn                     is_path
+    )
     {
-        std::vector< std::pair<Attribute, Variant> > path;
-        std::vector< std::pair<Attribute, Variant> > data;
+        std::vector<std::pair<Attribute, Variant>> path;
+        std::vector<std::pair<Attribute, Variant>> data;
         //
         // helper function to distinguish path and attribute entries
         //
 
-        auto push_entry = [&](cali_id_t attr_id, const Variant& val){
+        auto push_entry = [&](cali_id_t attr_id, const Variant& val) {
             Attribute attr = db.get_attribute(attr_id);
 
             if (!attr)
@@ -121,9 +119,9 @@ struct SnapshotTree::SnapshotTreeImpl
             if (is_path(attr, val))
                 path.push_back(std::make_pair(attr, val));
             else {
-                auto it = std::find_if(data.begin(), data.end(), [&attr](const std::pair<Attribute, Variant>& p){
-                        return attr == p.first;
-                    });
+                auto it = std::find_if(data.begin(), data.end(), [&attr](const std::pair<Attribute, Variant>& p) {
+                    return attr == p.first;
+                });
 
                 if (it == data.end())
                     data.push_back(std::make_pair(attr, val));
@@ -154,7 +152,7 @@ struct SnapshotTree::SnapshotTreeImpl
         for (auto it = path.rbegin(); it != path.rend(); ++it) {
             SnapshotTreeNode* child = node->first_child();
 
-            for ( ; child && !child->label_equals((*it).first, (*it).second); child = child->next_sibling())
+            for (; child && !child->label_equals((*it).first, (*it).second); child = child->next_sibling())
                 ;
 
             if (!child) {
@@ -176,40 +174,33 @@ struct SnapshotTree::SnapshotTreeImpl
         return node;
     }
 
-    SnapshotTreeImpl(const Attribute& attr, const Variant& value)
-        : m_root(new SnapshotTreeNode(attr, value))
-        { }
+    SnapshotTreeImpl(const Attribute& attr, const Variant& value) : m_root(new SnapshotTreeNode(attr, value)) {}
 
-    ~SnapshotTreeImpl() {
-        recursive_delete(m_root);
-    }
+    ~SnapshotTreeImpl() { recursive_delete(m_root); }
 
 }; // SnapshotTreeImpl
 
+SnapshotTree::SnapshotTree() : mP(new SnapshotTreeImpl(Attribute(), Variant()))
+{}
 
-SnapshotTree::SnapshotTree()
-    : mP(new SnapshotTreeImpl(Attribute(), Variant()))
-{ }
-
-SnapshotTree::SnapshotTree(const Attribute& attr, const Variant& value)
-    : mP(new SnapshotTreeImpl(attr, value))
-{ }
+SnapshotTree::SnapshotTree(const Attribute& attr, const Variant& value) : mP(new SnapshotTreeImpl(attr, value))
+{}
 
 SnapshotTree::~SnapshotTree()
 {
     mP.reset();
 }
 
-const SnapshotTreeNode*
-SnapshotTree::add_snapshot(const CaliperMetadataAccessInterface& db,
-                           const EntryList&  list,
-                           IsPathPredicateFn is_path)
+const SnapshotTreeNode* SnapshotTree::add_snapshot(
+    const CaliperMetadataAccessInterface& db,
+    const EntryList&                      list,
+    IsPathPredicateFn                     is_path
+)
 {
     return mP->add_snapshot(db, list, is_path);
 }
 
-SnapshotTreeNode*
-SnapshotTree::root() const
+SnapshotTreeNode* SnapshotTree::root() const
 {
     return mP->m_root;
 }

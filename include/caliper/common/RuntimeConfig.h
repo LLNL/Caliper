@@ -31,31 +31,29 @@ class ConfigSet
 public:
 
     struct Entry {
-        const char*    key;         ///< Variable key
-        cali_attr_type type;        ///< Variable type
-        const char*    value;       ///< (Default) value as string
-        const char*    descr;       ///< One-line description
-        const char*    long_descr;  ///< Extensive, multi-line description
+        const char*    key;        ///< Variable key
+        cali_attr_type type;       ///< Variable type
+        const char*    value;      ///< (Default) value as string
+        const char*    descr;      ///< One-line description
+        const char*    long_descr; ///< Extensive, multi-line description
     };
 
     static constexpr Entry Terminator = { 0, CALI_TYPE_INV, 0, 0, 0 };
 
     constexpr ConfigSet() = default;
 
-    StringConverter  get(const char* key) const;
+    StringConverter get(const char* key) const;
 };
-
 
 /// \brief Functionality to read and retrieve %Caliper config settings.
 class RuntimeConfig
 {
     struct RuntimeConfigImpl;
-
     std::shared_ptr<RuntimeConfigImpl> mP;
 
 public:
 
-    typedef std::vector< std::pair<std::string, std::string > > config_entry_list_t;
+    typedef std::vector<std::pair<std::string, std::string>> config_entry_list_t;
 
     RuntimeConfig();
 
@@ -63,27 +61,27 @@ public:
     StringConverter get(const char* set, const char* key);
 
     /// \brief Initialize a ConfigSet from ConfigSet::Entry list (old method)
-    ConfigSet       init(const char* name, const ConfigSet::Entry* set);
+    ConfigSet init(const char* name, const ConfigSet::Entry* set);
 
     /// \brief Initialize a ConfigSet
-    ConfigSet       init(const char* name, const config_entry_list_t&);
+    ConfigSet init(const char* name, const config_entry_list_t&);
 
     /// \brief Pre-set config entry \a key to \a value.
     ///
     /// The value may be overwritten by configuration files or environment
     /// variables.
-    void            preset(const char* key, const std::string& value);
+    void preset(const char* key, const std::string& value);
 
     /// \brief Set config entry \a key to \a value.
     ///
     /// The value will *not* be overwritten by configuration files,
     /// profile settings, or environment variables.
-    void            set(const char* key, const std::string& value);
+    void set(const char* key, const std::string& value);
 
     /// \brief Import config values from the given the \a values map
-    void            import(const std::map<std::string, std::string>& values);
+    void import(const std::map<std::string, std::string>& values);
 
-    bool            allow_read_env();
+    bool allow_read_env();
 
     /// \brief Enable or disable reading of configuration settings
     ///   from environment variables.
@@ -96,7 +94,7 @@ public:
     ///
     /// \note Only effective *before* initialization of the %Caliper
     ///   runtime system.
-    bool            allow_read_env(bool allow);
+    bool allow_read_env(bool allow);
 
     /// \brief Print the current configuration settings.
     ///
@@ -108,7 +106,7 @@ public:
     // --- Static API (temporary)
     //
 
-    static RuntimeConfig  get_default_config();
+    static RuntimeConfig get_default_config();
 
 }; // class RuntimeConfig
 

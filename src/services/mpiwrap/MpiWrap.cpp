@@ -26,7 +26,7 @@ extern void mpiwrap_init(Caliper* c, Channel* chn, cali::ConfigSet& cfg);
 
 extern Attribute subscription_event_attr;
 
-}
+} // namespace cali
 
 namespace
 {
@@ -64,21 +64,22 @@ void mpi_register(Caliper* c, Channel* chn)
     Variant v_true(true);
 
     if (!mpifn_attr)
-        mpifn_attr   =
-            c->create_attribute("mpi.function", CALI_TYPE_STRING,
-                                CALI_ATTR_NESTED,
-                                1, &subscription_event_attr, &v_true);
+        mpifn_attr = c->create_attribute(
+            "mpi.function",
+            CALI_TYPE_STRING,
+            CALI_ATTR_NESTED,
+            1,
+            &subscription_event_attr,
+            &v_true
+        );
     if (!mpirank_attr)
-        mpirank_attr =
-            c->create_attribute("mpi.rank", CALI_TYPE_INT,
-                                CALI_ATTR_SCOPE_PROCESS |
-                                CALI_ATTR_SKIP_EVENTS   |
-                                CALI_ATTR_ASVALUE);
+        mpirank_attr = c->create_attribute(
+            "mpi.rank",
+            CALI_TYPE_INT,
+            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
+        );
     if (!mpisize_attr)
-        mpisize_attr =
-            c->create_attribute("mpi.world.size", CALI_TYPE_INT,
-                                CALI_ATTR_GLOBAL        |
-                                CALI_ATTR_SKIP_EVENTS);
+        mpisize_attr = c->create_attribute("mpi.world.size", CALI_TYPE_INT, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
 
     ConfigSet cfg = services::init_config_from_spec(chn->config(), mpi_service_spec);
 
@@ -88,7 +89,6 @@ void mpi_register(Caliper* c, Channel* chn)
 }
 
 } // anonymous namespace
-
 
 namespace cali
 {

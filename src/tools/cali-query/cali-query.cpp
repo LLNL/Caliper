@@ -8,7 +8,7 @@
 #include "AttributeExtract.h"
 #include "query_common.h"
 
-#include "caliper/tools-util/Args.h"
+#include "../util/Args.h"
 
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
@@ -37,136 +37,122 @@ using namespace cali;
 using namespace std;
 using namespace util;
 
-
 namespace
 {
-    const char* usage = "cali-query [OPTION]... [FILE]..."
-        "\n  Read, merge, and filter caliper streams";
+const char* usage =
+    "cali-query [OPTION]... [FILE]..."
+    "\n  Read, merge, and filter caliper streams";
 
-    const Args::Table option_table[] = {
-        // name, longopt name, shortopt char, has argument, info, argument info
-        { "select", "select", 's', true,
-          "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]",
-          "QUERY_STRING"
-        },
-        { "aggregate", "aggregate", 0, true,
-          "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
-          "AGGREGATION_OPS"
-        },
-        { "aggregate-key", "aggregate-key", 0, true,
-          "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
-          "ATTRIBUTES"
-        },
-        { "expand", "expand", 'e', false,
-          "Print records as comma-separated key=value lists",
-          nullptr
-        },
-        { "attributes", "print-attributes", 0, true,
-          "Select attributes to print (or hide) in expanded output: [-]attribute[:...]",
-          "ATTRIBUTES"
-        },
-        { "sort", "sort-by", 'S', true,
-          "Sort rows in table format: attribute[:...]",
-          "SORT_ATTRIBUTES"
-        },
-	    { "format", "format", 'f', true,
-          "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
-          "FORMAT_STRING"
-        },
-    	{ "title",  "title",  0, true,
-          "Set the title row for formatted output",
-          "STRING"
-        },
-        { "table", "table", 't', false,
-          "Print records in human-readable table form",
-          nullptr
-        },
-        { "tree" , "tree", 'T', false,
-          "Print records in a tree based on the hierarchy of the selected path attributes",
-          nullptr
-        },
-        { "path-attributes", "path-attributes", 0, true,
-          "Select the path attributes for tree printers",
-          "ATTRIBUTES"
-        },
-        { "json", "json", 'j', false,
-          "Print given attributes in web-friendly json format",
-          "ATTRIBUTES"
-        },
-        { "threads", "threads", 0, true,
-          "Use this many threads (applicable only with multiple files)",
-          "THREADS"
-        },
-        { "query", "query", 'q', true,
-          "Execute a query in CalQL format",
-          "QUERY STRING"
-        },
-        { "query-file", "query-file", 'Q', true,
-          "Read a CalQL query from a file",
-          "FILENAME"
-        },
-        { "caliper-config", "caliper-config", 'P', true,
-          "Set Caliper configuration for profiling cali-query",
-          "CALIPER-CONFIG"
-        },
-        { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
-        { "version", "version", 'V', false, "Print version number",     nullptr },
-        { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
-        { "help",    "help",    'h', true,  "Print help message",       nullptr },
-        { "list-attributes", "list-attributes", 0, false,
-          "List attribute info. Use with -j, -t, etc. to select output format.",
-          nullptr
-        },
-        { "list-globals", "list-globals", 'G', false,
-          "List global run metadata. Use with -j, -t, etc. to select output format.",
-          nullptr
-        },
-        Args::Terminator
-    };
+const Args::Table option_table[] = {
+    // name, longopt name, shortopt char, has argument, info, argument info
+    { "select",
+      "select",
+      's',
+      true,
+      "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]",
+      "QUERY_STRING" },
+    { "aggregate",
+      "aggregate",
+      0,
+      true,
+      "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
+      "AGGREGATION_OPS" },
+    { "aggregate-key",
+      "aggregate-key",
+      0,
+      true,
+      "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
+      "ATTRIBUTES" },
+    { "expand", "expand", 'e', false, "Print records as comma-separated key=value lists", nullptr },
+    { "attributes",
+      "print-attributes",
+      0,
+      true,
+      "Select attributes to print (or hide) in expanded output: [-]attribute[:...]",
+      "ATTRIBUTES" },
+    { "sort", "sort-by", 'S', true, "Sort rows in table format: attribute[:...]", "SORT_ATTRIBUTES" },
+    { "format",
+      "format",
+      'f',
+      true,
+      "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
+      "FORMAT_STRING" },
+    { "title", "title", 0, true, "Set the title row for formatted output", "STRING" },
+    { "table", "table", 't', false, "Print records in human-readable table form", nullptr },
+    { "tree",
+      "tree",
+      'T',
+      false,
+      "Print records in a tree based on the hierarchy of the selected path attributes",
+      nullptr },
+    { "path-attributes", "path-attributes", 0, true, "Select the path attributes for tree printers", "ATTRIBUTES" },
+    { "json", "json", 'j', false, "Print given attributes in web-friendly json format", "ATTRIBUTES" },
+    { "threads", "threads", 0, true, "Use this many threads (applicable only with multiple files)", "THREADS" },
+    { "query", "query", 'q', true, "Execute a query in CalQL format", "QUERY STRING" },
+    { "query-file", "query-file", 'Q', true, "Read a CalQL query from a file", "FILENAME" },
+    { "caliper-config",
+      "caliper-config",
+      'P',
+      true,
+      "Set Caliper configuration for profiling cali-query",
+      "CALIPER-CONFIG" },
+    { "verbose", "verbose", 'v', false, "Be verbose.", nullptr },
+    { "version", "version", 'V', false, "Print version number", nullptr },
+    { "output", "output", 'o', true, "Set the output file name", "FILE" },
+    { "help", "help", 'h', true, "Print help message", nullptr },
+    { "list-attributes",
+      "list-attributes",
+      0,
+      false,
+      "List attribute info. Use with -j, -t, etc. to select output format.",
+      nullptr },
+    { "list-globals",
+      "list-globals",
+      'G',
+      false,
+      "List global run metadata. Use with -j, -t, etc. to select output format.",
+      nullptr },
+    Args::Terminator
+};
 
-    /// A node record filter that filters redundant identical node records.
-    /// Redundant node records can occur when merging/unifying two streams.
-    class FilterDuplicateNodes {
-        cali_id_t m_max_node;
+/// A node record filter that filters redundant identical node records.
+/// Redundant node records can occur when merging/unifying two streams.
+class FilterDuplicateNodes
+{
+    cali_id_t m_max_node;
 
-    public:
+public:
 
-        FilterDuplicateNodes()
-            : m_max_node { 0 }
-            { }
+    FilterDuplicateNodes() : m_max_node { 0 } {}
 
-        void operator()(CaliperMetadataAccessInterface& db, const Node* node, NodeProcessFn push) {
-            cali_id_t id = node->id();
+    void operator() (CaliperMetadataAccessInterface& db, const Node* node, NodeProcessFn push)
+    {
+        cali_id_t id = node->id();
 
-            if (id != CALI_INV_ID) {
-                if (id < m_max_node) {
-                    return;
-                } else
-                    m_max_node = id;
-            }
-
-            push(db, node);
+        if (id != CALI_INV_ID) {
+            if (id < m_max_node) {
+                return;
+            } else
+                m_max_node = id;
         }
-    };
 
+        push(db, node);
+    }
+};
 
-    /// NodeFilterStep helper struct
-    /// Basically the chain link in the processing chain.
-    /// Passes result of @param m_filter_fn to @param m_push_fn
-    struct NodeFilterStep {
-        NodeFilterFn  m_filter_fn; ///< This processing step
-        NodeProcessFn m_push_fn;   ///< Next processing step
+/// NodeFilterStep helper struct
+/// Basically the chain link in the processing chain.
+/// Passes result of @param m_filter_fn to @param m_push_fn
+struct NodeFilterStep {
+    NodeFilterFn  m_filter_fn; ///< This processing step
+    NodeProcessFn m_push_fn;   ///< Next processing step
 
-        NodeFilterStep(NodeFilterFn filter_fn, NodeProcessFn push_fn)
-            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
-            { }
+    NodeFilterStep(NodeFilterFn filter_fn, NodeProcessFn push_fn) : m_filter_fn { filter_fn }, m_push_fn { push_fn } {}
 
-        void operator ()(CaliperMetadataAccessInterface& db, const Node* node) {
-            m_filter_fn(db, node, m_push_fn);
-        }
-    };
+    void operator() (CaliperMetadataAccessInterface& db, const Node* node) { m_filter_fn(db, node, m_push_fn); }
+};
 
-}
+} // namespace
 
 const char* progress_config_spec =
     "{"
@@ -222,8 +208,7 @@ int main(int argc, const char* argv[])
         int i = args.parse(argc, argv);
 
         if (i < argc) {
-            cerr << "cali-query: error: unknown option: " << argv[i] << '\n'
-                 << "  Available options: ";
+            cerr << "cali-query: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
 
             args.print_available_options(cerr);
 
@@ -246,8 +231,7 @@ int main(int argc, const char* argv[])
     mgr.add(args.get("caliper-config").c_str());
 
     if (mgr.error()) {
-        std::cerr << "cali-query: Caliper config parse error: "
-                  << mgr.error_msg() << std::endl;
+        std::cerr << "cali-query: Caliper config parse error: " << mgr.error_msg() << std::endl;
         return -1;
     }
 
@@ -276,23 +260,27 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    QueryArgsParser   query_parser;
+    QueryArgsParser query_parser;
 
     if (!query_parser.parse_args(args)) {
         cerr << "cali-query: Invalid query: " << query_parser.error_msg() << std::endl;
         return -2;
     }
 
-    QuerySpec         spec = query_parser.spec();
+    QuerySpec spec = query_parser.spec();
 
     // setup format spec
 
-    FormatProcessor   format(spec, stream);
+    FormatProcessor format(spec, stream);
 
-    NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
-    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+    NodeProcessFn node_proc = [](CaliperMetadataAccessInterface&, const Node*) {
+        return;
+    };
+    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&, const EntryList&) {
+        return;
+    };
 
-    Aggregator        aggregate(spec);
+    Aggregator aggregate(spec);
 
     if (!args.is_set("list-globals")) {
         if (spec.aggregate.selection == QuerySpec::AggregationSelection::None)
@@ -303,11 +291,13 @@ int main(int argc, const char* argv[])
         if (spec.filter.selection == QuerySpec::FilterSelection::List)
             snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
         if (!spec.preprocess_ops.empty())
-            snap_proc = SnapshotFilterStep(Preprocessor(spec),   snap_proc);
+            snap_proc = SnapshotFilterStep(Preprocessor(spec), snap_proc);
 
         if (args.is_set("list-attributes")) {
             node_proc = AttributeExtract(snap_proc);
-            snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+            snap_proc = [](CaliperMetadataAccessInterface&, const EntryList&) {
+                return;
+            };
         }
     }
 
@@ -318,14 +308,11 @@ int main(int argc, const char* argv[])
     if (files.empty())
         files.push_back(""); // read from stdin if no files are given
 
-    unsigned num_threads =
-        std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
+    unsigned num_threads = std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
 
     if (verbose)
-        std::cerr << "cali-query: Processing " << files.size()
-                  << " files using "
-                  << num_threads << " thread" << (num_threads == 1 ? "." : "s.")
-                  << std::endl;
+        std::cerr << "cali-query: Processing " << files.size() << " files using " << num_threads << " thread"
+                  << (num_threads == 1 ? "." : "s.") << std::endl;
 
     cali_set_global_int_byname("cali-query.num-threads", num_threads);
 
@@ -345,18 +332,15 @@ int main(int argc, const char* argv[])
     metadb.add_attribute_units(spec.units);
 
     auto thread_fn = [&](unsigned t) {
-        Annotation::Guard
-            g_t(Annotation("thread", CALI_ATTR_SCOPE_THREAD).begin(static_cast<int>(t)));
+        Annotation::Guard g_t(Annotation("thread", CALI_ATTR_SCOPE_THREAD).begin(static_cast<int>(t)));
 
         for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write
             const char* filename = (files[i].empty() ? "stdin" : files[i].c_str());
 
-            Annotation::Guard
-                g_s(Annotation("cali-query.stream", CALI_ATTR_SCOPE_THREAD).begin(filename));
+            Annotation::Guard g_s(Annotation("cali-query.stream", CALI_ATTR_SCOPE_THREAD).begin(filename));
 
             if (verbose) {
-                std::lock_guard<std::mutex>
-                    g(msgmutex);
+                std::lock_guard<std::mutex> g(msgmutex);
 
                 std::cerr << "cali-query: Reading " << filename << std::endl;
             }
@@ -365,11 +349,9 @@ int main(int argc, const char* argv[])
             reader.read(files[i], metadb, node_proc, snap_proc);
 
             if (reader.error()) {
-                std::lock_guard<std::mutex>
-                    g(msgmutex);
+                std::lock_guard<std::mutex> g(msgmutex);
 
-                std::cerr << "cali-query: Error reading "
-                    << filename << ": " << reader.error_msg() << std::endl;
+                std::cerr << "cali-query: Error reading " << filename << ": " << reader.error_msg() << std::endl;
             }
         }
     };
@@ -383,7 +365,7 @@ int main(int argc, const char* argv[])
     for (unsigned t = 0; t < num_threads; ++t)
         threads.emplace_back(thread_fn, t);
 
-    for (auto &t : threads)
+    for (auto& t : threads)
         t.join();
 
     CALI_MARK_END("Processing");

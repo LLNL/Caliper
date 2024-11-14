@@ -8,43 +8,32 @@
 
 using namespace cali;
 
-TEST(FlatExclusiveRegionProfileTest, NestedRegion) {
+TEST(FlatExclusiveRegionProfileTest, NestedRegion)
+{
     CaliperMetadataDB db;
 
-    Attribute metric_attr =
-        db.create_attribute("metric.attr", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute reg_a_attr =
-        db.create_attribute("reg_a", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute reg_b_attr =
-        db.create_attribute("reg_b", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute reg_c_attr =
-        db.create_attribute("reg_c", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute metric_attr = db.create_attribute("metric.attr", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute reg_a_attr  = db.create_attribute("reg_a", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute reg_b_attr  = db.create_attribute("reg_b", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute reg_c_attr  = db.create_attribute("reg_c", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     IdMap idmap;
 
-    Node* a_node =
-        db.merge_node(200, reg_a_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 2), idmap);
-    Node* b_node =
-        db.merge_node(201, reg_b_attr.id(), 200,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
-    Node* c_node =
-        db.merge_node(202, reg_c_attr.id(), 201,         Variant(CALI_TYPE_STRING, "c", 2), idmap);
+    Node* a_node = db.merge_node(200, reg_a_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 2), idmap);
+    Node* b_node = db.merge_node(201, reg_b_attr.id(), 200, Variant(CALI_TYPE_STRING, "b", 2), idmap);
+    Node* c_node = db.merge_node(202, reg_c_attr.id(), 201, Variant(CALI_TYPE_STRING, "c", 2), idmap);
 
     FlatExclusiveRegionProfile rp(db, "metric.attr");
 
-    rp(db,
-       { Entry(a_node), Entry(metric_attr, Variant(2))    } );
-    rp(db,
-       { Entry(b_node), Entry(metric_attr, Variant(40))   } );
-    rp(db,
-       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
-    rp(db,
-       { Entry(metric_attr, Variant(1000)) });
-    rp(db,
-       { Entry(b_node) });
+    rp(db, { Entry(a_node), Entry(metric_attr, Variant(2)) });
+    rp(db, { Entry(b_node), Entry(metric_attr, Variant(40)) });
+    rp(db, { Entry(c_node), Entry(metric_attr, Variant(100)) });
+    rp(db, { Entry(metric_attr, Variant(1000)) });
+    rp(db, { Entry(b_node) });
 
     std::map<std::string, double> reg_profile;
-    double total_reg = 0.0;
-    double total = 0.0;
+    double                        total_reg = 0.0;
+    double                        total     = 0.0;
 
     std::tie(reg_profile, total_reg, total) = rp.result();
 
@@ -57,44 +46,32 @@ TEST(FlatExclusiveRegionProfileTest, NestedRegion) {
     EXPECT_DOUBLE_EQ(reg_profile["b"], 40.0);
 }
 
-
-TEST(FlatExclusiveRegionProfileTest, GivenRegion) {
+TEST(FlatExclusiveRegionProfileTest, GivenRegion)
+{
     CaliperMetadataDB db;
 
-    Attribute metric_attr =
-        db.create_attribute("metric.attr", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute reg_a_attr =
-        db.create_attribute("reg_a", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute reg_b_attr =
-        db.create_attribute("reg_b", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute reg_c_attr =
-        db.create_attribute("reg_c", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute metric_attr = db.create_attribute("metric.attr", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute reg_a_attr  = db.create_attribute("reg_a", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute reg_b_attr  = db.create_attribute("reg_b", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute reg_c_attr  = db.create_attribute("reg_c", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     IdMap idmap;
 
-    Node* a_node =
-        db.merge_node(200, reg_a_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 2), idmap);
-    Node* b_node =
-        db.merge_node(201, reg_b_attr.id(), 200,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
-    Node* c_node =
-        db.merge_node(202, reg_c_attr.id(), 201,         Variant(CALI_TYPE_STRING, "c", 2), idmap);
+    Node* a_node = db.merge_node(200, reg_a_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 2), idmap);
+    Node* b_node = db.merge_node(201, reg_b_attr.id(), 200, Variant(CALI_TYPE_STRING, "b", 2), idmap);
+    Node* c_node = db.merge_node(202, reg_c_attr.id(), 201, Variant(CALI_TYPE_STRING, "c", 2), idmap);
 
     FlatExclusiveRegionProfile rp(db, "metric.attr", "reg_c");
 
-    rp(db,
-       { Entry(a_node), Entry(metric_attr, Variant(2))   } );
-    rp(db,
-       { Entry(b_node), Entry(metric_attr, Variant(40))  } );
-    rp(db,
-       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
-    rp(db,
-       { Entry(metric_attr, Variant(1000)) });
-    rp(db,
-       { Entry(b_node) });
+    rp(db, { Entry(a_node), Entry(metric_attr, Variant(2)) });
+    rp(db, { Entry(b_node), Entry(metric_attr, Variant(40)) });
+    rp(db, { Entry(c_node), Entry(metric_attr, Variant(100)) });
+    rp(db, { Entry(metric_attr, Variant(1000)) });
+    rp(db, { Entry(b_node) });
 
     std::map<std::string, double> reg_profile;
-    double total_reg = 0.0;
-    double total = 0.0;
+    double                        total_reg = 0.0;
+    double                        total     = 0.0;
 
     std::tie(reg_profile, total_reg, total) = rp.result();
 

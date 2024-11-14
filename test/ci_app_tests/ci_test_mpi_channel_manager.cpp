@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 {
     MPI_Init(&argc, &argv);
 
-    int worldrank = 0;
+    int      worldrank = 0;
     MPI_Comm subcomm;
     MPI_Comm_rank(MPI_COMM_WORLD, &worldrank);
     MPI_Comm_split(MPI_COMM_WORLD, worldrank % 2, worldrank, &subcomm);

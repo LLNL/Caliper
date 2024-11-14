@@ -27,7 +27,7 @@ public:
     CaliReader();
     ~CaliReader();
 
-    bool error() const;
+    bool        error() const;
     std::string error_msg() const;
 
     void read(std::istream& is, CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);

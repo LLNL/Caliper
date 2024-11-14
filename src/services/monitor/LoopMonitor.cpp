@@ -22,21 +22,21 @@ namespace cali
 extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 
-}
+} // namespace cali
 
 namespace
 {
 
 class LoopMonitor
 {
-    int       loop_level;
-    int       target_level;
-    int       start_iteration;
-    int       num_iterations;
-    int       num_snapshots;
+    int loop_level;
+    int target_level;
+    int start_iteration;
+    int num_iterations;
+    int num_snapshots;
 
-    int       iteration_interval;
-    double    time_interval;
+    int    iteration_interval;
+    double time_interval;
 
     Attribute num_iterations_attr;
     Attribute start_iteration_attr;
@@ -45,7 +45,8 @@ class LoopMonitor
 
     std::chrono::high_resolution_clock::time_point last_snapshot_time;
 
-    bool is_target_loop(const Variant& value) {
+    bool is_target_loop(const Variant& value)
+    {
         if (target_loops.empty())
             return true;
 
@@ -56,22 +57,22 @@ class LoopMonitor
         return false;
     }
 
-    void snapshot(Caliper* c, Channel* channel) {
-        Entry data[] = {
-            { num_iterations_attr,  Variant(num_iterations)  },
-            { start_iteration_attr, Variant(start_iteration) }
-        };
-        size_t n = start_iteration >= 0 ? 2 : 1;
+    void snapshot(Caliper* c, Channel* channel)
+    {
+        Entry  data[] = { { num_iterations_attr, Variant(num_iterations) },
+                          { start_iteration_attr, Variant(start_iteration) } };
+        size_t n      = start_iteration >= 0 ? 2 : 1;
         c->push_snapshot(channel, SnapshotView(n, data));
 
         start_iteration = -1;
-        num_iterations  =  0;
+        num_iterations  = 0;
         ++num_snapshots;
 
         last_snapshot_time = std::chrono::high_resolution_clock::now();
     }
 
-    void begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value) {
+    void begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value)
+    {
         if (attr == loop_attr) {
             if (target_level < 0 && is_target_loop(value)) {
                 target_level = loop_level + 1;
@@ -85,7 +86,8 @@ class LoopMonitor
         }
     }
 
-    void end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value) {
+    void end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value)
+    {
         if (attr == loop_attr) {
             if (loop_level == target_level) {
                 snapshot(c, channel);
@@ -108,9 +110,9 @@ class LoopMonitor
         }
     }
 
-    void finish_cb(Caliper* c, Channel* channel) {
-        Log(1).stream() << channel->name()
-                        << ": loop_monitor: Triggered " << num_snapshots << " snapshots."
+    void finish_cb(Caliper* c, Channel* channel)
+    {
+        Log(1).stream() << channel->name() << ": loop_monitor: Triggered " << num_snapshots << " snapshots."
                         << std::endl;
     }
 
@@ -125,15 +127,13 @@ class LoopMonitor
     {
         Variant v_true(true);
 
-        num_iterations_attr =
-            c->create_attribute("loop.iterations", CALI_TYPE_INT,
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE     |
-                                CALI_ATTR_AGGREGATABLE);
+        num_iterations_attr = c->create_attribute(
+            "loop.iterations",
+            CALI_TYPE_INT,
+            CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE
+        );
         start_iteration_attr =
-            c->create_attribute("loop.start_iteration", CALI_TYPE_INT,
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE);
+            c->create_attribute("loop.start_iteration", CALI_TYPE_INT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
         ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
 
@@ -146,52 +146,54 @@ public:
 
     static const char* s_spec;
 
-    static void create(Caliper* c, Channel* channel) {
+    static void create(Caliper* c, Channel* channel)
+    {
         LoopMonitor* instance = new LoopMonitor(c, channel);
 
         channel->events().pre_begin_evt.connect(
             [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
                 instance->begin_cb(c, channel, attr, val);
-            });
+            }
+        );
         channel->events().pre_end_evt.connect(
             [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
                 instance->end_cb(c, channel, attr, val);
-            });
-        channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
-            });
+            }
+        );
+        channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
+            instance->finish_cb(c, channel);
+            delete instance;
+        });
 
-        Log(1).stream() << channel->name()
-                        << ": Registered loop_monitor service"
-                        << std::endl;
+        Log(1).stream() << channel->name() << ": Registered loop_monitor service" << std::endl;
     }
 };
 
 const char* LoopMonitor::s_spec = R"json(
-{   "name"        : "loop_monitor",
-    "description" : "Trigger snapshots on loop iterations",
-    "config"      : [
-        {   "name"        : "iteration_interval",
-            "description" : "Trigger snapshots every N iterations",
-            "type"        : "int",
-            "value"       : "0"
-        },
-        {   "name"        : "time_interval",
-            "description" : "Trigger snapshots every t seconds",
-            "type"        : "double",
-            "value"       : "0.0"
-        },
-        {   "name"        : "target_loops",
-            "description" : "List of loops to instrument",
-            "type"        : "string"
-        }
-    ]
-}
+{
+"name"        : "loop_monitor",
+"description" : "Trigger snapshots on loop iterations",
+"config"      :
+[
+ {
+  "name": "iteration_interval",
+  "type": "int",
+  "description": "Trigger snapshots every N iterations",
+  "value": "0"
+ },{
+  "name": "time_interval",
+  "description": "Trigger snapshots every t seconds",
+  "type": "double",
+  "value": "0.0"
+ },{
+  "name": "target_loops",
+  "description": "List of loops to instrument",
+  "type": "string"
+ }
+]}
 )json";
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

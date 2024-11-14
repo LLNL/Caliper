@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "QuerySpec.h"
 #include "RecordProcessor.h"
 
 #include <iostream>
@@ -17,6 +16,7 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 class OutputStream;
+struct QuerySpec;
 
 /// \brief Execute a given query (filter, aggregation, and output formatting)
 ///   on a series of snapshot records.
@@ -24,7 +24,7 @@ class QueryProcessor
 {
     struct QueryProcessorImpl;
     std::shared_ptr<QueryProcessorImpl> mP;
-    
+
 public:
 
     QueryProcessor(const QuerySpec&, OutputStream& stream);
@@ -32,12 +32,9 @@ public:
     ~QueryProcessor();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
-
     void flush(CaliperMetadataAccessInterface&);
 
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
-    }
+    void operator() (CaliperMetadataAccessInterface& db, const EntryList& rec) { process_record(db, rec); }
 };
 
-}
+} // namespace cali

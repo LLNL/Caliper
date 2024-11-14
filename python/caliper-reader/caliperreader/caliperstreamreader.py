@@ -15,14 +15,11 @@ class CaliperStreamReader:
     Attributes:
         globals     : dict
             The global key:value attributes defined in the .cali file
-        num_records : dict
-            The number of different kinds of records read
     """
 
     def __init__(self):
         self.db = MetadataDB()
         self.globals = {}
-        self.num_records = {}
 
 
     def read(self, filename_or_stream, process_record_fn = None):
@@ -81,11 +78,6 @@ class CaliperStreamReader:
             process_record_fn(self._expand_record(record))
         elif kind == 'globals':
             self.globals = self._expand_record(record)
-
-        if not kind in self.num_records:
-            self.num_records[kind] = 0
-
-        self.num_records[kind] += 1
 
 
     def _process_node_record(self, record):

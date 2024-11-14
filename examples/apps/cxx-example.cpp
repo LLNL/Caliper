@@ -36,10 +36,13 @@ double foo(int i)
     // and automatically closes it at the end of the function.
     CALI_CXX_MARK_FUNCTION;
 
-    struct timespec sleeptime { 0, std::max<time_t>(i * 500, 100000) };
+    struct timespec sleeptime {
+        0, std::max<time_t>(i * 500, 100000)
+    };
+
     nanosleep(&sleeptime, nullptr);
 
-    return 0.5*i;
+    return 0.5 * i;
 }
 
 int main(int argc, char* argv[])
@@ -47,11 +50,12 @@ int main(int argc, char* argv[])
     //   The ConfigManager manages built-in or custom Caliper measurement
     // configurations, and provides an API to control performance profiling.
     cali::ConfigManager mgr;
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
 
     //   Parse command-line arguments. Let users choose a Caliper performance
     // profiling configuration via the "-P" command-line argument.
     std::string configstr;
-    int iterations = 4;
+    int         iterations = 4;
 
     for (int a = 1; a < argc; ++a) {
         if (strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0) {
@@ -69,9 +73,7 @@ int main(int argc, char* argv[])
             try {
                 iterations = std::stoi(argv[a]);
             } catch (std::invalid_argument) {
-                std::cerr << "Invalid argument: \"" << argv[a]
-                          << "\". Expected a number."
-                          << std::endl;
+                std::cerr << "Invalid argument: \"" << argv[a] << "\". Expected a number." << std::endl;
                 return 2;
             }
         }

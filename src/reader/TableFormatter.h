@@ -20,7 +20,7 @@ struct QuerySpec;
 
 /// \brief Print a set of snapshot records in a human-readable table
 /// \ingroup ReaderAPI
-    
+
 class TableFormatter : public Formatter
 {
     struct TableImpl;

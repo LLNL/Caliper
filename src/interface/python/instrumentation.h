@@ -3,49 +3,51 @@
 
 #include "common.h"
 
-namespace cali {
+namespace cali
+{
 
-class PythonAttribute {
+class PythonAttribute
+{
 public:
-  PythonAttribute(const char *name, cali_attr_type type);
 
-  PythonAttribute(const char *name, cali_attr_type type,
-                  cali_attr_properties opt);
+    PythonAttribute(const char* name, cali_attr_type type);
 
-  static PythonAttribute find_attribute(const char *name);
+    PythonAttribute(const char* name, cali_attr_type type, cali_attr_properties opt);
 
-  const char *name() const;
+    static PythonAttribute find_attribute(const char* name);
 
-  cali_attr_type type() const;
+    const char* name() const;
 
-  cali_attr_properties properties() const;
+    cali_attr_type type() const;
 
-  void begin();
+    cali_attr_properties properties() const;
 
-  void begin(int val);
+    void begin();
 
-  void begin(double val);
+    void begin(int val);
 
-  void begin(const char *val);
+    void begin(double val);
 
-  void set(int val);
+    void begin(const char* val);
 
-  void set(double val);
+    void set(int val);
 
-  void set(const char *val);
+    void set(double val);
 
-  void end();
+    void set(const char* val);
+
+    void end();
 
 private:
-  PythonAttribute(cali_id_t id);
 
-  cali_id_t m_attr_id;
+    PythonAttribute(cali_id_t id);
+
+    cali_id_t m_attr_id;
 };
 
 // TODO add "byname" functions to module
 
-void create_caliper_instrumentation_mod(
-    py::module_ &caliper_instrumentation_mod);
+void create_caliper_instrumentation_mod(py::module_& caliper_instrumentation_mod);
 
 } // namespace cali
 

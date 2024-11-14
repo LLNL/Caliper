@@ -19,7 +19,6 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
-
 //
 // --- SnapshotTree class
 //
@@ -60,56 +59,53 @@ class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
     Attribute m_label_key;
     Variant   m_label_value;
 
-    using Record = std::vector< std::pair<Attribute, Variant> >;
+    using Record = std::vector<std::pair<Attribute, Variant>>;
 
     std::vector<Record> m_records;
 
     std::map<Attribute, Variant> m_v_min;
     std::map<Attribute, Variant> m_v_max;
 
-    void add_record(const Record& rec) {
-        m_records.push_back(rec);
-    }
+    void add_record(const Record& rec) { m_records.push_back(rec); }
 
     SnapshotTreeNode(const Attribute& label_key, const Variant& label_val)
         : util::LockfreeIntrusiveTree<SnapshotTreeNode>(this, &SnapshotTreeNode::m_treenode),
           m_label_key(label_key),
           m_label_value(label_val)
-    { }
+    {}
 
 public:
 
     /// \brief Return the label attribute key.
-    Attribute label_key()   const { return m_label_key;   }
+    Attribute label_key() const { return m_label_key; }
+
     /// \brief Return the label value.
-    Variant   label_value() const { return m_label_value; }
+    Variant label_value() const { return m_label_value; }
 
     /// \brief Return `false` if the node represents a snapshot record,
     ///   otherwise (i.e., if the node is empty) return `true`.
-    bool      is_empty()    const { return m_records.empty(); }
+    bool is_empty() const { return m_records.empty(); }
 
     /// \brief Return `true` if the label equals the given (\a key,\a value) pair.
-    bool label_equals(const Attribute& key, const Variant& value) const {
+    bool label_equals(const Attribute& key, const Variant& value) const
+    {
         return m_label_key == key && m_label_value == value;
     }
 
     /// \brief Access the non-path attributes of the snapshot records associated
     ///   with this node.
-    const decltype(m_records)& records() const {
-        return m_records;
-    }
+    const decltype(m_records)& records() const { return m_records; }
 
     /// \brief Recursively find the minimum value for \a key under this node
-    Variant   min_val(const Attribute& key);
+    Variant min_val(const Attribute& key);
     /// \brief Recursively find the maximum value for \a key under this node
-    Variant   max_val(const Attribute& key);
+    Variant max_val(const Attribute& key);
 
     /// \brief sort records by \a key
-    void      sort(const Attribute& key, bool ascending);
+    void sort(const Attribute& key, bool ascending);
 
     friend class SnapshotTree;
 }; // SnapshotTreeNode
-
 
 //
 // --- SnapshotTree
@@ -150,7 +146,7 @@ public:
 
     /// A predicate to determine if a given _(attribute,value)_ pair
     /// in a snapshot record belongs to the tree path or not.
-    typedef std::function<bool(const Attribute&,const Variant&)> IsPathPredicateFn;
+    typedef std::function<bool(const Attribute&, const Variant&)> IsPathPredicateFn;
 
     /// \brief Add given snapshot record to the tree.
     ///
@@ -168,14 +164,14 @@ public:
     ///    (attribute,value) pair is on the path or not.
     /// \return Pointer to the newly created tree node. Null pointer
     ///    if no path entry was found.
-    const SnapshotTreeNode*
-    add_snapshot(const CaliperMetadataAccessInterface& db,
-                 const EntryList&  list,
-                 IsPathPredicateFn is_path);
+    const SnapshotTreeNode* add_snapshot(
+        const CaliperMetadataAccessInterface& db,
+        const EntryList&                      list,
+        IsPathPredicateFn                     is_path
+    );
 
     /// \brief Return the snapshot tree's root node.
-    SnapshotTreeNode*
-    root() const;
+    SnapshotTreeNode* root() const;
 };
 
 } // namespace cali

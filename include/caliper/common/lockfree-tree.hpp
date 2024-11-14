@@ -44,52 +44,51 @@ namespace util
 /// performed. Specifically, tree nodes can only be added, but not
 /// moved or removed.
 
-template<typename T>
-class LockfreeIntrusiveTree {
+template <typename T>
+class LockfreeIntrusiveTree
+{
 public:
 
     struct Node {
-        T* parent;
-        T* next;
+        T*              parent;
+        T*              next;
         std::atomic<T*> head;
 
-        Node()
-            : parent(0), next(0), head(0)
-            { }
+        Node() : parent(0), next(0), head(0) {}
     };
 
 private:
 
     // --- private data
 
-    T* m_me;
+    T*                             m_me;
     LockfreeIntrusiveTree<T>::Node T::*m_node;
 
     // --- private methods
 
     static LockfreeIntrusiveTree<T>::Node& node(T* t, LockfreeIntrusiveTree<T>::Node T::*node) { return (t->*node); }
 
-    LockfreeIntrusiveTree<T>        tree(T* t) const { return LockfreeIntrusiveTree<T>(t, m_node); }
+    LockfreeIntrusiveTree<T> tree(T* t) const { return LockfreeIntrusiveTree<T>(t, m_node); }
+
     LockfreeIntrusiveTree<T>::Node& node(T* t) const { return node(t, m_node); }
 
 public:
 
-    LockfreeIntrusiveTree(T* me, LockfreeIntrusiveTree<T>::Node T::*nodeptr)
-        : m_me(me), m_node(nodeptr)
-    { }
+    LockfreeIntrusiveTree(T* me, LockfreeIntrusiveTree<T>::Node T::*nodeptr) : m_me(me), m_node(nodeptr) {}
 
-    T* parent()       const { return node(m_me).parent;     }
-    T* first_child()  const { return node(m_me).head.load(std::memory_order_relaxed); }
-    T* next_sibling() const { return node(m_me).next;       }
+    T* parent() const { return node(m_me).parent; }
 
-    void append(T* sub) {
+    T* first_child() const { return node(m_me).head.load(std::memory_order_relaxed); }
+
+    T* next_sibling() const { return node(m_me).next; }
+
+    void append(T* sub)
+    {
         LockfreeIntrusiveTree<T>::Node& n = node(m_me);
 
         node(sub).parent = m_me;
 
-        while(!n.head.compare_exchange_weak(node(sub).next, sub,
-                                            std::memory_order_release,
-                                            std::memory_order_relaxed))
+        while (!n.head.compare_exchange_weak(node(sub).next, sub, std::memory_order_release, std::memory_order_relaxed))
             ;
     }
 };

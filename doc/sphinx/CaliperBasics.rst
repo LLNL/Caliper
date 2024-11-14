@@ -102,9 +102,9 @@ With the source-code annotations in place, we can run performance measurements.
 By default, Caliper does not record data - we have to activate performance
 profiling at runtime.
 An easy way to do this is to use one of Caliper's built-in measurement
-configurations. For example, the `runtime-report` config prints out the time
+recipes. For example, the `runtime-report` recipe prints out the time
 spent in the annotated regions. You can activate built-in measurement
-configurations with the :ref:`configmgr_api` or with the
+recipes with the :ref:`configmgr_api` or with the
 :envvar:`CALI_CONFIG` environment variable.
 Let's try this on Caliper's cxx-example program:
 
@@ -119,7 +119,7 @@ Let's try this on Caliper's cxx-example program:
         foo         0.000646      0.000646      0.000646 38.429506
       init          0.000017      0.000017      0.000017  1.011303
 
-Like most built-in configurations, the runtime-report config works for MPI and
+Like most built-in recipes, the runtime-report config works for MPI and
 non-MPI programs. By default, it reports the minimum, maximum, and average
 exclusive time (seconds) spent in each marked code region across MPI ranks
 (the three values are identical in non-MPI programs). Exclusive time is the
@@ -140,8 +140,8 @@ of exclusive region times:
         foo         0.000624      0.000624      0.000624 52.392947
       init          0.000003      0.000003      0.000003  0.251889
 
-Caliper provides many more performance measurement configurations in addition
-to `runtime-report` that make use of region annotations. For example,
+Caliper provides many more performance measurement configurations that
+make use of region annotations. For example,
 `hatchet-region-profile` writes a .cali file with region times for processing
 with `Hatchet <https://github.com/LLNL/hatchet>`_. See
 :ref:`more-on-configurations` below to learn more about different
@@ -248,12 +248,12 @@ measurements programmatically with the ConfigManager API. For example, we often
 let users activate performance measurements with a command-line argument.
 
 The ConfigManager API provides access to Caliper's built-in measurement
-configurations (see :ref:`more-on-configurations` below). The ConfigManager
+recipes (see :ref:`more-on-configurations` below). The ConfigManager
 interprets a short configuration string that can be hard-coded in the program
 or provided by the user in some form, e.g. as a command-line parameter or
 in the program's configuration file.
 
-To access and control the built-in configurations, create a
+To use the ConfigManager API, create a
 :cpp:class:`cali::ConfigManager` object. Add a configuration string with
 ``add()``, start the requested configuration channels with ``start()``,
 and trigger output with ``flush()``. In MPI programs, the ``flush()`` method
@@ -321,25 +321,20 @@ More on configurations
 --------------------------------
 
 A configuration string for the ConfigManager API or the
-:envvar:`CALI_CONFIG` environment variable is a comma-separated list of
-*configs* and *parameters*.
+:envvar:`CALI_CONFIG` environment variable is a list of
+*configs* (like `runtime-report`) and *parameters*.
+Multiple configs can be specified, separated by comma.
 
-A *config* is the name of one of Caliper's built-in measurement configurations,
-e.g. `runtime-report`. Multiple configs can be specified, separated by comma.
-
-Most configs have optional parameters, e.g. `output` to name an output file.
-Parameters can be specified as a list of key-value pairs in parentheses after
-the config name, e.g. `runtime-report(output=report.txt,io.bytes)`. For
+Parameters can configure output options or enable additional functionality.
+They can be specified as a list of key-value pairs in parentheses
+after the config name, e.g. `runtime-report(output=report.txt,io.bytes)`. For
 boolean parameters, only the key needs to be added to enable it; for example,
 `io.bytes` is equal to `io.bytes=true`. You can also add parameters outside
 of parentheses; these apply to all configs.
 
-Many optional parameters enable additional Caliper functionality. For example,
-the `profile.mpi` option enables MPI function profiling, the `io.bytes` option
-reports I/O bytes written and read, and the `mem.highwatermark` option reports
-the memory high-watermark. In the example below, the `mem.highwatermark`
-option for `runtime-report` adds the "Allocated MB" column that shows the
-maximum amount of memory that was allocated in each region:
+In the example below, we enable the `mem.highwatermark` option in
+`runtime-report`. This adds the "Allocated MB" column that shows the maximum
+amount of memory that was allocated in each region:
 
 .. code-block:: sh
 
@@ -350,12 +345,11 @@ maximum amount of memory that was allocated in each region:
         foo         0.000778      0.000778      0.000778 8.930211     0.000016
       init          0.000020      0.000020      0.000020 0.229568     0.000000
 
-You can use the cali-query program to list available configs and their parameters.
-For example, ``cali-query --help=configs`` lists all configs and their options.
-You can also query parameters for a specific config, e.g.
+You can use ``cali-query --help=configs`` to list all available recipes and their
+parameters. You can also query parameters for a specific recipe, e.g.
 ``cali-query --help=runtime-report``.
 
-Some available performance measurement configs include:
+Some available performance measurement recipes include:
 
 runtime-report
    Print a time profile for annotated regions.
@@ -429,8 +423,21 @@ Like other region annotations, loop and iteration annotations are meant for
 high-level regions, not small, frequently executed loops inside kernels.
 We recommend to only annotate top-level loops, such as the main timestepping
 loop in a simulation code.
-With the loop annotations in place, we can use the loop-report config to print
-loop performance information:
+
+With loop annotations in place, we can use the `loop.stats` option to print
+the minimum, maximum, and average time per loop iteration:
+
+.. code-block:: sh
+
+    $ ./examples/apps/cxx-example -P runtime-report,loop.stats 5000
+    Path       Time (E) Time (I) Time % (E) Time % (I) Iterations Time/iter (min) Time/iter (avg) Time/iter (max)
+    main       0.000070 8.010493   0.000870  99.995709
+      init     0.000004 0.000004   0.000047   0.000047
+      mainloop 0.172615 8.010420   2.154765  99.994792       5000        0.000110        0.001591        0.003317
+        foo    7.837805 7.837805  97.840027  97.840027
+
+More detailed loop timing information is available with the loop-report
+recipe:
 
 .. code-block:: sh
 
@@ -571,27 +578,6 @@ save global attributes in the form of key-value pairs:
     cali_set_global_int_byname("iterations", iterations);
     cali_set_global_string_byname("caliper.config", configstr.c_str());
 
-Most machine-readable output formats, e.g. the hatchet JSON format written by the
-hatchet-region-profile config, include this data:
-
-.. code-block:: sh
-
-    $ ./examples/apps/cxx-example -P hatchet-region-profile,output=stdout
-    {
-    "data": [
-        ...
-    ],
-    ...
-    "caliper.config": "hatchet-region-profile,output=stdout",
-    "iterations": "4",
-    "cali.caliper.version": "2.5.0-dev",
-    "cali.channel": "hatchet-region-profile"
-    }
-
-Note how the "iterations" and "caliper.config" attributes are stored as
-top-level attributes in the JSON output. Caliper adds some built-in metadata
-attributes as well, such as the Caliper version ("cali.caliper.version").
-
 An even better way to record metadata is the `Adiak <https://github.com/LLNL/Adiak>`_
 library. Adiak makes metadata attributes accessible to multiple tools, and
 provides built-in functionality to record common information such as user
@@ -608,7 +594,7 @@ above, and also the user name, launch date, and MPI job size:
     adiak::value("iterations", iterations);
     adiak::value("caliper.config", configstr.c_str());
 
-Most Caliper configs automatically import metadata attributes set through
+Most Caliper recipes automatically import metadata attributes set through
 Adiak (Adiak support must be enabled in the Caliper build configuration). The
 spot config for the Spot web visualization framework requires that metadata
 attributes are recorded through Adiak.

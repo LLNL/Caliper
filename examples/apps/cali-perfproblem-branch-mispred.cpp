@@ -12,30 +12,27 @@ int* init(size_t arraySize, bool sort)
 {
     CALI_CXX_MARK_FUNCTION;
 
-    int *data = 
-        static_cast<int*>(cali_datatracker_allocate_dimensional("data", sizeof(int), &arraySize, 1));
+    int* data = static_cast<int*>(cali_datatracker_allocate_dimensional("data", sizeof(int), &arraySize, 1));
 
     std::srand(1337);
     for (size_t c = 0; c < arraySize; ++c)
         data[c] = std::rand() % 256;
 
     if (sort)
-        std::sort(data, data + arraySize); 
+        std::sort(data, data + arraySize);
 
     return data;
 }
 
-void work(int *data, size_t arraySize)
+void work(int* data, size_t arraySize)
 {
     CALI_CXX_MARK_FUNCTION;
 
     long sum = 0;
 
-    for (size_t i = 0; i < 100000; ++i)
-    {
+    for (size_t i = 0; i < 100000; ++i) {
         // Primary loop
-        for (size_t c = 0; c < arraySize; ++c)
-        {
+        for (size_t c = 0; c < arraySize; ++c) {
             if (data[c] >= 128)
                 sum += data[c];
         }
@@ -43,7 +40,7 @@ void work(int *data, size_t arraySize)
     std::cout << "sum = " << sum << std::endl;
 }
 
-void cleanup(int *data)
+void cleanup(int* data)
 {
     CALI_CXX_MARK_FUNCTION;
 
@@ -59,7 +56,7 @@ void benchmark(size_t arraySize, bool sort)
 
     std::cout << "Initializing benchmark data with sort = " << sort << std::endl;
 
-    int *data = init(arraySize, sort);
+    int* data = init(arraySize, sort);
 
     std::cout << "Calculating sum of values >= 128" << std::endl;
 
@@ -72,7 +69,7 @@ void benchmark(size_t arraySize, bool sort)
     std::cout << "Done!" << std::endl;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     CALI_CXX_MARK_FUNCTION;
 

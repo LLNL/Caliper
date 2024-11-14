@@ -34,24 +34,23 @@ void snapshot_cb(Caliper*, Channel*, SnapshotView, SnapshotBuilder& rec)
 
 void cpuinfo_register(Caliper* c, Channel* chn)
 {
-    cpu_attr =
-        c->create_attribute("cpuinfo.cpu",  CALI_TYPE_UINT,
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_SCOPE_THREAD);
-    node_attr =
-        c->create_attribute("cpuinfo.numa_node", CALI_TYPE_UINT,
-                            CALI_ATTR_ASVALUE      |
-                            CALI_ATTR_SKIP_EVENTS  |
-                            CALI_ATTR_SCOPE_THREAD);
+    cpu_attr = c->create_attribute(
+        "cpuinfo.cpu",
+        CALI_TYPE_UINT,
+        CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_SCOPE_THREAD
+    );
+    node_attr = c->create_attribute(
+        "cpuinfo.numa_node",
+        CALI_TYPE_UINT,
+        CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_SCOPE_THREAD
+    );
 
     chn->events().snapshot.connect(snapshot_cb);
 
     Log(1).stream() << chn->name() << ": Registered cpuinfo service" << std::endl;
 }
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {

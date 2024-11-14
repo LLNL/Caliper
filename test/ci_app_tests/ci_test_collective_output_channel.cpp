@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     std::shared_ptr<cali::CollectiveOutputChannel> channel;
-    std::string errmsg;
+    std::string                                    errmsg;
 
     std::tie(channel, errmsg) = cali::make_collective_output_channel(argc > 1 ? argv[1] : "");
 

@@ -13,7 +13,8 @@
 #include <stddef.h> /* size_t */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /*
@@ -31,10 +32,7 @@ extern "C" {
  * \param size Size of the allocation
  */
 
-void
-cali_datatracker_track(const void *ptr,
-                       const char *label,
-                       size_t size);
+void cali_datatracker_track(const void* ptr, const char* label, size_t size);
 
 /**
  * Track an existing allocation in Caliper.
@@ -46,12 +44,13 @@ cali_datatracker_track(const void *ptr,
  * \param num_dimensions The number of dimensions in `dimensions`
  */
 
-void
-cali_datatracker_track_dimensional(const void   *ptr,
-                                   const char   *label,
-                                   size_t        elem_size,
-                                   const size_t *dimensions,
-                                   size_t        num_dimensions);
+void cali_datatracker_track_dimensional(
+    const void*   ptr,
+    const char*   label,
+    size_t        elem_size,
+    const size_t* dimensions,
+    size_t        num_dimensions
+);
 
 /**
  * Untrack a previously tracked allocation in Caliper.
@@ -59,8 +58,7 @@ cali_datatracker_track_dimensional(const void   *ptr,
  * \param ptr The pointer to the beginning of the allocation to untrack
  */
 
-void
-cali_datatracker_untrack(const void *ptr);
+void cali_datatracker_untrack(const void* ptr);
 
 /**
  * \}
@@ -83,8 +81,7 @@ cali_datatracker_untrack(const void *ptr);
  * and resolved with the alloc service.
  */
 
-#define CALI_DATATRACKER_TRACK(ptr, size)            \
-    cali_datatracker_track(ptr, #ptr, size)
+#define CALI_DATATRACKER_TRACK(ptr, size) cali_datatracker_track(ptr, #ptr, size)
 
 /**
  * \brief Label and track a multi-dimensional array.
@@ -105,8 +102,7 @@ cali_datatracker_untrack(const void *ptr);
  * \brief Stop tracking the memory region pointed to by \a ptr
  */
 
-#define CALI_DATATRACKER_UNTRACK(ptr) \
-    cali_datatracker_untrack(ptr)
+#define CALI_DATATRACKER_UNTRACK(ptr) cali_datatracker_untrack(ptr)
 
 /**
  * \}

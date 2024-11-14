@@ -4,7 +4,7 @@
 ///@file Args.cpp
 /// Argument parsing implementation
 
-#include "caliper/tools-util/Args.h"
+#include "Args.h"
 
 #include <cstring>
 #include <map>
@@ -12,27 +12,27 @@
 using namespace std;
 using namespace util;
 
-struct Args::ArgsImpl
-{
-    vector<Args::Table> m_options;     ///< Option list
+struct Args::ArgsImpl {
+    vector<Args::Table> m_options; ///< Option list
 
-    map<string, vector<Table>::size_type> m_option_map;     ///< Option key -> option index
+    map<string, vector<Table>::size_type> m_option_map; ///< Option key -> option index
 
-    map<string, vector<Table>::size_type> m_long_options;   ///< Long option name -> option index
-    map<char,   vector<Table>::size_type> m_short_options;  ///< Short option name -> option index
+    map<string, vector<Table>::size_type> m_long_options;  ///< Long option name -> option index
+    map<char, vector<Table>::size_type>   m_short_options; ///< Short option name -> option index
 
     map<vector<Table>::size_type, string> m_active_options; ///< Option index -> option argument
 
-    vector<string>      m_arguments;   ///< Non-option arguments (filenames etc.)
-    string              m_programname; ///< argv[0]
+    vector<string> m_arguments;   ///< Non-option arguments (filenames etc.)
+    string         m_programname; ///< argv[0]
 
-    bool                m_fail;        ///< Fail when parsing unknown option
+    bool m_fail; ///< Fail when parsing unknown option
 
-    string              m_shortopt_prefix { "-"  };
-    string              m_longopt_prefix  { "--" };
-    string              m_options_end     { "--" }; 
+    string m_shortopt_prefix { "-" };
+    string m_longopt_prefix { "--" };
+    string m_options_end { "--" };
 
-    void add_table(const Table table[]) {
+    void add_table(const Table table[])
+    {
         for (const Table* t = table; t->name; ++t) {
             auto n = m_options.size();
 
@@ -47,7 +47,8 @@ struct Args::ArgsImpl
         }
     }
 
-    int parse(int argc, const char* const argv[], int pos) {
+    int parse(int argc, const char* const argv[], int pos)
+    {
         if (argc <= pos)
             return pos;
 
@@ -70,16 +71,16 @@ struct Args::ArgsImpl
             if (!m_longopt_prefix.empty() && arg.find(m_longopt_prefix) == 0) {
                 string::size_type dpos = arg.find('=');
 
-                auto it = m_long_options.find(arg.substr(lps, dpos == string::npos ? dpos : dpos-lps));
+                auto it = m_long_options.find(arg.substr(lps, dpos == string::npos ? dpos : dpos - lps));
 
                 if (it == m_long_options.end())
                     return i;
 
                 string optarg;
 
-                if (dpos != string::npos && dpos+1 < arg.size())
-                    optarg.assign(arg, dpos+1, string::npos);
-                if (m_options[it->second].has_argument && optarg.empty() && i+1 < argc)
+                if (dpos != string::npos && dpos + 1 < arg.size())
+                    optarg.assign(arg, dpos + 1, string::npos);
+                if (m_options[it->second].has_argument && optarg.empty() && i + 1 < argc)
                     optarg.assign(argv[++i]);
 
                 m_active_options.insert(make_pair(it->second, optarg));
@@ -94,8 +95,8 @@ struct Args::ArgsImpl
             if (!m_shortopt_prefix.empty() && arg.find(m_shortopt_prefix) == 0) {
                 string::size_type dpos = arg.find('=');
 
-                // handle characters in the shortopt string; last one may have an option argument 
-                for (auto n = sps ; n < arg.size() && n < dpos; ++n) {
+                // handle characters in the shortopt string; last one may have an option argument
+                for (auto n = sps; n < arg.size() && n < dpos; ++n) {
                     auto it = m_short_options.find(arg[n]);
 
                     if (it == m_short_options.end())
@@ -103,9 +104,9 @@ struct Args::ArgsImpl
 
                     string optarg;
 
-                    if (dpos+1 < arg.size() && n == dpos-1)
-                        optarg.assign(arg, dpos+1, string::npos);
-                    if (n == arg.size()-1 && m_options[it->second].has_argument && (i+1) < argc)
+                    if (dpos + 1 < arg.size() && n == dpos - 1)
+                        optarg.assign(arg, dpos + 1, string::npos);
+                    if (n == arg.size() - 1 && m_options[it->second].has_argument && (i + 1) < argc)
                         optarg.assign(string(argv[++i]));
 
                     m_active_options.insert(make_pair(it->second, optarg));
@@ -126,9 +127,10 @@ struct Args::ArgsImpl
         return i;
     }
 
-    string get(const string& name, const string& def) const {
+    string get(const string& name, const string& def) const
+    {
         auto opt_it = m_option_map.find(name);
-        
+
         if (opt_it == m_option_map.end())
             return def;
 
@@ -137,9 +139,10 @@ struct Args::ArgsImpl
         return it == m_active_options.end() ? def : it->second;
     }
 
-    bool is_set(const string& name) const {
+    bool is_set(const string& name) const
+    {
         auto opt_it = m_option_map.find(name);
-        
+
         if (opt_it == m_option_map.end())
             return false;
 
@@ -148,34 +151,34 @@ struct Args::ArgsImpl
         return it != m_active_options.end();
     }
 
-    vector<string> options() const {
+    vector<string> options() const
+    {
         vector<string> out;
 
-        for (auto const &p : m_active_options)
+        for (auto const& p : m_active_options)
             out.emplace_back(m_options[p.first].name);
 
         return out;
     }
 
-    vector<string> arguments() const {
-        return m_arguments;
-    }
+    vector<string> arguments() const { return m_arguments; }
 
-    void print_available_options(ostream& os) const {
+    void print_available_options(ostream& os) const
+    {
         const string::size_type pad         = 2;
         string::size_type       max_longopt = m_longopt_prefix.size();
 
         // Get max longopt+argument info size for padding
         for (auto const& l : m_long_options) {
-            string::size_type s = m_longopt_prefix.size() 
-                + l.first.size() 
+            string::size_type s =
+                m_longopt_prefix.size() + l.first.size()
                 + (m_options[l.second].argument_info ? strlen(m_options[l.second].argument_info) + 1 : 0);
 
             max_longopt = max(max_longopt, s);
         }
 
-        const string opt_sep(", ");
-        const char*  whitespace = "                                        ";
+        const string            opt_sep(", ");
+        const char*             whitespace    = "                                        ";
         const string::size_type maxwhitespace = strlen(whitespace);
 
         for (const Table& opt : m_options) {
@@ -183,8 +186,8 @@ struct Args::ArgsImpl
 
             if (opt.shortopt)
                 os << m_shortopt_prefix << opt.shortopt << opt_sep;
-            else 
-                os.write(whitespace, min(m_shortopt_prefix.size()+1+opt_sep.size(), maxwhitespace));
+            else
+                os.write(whitespace, min(m_shortopt_prefix.size() + 1 + opt_sep.size(), maxwhitespace));
 
             if (opt.longopt) {
                 os << m_longopt_prefix << opt.longopt;
@@ -196,9 +199,9 @@ struct Args::ArgsImpl
                     s += strlen(opt.argument_info) + 1;
                 }
 
-                os.write(whitespace, min(max_longopt+pad-s, maxwhitespace));
-            } else 
-                os.write(whitespace, min(max_longopt+pad+opt_sep.size(), maxwhitespace));
+                os.write(whitespace, min(max_longopt + pad - s, maxwhitespace));
+            } else
+                os.write(whitespace, min(max_longopt + pad + opt_sep.size(), maxwhitespace));
 
             if (opt.info)
                 os << opt.info;
@@ -207,26 +210,20 @@ struct Args::ArgsImpl
         }
     }
 
-    ArgsImpl() 
-        { }
+    ArgsImpl() {}
 
-    ArgsImpl(const Args::Table table[]) { 
-        add_table(table);
-    }
+    ArgsImpl(const Args::Table table[]) { add_table(table); }
 };
 
-
-// 
+//
 // --- Public interface
 //
 
-Args::Args()
-    : mP { new ArgsImpl }
-{ }
+Args::Args() : mP { new ArgsImpl }
+{}
 
-Args::Args(const Args::Table table[])
-    : mP { new ArgsImpl(table) }
-{ }
+Args::Args(const Args::Table table[]) : mP { new ArgsImpl(table) }
+{}
 
 Args::~Args()
 {

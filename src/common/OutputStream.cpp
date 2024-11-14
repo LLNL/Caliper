@@ -13,8 +13,14 @@
 #include <mutex>
 #include <sstream>
 
-// MSVC has a low value of __cplusplus even though it support C++17
-#if defined(_WIN32) || (__cplusplus >= 201703L)
+// (1) MSVC has a low value of __cplusplus even though it support C++17.
+// (2) std::filesystem support in libstdc++ prior to gcc 9 requires linking
+// an extra libstdc++-fs library. Let's not bother with this.
+#if defined(_WIN32) || (__cplusplus >= 201703L && (!defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE >= 9))
+#define CALI_OSTREAM_USE_STD_FILESYSTEM
+#endif
+
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
 #include <filesystem>
 #else
 #include <errno.h>
@@ -26,7 +32,7 @@ using namespace cali;
 namespace
 {
 
-#if defined(_WIN32) || (__cplusplus >= 201703L)
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
 bool check_and_create_directory(const std::filesystem::path& filepath)
 {
     try {
@@ -81,31 +87,30 @@ bool check_and_create_directory(const std::string& filepath)
 }
 #endif
 
-}
+} // namespace
 
-struct OutputStream::OutputStreamImpl
-{
-    StreamType    type;
-    Mode          mode;
+struct OutputStream::OutputStreamImpl {
+    StreamType type;
+    Mode       mode;
 
-    bool          is_initialized;
-    std::mutex    init_mutex;
+    bool       is_initialized;
+    std::mutex init_mutex;
 
-#if defined(_WIN32) || (__cplusplus >= 201703L)
-    std::filesystem::path   filename;
+#ifdef CALI_OSTREAM_USE_STD_FILESYSTEM
+    std::filesystem::path filename;
 #else
-    std::string             filename;
+    std::string filename;
 #endif
     std::ofstream fs;
 
     std::ostream* user_os;
 
-    void init() {
+    void init()
+    {
         if (is_initialized)
             return;
 
-        std::lock_guard<std::mutex>
-            g(init_mutex);
+        std::lock_guard<std::mutex> g(init_mutex);
 
         is_initialized = true;
 
@@ -121,7 +126,8 @@ struct OutputStream::OutputStreamImpl
         }
     }
 
-    std::ostream* stream() {
+    std::ostream* stream()
+    {
         init();
 
         switch (type) {
@@ -140,64 +146,57 @@ struct OutputStream::OutputStreamImpl
         return &fs;
     }
 
-    void reset() {
+    void reset()
+    {
         fs.close();
         filename.clear();
-        user_os = nullptr;
-        type = StreamType::None;
+        user_os        = nullptr;
+        type           = StreamType::None;
         is_initialized = false;
     }
 
-    OutputStreamImpl()
-        : type(StreamType::None), mode(Truncate), is_initialized(false), user_os(nullptr)
-    { }
+    OutputStreamImpl() : type(StreamType::None), mode(Truncate), is_initialized(false), user_os(nullptr) {}
 
     OutputStreamImpl(const char* name)
         : type(StreamType::None), mode(Truncate), is_initialized(false), filename(name), user_os(nullptr)
-    { }
+    {}
 };
 
-OutputStream::OutputStream()
-    : mP(new OutputStreamImpl)
-{ }
+OutputStream::OutputStream() : mP(new OutputStreamImpl)
+{}
 
 OutputStream::~OutputStream()
 {
     mP.reset();
 }
 
-OutputStream::operator bool() const
+OutputStream::operator bool () const
 {
     return mP->is_initialized;
 }
 
-OutputStream::StreamType
-OutputStream::type() const
+OutputStream::StreamType OutputStream::type() const
 {
     return mP->type;
 }
 
-std::ostream*
-OutputStream::stream()
+std::ostream* OutputStream::stream()
 {
     return mP->stream();
 }
 
-void
-OutputStream::set_mode(OutputStream::Mode mode)
+void OutputStream::set_mode(OutputStream::Mode mode)
 {
     mP->mode = mode;
 }
 
-void
-OutputStream::set_stream(StreamType type)
+void OutputStream::set_stream(StreamType type)
 {
     mP->reset();
     mP->type = type;
 }
 
-void
-OutputStream::set_stream(std::ostream* os)
+void OutputStream::set_stream(std::ostream* os)
 {
     mP->reset();
 
@@ -205,8 +204,7 @@ OutputStream::set_stream(std::ostream* os)
     mP->user_os = os;
 }
 
-void
-OutputStream::set_filename(const char* filename)
+void OutputStream::set_filename(const char* filename)
 {
     mP->reset();
 
@@ -214,12 +212,15 @@ OutputStream::set_filename(const char* filename)
     mP->type     = StreamType::File;
 }
 
-void
-OutputStream::set_filename(const char* formatstr, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec)
+void OutputStream::set_filename(
+    const char*                           formatstr,
+    const CaliperMetadataAccessInterface& db,
+    const std::vector<Entry>&             rec
+)
 {
     mP->reset();
 
-    if      (strcmp(formatstr, "stdout") == 0)
+    if (strcmp(formatstr, "stdout") == 0)
         mP->type = StreamType::StdOut;
     else if (strcmp(formatstr, "stderr") == 0)
         mP->type = StreamType::StdErr;

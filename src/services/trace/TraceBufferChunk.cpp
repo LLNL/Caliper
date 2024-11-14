@@ -14,7 +14,6 @@
 using namespace trace;
 using namespace cali;
 
-
 TraceBufferChunk::~TraceBufferChunk()
 {
     delete[] m_data;
@@ -23,7 +22,6 @@ TraceBufferChunk::~TraceBufferChunk()
         delete m_next;
 }
 
-
 void TraceBufferChunk::append(TraceBufferChunk* chunk)
 {
     if (m_next)
@@ -31,7 +29,6 @@ void TraceBufferChunk::append(TraceBufferChunk* chunk)
     else
         m_next = chunk;
 }
-
 
 void TraceBufferChunk::reset()
 {
@@ -43,7 +40,6 @@ void TraceBufferChunk::reset()
     delete m_next;
     m_next = 0;
 }
-
 
 size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
 {
@@ -81,7 +77,6 @@ size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
     return written;
 }
 
-
 void TraceBufferChunk::save_snapshot(SnapshotView s)
 {
     if (s.empty())
@@ -95,7 +90,6 @@ void TraceBufferChunk::save_snapshot(SnapshotView s)
     ++m_nrec;
 }
 
-
 bool TraceBufferChunk::fits(SnapshotView rec) const
 {
     // get worst-case estimate of packed snapshot size:
@@ -107,7 +101,6 @@ bool TraceBufferChunk::fits(SnapshotView rec) const
     return (m_pos + max) < m_size;
 }
 
-
 TraceBufferChunk::UsageInfo TraceBufferChunk::info() const
 {
     UsageInfo info { 0, 0, 0 };
@@ -117,7 +110,7 @@ TraceBufferChunk::UsageInfo TraceBufferChunk::info() const
 
     info.nchunks++;
     info.reserved += m_size;
-    info.used     += m_pos;
+    info.used += m_pos;
 
     return info;
 }

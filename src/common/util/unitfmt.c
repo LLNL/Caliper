@@ -31,24 +31,21 @@
 
 #include "unitfmt.h"
 
-const struct unitfmt_table unitfmt_bytes[] = {
-    { 1,                  "Byte(s)" },
-    { 1024,               "KiB"     },
-    { 1024 * 1024,        "MiB"     },
-    { 1024 * 1024 * 1024, "GiB"     },
-    { 0,                  "GiB"     }
-};
+const struct unitfmt_table unitfmt_bytes[] = { { 1, "Byte(s)" },
+                                               { 1024, "KiB" },
+                                               { 1024 * 1024, "MiB" },
+                                               { 1024 * 1024 * 1024, "GiB" },
+                                               { 0, "GiB" } };
 
-unitfmt_result
-unitfmt(unsigned long long val, const struct unitfmt_table table[])
+unitfmt_result unitfmt(unsigned long long val, const struct unitfmt_table table[])
 {
     double         dval   = (double) val;
     unitfmt_result result = { dval, table[0].symbol };
-    
+
     for (const struct unitfmt_table* p = table; p->factor && dval >= p->factor; ++p) {
         result.val    = dval / p->factor;
         result.symbol = p->symbol;
     }
-    
+
     return result;
 }

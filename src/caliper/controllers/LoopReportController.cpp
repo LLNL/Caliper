@@ -29,8 +29,8 @@ namespace
 
 struct LoopInfo {
     std::string name;
-    int iterations;
-    int count;
+    int         iterations;
+    int         count;
 };
 
 LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
@@ -42,10 +42,10 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     Attribute lcnt_a = db.get_attribute("max#count");
 
     for (const Entry& e : rec) {
-        if      (e.attribute() == iter_a.id())
+        if (e.attribute() == iter_a.id())
             ret.iterations = e.value().to_int();
         else if (e.attribute() == lcnt_a.id())
-            ret.count      = e.value().to_int();
+            ret.count = e.value().to_int();
         else {
             Variant v_loop = e.value(loop_a);
             if (!v_loop.empty())
@@ -56,30 +56,35 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     return ret;
 }
 
-
 using Comm = cali::internal::CustomOutputController::Comm;
 
 class LoopReportController : public cali::internal::CustomOutputController
 {
     cali::ConfigManager::Options m_opts;
 
-    Aggregator local_aggregate(Caliper& c, CaliperMetadataDB& db, const QuerySpec& spec) {
+    Aggregator local_aggregate(Caliper& c, CaliperMetadataDB& db, const QuerySpec& spec)
+    {
         RecordSelector filter(spec);
         Preprocessor   prp(spec);
         Aggregator     agg(spec);
 
-        Channel        chn(channel());
-        c.flush(&chn, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
+        Channel chn(channel());
+        c.flush(
+            &chn,
+            SnapshotView(),
+            [&db, &filter, &prp, &agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec) {
                 EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
                 if (filter.pass(db, mrec))
                     agg.add(db, mrec);
-            });
+            }
+        );
 
         return agg;
     }
 
-    Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db) {
+    Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db)
+    {
         const char* select =
             " loop"
             ",count()"
@@ -89,17 +94,19 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(iter_per_sec)"
             ",avg(iter_per_sec)";
 
-        std::string query = m_opts.build_query("local", {
-                { "let",      "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
-                { "select",   select },
-                { "group by", "loop" },
-                { "where",    "loop" }
-            });
+        std::string query = m_opts.build_query(
+            "local",
+            { { "let", "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
+              { "select", select },
+              { "group by", "loop" },
+              { "where", "loop" } }
+        );
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
 
-    QuerySpec summary_query() {
+    QuerySpec summary_query()
+    {
         const char* select =
             " loop as Loop"
             ",max(sum#loop.iterations) as \"Iterations\""
@@ -108,48 +115,57 @@ class LoopReportController : public cali::internal::CustomOutputController
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
             ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\"";
 
-        std::string query = m_opts.build_query("cross", {
-                { "select",    select },
+        std::string query = m_opts.build_query(
+            "cross",
+            {
+                { "select", select },
                 { "aggregate", "max(count)" },
-                { "group by",  "loop" },
-                { "format",    "table" },
-            });
+                { "group by", "loop" },
+                { "format", "table" },
+            }
+        );
 
         return CalQLParser(query.c_str()).spec();
     }
 
-    Aggregator timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
+    Aggregator timeseries_local_aggregation(
+        Caliper&           c,
+        CaliperMetadataDB& db,
+        const std::string& loopname,
+        int                blocksize
+    )
+    {
         const char* select =
             " Block"
             ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration.ns,1e9)";
 
-        std::string block =
-            std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+        std::string block = std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
-        std::string query = m_opts.build_query("local", {
-                { "let",      block   },
-                { "select",   select  },
-                { "group by", "Block" },
-                { "where",    std::string("loop=\"")+loopname+"\"" }
-            });
+        std::string query = m_opts.build_query(
+            "local",
+            { { "let", block },
+              { "select", select },
+              { "group by", "Block" },
+              { "where", std::string("loop=\"") + loopname + "\"" } }
+        );
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
 
-    QuerySpec timeseries_spec() {
+    QuerySpec timeseries_spec()
+    {
         const char* select =
             " Block"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(scale#time.duration.ns) as \"Time (s)\""
             ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\"";
 
-        std::string query = m_opts.build_query("cross", {
-                { "select",   select  },
-                { "group by", "Block" },
-                { "format",   "table order by Block" }
-            });
+        std::string query = m_opts.build_query(
+            "cross",
+            { { "select", select }, { "group by", "Block" }, { "format", "table order by Block" } }
+        );
 
         CalQLParser parser(query.c_str());
 
@@ -159,16 +175,17 @@ class LoopReportController : public cali::internal::CustomOutputController
         return CalQLParser(query.c_str()).spec();
     }
 
-    void process_timeseries(Caliper& c, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info, Comm comm) {
-        int iterations = comm.bcast_int(info.iterations);
-        int rec_count = comm.bcast_int(info.count);
-        std::string name = comm.bcast_str(info.name);
+    void process_timeseries(Caliper& c, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info, Comm comm)
+    {
+        int         iterations = comm.bcast_int(info.iterations);
+        int         rec_count  = comm.bcast_int(info.count);
+        std::string name       = comm.bcast_str(info.name);
 
         if (iterations > 0) {
             int nblocks = 20;
 
             if (m_opts.is_set("timeseries.maxrows"))
-                nblocks = m_opts.get("timeseries.maxrows").to_int();
+                nblocks = StringConverter(m_opts.get("timeseries.maxrows")).to_int();
             if (nblocks <= 0)
                 nblocks = rec_count;
 
@@ -192,18 +209,20 @@ class LoopReportController : public cali::internal::CustomOutputController
         }
     }
 
-    OutputStream create_stream() {
-        std::string output = m_opts.get("output", "stdout").to_string();
+    OutputStream create_stream()
+    {
+        std::string output = m_opts.get("output", "stdout");
 
-        Caliper c;
+        Caliper      c;
         OutputStream stream;
         stream.set_filename(output.c_str(), c, c.get_globals());
 
         return stream;
     }
 
-    void collective_flush(OutputStream& stream, Comm& comm) override {
-        Caliper c;
+    void collective_flush(OutputStream& stream, Comm& comm) override
+    {
+        Caliper           c;
         CaliperMetadataDB db;
 
         Aggregator summary_local_agg  = summary_local_aggregation(c, db);
@@ -222,7 +241,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 
             bool print_summary = true;
             if (m_opts.is_set("summary"))
-                print_summary = m_opts.get("summary").to_bool();
+                print_summary = StringConverter(m_opts.get("summary")).to_bool();
 
             if (print_summary) {
                 *os << "\nLoop summary:\n------------\n\n";
@@ -235,14 +254,14 @@ class LoopReportController : public cali::internal::CustomOutputController
 
         bool print_timeseries = true;
         if (m_opts.is_set("timeseries"))
-            print_timeseries = m_opts.get("timeseries").to_bool();
+            print_timeseries = StringConverter(m_opts.get("timeseries")).to_bool();
 
         if (print_timeseries) {
             std::vector<LoopInfo> infovec;
 
-            summary_cross_agg.flush(db, [&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
-                    infovec.push_back(get_loop_info(db, rec));
-                });
+            summary_cross_agg.flush(db, [&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec) {
+                infovec.push_back(get_loop_info(db, rec));
+            });
 
             if (!infovec.empty()) {
                 for (const LoopInfo& loopinfo : infovec)
@@ -257,83 +276,82 @@ class LoopReportController : public cali::internal::CustomOutputController
 public:
 
     LoopReportController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : cali::internal::CustomOutputController(name, 0, initial_cfg),
-        m_opts(opts)
+        : cali::internal::CustomOutputController(name, 0, initial_cfg), m_opts(opts)
     {
         if (opts.is_set("iteration_interval"))
-            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval").to_string();
+            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval");
         else if (opts.is_set("time_interval"))
-            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = opts.get("time_interval").to_string();
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = opts.get("time_interval");
         else
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
         if (opts.is_set("target_loops"))
-            config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = opts.get("target_loops").to_string();
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS"] = opts.get("target_loops");
 
         opts.update_channel_config(config());
         opts.update_channel_metadata(metadata());
     }
 };
 
-const char* loop_report_controller_spec =
-    "{"
-    " \"name\"        : \"loop-report\","
-    " \"description\" : \"Print summary and time-series information for loops\","
-    " \"categories\"  : [ \"metric\", \"output\" ],"
-    " \"services\"    : [ \"loop_monitor\", \"timer\", \"trace\" ],"
-    " \"config\"      : "
-    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\","
-    "     \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
-    "     \"CALI_TIMER_UNIT\"            : \"sec\""
-    "   },"
-    " \"options\": "
-    " ["
-    "  {"
-    "   \"name\": \"summary\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Print loop summary\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Print time series\""
-    "  },"
-    "  {"
-    "   \"name\": \"iteration_interval\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Measure every N loop iterations\""
-    "  },"
-    "  {"
-    "   \"name\": \"time_interval\","
-    "   \"type\": \"double\","
-    "   \"description\": \"Measure after t seconds\""
-    "  },"
-    "  {"
-    "   \"name\": \"timeseries.maxrows\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Max number of rows in timeseries display. Set to 0 to show all. Default: 20.\""
-    "  },"
-    "  {"
-    "   \"name\": \"target_loops\","
-    "   \"type\": \"string\","
-    "   \"description\": \"List of loops to target. Default: any top-level loop.\""
-    "  }"
-    " ]"
-    "}";
+const char* loop_report_controller_spec = R"json(
+{
+ "name"        : "loop-report",
+ "description" : "Print summary and time-series information for loops",
+ "categories"  : [ "metric", "output" ],
+ "services"    : [ "loop_monitor", "timer", "trace" ],
+ "config"      :
+ {
+  "CALI_CHANNEL_FLUSH_ON_EXIT" : "false",
+  "CALI_CHANNEL_CONFIG_CHECK"  : "false",
+  "CALI_TIMER_UNIT"            : "sec"
+ },
+ "options":
+ [
+  {
+   "name": "summary",
+   "type": "bool",
+   "description": "Print loop summary"
+  },{
+   "name": "timeseries",
+   "type": "bool",
+   "description": "Print time series"
+  },{
+   "name": "iteration_interval",
+   "type": "int",
+   "description": "Measure every N loop iterations"
+  },{
+   "name": "time_interval",
+   "type": "double",
+   "description": "Measure after t seconds"
+  },{
+   "name": "timeseries.maxrows",
+   "type": "int",
+   "description": "Max number of rows in timeseries display. Set to 0 to show all. Default: 20."
+  },{
+   "name": "target_loops",
+   "type": "string",
+   "description": "List of loops to target. Default: any top-level loop."
+  }
+ ]
+}
+)json";
 
-cali::ChannelController*
-make_loopreport_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+cali::ChannelController* make_loopreport_controller(
+    const char*                         name,
+    const config_map_t&                 initial_cfg,
+    const cali::ConfigManager::Options& opts
+)
+{
     return new LoopReportController(name, initial_cfg, opts);
 }
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo loop_report_controller_info
-{
-    ::loop_report_controller_spec, ::make_loopreport_controller, nullptr
-};
+ConfigManager::ConfigInfo loop_report_controller_info { ::loop_report_controller_spec,
+                                                        ::make_loopreport_controller,
+                                                        nullptr };
 
 }

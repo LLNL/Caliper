@@ -6,10 +6,8 @@
 #include "caliper/Annotation.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/cali.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/Variant.h"
 
 #include <atomic>
 #include <cstring>
@@ -25,7 +23,7 @@ extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 extern Attribute region_attr;
 
-}
+} // namespace cali
 
 // --- Pre-defined Function annotation class
 
@@ -58,20 +56,22 @@ struct Loop::Impl {
     std::atomic<int> level;
     std::atomic<int> refcount;
 
-    Impl(const char* name)
-        : level(0), refcount(1) {
+    Impl(const char* name) : level(0), refcount(1)
+    {
         Variant v_true(true);
 
-        iter_attr =
-            Caliper().create_attribute(std::string("iteration#") + name,
-                                       CALI_TYPE_INT,
-                                       CALI_ATTR_ASVALUE,
-                                       1, &class_iteration_attr, &v_true);
+        iter_attr = Caliper().create_attribute(
+            std::string("iteration#") + name,
+            CALI_TYPE_INT,
+            CALI_ATTR_ASVALUE,
+            1,
+            &class_iteration_attr,
+            &v_true
+        );
     }
 };
 
-Loop::Iteration::Iteration(const Impl* p, int i)
-    : pI(p)
+Loop::Iteration::Iteration(const Impl* p, int i) : pI(p)
 {
     Caliper().begin(p->iter_attr, Variant(i));
 }
@@ -81,15 +81,13 @@ Loop::Iteration::~Iteration()
     Caliper().end(pI->iter_attr);
 }
 
-Loop::Loop(const char* name)
-    : pI(new Impl(name))
+Loop::Loop(const char* name) : pI(new Impl(name))
 {
     Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
     ++pI->level;
 }
 
-Loop::Loop(const Loop& loop)
-    : pI(loop.pI)
+Loop::Loop(const Loop& loop) : pI(loop.pI)
 {
     ++pI->refcount;
 }
@@ -102,14 +100,12 @@ Loop::~Loop()
     }
 }
 
-Loop::Iteration
-Loop::iteration(int i) const
+Loop::Iteration Loop::iteration(int i) const
 {
     return Iteration(pI, i);
 }
 
-void
-Loop::end()
+void Loop::end()
 {
     if (pI->level > 0) {
         Caliper().end(loop_attr);
@@ -127,38 +123,30 @@ struct Annotation::Impl {
     std::vector<Variant>   m_metadata_values;
     int                    m_opt;
 
-    std::atomic<int>       m_refcount;
+    std::atomic<int> m_refcount;
 
     Impl(const std::string& name, MetadataListType metadata, int opt)
-        : m_attr_node(nullptr),
-          m_name(name),
-          m_opt(opt),
-          m_refcount(1)
-        {
-            Caliper c;
-            Attribute attr = c.get_attribute(name);
+        : m_attr_node(nullptr), m_name(name), m_opt(opt), m_refcount(1)
+    {
+        Caliper   c;
+        Attribute attr = c.get_attribute(name);
 
-            if (!attr) {
-                for(auto kv : metadata) {
-                    m_metadata_keys.push_back(c.create_attribute(kv.first,kv.second.type(),0));
-                    m_metadata_values.push_back(kv.second);
-                }
-            } else {
-                m_attr_node.store(attr.node());
+        if (!attr) {
+            for (auto kv : metadata) {
+                m_metadata_keys.push_back(c.create_attribute(kv.first, kv.second.type(), 0));
+                m_metadata_values.push_back(kv.second);
             }
+        } else {
+            m_attr_node.store(attr.node());
         }
+    }
 
-    Impl(const std::string& name, int opt)
-        : m_attr_node(nullptr),
-          m_name(name),
-          m_opt(opt),
-          m_refcount(1)
-        { }
+    Impl(const std::string& name, int opt) : m_attr_node(nullptr), m_name(name), m_opt(opt), m_refcount(1) {}
 
-    ~Impl()
-        { }
+    ~Impl() {}
 
-    void begin(const Variant& data) {
+    void begin(const Variant& data)
+    {
         Caliper   c;
         Attribute attr = get_attribute(c, data.type());
 
@@ -166,7 +154,8 @@ struct Annotation::Impl {
             c.begin(attr, data);
     }
 
-    void set(const Variant& data) {
+    void set(const Variant& data)
+    {
         Caliper   c;
         Attribute attr = get_attribute(c, data.type());
 
@@ -174,23 +163,28 @@ struct Annotation::Impl {
             c.set(attr, data);
     }
 
-    void end() {
-        Caliper c;
+    void end()
+    {
+        Caliper   c;
         Attribute attr = Attribute::make_attribute(m_attr_node.load());
 
         if (attr)
             c.end(attr);
     }
 
-    Attribute get_attribute(Caliper& c, cali_attr_type type) {
+    Attribute get_attribute(Caliper& c, cali_attr_type type)
+    {
         cali::Node* attr_node = m_attr_node.load();
 
         if (!attr_node) {
-            Attribute attr =
-                c.create_attribute(m_name, type, m_opt,
-                                   m_metadata_keys.size(),
-                                   m_metadata_keys.data(),
-                                   m_metadata_values.data());
+            Attribute attr = c.create_attribute(
+                m_name,
+                type,
+                m_opt,
+                m_metadata_keys.size(),
+                m_metadata_keys.data(),
+                m_metadata_values.data()
+            );
 
             attr_node = attr.node();
             m_attr_node.store(attr_node);
@@ -199,12 +193,14 @@ struct Annotation::Impl {
         return Attribute::make_attribute(attr_node);
     }
 
-    Impl* attach() {
+    Impl* attach()
+    {
         ++m_refcount;
         return this;
     }
 
-    void detach() {
+    void detach()
+    {
         --m_refcount;
 
         if (m_refcount == 0)
@@ -212,12 +208,10 @@ struct Annotation::Impl {
     }
 };
 
-
 // --- Guard subclass
 
-Annotation::Guard::Guard(Annotation& a)
-    : pI(a.pI->attach())
-{ }
+Annotation::Guard::Guard(Annotation& a) : pI(a.pI->attach())
+{}
 
 Annotation::Guard::~Guard()
 {
@@ -226,24 +220,21 @@ Annotation::Guard::~Guard()
 }
 
 // --- Constructors / destructor
-Annotation::Annotation(const char* name, const MetadataListType& metadata, int opt)
-    : pI(new Impl(name, metadata, opt))
-{ }
+Annotation::Annotation(const char* name, const MetadataListType& metadata, int opt) : pI(new Impl(name, metadata, opt))
+{}
 
-Annotation::Annotation(const char* name, int opt)
-    : pI(new Impl(name, opt))
-{ }
+Annotation::Annotation(const char* name, int opt) : pI(new Impl(name, opt))
+{}
 
 Annotation::~Annotation()
 {
     pI->detach();
 }
 
-Annotation::Annotation(const Annotation& a)
-    : pI(a.pI->attach())
-{ }
+Annotation::Annotation(const Annotation& a) : pI(a.pI->attach())
+{}
 
-Annotation& Annotation::operator = (const Annotation& a)
+Annotation& Annotation::operator= (const Annotation& a)
 {
     if (pI == a.pI)
         return *this;
@@ -253,7 +244,6 @@ Annotation& Annotation::operator = (const Annotation& a)
 
     return *this;
 }
-
 
 // --- begin() overloads
 

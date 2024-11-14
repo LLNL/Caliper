@@ -6,13 +6,10 @@
 
 #pragma once
 
+#include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
 
-#include "caliper/caliper-config.h"
-#include "caliper/Caliper.h"
-
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <iostream>
 #include <memory>
@@ -72,14 +69,10 @@ class Node;
 
 class AnnotationBinding
 {
-    ConfigSet m_config;
     Attribute m_marker_attr;
 
     std::unique_ptr<RegionFilter> m_filter;
-
     std::vector<std::string> m_trigger_attr_names;
-
-    static const ConfigSet::Entry s_configdata[];
 
     void mark_attribute(Caliper*, Channel*, const Attribute&);
     void check_attribute(Caliper*, Channel*, const Attribute&);
@@ -109,29 +102,26 @@ protected:
     /// \param c    The %Caliper instance
     /// \param chn  The channel instance
     /// \param attr The attribute being marked
-    virtual void on_mark_attribute(Caliper*           c,
-                                   Channel*           chn,
-                                   const Attribute&   attr)
-    { }
+    virtual void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {}
 
     /// \brief Callback for an annotation begin event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper begin event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) { }
+    virtual void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
 
     /// \brief Callback for an annotation end event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper end event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)   { }
+    virtual void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
 
     /// \brief Initialization callback. Invoked after the %Caliper
     ///   initialization completed.
-    virtual void initialize(Caliper* c, Channel* chn) { }
+    virtual void initialize(Caliper* c, Channel* chn) {}
 
     /// \brief Invoked on %Caliper finalization.
-    virtual void finalize(Caliper* c, Channel* chn)   { }
+    virtual void finalize(Caliper* c, Channel* chn) {}
 
 public:
 
@@ -153,37 +143,37 @@ public:
     /// %Caliper callback functions. Can be used as a %Caliper service
     /// initialization function.
     template <class BindingT>
-    static void make_binding(Caliper* c, Channel* chn) {
+    static void make_binding(Caliper* c, Channel* chn)
+    {
         BindingT* binding = new BindingT();
         binding->base_pre_initialize(c, chn);
         binding->initialize(c, chn);
         binding->base_post_initialize(c, chn);
 
-        chn->events().create_attr_evt.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr){
-                if (!is_subscription_attribute(attr))
-                    binding->check_attribute(c, chn, attr);
-            });
-        chn->events().subscribe_attribute.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr){
+        chn->events().create_attr_evt.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
+            if (!is_subscription_attribute(attr))
                 binding->check_attribute(c, chn, attr);
-            });
+        });
+        chn->events().subscribe_attribute.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
+            binding->check_attribute(c, chn, attr);
+        });
         chn->events().pre_begin_evt.connect(
-            [binding](Caliper* c, Channel* chn,const Attribute& attr,const Variant& value){
-                binding->begin_cb(c,chn,attr,value);
-            });
+            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
+                binding->begin_cb(c, chn, attr, value);
+            }
+        );
         chn->events().pre_end_evt.connect(
-            [binding](Caliper* c, Channel* chn,const Attribute& attr,const Variant& value){
-                binding->end_cb(c,chn,attr,value);
-            });
-        chn->events().finish_evt.connect(
-            [binding](Caliper* c, Channel* chn){
-                binding->finalize(c,chn);
-                delete binding;
-            });
+            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
+                binding->end_cb(c, chn, attr, value);
+            }
+        );
+        chn->events().finish_evt.connect([binding](Caliper* c, Channel* chn) {
+            binding->finalize(c, chn);
+            delete binding;
+        });
 
-        Log(1).stream() << "Registered " << binding->service_tag()
-                        << " binding for channel " << chn->name() << std::endl;
+        Log(1).stream() << "Registered " << binding->service_tag() << " binding for channel " << chn->name()
+                        << std::endl;
     }
 };
 

@@ -14,16 +14,8 @@ using namespace cali;
 namespace
 {
 
-const char* trigger_grp[] = {
-    "alloc",
-    "cuptitrace",
-    "event",
-    "libpfm",
-    "loop_monitor",
-    "region_monitor",
-    "sampler",
-    nullptr
-};
+const char* trigger_grp[] = { "alloc",        "cuptitrace",     "event",   "libpfm",
+                              "loop_monitor", "region_monitor", "sampler", nullptr };
 const char* buffer_grp[]  = { "aggregate", "trace", "cuptitrace", nullptr };
 const char* process_grp[] = { "aggregate", "trace", "textlog", nullptr };
 const char* online_grp[]  = { "textlog", nullptr };
@@ -32,13 +24,11 @@ const char* offline_grp[] = { "recorder", "report", "sos", "mpireport", nullptr 
 struct service_group_t {
     const char*  group_name;
     const char** services;
-} service_groups[] = {
-    { "snapshot trigger", trigger_grp },
-    { "snapshot buffer",  buffer_grp  },
-    { "snapshot process", process_grp },
-    { "online output",    online_grp  },
-    { "offline output",   offline_grp }
-};
+} service_groups[] = { { "snapshot trigger", trigger_grp },
+                       { "snapshot buffer", buffer_grp },
+                       { "snapshot process", process_grp },
+                       { "online output", online_grp },
+                       { "offline output", offline_grp } };
 
 enum ServiceGroupID {
     SnapshotTrigger = 0,
@@ -48,15 +38,14 @@ enum ServiceGroupID {
     OfflineOutput   = 4
 };
 
-std::string
-format_group(const char* const* group, const char* sep, const char* last_sep)
+std::string format_group(const char* const* group, const char* sep, const char* last_sep)
 {
     std::string ret;
-    int count = 0;
+    int         count = 0;
 
     for (const char* const* sptr = group; sptr && *sptr; ++sptr) {
         if (count++) {
-            if (*(sptr+1) == nullptr)
+            if (*(sptr + 1) == nullptr)
                 ret.append(last_sep);
             else
                 ret.append(sep);
@@ -68,14 +57,15 @@ format_group(const char* const* group, const char* sep, const char* last_sep)
     return ret;
 }
 
-void
-check_service_dependency(const service_group_t dependent,
-                         const service_group_t dependency,
-                         const std::vector<std::string>& services)
+void check_service_dependency(
+    const service_group_t           dependent,
+    const service_group_t           dependency,
+    const std::vector<std::string>& services
+)
 {
     const char* const* dept = dependent.services;
 
-    for ( ; dept && *dept; ++dept)
+    for (; dept && *dept; ++dept)
         if (std::find(services.begin(), services.end(), *dept) != services.end())
             break;
 
@@ -84,16 +74,15 @@ check_service_dependency(const service_group_t dependent,
 
     const char* const* depcy = dependency.services;
 
-    for ( ; depcy && *depcy; ++depcy)
+    for (; depcy && *depcy; ++depcy)
         if (std::find(services.begin(), services.end(), *depcy) != services.end())
             break;
 
     if (depcy && *depcy)
         return;
 
-    Log(1).stream() << "Config check: Warning: " << dependent.group_name
-                    << " service \"" << *dept << "\" requires " << dependency.group_name
-                    << " services, but none are active.\n     Add "
+    Log(1).stream() << "Config check: Warning: " << dependent.group_name << " service \"" << *dept << "\" requires "
+                    << dependency.group_name << " services, but none are active.\n     Add "
                     << format_group(dependency.services, ", ", " or ")
                     << " to CALI_SERVICES_ENABLE to generate Caliper output." << std::endl;
 }
@@ -101,34 +90,29 @@ check_service_dependency(const service_group_t dependent,
 void check_services(const std::vector<std::string>& services)
 {
     const struct ServiceDependency {
-        ServiceGroupID dept; ServiceGroupID depcy;
-    } dependencies[] {
-        { SnapshotTrigger, SnapshotProcess },
-        { SnapshotProcess, SnapshotTrigger },
-        { SnapshotBuffer,  OfflineOutput   },
-        { OnlineOutput,    SnapshotTrigger },
-        { OfflineOutput,   SnapshotBuffer  }
-    };
+        ServiceGroupID dept;
+        ServiceGroupID depcy;
+    } dependencies[] { { SnapshotTrigger, SnapshotProcess },
+                       { SnapshotProcess, SnapshotTrigger },
+                       { SnapshotBuffer, OfflineOutput },
+                       { OnlineOutput, SnapshotTrigger },
+                       { OfflineOutput, SnapshotBuffer } };
 
-    for (const ServiceDependency &d : dependencies)
-        check_service_dependency(service_groups[d.dept], service_groups[d.depcy],
-                                 services);
+    for (const ServiceDependency& d : dependencies)
+        check_service_dependency(service_groups[d.dept], service_groups[d.depcy], services);
 }
 
-} // namespace [anonymous]
-
+} // namespace
 
 namespace cali
 {
 
 void config_sanity_check(const char* channel, RuntimeConfig cfg)
 {
-    std::vector<std::string> services =
-        cfg.get("services", "enable").to_stringlist(",:");
+    std::vector<std::string> services = cfg.get("services", "enable").to_stringlist(",:");
 
     if (services.empty()) {
-        Log(1).stream() << channel << ": No services enabled, "
-                        << channel << " channel will not record data."
+        Log(1).stream() << channel << ": No services enabled, " << channel << " channel will not record data."
                         << std::endl;
         return;
     }
@@ -142,4 +126,4 @@ void config_sanity_check(const char* channel, RuntimeConfig cfg)
     ::check_services(services);
 }
 
-}
+} // namespace cali

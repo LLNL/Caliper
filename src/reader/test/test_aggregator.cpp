@@ -11,13 +11,17 @@ using namespace cali;
 namespace
 {
 
-QuerySpec::AggregationOp
-make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr, const char* arg3 = nullptr)
+QuerySpec::AggregationOp make_op(
+    const char* name,
+    const char* arg1 = nullptr,
+    const char* arg2 = nullptr,
+    const char* arg3 = nullptr
+)
 {
-    QuerySpec::AggregationOp op;
+    QuerySpec::AggregationOp            op;
     const QuerySpec::FunctionSignature* p = Aggregator::aggregation_defs();
 
-    for ( ; p && p->name && (0 != strcmp(p->name, name)); ++p )
+    for (; p && p->name && (0 != strcmp(p->name, name)); ++p)
         ;
 
     if (p->name) {
@@ -34,12 +38,11 @@ make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr
     return op;
 }
 
-std::map<cali_id_t, cali::Entry>
-make_dict_from_entrylist(const EntryList& list)
+std::map<cali_id_t, cali::Entry> make_dict_from_entrylist(const EntryList& list)
 {
     std::map<cali_id_t, Entry> dict;
 
-    for ( const Entry& e : list )
+    for (const Entry& e : list)
         dict[e.attribute()] = e;
 
     return dict;
@@ -47,8 +50,8 @@ make_dict_from_entrylist(const EntryList& list)
 
 } // namespace
 
-
-TEST(AggregatorTest, DefaultKeyCountOpSpec) {
+TEST(AggregatorTest, DefaultKeyCountOpSpec)
+{
     //
     // --- setup
     //
@@ -58,12 +61,9 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
 
     // create some context attributes
 
-    Attribute ctx1 =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 =
-        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx1     = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2     = db.create_attribute("ctx.2", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -72,13 +72,11 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+                       { 101, ctx2.id(), 100, Variant(42) },
+                       { 102, ctx1.id(), 101, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -98,25 +96,23 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
 
     // add some entries
 
-    Variant   v_val(47);
+    Variant v_val(47);
 
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t val_id    = val_attr.id();
 
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx1, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute count_attr = db.get_attribute("count");
 
@@ -128,28 +124,29 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
 
     int rescount = 0;
 
-    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
-            auto dict = make_dict_from_entrylist(list);
-            int  aggr = dict[count_attr.id()].value().to_int();
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list) {
+        auto dict = make_dict_from_entrylist(list);
+        int  aggr = dict[count_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant("inner")) {
-                EXPECT_EQ(aggr, 3);
-                EXPECT_EQ(static_cast<int>(list.size()), 2);
-                ++rescount;
-            } else if (dict[ctx2.id()].value() == Variant(42)) {
-                EXPECT_EQ(aggr, 2);
-                EXPECT_EQ(static_cast<int>(list.size()), 2);
-                ++rescount;
-            } else {
-                EXPECT_EQ(aggr, 2);
-                ++rescount;
-            }
-        });
+        if (dict[ctx1.id()].value() == Variant("inner")) {
+            EXPECT_EQ(aggr, 3);
+            EXPECT_EQ(static_cast<int>(list.size()), 2);
+            ++rescount;
+        } else if (dict[ctx2.id()].value() == Variant(42)) {
+            EXPECT_EQ(aggr, 2);
+            EXPECT_EQ(static_cast<int>(list.size()), 2);
+            ++rescount;
+        } else {
+            EXPECT_EQ(aggr, 2);
+            ++rescount;
+        }
+    });
 
     EXPECT_EQ(rescount, 3);
 }
 
-TEST(AggregatorTest, DefaultKeySumOpSpec) {
+TEST(AggregatorTest, DefaultKeySumOpSpec)
+{
     //
     // --- setup
     //
@@ -159,12 +156,9 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
 
     // create some context attributes
 
-    Attribute ctx1 =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 =
-        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx1     = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2     = db.create_attribute("ctx.2", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -173,13 +167,11 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+                       { 101, ctx2.id(), 100, Variant(42) },
+                       { 102, ctx1.id(), 101, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -205,25 +197,23 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
 
     // add some entries
 
-    Variant   v_val(7);
+    Variant v_val(7);
 
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t val_id    = val_attr.id();
 
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx1, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
@@ -237,33 +227,34 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
 
     int rescount = 0;
 
-    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
-            auto dict = make_dict_from_entrylist(list);
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list) {
+        auto dict = make_dict_from_entrylist(list);
 
-            int  aggr = dict[count_attr.id()].value().to_int();
-            int  val  = dict[sum_attr.id()  ].value().to_int();
+        int aggr = dict[count_attr.id()].value().to_int();
+        int val  = dict[sum_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant("inner")) {
-                EXPECT_EQ(aggr,  3);
-                EXPECT_EQ(val,  14);
-                EXPECT_EQ(static_cast<int>(list.size()), 3);
-                ++rescount;
-            } else if (dict[ctx2.id()].value() == Variant(42)) {
-                EXPECT_EQ(aggr,  2);
-                EXPECT_EQ(val,   7);
-                EXPECT_EQ(static_cast<int>(list.size()), 3);
-                ++rescount;
-            } else {
-                EXPECT_EQ(aggr,  2);
-                EXPECT_EQ(val,   7);
-                ++rescount;
-            }
-        });
+        if (dict[ctx1.id()].value() == Variant("inner")) {
+            EXPECT_EQ(aggr, 3);
+            EXPECT_EQ(val, 14);
+            EXPECT_EQ(static_cast<int>(list.size()), 3);
+            ++rescount;
+        } else if (dict[ctx2.id()].value() == Variant(42)) {
+            EXPECT_EQ(aggr, 2);
+            EXPECT_EQ(val, 7);
+            EXPECT_EQ(static_cast<int>(list.size()), 3);
+            ++rescount;
+        } else {
+            EXPECT_EQ(aggr, 2);
+            EXPECT_EQ(val, 7);
+            ++rescount;
+        }
+    });
 
     EXPECT_EQ(rescount, 3);
 }
 
-TEST(AggregatorTest, SingleKeySumOpSpec) {
+TEST(AggregatorTest, SingleKeySumOpSpec)
+{
     //
     // --- setup
     //
@@ -273,12 +264,9 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
 
     // create some context attributes
 
-    Attribute ctx1 =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 =
-        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx1     = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2     = db.create_attribute("ctx.2", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -287,13 +275,11 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+                       { 101, ctx2.id(), 100, Variant(42) },
+                       { 102, ctx1.id(), 101, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -318,28 +304,26 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
 
     // add some entries
 
-    Variant   v_val(7);
+    Variant v_val(7);
 
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t node_ctx3 = 100;
     cali_id_t val_id    = val_attr.id();
 
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx1, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
@@ -352,28 +336,29 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
 
     int rescount = 0;
 
-    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
-            auto dict = make_dict_from_entrylist(list);
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list) {
+        auto dict = make_dict_from_entrylist(list);
 
-            int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[sum_attr.id()  ].value().to_int();
+        int count = dict[count_attr.id()].value().to_int();
+        int val   = dict[sum_attr.id()].value().to_int();
 
-            if (dict[ctx2.id()].value() == Variant(42)) {
-                EXPECT_EQ(count,  5);
-                EXPECT_EQ(val,   21);
-                EXPECT_EQ(static_cast<int>(list.size()), 3);
-                ++rescount;
-            } else {
-                EXPECT_EQ(count,  4);
-                EXPECT_EQ(val,   14);
-                ++rescount;
-            }
-        });
+        if (dict[ctx2.id()].value() == Variant(42)) {
+            EXPECT_EQ(count, 5);
+            EXPECT_EQ(val, 21);
+            EXPECT_EQ(static_cast<int>(list.size()), 3);
+            ++rescount;
+        } else {
+            EXPECT_EQ(count, 4);
+            EXPECT_EQ(val, 14);
+            ++rescount;
+        }
+    });
 
     EXPECT_EQ(rescount, 2);
 }
 
-TEST(AggregatorTest, InclusiveSumOp) {
+TEST(AggregatorTest, InclusiveSumOp)
+{
     //
     // --- setup
     //
@@ -383,12 +368,9 @@ TEST(AggregatorTest, InclusiveSumOp) {
 
     // create some context attributes
 
-    Attribute ctx1 =
-        db.create_attribute("ictx.1", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute ctx2 =
-        db.create_attribute("ictx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx1     = db.create_attribute("ictx.1", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute ctx2     = db.create_attribute("ictx.2", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -397,12 +379,9 @@ TEST(AggregatorTest, InclusiveSumOp) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx1.id(), 100,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx1.id(), CALI_INV_ID, Variant("outer") }, { 101, ctx1.id(), 100, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -430,25 +409,23 @@ TEST(AggregatorTest, InclusiveSumOp) {
 
     // add some entries
 
-    Variant   v_val(7);
+    Variant v_val(7);
 
     cali_id_t node_ctx1 = 101;
     cali_id_t node_ctx2 = 100;
     cali_id_t val_id    = val_attr.id();
 
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx1, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute count_attr  = db.get_attribute("count");
     Attribute sum_attr    = db.get_attribute("sum#val");
@@ -466,33 +443,33 @@ TEST(AggregatorTest, InclusiveSumOp) {
 
     int rescount = 0;
 
-    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
-            auto dict = make_dict_from_entrylist(list);
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list) {
+        auto dict = make_dict_from_entrylist(list);
 
-            int  count  = dict[count_attr.id() ].value().to_int();
-            int  val    = dict[sum_attr.id()   ].value().to_int();
-            int  ival   = dict[isum_attr.id()  ].value().to_int();
-            int  iscval = dict[iscale_attr.id()].value().to_int();
+        int count  = dict[count_attr.id()].value().to_int();
+        int val    = dict[sum_attr.id()].value().to_int();
+        int ival   = dict[isum_attr.id()].value().to_int();
+        int iscval = dict[iscale_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant("inner")) {
-                EXPECT_EQ(val,    14);
-                EXPECT_EQ(ival,   14);
-                EXPECT_EQ(iscval, 28);
-                EXPECT_EQ(static_cast<int>(list.size()), 6);
-                ++rescount;
-            } else if (dict[ctx1.id()].value() == Variant("outer")) {
-                EXPECT_EQ(val,     7);
-                EXPECT_EQ(ival,   21);
-                EXPECT_EQ(iscval, 42);
-                ++rescount;
-            }
-        });
+        if (dict[ctx1.id()].value() == Variant("inner")) {
+            EXPECT_EQ(val, 14);
+            EXPECT_EQ(ival, 14);
+            EXPECT_EQ(iscval, 28);
+            EXPECT_EQ(static_cast<int>(list.size()), 6);
+            ++rescount;
+        } else if (dict[ctx1.id()].value() == Variant("outer")) {
+            EXPECT_EQ(val, 7);
+            EXPECT_EQ(ival, 21);
+            EXPECT_EQ(iscval, 42);
+            ++rescount;
+        }
+    });
 
     EXPECT_EQ(rescount, 2);
 }
 
-
-TEST(AggregatorTest, InclusiveRatio) {
+TEST(AggregatorTest, InclusiveRatio)
+{
     //
     // --- setup
     //
@@ -502,12 +479,9 @@ TEST(AggregatorTest, InclusiveRatio) {
 
     // create some context attributes
 
-    Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute num_attr =
-        db.create_attribute("num", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
-    Attribute den_attr =
-        db.create_attribute("den", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx      = db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute num_attr = db.create_attribute("num", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute den_attr = db.create_attribute("den", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -516,12 +490,9 @@ TEST(AggregatorTest, InclusiveRatio) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx.id(), 100,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx.id(), CALI_INV_ID, Variant("outer") }, { 101, ctx.id(), 100, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -542,25 +513,23 @@ TEST(AggregatorTest, InclusiveRatio) {
 
     // add some entries
 
-    cali_id_t node_inner = 101;
-    cali_id_t node_outer = 100;
-    cali_id_t attr[2] = { num_attr.id(), den_attr.id() };
+    cali_id_t node_inner    = 101;
+    cali_id_t node_outer    = 100;
+    cali_id_t attr[2]       = { num_attr.id(), den_attr.id() };
     Variant   data_inner[2] = { Variant(10), Variant(10) };
-    Variant   data_outer[2] = { Variant(10), Variant(5)  };
+    Variant   data_outer[2] = { Variant(10), Variant(5) };
 
-    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr,    data_outer, idmap));
+    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr, data_outer, idmap));
     a.add(db, db.merge_snapshot(1, &node_outer, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr,    data_outer, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,     2, attr,    data_outer, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,     0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_inner, 2, attr,    data_inner,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr, data_outer, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 2, attr, data_outer, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_inner, 2, attr, data_inner, idmap));
     a.add(db, db.merge_snapshot(1, &node_inner, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute iratio_attr = db.get_attribute("iratio#num/den");
 
@@ -572,24 +541,25 @@ TEST(AggregatorTest, InclusiveRatio) {
 
     int rescount = 0;
 
-    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
-            auto dict = make_dict_from_entrylist(list);
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list) {
+        auto dict = make_dict_from_entrylist(list);
 
-            double iratio = dict[iratio_attr.id()].value().to_double();
+        double iratio = dict[iratio_attr.id()].value().to_double();
 
-            if (dict[ctx.id()].value() == Variant("inner")) {
-                EXPECT_DOUBLE_EQ(iratio, 1.0);
-                ++rescount;
-            } else if (dict[ctx.id()].value() == Variant("outer")) {
-                EXPECT_DOUBLE_EQ(iratio, 1.5);
-                ++rescount;
-            }
-        });
+        if (dict[ctx.id()].value() == Variant("inner")) {
+            EXPECT_DOUBLE_EQ(iratio, 1.0);
+            ++rescount;
+        } else if (dict[ctx.id()].value() == Variant("outer")) {
+            EXPECT_DOUBLE_EQ(iratio, 1.5);
+            ++rescount;
+        }
+    });
 
     EXPECT_EQ(rescount, 2);
 }
 
-TEST(AggregatorTest, NoneKeySumOpSpec) {
+TEST(AggregatorTest, NoneKeySumOpSpec)
+{
     //
     // --- setup
     //
@@ -599,12 +569,9 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
 
     // create some context attributes
 
-    Attribute ctx1 =
-        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 =
-        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx1     = db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2     = db.create_attribute("ctx.2", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -613,13 +580,11 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx2.id(), 100,         Variant(42)      },
-        { 102, ctx1.id(), 101,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+                       { 101, ctx2.id(), 100, Variant(42) },
+                       { 102, ctx1.id(), 101, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -643,28 +608,26 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
 
     // add some entries
 
-    Variant   v_val(7);
+    Variant v_val(7);
 
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t node_ctx3 = 100;
     cali_id_t val_id    = val_attr.id();
 
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx1, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx1, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    1, &val_id, &v_val,  idmap));
-    a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
-    a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val,  idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &val_id, &v_val, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 0, nullptr, nullptr, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     Attribute count_attr = db.get_attribute("count");
     Attribute sum_attr   = db.get_attribute("sum#val");
@@ -676,25 +639,24 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
 
     EXPECT_EQ(resdb.size(), 1); // one for (empty key)
 
-    auto dict  = make_dict_from_entrylist(resdb.front());
+    auto dict = make_dict_from_entrylist(resdb.front());
 
-    int  count = dict[count_attr.id()].value().to_int();
-    int  val   = dict[sum_attr.id()  ].value().to_int();
+    int count = dict[count_attr.id()].value().to_int();
+    int val   = dict[sum_attr.id()].value().to_int();
 
-    EXPECT_EQ(count,  9);
-    EXPECT_EQ(val,   35);
+    EXPECT_EQ(count, 9);
+    EXPECT_EQ(val, 35);
 }
 
-TEST(AggregatorTest, StatisticsKernels) {
+TEST(AggregatorTest, StatisticsKernels)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-     // create some context attributes
+    // create some context attributes
 
-    Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute val_attr =
-        db.create_attribute("val", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute ctx      = db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -703,12 +665,9 @@ TEST(AggregatorTest, StatisticsKernels) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx.id(), CALI_INV_ID, Variant("outer") },
-        { 101, ctx.id(), 100,         Variant("inner") }
-    };
+    } test_nodes[] = { { 100, ctx.id(), CALI_INV_ID, Variant("outer") }, { 101, ctx.id(), 100, Variant("inner") } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -729,9 +688,9 @@ TEST(AggregatorTest, StatisticsKernels) {
 
     Aggregator a(spec), b(spec);
 
-    Variant    v_ints[4] = { Variant(-4), Variant(9), Variant(25), Variant(36) };
-    cali_id_t  node_id = 101;
-    cali_id_t  val_id  = val_attr.id();
+    Variant   v_ints[4] = { Variant(-4), Variant(9), Variant(25), Variant(36) };
+    cali_id_t node_id   = 101;
+    cali_id_t val_id    = val_attr.id();
 
     a.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[0], idmap));
     a.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[1], idmap));
@@ -754,30 +713,27 @@ TEST(AggregatorTest, StatisticsKernels) {
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     // check results
 
     EXPECT_EQ(resdb.size(), 1); // one entry
 
-    auto dict  = make_dict_from_entrylist(resdb.front());
+    auto dict = make_dict_from_entrylist(resdb.front());
 
     EXPECT_EQ(dict[attr_min.id()].value().to_int(), -4);
     EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
-    EXPECT_DOUBLE_EQ(dict[attr_var.id()].value().to_double(), 2018.0/4.0 - (16.5*16.5));
+    EXPECT_DOUBLE_EQ(dict[attr_var.id()].value().to_double(), 2018.0 / 4.0 - (16.5 * 16.5));
 }
 
-TEST(AggregatorTest, ScaledRatioKernel) {
+TEST(AggregatorTest, ScaledRatioKernel)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute x_attr =
-        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
-    Attribute y_attr =
-        db.create_attribute("y", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute x_attr = db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute y_attr = db.create_attribute("y", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     QuerySpec spec;
 
@@ -788,17 +744,15 @@ TEST(AggregatorTest, ScaledRatioKernel) {
 
     Aggregator a(spec);
 
-    Variant    v_ints[4] = { Variant(10), Variant(20), Variant(74), Variant(22) };
-    cali_id_t  attrs[2]  = { x_attr.id(), y_attr.id() };
+    Variant   v_ints[4] = { Variant(10), Variant(20), Variant(74), Variant(22) };
+    cali_id_t attrs[2]  = { x_attr.id(), y_attr.id() };
 
-    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints+0, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints+2, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints + 0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints + 2, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     ASSERT_EQ(resdb.size(), 1);
 
@@ -811,12 +765,12 @@ TEST(AggregatorTest, ScaledRatioKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_ratio.id()].value().to_double(), 20.0);
 }
 
-TEST(AggregatorTest, ScaledSumKernel) {
+TEST(AggregatorTest, ScaledSumKernel)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute x_attr =
-        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute x_attr = db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     QuerySpec spec;
 
@@ -827,17 +781,15 @@ TEST(AggregatorTest, ScaledSumKernel) {
 
     Aggregator a(spec);
 
-    Variant    v_ints[2] = { Variant(10), Variant(20) };
-    cali_id_t  attr_id   = x_attr.id();
+    Variant   v_ints[2] = { Variant(10), Variant(20) };
+    cali_id_t attr_id   = x_attr.id();
 
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+0, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+1, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 1, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     ASSERT_EQ(resdb.size(), 1);
 
@@ -850,13 +802,12 @@ TEST(AggregatorTest, ScaledSumKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 15.0);
 }
 
-
-TEST(AggregatorTest, ScaledCountKernel) {
+TEST(AggregatorTest, ScaledCountKernel)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute x_attr =
-        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute x_attr = db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     QuerySpec spec;
 
@@ -867,17 +818,15 @@ TEST(AggregatorTest, ScaledCountKernel) {
 
     Aggregator a(spec);
 
-    Variant    v_ints[2] = { Variant(10), Variant(20) };
-    cali_id_t  attr_id   = x_attr.id();
+    Variant   v_ints[2] = { Variant(10), Variant(20) };
+    cali_id_t attr_id   = x_attr.id();
 
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+0, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+1, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 1, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     ASSERT_EQ(resdb.size(), 1);
 
@@ -890,12 +839,12 @@ TEST(AggregatorTest, ScaledCountKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 5.0);
 }
 
-TEST(AggregatorTest, AnyKernel) {
+TEST(AggregatorTest, AnyKernel)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-    Attribute x_attr =
-        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute x_attr = db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     QuerySpec spec;
 
@@ -906,17 +855,15 @@ TEST(AggregatorTest, AnyKernel) {
 
     Aggregator a(spec);
 
-    Variant    v_ints[2] = { Variant(42), Variant(42) };
-    cali_id_t  attr_id   = x_attr.id();
+    Variant   v_ints[2] = { Variant(42), Variant(42) };
+    cali_id_t attr_id   = x_attr.id();
 
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+0, idmap));
-    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+1, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints + 1, idmap));
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     ASSERT_EQ(resdb.size(), 1);
 
@@ -929,16 +876,15 @@ TEST(AggregatorTest, AnyKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 42.0);
 }
 
-TEST(AggregatorTest, PercentTotalKernel) {
+TEST(AggregatorTest, PercentTotalKernel)
+{
     CaliperMetadataDB db;
     IdMap             idmap;
 
-     // create some context attributes
+    // create some context attributes
 
-    Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_NESTED);
-    Attribute val_attr =
-        db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute ctx      = db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_NESTED);
+    Attribute val_attr = db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
 
@@ -947,13 +893,11 @@ TEST(AggregatorTest, PercentTotalKernel) {
         cali_id_t attr_id;
         cali_id_t prnt_id;
         Variant   data;
-    } test_nodes[] = {
-        { 100, ctx.id(), CALI_INV_ID, Variant(-1) },
-        { 101, ctx.id(), 100,         Variant(42) },
-        { 102, ctx.id(), 101,         Variant(24) }
-    };
+    } test_nodes[] = { { 100, ctx.id(), CALI_INV_ID, Variant(-1) },
+                       { 101, ctx.id(), 100, Variant(42) },
+                       { 102, ctx.id(), 101, Variant(24) } };
 
-    for ( const NodeInfo& nI : test_nodes )
+    for (const NodeInfo& nI : test_nodes)
         db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
@@ -972,10 +916,10 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     Aggregator a(spec), b(spec);
 
-    Variant    v_ints[4] = { Variant(4), Variant(24), Variant(16), Variant(36) };
-    cali_id_t  nodea_id = 101;
-    cali_id_t  nodeb_id = 102;
-    cali_id_t  val_id  = val_attr.id();
+    Variant   v_ints[4] = { Variant(4), Variant(24), Variant(16), Variant(36) };
+    cali_id_t nodea_id  = 101;
+    cali_id_t nodeb_id  = 102;
+    cali_id_t val_id    = val_attr.id();
 
     a.add(db, db.merge_snapshot(1, &nodea_id, 1, &val_id, &v_ints[0], idmap));
     a.add(db, db.merge_snapshot(1, &nodeb_id, 1, &val_id, &v_ints[1], idmap));
@@ -994,52 +938,50 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     std::vector<EntryList> resdb;
 
-    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
-            resdb.push_back(list);
-        });
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) { resdb.push_back(list); });
 
     // check results
 
     EXPECT_EQ(resdb.size(), 3); // three entries
 
-    auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
-            for (const Entry& e : list)
-                if (e.value(ctx).to_int() == 42)
-                    return true;
-            return false;
-        });
+    auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list) {
+        for (const Entry& e : list)
+            if (e.value(ctx).to_int() == 42)
+                return true;
+        return false;
+    });
 
     ASSERT_NE(it, resdb.end());
 
-    auto dict  = make_dict_from_entrylist(*it);
+    auto dict = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 25.0);
     EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);
 
-    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
-            for (const Entry& e : list)
-                if (e.value(ctx).to_int() == 24)
-                    return true;
-            return false;
-        });
+    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list) {
+        for (const Entry& e : list)
+            if (e.value(ctx).to_int() == 24)
+                return true;
+        return false;
+    });
 
     ASSERT_NE(it, resdb.end());
 
-    dict  = make_dict_from_entrylist(*it);
+    dict = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 75.0);
     EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 75.0);
 
-    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
-            for (const Entry& e : list)
-                if (e.value(ctx).to_int() == -1)
-                    return true;
-            return false;
-        });
+    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list) {
+        for (const Entry& e : list)
+            if (e.value(ctx).to_int() == -1)
+                return true;
+        return false;
+    });
 
     ASSERT_NE(it, resdb.end());
 
-    dict  = make_dict_from_entrylist(*it);
+    dict = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 0.0);
     EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);

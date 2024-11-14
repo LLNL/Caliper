@@ -11,14 +11,11 @@
 
 using namespace cali;
 
-struct OutputCommMpi::OutputCommMpiImpl
-{
+struct OutputCommMpi::OutputCommMpiImpl {
     MPI_Comm comm { MPI_COMM_NULL };
     int      rank { 0 };
 
-    bool active() const {
-        return comm != MPI_COMM_NULL;
-    }
+    bool active() const { return comm != MPI_COMM_NULL; }
 
     OutputCommMpiImpl(MPI_Comm comm_)
     {
@@ -38,7 +35,7 @@ struct OutputCommMpi::OutputCommMpiImpl
 OutputCommMpi::OutputCommMpi()
 {
     int initialized = 0;
-    int finalized = 0;
+    int finalized   = 0;
 
     MPI_Initialized(&initialized);
     MPI_Finalized(&finalized);
@@ -55,12 +52,11 @@ OutputCommMpi::OutputCommMpi()
     mP.reset(new OutputCommMpiImpl(comm));
 }
 
-OutputCommMpi::OutputCommMpi(MPI_Comm comm)
-    : mP { new OutputCommMpiImpl(comm) }
-{ }
+OutputCommMpi::OutputCommMpi(MPI_Comm comm) : mP { new OutputCommMpiImpl(comm) }
+{}
 
 OutputCommMpi::~OutputCommMpi()
-{ }
+{}
 
 int OutputCommMpi::rank() const
 {

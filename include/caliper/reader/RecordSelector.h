@@ -19,8 +19,8 @@ class CaliperMetadataAccessInterface;
 
 /// \brief Filter for snapshot records
 /// \ingroup ReaderAPI
-    
-class RecordSelector 
+
+class RecordSelector
 {
     struct RecordSelectorImpl;
     std::shared_ptr<RecordSelectorImpl> mP;
@@ -30,12 +30,12 @@ public:
     RecordSelector(const std::string& filter_string);
     RecordSelector(const QuerySpec& spec);
     RecordSelector(const QuerySpec::Condition& cond);
-    
+
     ~RecordSelector();
 
     bool pass(const CaliperMetadataAccessInterface&, const EntryList&);
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&, SnapshotProcessFn) const;
+    void operator() (CaliperMetadataAccessInterface&, const EntryList&, SnapshotProcessFn) const;
 
     static std::vector<QuerySpec::Condition> parse(const std::string&);
 };

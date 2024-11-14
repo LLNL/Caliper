@@ -22,10 +22,9 @@ using namespace cali;
 extern "C"
 {
 
-void *sbrk(__intptr_t increment);
-void __pat_init (int, const char *[ ], const char *[ ], const void *, const void *);
-void __pat_exit (void);
-
+void* sbrk(__intptr_t increment);
+void  __pat_init(int, const char*[], const char*[], const void*, const void*);
+void  __pat_exit(void);
 }
 
 namespace
@@ -36,7 +35,7 @@ std::vector<std::string> read_cmdline()
     std::vector<std::string> ret;
 
     std::ifstream f("/proc/self/cmdline");
-    std::string s;
+    std::string   s;
 
     while (f) {
         char c = f.get();
@@ -61,24 +60,25 @@ class CrayPATBinding : public AnnotationBinding
 
 public:
 
-    void on_begin(Caliper*, Channel*, const Attribute &attr, const Variant& value) {
+    void on_begin(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    {
         if (attr.is_nested() && attr.type() == CALI_TYPE_STRING)
             PAT_region_push(static_cast<const char*>(value.data()));
     }
 
-    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    {
         if (attr.is_nested() && attr.type() == CALI_TYPE_STRING)
             PAT_region_pop(static_cast<const char*>(value.data()));
     }
 
-    void initialize(Caliper*, Channel* channel) {
+    void initialize(Caliper*, Channel* channel)
+    {
         m_args = read_cmdline();
 
         if (m_args.empty()) {
-            Log(0).stream()
-                << channel->name()
-                << ": craypat: Unable to initialize CrayPAT: cannot read command line"
-                << std::endl;
+            Log(0).stream() << channel->name() << ": craypat: Unable to initialize CrayPAT: cannot read command line"
+                            << std::endl;
 
             return;
         }
@@ -92,12 +92,19 @@ public:
         putenv(const_cast<char*>("PAT_RT_CALLSTACK_MODE=trace"));
         putenv(const_cast<char*>("PAT_RT_EXPERIMENT=trace"));
 
-        __pat_init(static_cast<int>(m_argv.size()-1), m_argv.data(), const_cast<const char**>(environ), __builtin_frame_address (0), sbrk (0L));
+        __pat_init(
+            static_cast<int>(m_argv.size() - 1),
+            m_argv.data(),
+            const_cast<const char**>(environ),
+            __builtin_frame_address(0),
+            sbrk(0L)
+        );
 
         Log(1).stream() << channel->name() << ": craypat: CrayPAT initialized\n";
     }
 
-    void finalize(Caliper*, Channel* channel) {
+    void finalize(Caliper*, Channel* channel)
+    {
         Log(1).stream() << channel->name() << ": craypat: Closing CrayPAT\n";
         __pat_exit();
     }
@@ -105,7 +112,7 @@ public:
     const char* service_tag() const { return "craypat"; }
 };
 
-} // namespace [anonymous]
+} // namespace
 
 namespace cali
 {

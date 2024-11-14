@@ -13,17 +13,19 @@ TEST(ChannelControllerTest, ChannelController)
         bool    saw_create_callback = false;
         Channel the_channel;
 
-        void on_create(Caliper*, Channel& chn) {
+        void on_create(Caliper*, Channel& chn)
+        {
             saw_create_callback = true;
-            the_channel = chn;
+            the_channel         = chn;
         }
 
         TestCC()
-            : ChannelController("testCC", 0, {
-                    { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                    { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
-                })
-            { }
+            : ChannelController(
+                "testCC",
+                0,
+                { { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }, { "CALI_CHANNEL_CONFIG_CHECK", "false" } }
+            )
+        {}
     };
 
     TestCC testCC;
@@ -49,23 +51,23 @@ TEST(ChannelControllerTest, ChannelController)
 TEST(ChannelControllerTest, DestroyChannel)
 {
     struct DestroyTestCC : public ChannelController {
-        void destruct() {
+        void destruct()
+        {
             if (is_active()) {
                 Channel chn = channel();
                 Caliper::instance().delete_channel(chn);
             }
         }
 
-        bool channel_is_null() {
-            return !channel();
-        }
+        bool channel_is_null() { return !channel(); }
 
         DestroyTestCC()
-            : ChannelController("DestroyTestCC", 0, {
-                    { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                    { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
-                })
-            { }
+            : ChannelController(
+                "DestroyTestCC",
+                0,
+                { { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }, { "CALI_CHANNEL_CONFIG_CHECK", "false" } }
+            )
+        {}
     };
 
     DestroyTestCC testCC;

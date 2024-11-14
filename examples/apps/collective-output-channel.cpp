@@ -13,19 +13,17 @@
 #include <iostream>
 #include <tuple>
 
-
 int main(int argc, char* argv[])
 {
     MPI_Init(&argc, &argv);
 
     std::shared_ptr<cali::CollectiveOutputChannel> channel;
-    std::string errmsg;
+    std::string                                    errmsg;
 
     //
     // Create a "runtime-report" channel and return a control object.
 
-    std::tie(channel, errmsg) =
-        cali::make_collective_output_channel("runtime-report(profile.mpi)");
+    std::tie(channel, errmsg) = cali::make_collective_output_channel("runtime-report(profile.mpi)");
 
     //
     //   Check if the channel was created successfully. If not, the second
@@ -56,7 +54,7 @@ int main(int argc, char* argv[])
     //
     //   Gather and flush channel output into the given std::ostream on
     // MPI_COMM_WORLD. This is a collective operation on MPI_COMM_WORLD.
-    // Output will be written on rank 0 on the given communicator. 
+    // Output will be written on rank 0 on the given communicator.
     // Other ranks ignore the stream argument.
 
     channel->collective_flush(os, MPI_COMM_WORLD);

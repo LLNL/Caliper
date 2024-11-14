@@ -10,12 +10,12 @@
 namespace util
 {
 
-template<typename String, typename Char, typename OutputIterator>
+template <typename String, typename Char, typename OutputIterator>
 void split(String input, Char sep, OutputIterator out)
 {
     String str;
 
-    for ( Char c : input ) {
+    for (Char c : input) {
         if (c == sep) {
             *out++ = str;
             str.clear();
@@ -28,16 +28,17 @@ void split(String input, Char sep, OutputIterator out)
         *out++ = str;
 }
 
-template<typename String, typename Char, typename OutputIterator>
+template <typename String, typename Char, typename OutputIterator>
 void tokenize(String input, const Char* tokens, OutputIterator out)
 {
     String str;
 
-    for ( Char c : input ) {
+    for (Char c : input) {
         bool is_token_char = false;
-        for ( const Char* tc = tokens; *tc; ++tc )
+        for (const Char* tc = tokens; *tc; ++tc)
             if (c == *tc) {
-                is_token_char = true; break;
+                is_token_char = true;
+                break;
             }
 
         if (is_token_char) {

@@ -15,43 +15,35 @@
 // splicer end class.BufferedRegionProfile.CXX_declarations
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 // splicer begin class.BufferedRegionProfile.C_declarations
 // splicer end class.BufferedRegionProfile.C_declarations
 
-cali_BufferedRegionProfile * cali_BufferedRegionProfile_new(
-    cali_BufferedRegionProfile * SHC_rv);
+cali_BufferedRegionProfile* cali_BufferedRegionProfile_new(cali_BufferedRegionProfile* SHC_rv);
 
-void cali_BufferedRegionProfile_delete(
-    cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_delete(cali_BufferedRegionProfile* self);
 
-void cali_BufferedRegionProfile_start(
-    cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_start(cali_BufferedRegionProfile* self);
 
-void cali_BufferedRegionProfile_stop(cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_stop(cali_BufferedRegionProfile* self);
 
-void cali_BufferedRegionProfile_clear(
-    cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_clear(cali_BufferedRegionProfile* self);
 
-void cali_BufferedRegionProfile_fetch_exclusive_region_times(
-    cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_fetch_exclusive_region_times(cali_BufferedRegionProfile* self);
 
-void cali_BufferedRegionProfile_fetch_inclusive_region_times(
-    cali_BufferedRegionProfile * self);
+void cali_BufferedRegionProfile_fetch_inclusive_region_times(cali_BufferedRegionProfile* self);
 
-double cali_BufferedRegionProfile_total_profiling_time(
-    const cali_BufferedRegionProfile * self);
+double cali_BufferedRegionProfile_total_profiling_time(const cali_BufferedRegionProfile* self);
 
-double cali_BufferedRegionProfile_total_region_time(
-    const cali_BufferedRegionProfile * self);
+double cali_BufferedRegionProfile_total_region_time(const cali_BufferedRegionProfile* self);
 
-double cali_BufferedRegionProfile_region_time(
-    cali_BufferedRegionProfile * self, const char * region);
+double cali_BufferedRegionProfile_region_time(cali_BufferedRegionProfile* self, const char* region);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // WRAPBUFFEREDREGIONPROFILE_H
+#endif // WRAPBUFFEREDREGIONPROFILE_H

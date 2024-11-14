@@ -16,11 +16,11 @@
 
 using namespace cali;
 
-TEST(AttributeAPITest, ValidAttribute) {
+TEST(AttributeAPITest, ValidAttribute)
+{
     Caliper c;
 
-    Attribute meta_attr =
-        c.create_attribute("test.attribute.api.meta", CALI_TYPE_INT, CALI_ATTR_HIDDEN);
+    Attribute meta_attr = c.create_attribute("test.attribute.api.meta", CALI_TYPE_INT, CALI_ATTR_HIDDEN);
 
     ASSERT_TRUE(meta_attr);
 
@@ -32,10 +32,14 @@ TEST(AttributeAPITest, ValidAttribute) {
     cali_id_t      meta_id  = meta_attr.id();
     cali_variant_t meta_val = cali_make_variant_from_int(42);
 
-    cali_id_t attr_id =
-        cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING,
-                                            CALI_ATTR_NESTED | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_NOMERGE,
-                                            1, &meta_id, &meta_val);
+    cali_id_t attr_id = cali_create_attribute_with_metadata(
+        "test.attribute.api",
+        CALI_TYPE_STRING,
+        CALI_ATTR_NESTED | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_NOMERGE,
+        1,
+        &meta_id,
+        &meta_val
+    );
 
     ASSERT_NE(attr_id, CALI_INV_ID);
 
@@ -55,7 +59,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     ASSERT_GE(cali_prop2string(cali_attribute_properties(attr_id), buf, 120), 1);
 
     std::vector<std::string> props;
-    util::split(std::string(buf), ':',  std::back_inserter(props));
+    util::split(std::string(buf), ':', std::back_inserter(props));
 
     std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default", "level_0" };
 
@@ -68,19 +72,19 @@ TEST(AttributeAPITest, ValidAttribute) {
     EXPECT_TRUE(props_exp.empty());
 }
 
-TEST(AttributeAPITest, InvalidAttribute) {
+TEST(AttributeAPITest, InvalidAttribute)
+{
     EXPECT_EQ(cali_attribute_type(CALI_INV_ID), CALI_TYPE_INV);
     EXPECT_EQ(cali_attribute_name(CALI_INV_ID), nullptr);
     EXPECT_EQ(cali_find_attribute("test.attribute.api.nope"), CALI_INV_ID);
     EXPECT_FALSE(Caliper::instance().attribute_exists("test.attribute.api.nope"));
-
 }
 
-TEST(AttributeAPITest, GlobalAttributes) {
+TEST(AttributeAPITest, GlobalAttributes)
+{
     Caliper c;
 
-    Attribute global_attr =
-        c.create_attribute("test.attribute.global", CALI_TYPE_INT, CALI_ATTR_GLOBAL);
+    Attribute global_attr = c.create_attribute("test.attribute.global", CALI_TYPE_INT, CALI_ATTR_GLOBAL);
 
     ASSERT_TRUE(global_attr);
 
@@ -94,23 +98,21 @@ TEST(AttributeAPITest, GlobalAttributes) {
 
     std::vector<Entry> globals = c.get_globals();
 
-    auto it = std::find_if(globals.begin(), globals.end(),
-                           [global_attr](const Entry& e) {
-                               return e.count(global_attr) > 0;
-                           } );
+    auto it = std::find_if(globals.begin(), globals.end(), [global_attr](const Entry& e) {
+        return e.count(global_attr) > 0;
+    });
 
     ASSERT_NE(it, globals.end());
 
     EXPECT_EQ(it->value(global_attr).to_int(), 42);
 }
 
-TEST(AttributeAPITest, NestedAttribute) {
+TEST(AttributeAPITest, NestedAttribute)
+{
     Caliper c;
 
-    Attribute nested_a =
-        c.create_attribute("test.attr.nested.a", CALI_TYPE_INT, CALI_ATTR_NESTED);
-    Attribute nested_b =
-        c.create_attribute("test.attr.nested.b", CALI_TYPE_INT, CALI_ATTR_NESTED);
+    Attribute nested_a = c.create_attribute("test.attr.nested.a", CALI_TYPE_INT, CALI_ATTR_NESTED);
+    Attribute nested_b = c.create_attribute("test.attr.nested.b", CALI_TYPE_INT, CALI_ATTR_NESTED);
 
     EXPECT_TRUE(nested_a.is_nested());
     EXPECT_TRUE(nested_a.is_autocombineable());

@@ -17,7 +17,8 @@
 #include <caliper/Caliper.h>
 
 #include <caliper/cali.h>
-#include <caliper/tools-util/Args.h>
+
+#include "../src/tools/util/Args.h"
 
 #include <chrono>
 #include <iostream>
@@ -26,8 +27,7 @@
 #include <omp.h>
 #endif
 
-struct Config
-{
+struct Config {
     int  iter;
     int  nxtra;
     bool write;
@@ -50,9 +50,9 @@ void run(const Config& cfg)
             cali::Caliper c;
 
             for (int x = 0, div = 10; x < cfg.nxtra; ++x, div *= 10)
-                c.begin(cfg.xtra_attrs[x], cali::Variant(i/div));
+                c.begin(cfg.xtra_attrs[x], cali::Variant(i / div));
             for (int x = 0; x < cfg.nxtra; ++x)
-                c.end(cfg.xtra_attrs[cfg.nxtra-(1+x)]);
+                c.end(cfg.xtra_attrs[cfg.nxtra - (1 + x)]);
         }
 
         CALI_CXX_MARK_LOOP_END(testloop);
@@ -60,16 +60,12 @@ void run(const Config& cfg)
 }
 
 const util::Args::Table option_table[] = {
-    { "iterations", "iterations", 'i', true,
-        "Number of loop iterations", "ITERATIONS"   },
-    { "xtra",       "xtra",       'x', true,
-        "Number of extra attributes", "XTRA"   },
+    { "iterations", "iterations", 'i', true, "Number of loop iterations", "ITERATIONS" },
+    { "xtra", "xtra", 'x', true, "Number of extra attributes", "XTRA" },
 
-    { "channels",   "channels",   'c', true,
-        "Number of replicated channels", "CHANNELS" },
+    { "channels", "channels", 'c', true, "Number of replicated channels", "CHANNELS" },
 
-    { "write", "write", 'w', false,
-        "Write to output service in addition to flush", nullptr },
+    { "write", "write", 'w', false, "Write to output service in addition to flush", nullptr },
 
     { "help", "help", 'h', false, "Print help", nullptr },
 
@@ -88,8 +84,7 @@ int main(int argc, char* argv[])
     int lastarg = args.parse(argc, argv);
 
     if (lastarg < argc) {
-        std::cerr << "cali-flush-perftest: unknown option: " << argv[lastarg] << '\n'
-                  << "Available options: ";
+        std::cerr << "cali-flush-perftest: unknown option: " << argv[lastarg] << '\n' << "Available options: ";
 
         args.print_available_options(std::cerr);
 
@@ -109,8 +104,8 @@ int main(int argc, char* argv[])
     Config cfg;
 
     cfg.iter     = std::stoi(args.get("iterations", "100000"));
-    cfg.nxtra    = std::stoi(args.get("xtra",       "2"));
-    cfg.channels = std::stoi(args.get("channels",   "1"));
+    cfg.nxtra    = std::stoi(args.get("xtra", "2"));
+    cfg.channels = std::stoi(args.get("channels", "1"));
     cfg.write    = args.is_set("write");
 
     cali_set_global_int_byname("flush-perftest.iterations", cfg.iter);
@@ -121,8 +116,7 @@ int main(int argc, char* argv[])
     // --- print info
 
     std::cout << "cali-flush-perftest:"
-              << "\n    Channels:   " << cfg.channels
-              << "\n    Iterations: " << cfg.iter
+              << "\n    Channels:   " << cfg.channels << "\n    Iterations: " << cfg.iter
               << "\n    Xtra:       " << cfg.nxtra
 #ifdef _OPENMP
               << "\n    Threads:    " << threads
@@ -134,13 +128,15 @@ int main(int argc, char* argv[])
     cali::Caliper c;
 
     for (int i = 0, div = 10; i < cfg.nxtra; ++i, div *= 10)
-        cfg.xtra_attrs.push_back(c.create_attribute(std::string("x.")+std::to_string(div),
-                                                    CALI_TYPE_INT,
-                                                    CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE));
+        cfg.xtra_attrs.push_back(c.create_attribute(
+            std::string("x.") + std::to_string(div),
+            CALI_TYPE_INT,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE
+        ));
 
     // --- set up channels
     std::vector<cali::Channel> channels;
-    auto default_channel = c.get_channel(0);
+    auto                       default_channel = c.get_channel(0);
     if (default_channel)
         channels.push_back(default_channel);
 
@@ -161,26 +157,28 @@ int main(int argc, char* argv[])
 
     // --- Timed flush
 
-    int snapshots = 3 + cfg.channels * (2*threads + (cfg.iter * (2 + 2*cfg.nxtra)));
+    int snapshots = 3 + cfg.channels * (2 * threads + (cfg.iter * (2 + 2 * cfg.nxtra)));
 
     CALI_MARK_BEGIN("flush");
 
     auto stime = std::chrono::system_clock::now();
 
-    for (auto &chn : channels)
+    for (auto& chn : channels)
         if (cfg.write)
             c.flush_and_write(&chn, cali::SnapshotView());
         else
-            c.flush(&chn, cali::SnapshotView(), [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
+            c.flush(
+                &chn,
+                cali::SnapshotView(),
+                [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) {}
+            );
 
     auto etime = std::chrono::system_clock::now();
 
     CALI_MARK_END("flush");
 
-    auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
+    auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(etime - stime).count();
 
-    std::cout << "  " << snapshots     << " snapshots flushed in "
-              << msec/1000.0           << " sec, "
-              << 1000.0*msec/snapshots << " usec/snapshot"
-              << std::endl;
+    std::cout << "  " << snapshots << " snapshots flushed in " << msec / 1000.0 << " sec, " << 1000.0 * msec / snapshots
+              << " usec/snapshot" << std::endl;
 }

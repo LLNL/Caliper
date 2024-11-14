@@ -24,24 +24,27 @@ struct ChannelList {
     ChannelList* next;
     ChannelList* prev;
 
-    inline void unlink() {
+    inline void unlink()
+    {
         if (next)
             next->prev = prev;
         if (prev)
             prev->next = next;
     }
 
-    inline static void add(ChannelList** head, cali::Channel& chn) {
+    inline static void add(ChannelList** head, cali::Channel& chn)
+    {
         ChannelList* ret = new ChannelList { chn, nullptr, nullptr };
 
         if (*head)
             (*head)->prev = ret;
 
         ret->next = *head;
-        *head = ret;
+        *head     = ret;
     }
 
-    inline static void remove(ChannelList** head, cali::Channel& chn) {
+    inline static void remove(ChannelList** head, cali::Channel& chn)
+    {
         ChannelList* p = *head;
 
         while (p && p->channel != chn)

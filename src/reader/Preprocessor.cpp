@@ -24,7 +24,12 @@ using namespace cali;
 namespace
 {
 
-Variant get_value(const CaliperMetadataAccessInterface& db, const std::string& attr_name, Attribute& attr, const EntryList& rec)
+Variant get_value(
+    const CaliperMetadataAccessInterface& db,
+    const std::string&                    attr_name,
+    Attribute&                            attr,
+    const EntryList&                      rec
+)
 {
     if (!attr)
         attr = db.get_attribute(attr_name);
@@ -40,7 +45,8 @@ Variant get_value(const CaliperMetadataAccessInterface& db, const std::string& a
     return Variant();
 }
 
-class Kernel {
+class Kernel
+{
 public:
 
     virtual void process(CaliperMetadataAccessInterface& db, EntryList& rec) = 0;
@@ -54,25 +60,23 @@ class ScaledRatioKernel : public Kernel
     std::string m_nom_attr_name;
     std::string m_dnm_attr_name;
 
-    Attribute   m_res_attr;
-    Attribute   m_nom_attr;
-    Attribute   m_dnm_attr;
+    Attribute m_res_attr;
+    Attribute m_nom_attr;
+    Attribute m_dnm_attr;
 
-    double      m_scale;
+    double m_scale;
 
     ScaledRatioKernel(const std::string& def, const std::vector<std::string>& args)
-        : m_res_attr_name(def),
-          m_nom_attr_name(args[0]),
-          m_dnm_attr_name(args[1]),
-          m_scale(1.0)
-        {
-            if (args.size() > 2)
-                m_scale = std::stod(args[2]);
-        }
+        : m_res_attr_name(def), m_nom_attr_name(args[0]), m_dnm_attr_name(args[1]), m_scale(1.0)
+    {
+        if (args.size() > 2)
+            m_scale = std::stod(args[2]);
+    }
 
 public:
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         Variant v_nom = get_value(db, m_nom_attr_name, m_nom_attr, rec);
         Variant v_dnm = get_value(db, m_dnm_attr_name, m_dnm_attr, rec);
 
@@ -87,81 +91,77 @@ public:
         double val = m_scale * (v_nom.to_double() / dnm);
 
         if (!m_res_attr)
-            m_res_attr = db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE,
-                            CALI_ATTR_SKIP_EVENTS |
-                            CALI_ATTR_ASVALUE);
+            m_res_attr =
+                db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
         rec.push_back(Entry(m_res_attr, Variant(val)));
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         return new ScaledRatioKernel(def, args);
     }
 };
-
 
 class ScaleKernel : public Kernel
 {
     std::string m_res_attr_name;
     std::string m_tgt_attr_name;
 
-    Attribute   m_res_attr;
-    Attribute   m_tgt_attr;
+    Attribute m_res_attr;
+    Attribute m_tgt_attr;
 
-    double      m_scale;
+    double m_scale;
 
     ScaleKernel(const std::string& def, const std::vector<std::string>& args)
-        : m_res_attr_name(def),
-          m_tgt_attr_name(args[0]),
-          m_scale(1.0)
-        {
-            m_scale = std::stod(args[1]);
-        }
+        : m_res_attr_name(def), m_tgt_attr_name(args[0]), m_scale(1.0)
+    {
+        m_scale = std::stod(args[1]);
+    }
 
 public:
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         Variant v_tgt = get_value(db, m_tgt_attr_name, m_tgt_attr, rec);
 
         if (v_tgt.empty())
             return;
 
         if (!m_res_attr)
-            m_res_attr = db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE,
-                            CALI_ATTR_SKIP_EVENTS |
-                            CALI_ATTR_ASVALUE);
+            m_res_attr =
+                db.create_attribute(m_res_attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
         rec.push_back(Entry(m_res_attr, Variant(m_scale * v_tgt.to_double())));
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         return new ScaleKernel(def, args);
     }
 };
-
 
 class TruncateKernel : public Kernel
 {
     std::string m_res_attr_name;
     std::string m_tgt_attr_name;
 
-    Attribute   m_res_attr;
-    Attribute   m_tgt_attr;
+    Attribute m_res_attr;
+    Attribute m_tgt_attr;
 
-    double      m_factor;
+    double m_factor;
 
     TruncateKernel(const std::string& def, const std::vector<std::string>& args)
-        : m_res_attr_name(def),
-          m_tgt_attr_name(args[0]),
-          m_factor(1.0)
-        {
-            if (args.size() > 1)
-                m_factor = std::stod(args[1]);
-        }
+        : m_res_attr_name(def), m_tgt_attr_name(args[0]), m_factor(1.0)
+    {
+        if (args.size() > 1)
+            m_factor = std::stod(args[1]);
+    }
 
 public:
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         Variant v_tgt = get_value(db, m_tgt_attr_name, m_tgt_attr, rec);
 
         if (v_tgt.empty())
@@ -173,9 +173,7 @@ public:
             type = CALI_TYPE_DOUBLE;
 
         if (!m_res_attr)
-            m_res_attr = db.create_attribute(m_res_attr_name, type,
-                            CALI_ATTR_SKIP_EVENTS |
-                            CALI_ATTR_ASVALUE);
+            m_res_attr = db.create_attribute(m_res_attr_name, type, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
         double val = v_tgt.to_double();
         double res = val - fmod(val, m_factor);
@@ -190,7 +188,8 @@ public:
         rec.push_back(Entry(m_res_attr, Variant(v_res)));
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         return new TruncateKernel(def, args);
     }
 };
@@ -206,13 +205,13 @@ class FirstKernel : public Kernel
 public:
 
     FirstKernel(const std::string& def, const std::vector<std::string>& args)
-        : m_res_attr_name(def),
-          m_tgt_attr_names(args)
-        {
-            m_tgt_attrs.assign(args.size(), Attribute());
-        }
+        : m_res_attr_name(def), m_tgt_attr_names(args)
+    {
+        m_tgt_attrs.assign(args.size(), Attribute());
+    }
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         for (size_t i = 0; i < m_tgt_attrs.size(); ++i) {
             Variant v_tgt = get_value(db, m_tgt_attr_names[i], m_tgt_attrs[i], rec);
 
@@ -222,9 +221,7 @@ public:
             cali_attr_type type = m_tgt_attrs[i].type();
 
             if (!m_res_attr)
-                m_res_attr = db.create_attribute(m_res_attr_name, type,
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE);
+                m_res_attr = db.create_attribute(m_res_attr_name, type, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
             rec.push_back(Entry(m_res_attr, v_tgt));
 
@@ -232,10 +229,10 @@ public:
         }
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         return new FirstKernel(def, args);
     }
-
 };
 
 class SumKernel : public Kernel
@@ -249,13 +246,13 @@ class SumKernel : public Kernel
 public:
 
     SumKernel(const std::string& def, const std::vector<std::string>& args)
-        : m_res_attr_name(def),
-          m_tgt_attr_names(args)
-        {
-            m_tgt_attrs.assign(args.size(), Attribute());
-        }
+        : m_res_attr_name(def), m_tgt_attr_names(args)
+    {
+        m_tgt_attrs.assign(args.size(), Attribute());
+    }
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         Variant v_sum;
 
         for (size_t i = 0; i < m_tgt_attrs.size(); ++i) {
@@ -269,18 +266,17 @@ public:
 
         if (!v_sum.empty()) {
             if (!m_res_attr)
-                m_res_attr = db.create_attribute(m_res_attr_name, v_sum.type(),
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE);
+                m_res_attr =
+                    db.create_attribute(m_res_attr_name, v_sum.type(), CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
             rec.push_back(Entry(m_res_attr, v_sum));
         }
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         return new SumKernel(def, args);
     }
-
 };
 
 class LeafKernel : public Kernel
@@ -293,27 +289,23 @@ class LeafKernel : public Kernel
 
 public:
 
-    LeafKernel(const std::string& def)
-        : m_use_path(true),
-          m_res_attr_name(def)
-        { }
+    LeafKernel(const std::string& def) : m_use_path(true), m_res_attr_name(def) {}
 
     LeafKernel(const std::string& def, const std::string& tgt)
-        : m_use_path(false),
-          m_res_attr_name(def),
-          m_tgt_attr_name(tgt)
-        { }
+        : m_use_path(false), m_res_attr_name(def), m_tgt_attr_name(tgt)
+    {}
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec)
+    {
         if (!m_res_attr) {
             cali_attr_type type = CALI_TYPE_STRING;
-            int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
             if (!m_use_path) {
                 m_tgt_attr = db.get_attribute(m_tgt_attr_name);
                 if (!m_tgt_attr)
                     return;
-                type  = m_tgt_attr.type();
+                type = m_tgt_attr.type();
                 prop |= m_tgt_attr.properties();
                 prop &= ~CALI_ATTR_NESTED;
             }
@@ -330,7 +322,8 @@ public:
         }
     }
 
-    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args)
+    {
         if (args.empty())
             return new LeafKernel(def);
 
@@ -338,104 +331,80 @@ public:
     }
 };
 
-enum KernelID {
-    ScaledRatio,
-    Scale,
-    Truncate,
-    First,
-    Sum,
-    Leaf
-};
+enum KernelID { ScaledRatio, Scale, Truncate, First, Sum, Leaf };
 
-const char* sratio_args[]  = { "numerator", "denominator", "scale" };
-const char* scale_args[]   = { "attribute", "scale" };
-const char* first_args[]   = {
-    "attribute0", "attribute1", "attribute2",
-    "attribute3", "attribute4", "attribute5",
-    "attribute6", "attribute7", "attribute8"
-};
+const char* sratio_args[] = { "numerator", "denominator", "scale" };
+const char* scale_args[]  = { "attribute", "scale" };
+const char* first_args[]  = { "attribute0", "attribute1", "attribute2", "attribute3", "attribute4",
+                              "attribute5", "attribute6", "attribute7", "attribute8" };
 
-const QuerySpec::FunctionSignature kernel_signatures[] = {
-    { KernelID::ScaledRatio,   "ratio",         2, 3, sratio_args  },
-    { KernelID::Scale,         "scale",         2, 2, scale_args   },
-    { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
-    { KernelID::First,         "first",         1, 8, first_args   },
-    { KernelID::Sum,           "sum",           1, 8, first_args   },
-    { KernelID::Leaf,          "leaf",          0, 1, scale_args   },
+const QuerySpec::FunctionSignature kernel_signatures[] = { { KernelID::ScaledRatio, "ratio", 2, 3, sratio_args },
+                                                           { KernelID::Scale, "scale", 2, 2, scale_args },
+                                                           { KernelID::Truncate, "truncate", 1, 2, scale_args },
+                                                           { KernelID::First, "first", 1, 8, first_args },
+                                                           { KernelID::Sum, "sum", 1, 8, first_args },
+                                                           { KernelID::Leaf, "leaf", 0, 1, scale_args },
 
-    QuerySpec::FunctionSignatureTerminator
-};
+                                                           QuerySpec::FunctionSignatureTerminator };
 
 typedef Kernel* (*KernelCreateFn)(const std::string& def, const std::vector<std::string>& args);
 
-const KernelCreateFn kernel_create_fn[] = {
-    ScaledRatioKernel::create,
-    ScaleKernel::create,
-    TruncateKernel::create,
-    FirstKernel::create,
-    SumKernel::create,
-    LeafKernel::create
-};
+const KernelCreateFn kernel_create_fn[] = { ScaledRatioKernel::create, ScaleKernel::create, TruncateKernel::create,
+                                            FirstKernel::create,       SumKernel::create,   LeafKernel::create };
 
 constexpr int MAX_KERNEL_ID = 5;
 
-}
+} // namespace
 
-struct Preprocessor::PreprocessorImpl
-{
-    std::vector< std::pair<RecordSelector, Kernel*> > kernels;
+struct Preprocessor::PreprocessorImpl {
+    std::vector<std::pair<RecordSelector, Kernel*>> kernels;
 
-    void configure(const QuerySpec& spec) {
-        for (const auto &pspec : spec.preprocess_ops) {
+    void configure(const QuerySpec& spec)
+    {
+        for (const auto& pspec : spec.preprocess_ops) {
             int index = pspec.op.op.id;
 
             if (index >= 0 && index <= MAX_KERNEL_ID) {
-                kernels.push_back(
-                        std::make_pair(
-                            RecordSelector(pspec.cond),
-                            (*::kernel_create_fn[index])(pspec.target, pspec.op.args)
-                        )
-                    );
+                kernels.push_back(std::make_pair(
+                    RecordSelector(pspec.cond),
+                    (*::kernel_create_fn[index])(pspec.target, pspec.op.args)
+                ));
             }
         }
     }
 
-    EntryList process(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+    EntryList process(CaliperMetadataAccessInterface& db, const EntryList& rec)
+    {
         EntryList ret = rec;
 
-        for (auto &k : kernels)
+        for (auto& k : kernels)
             if (k.first.pass(db, ret))
                 k.second->process(db, ret);
 
         return ret;
     }
 
-    PreprocessorImpl(const QuerySpec& spec) {
-        configure(spec);
-    }
+    PreprocessorImpl(const QuerySpec& spec) { configure(spec); }
 
-    ~PreprocessorImpl() {
-        for (auto &k : kernels)
+    ~PreprocessorImpl()
+    {
+        for (auto& k : kernels)
             delete k.second;
     }
 };
 
-
-Preprocessor::Preprocessor(const QuerySpec& spec)
-    : mP( new PreprocessorImpl(spec) )
-{ }
+Preprocessor::Preprocessor(const QuerySpec& spec) : mP(new PreprocessorImpl(spec))
+{}
 
 Preprocessor::~Preprocessor()
-{ }
+{}
 
-EntryList
-Preprocessor::process(CaliperMetadataAccessInterface& db, const EntryList& rec)
+EntryList Preprocessor::process(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
     return mP->process(db, rec);
 }
 
-const QuerySpec::FunctionSignature*
-Preprocessor::preprocess_defs()
+const QuerySpec::FunctionSignature* Preprocessor::preprocess_defs()
 {
     return ::kernel_signatures;
 }

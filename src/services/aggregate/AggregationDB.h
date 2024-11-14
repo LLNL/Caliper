@@ -13,13 +13,12 @@
 #include <memory>
 #include <vector>
 
-#define CALI_AGG_HISTOGRAM_BINS      10
+#define CALI_AGG_HISTOGRAM_BINS 10
 
 namespace aggregate
 {
 
-struct ResultAttributes
-{
+struct ResultAttributes {
     cali::Attribute min_attr;
     cali::Attribute max_attr;
     cali::Attribute sum_attr;
@@ -29,17 +28,16 @@ struct ResultAttributes
 #endif
 };
 
-struct AttributeInfo
-{
-    std::vector<cali::Attribute>  ref_key_attrs;
-    std::vector<cali::Attribute>  imm_key_attrs;
+struct AttributeInfo {
+    std::vector<cali::Attribute> ref_key_attrs;
+    std::vector<cali::Attribute> imm_key_attrs;
 
-    std::vector<cali::Attribute>  aggr_attrs;
+    std::vector<cali::Attribute> aggr_attrs;
 
     std::vector<ResultAttributes> result_attrs;
 
-    cali::Attribute               count_attr;
-    cali::Attribute               slot_attr;
+    cali::Attribute count_attr;
+    cali::Attribute slot_attr;
 
     bool implicit_grouping;
     bool group_nested;
@@ -60,7 +58,7 @@ public:
 
     ~AggregationDB();
 
-    void   process_snapshot(cali::Caliper*, cali::SnapshotView, const AttributeInfo&);
+    void process_snapshot(cali::Caliper*, cali::SnapshotView, const AttributeInfo&);
 
     void   clear();
     size_t flush(const AttributeInfo&, cali::Caliper*, cali::SnapshotFlushFn);

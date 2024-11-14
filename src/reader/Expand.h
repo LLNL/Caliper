@@ -20,7 +20,7 @@ struct QuerySpec;
 
 /// \brief Prints expanded snapshot records in CSV form
 /// \ingroup ReaderAPI
-    
+
 class Expand : public Formatter
 {
     struct ExpandImpl;
@@ -33,7 +33,7 @@ public:
 
     ~Expand();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&) const;
+    void operator() (CaliperMetadataAccessInterface&, const EntryList&) const;
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };

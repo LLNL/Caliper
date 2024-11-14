@@ -43,50 +43,37 @@ public:
     // --- I/O API
     //
 
-    Node*       merge_node    (cali_id_t       node_id,
-                               cali_id_t       attr_id,
-                               cali_id_t       prnt_id,
-                               const Variant&  v_data,
-                               IdMap&          idmap);
+    Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data, IdMap& idmap);
 
-    Node*       merge_node    (cali_id_t       node_id,
-                               cali_id_t       attr_id,
-                               cali_id_t       prnt_id,
-                               const std::string& data,
-                               IdMap&          idmap);
+    Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const std::string& data, IdMap& idmap);
 
-    EntryList   merge_snapshot(size_t          n_nodes,
-                               const cali_id_t node_ids[],
-                               size_t          n_imm,
-                               const cali_id_t attr_ids[],
-                               const Variant   values[],
-                               const IdMap&    idmap) const;
+    EntryList merge_snapshot(
+        size_t          n_nodes,
+        const cali_id_t node_ids[],
+        size_t          n_imm,
+        const cali_id_t attr_ids[],
+        const Variant   values[],
+        const IdMap&    idmap
+    ) const;
 
     /// \brief Merge snapshot record bound to metadata DB \a db
     ///   into this metadata DB
-    EntryList   merge_snapshot(const CaliperMetadataAccessInterface& db,
-                               const std::vector<Entry>& rec);
+    EntryList merge_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec);
 
-    Entry       merge_entry   (cali_id_t       node_id,
-                               const IdMap&    idmap);
-    Entry       merge_entry   (cali_id_t       attr_id,
-                               const std::string& data,
-                               const IdMap&    idmap);
+    Entry merge_entry(cali_id_t node_id, const IdMap& idmap);
+    Entry merge_entry(cali_id_t attr_id, const std::string& data, const IdMap& idmap);
 
-    void        merge_global  (cali_id_t       node_id,
-                               const IdMap&    idmap);
-    void        merge_global  (cali_id_t       attr_id,
-                               const std::string& data,
-                               const IdMap&    idmap);
+    void merge_global(cali_id_t node_id, const IdMap& idmap);
+    void merge_global(cali_id_t attr_id, const std::string& data, const IdMap& idmap);
 
     //
     // --- Query API
     //
 
-    Node*       node(cali_id_t id) const;
+    Node* node(cali_id_t id) const;
 
-    Attribute   get_attribute(cali_id_t id) const;
-    Attribute   get_attribute(const std::string& name) const;
+    Attribute get_attribute(cali_id_t id) const;
+    Attribute get_attribute(const std::string& name) const;
 
     std::vector<Attribute> get_all_attributes() const;
 
@@ -94,15 +81,17 @@ public:
     // --- Manipulation
     //
 
-    Node*       make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0);
-    Node*       make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0);
+    Node* make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0);
+    Node* make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0);
 
-    Attribute   create_attribute(const std::string& name,
-                                 cali_attr_type     type,
-                                 int                prop,
-                                 int                meta = 0,
-                                 const Attribute*   meta_attr = nullptr,
-                                 const Variant*     meta_data = nullptr);
+    Attribute create_attribute(
+        const std::string& name,
+        cali_attr_type     type,
+        int                prop,
+        int                meta      = 0,
+        const Attribute*   meta_attr = nullptr,
+        const Variant*     meta_data = nullptr
+    );
     //
     // --- Globals
     //
@@ -111,7 +100,7 @@ public:
     std::vector<Entry> get_globals();
 
     /// \brief Set a global entry
-    void               set_global(const Attribute& attr, const Variant& value);
+    void set_global(const Attribute& attr, const Variant& value);
 
     /// \brief Import global entries from metadata DB \a db into this
     ///   metadata DB
@@ -140,10 +129,9 @@ public:
     void add_attribute_units(const std::map<std::string, std::string>& aliases);
 
     /// \brief print usage statistics
-    std::ostream&
-    print_statistics(std::ostream& os);
+    std::ostream& print_statistics(std::ostream& os);
 };
 
-}
+} // namespace cali
 
 #endif

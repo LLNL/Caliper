@@ -8,14 +8,14 @@
 
 using namespace cali;
 
-struct AttributeExtract::AttributeExtractImpl
-{
-    SnapshotProcessFn      m_snap_fn;
-    Attribute              m_id_attr;
+struct AttributeExtract::AttributeExtractImpl {
+    SnapshotProcessFn m_snap_fn;
+    Attribute         m_id_attr;
 
     static const cali_id_t s_attr_id; // The "attribute" attribute id
 
-    void process_node(CaliperMetadataAccessInterface& db, const Node* node) {
+    void process_node(CaliperMetadataAccessInterface& db, const Node* node)
+    {
         if (node->attribute() != s_attr_id)
             return;
 
@@ -24,29 +24,26 @@ struct AttributeExtract::AttributeExtractImpl
 
         EntryList rec { Entry(m_id_attr, node->id()) };
 
-        for ( ; node && node->id() != CALI_INV_ID; node = node->parent())
+        for (; node && node->id() != CALI_INV_ID; node = node->parent())
             rec.push_back(Entry(db.get_attribute(node->attribute()), node->data()));
 
         m_snap_fn(db, rec);
     }
 
-    AttributeExtractImpl(SnapshotProcessFn snap_fn)
-        : m_snap_fn(snap_fn)
-        { }
+    AttributeExtractImpl(SnapshotProcessFn snap_fn) : m_snap_fn(snap_fn) {}
 };
 
 const cali_id_t AttributeExtract::AttributeExtractImpl::s_attr_id = 8;
 
-AttributeExtract::AttributeExtract(SnapshotProcessFn snap_fn)
-    : mP { new AttributeExtractImpl(snap_fn) } 
-{ }
+AttributeExtract::AttributeExtract(SnapshotProcessFn snap_fn) : mP { new AttributeExtractImpl(snap_fn) }
+{}
 
 AttributeExtract::~AttributeExtract()
 {
     mP.reset();
 }
 
-void AttributeExtract::operator()(CaliperMetadataAccessInterface& db, const Node* node)
+void AttributeExtract::operator() (CaliperMetadataAccessInterface& db, const Node* node)
 {
     mP->process_node(db, node);
 }

@@ -18,8 +18,7 @@ using namespace cali;
 namespace
 {
 
-int
-get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs)
+int get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs)
 {
     if (!defs || w.empty())
         return -1;
@@ -29,7 +28,7 @@ get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs
 
     int retid = 0;
 
-    for ( ; defs[retid].name && wl != defs[retid].name; ++retid)
+    for (; defs[retid].name && wl != defs[retid].name; ++retid)
         ;
 
     return defs[retid].name ? retid : -1;
@@ -40,7 +39,7 @@ std::pair<std::string, std::string> get_keyval(const std::string& str)
     std::istringstream is(str);
 
     std::string first = util::read_word(is, "=");
-    char c = util::read_char(is);
+    char        c     = util::read_char(is);
 
     if (c == '=') {
         std::string val = util::read_word(is);
@@ -78,42 +77,26 @@ bool extract_path_keyword(std::vector<std::string>& list)
     return ret;
 }
 
-} // namespace [anonymous]
+} // namespace
 
+struct CalQLParser::CalQLParserImpl {
+    QuerySpec spec;
 
-struct CalQLParser::CalQLParserImpl
-{
-    QuerySpec   spec;
-
-    bool        error;
-    std::string error_msg;
+    bool                   error;
+    std::string            error_msg;
     std::istream::pos_type error_pos;
 
-    enum Clause {
-        None = 0,
-        Aggregate,
-        Format,
-        Group,
-        Select,
-        Sort,
-        Where,
-        Let
-    };
+    enum Clause { None = 0, Aggregate, Format, Group, Select, Sort, Where, Let };
 
-    Clause get_clause_from_word(const std::string& w) {
+    Clause get_clause_from_word(const std::string& w)
+    {
         const struct keyword_map_t {
-            const char* name; Clause clause;
-        } keywords[] = {
-            { "aggregate", Aggregate },
-            { "format",    Format    },
-            { "group",     Group     },
-            { "select",    Select    },
-            { "order",     Sort      },
-            { "where",     Where     },
-            { "let",       Let       },
+            const char* name;
+            Clause      clause;
+        } keywords[] = { { "aggregate", Aggregate }, { "format", Format }, { "group", Group }, { "select", Select },
+                         { "order", Sort },          { "where", Where },   { "let", Let },
 
-            { nullptr,     None      }
-        };
+                         { nullptr, None } };
 
         std::string wl(w);
         std::transform(w.begin(), w.end(), wl.begin(), ::tolower);
@@ -125,19 +108,18 @@ struct CalQLParser::CalQLParserImpl
         return Clause::None;
     }
 
-    void
-    set_error(const std::string& s, std::istream& is) {
+    void set_error(const std::string& s, std::istream& is)
+    {
         error     = true;
         error_pos = is.tellg();
         error_msg = s;
     }
 
     /// \brief Parse "(arg1, arg2, ...)" argument list, ignoring whitespace
-    std::vector<std::string>
-    parse_arglist(std::istream& is)
+    std::vector<std::string> parse_arglist(std::istream& is)
     {
         std::vector<std::string> ret;
-        std::string word;
+        std::string              word;
 
         char c = util::read_char(is);
 
@@ -151,7 +133,7 @@ struct CalQLParser::CalQLParserImpl
 
         do {
             std::string str = util::read_word(is, ",;()\n");
-            c = util::read_char(is);
+            c               = util::read_char(is);
 
             if (!str.empty() && (c == ',' || c == ')'))
                 ret.push_back(str);
@@ -166,11 +148,14 @@ struct CalQLParser::CalQLParserImpl
         return ret;
     }
 
-    std::map<std::string, std::string>
-    make_kwargs(const QuerySpec::FunctionSignature& sig, const std::vector<std::string>& args, std::istream& is)
+    std::map<std::string, std::string> make_kwargs(
+        const QuerySpec::FunctionSignature& sig,
+        const std::vector<std::string>&     args,
+        std::istream&                       is
+    )
     {
         std::map<std::string, std::string> ret;
-        int n = std::min(static_cast<int>(args.size()), sig.max_args);
+        int                                n = std::min(static_cast<int>(args.size()), sig.max_args);
 
         for (int i = 0; i < n; ++i) {
             auto p = get_keyval(args[i]);
@@ -193,18 +178,18 @@ struct CalQLParser::CalQLParserImpl
         return ret;
     }
 
-    void
-    parse_aggregate(std::istream& is) {
+    void parse_aggregate(std::istream& is)
+    {
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
-        char c = '\0';
+        char                                c    = '\0';
 
         do {
-            std::string w = util::read_word(is, ",;=<>()\n");
+            std::string              w    = util::read_word(is, ",;=<>()\n");
             std::vector<std::string> args = parse_arglist(is);
 
             // check if this is an aggregation function
 
-            int i = get_definition_id(w, defs);
+            int i       = get_definition_id(w, defs);
             int argsize = static_cast<int>(args.size());
 
             if (i >= 0) {
@@ -225,8 +210,8 @@ struct CalQLParser::CalQLParserImpl
             is.unget();
     }
 
-    void
-    parse_format(std::istream& is) {
+    void parse_format(std::istream& is)
+    {
         const QuerySpec::FunctionSignature* defs = FormatProcessor::formatter_defs();
 
         std::string fname = util::read_word(is, ",;=<>()\n");
@@ -234,16 +219,16 @@ struct CalQLParser::CalQLParserImpl
 
         int i = 0;
 
-        for ( ; defs[i].name && fname != defs[i].name; ++i)
+        for (; defs[i].name && fname != defs[i].name; ++i)
             ;
 
         if (!defs[i].name) {
-            set_error(std::string("Unknown formatter ")  + fname, is);
+            set_error(std::string("Unknown formatter ") + fname, is);
             return;
         }
 
-        std::vector<std::string> args = parse_arglist(is);
-        int argsize = static_cast<int>(args.size());
+        std::vector<std::string> args    = parse_arglist(is);
+        int                      argsize = static_cast<int>(args.size());
 
         if (defs[i].min_args > argsize || defs[i].max_args < argsize)
             set_error(std::string("Invalid number of arguments for formatter ") + fname, is);
@@ -254,8 +239,8 @@ struct CalQLParser::CalQLParserImpl
         }
     }
 
-    void
-    parse_groupby(std::istream& is) {
+    void parse_groupby(std::istream& is)
+    {
         char c = 0;
 
         do {
@@ -275,17 +260,17 @@ struct CalQLParser::CalQLParserImpl
         spec.groupby.use_path = extract_path_keyword(spec.groupby.list);
     }
 
-    void
-    parse_select(std::istream& is) {
+    void parse_select(std::istream& is)
+    {
         // SELECT selection, selection, ...
         // selection : label [AS alias]
         //             | aggregation_function(parameters) [AS alias] [UNIT unit]
         //             | *
 
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
-        char c = '\0';
+        char                                c    = '\0';
 
-        std::string next_keyword;
+        std::string              next_keyword;
         std::vector<std::string> selection_list;
 
         do {
@@ -309,8 +294,8 @@ struct CalQLParser::CalQLParserImpl
                     int i = get_definition_id(w, defs);
 
                     if (i >= 0) {
-                        std::vector<std::string> args = parse_arglist(is);
-                        int argsize = static_cast<int>(args.size());
+                        std::vector<std::string> args    = parse_arglist(is);
+                        int                      argsize = static_cast<int>(args.size());
 
                         if (defs[i].min_args > argsize || defs[i].max_args < argsize) {
                             set_error(std::string("Invalid number of arguments for ") + defs[i].name, is);
@@ -329,7 +314,7 @@ struct CalQLParser::CalQLParserImpl
                             }
                         }
                     } else {
-                        set_error(std::string("Unknown aggregation function ")+w, is);
+                        set_error(std::string("Unknown aggregation function ") + w, is);
                     }
                 } else {
                     // not an aggregation function: add to selection list
@@ -393,10 +378,10 @@ struct CalQLParser::CalQLParserImpl
             parse_clause_from_word(next_keyword, is);
     }
 
-    void
-    parse_sort(std::istream& is) {
+    void parse_sort(std::istream& is)
+    {
         std::string next_keyword;
-        char c = 0;
+        char        c = 0;
 
         do {
             c = 0;
@@ -412,7 +397,7 @@ struct CalQLParser::CalQLParserImpl
             std::string tmp = util::read_word(is, ",;=<>()\n");
             std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
 
-            if (next_keyword == "asc" ) {
+            if (next_keyword == "asc") {
                 spec.sort.selection = QuerySpec::SortSelection::List;
                 spec.sort.list.push_back(QuerySpec::SortSpec(arg, QuerySpec::SortSpec::Ascending));
                 next_keyword.clear();
@@ -437,8 +422,8 @@ struct CalQLParser::CalQLParserImpl
             parse_clause_from_word(next_keyword, is);
     }
 
-    QuerySpec::Condition
-    parse_filter_clause(std::istream& is) {
+    QuerySpec::Condition parse_filter_clause(std::istream& is)
+    {
         std::string w = util::read_word(is, ",;=<>()\n");
         std::string wl(w);
 
@@ -448,7 +433,7 @@ struct CalQLParser::CalQLParserImpl
 
         if (wl == "not") {
             negate = true;
-            w = util::read_word(is, ",;=<>()\n");
+            w      = util::read_word(is, ",;=<>()\n");
         }
 
         QuerySpec::Condition cond;
@@ -491,7 +476,7 @@ struct CalQLParser::CalQLParserImpl
             if (w.empty())
                 set_error("Argument expected for '>'", is);
             else {
-                cond.op = (negate ? QuerySpec::Condition::LessOrEqual : QuerySpec::Condition::GreaterThan);
+                cond.op    = (negate ? QuerySpec::Condition::LessOrEqual : QuerySpec::Condition::GreaterThan);
                 cond.value = w;
             }
 
@@ -508,8 +493,8 @@ struct CalQLParser::CalQLParserImpl
         return cond;
     }
 
-    void
-    parse_where(std::istream& is) {
+    void parse_where(std::istream& is)
+    {
         char c = '\0';
 
         do {
@@ -527,14 +512,14 @@ struct CalQLParser::CalQLParserImpl
             is.unget();
     }
 
-    void
-    parse_let(std::istream& is) {
+    void parse_let(std::istream& is)
+    {
         std::string next_keyword;
-        char c = 0;
+        char        c = 0;
 
         do {
             const QuerySpec::FunctionSignature* defs = Preprocessor::preprocess_defs();
-            QuerySpec::PreprocessSpec pspec;
+            QuerySpec::PreprocessSpec           pspec;
 
             std::string target = util::read_word(is, ",;=<>()\n");
 
@@ -550,28 +535,29 @@ struct CalQLParser::CalQLParserImpl
 
             int i = 0;
 
-            for ( ; defs[i].name && opname != defs[i].name; ++i)
+            for (; defs[i].name && opname != defs[i].name; ++i)
                 ;
 
             if (!defs[i].name) {
-                set_error(std::string("Unknown operator ")  + opname, is);
+                set_error(std::string("Unknown operator ") + opname, is);
                 return;
             }
 
-            std::vector<std::string> args = parse_arglist(is);
-            int argsize = static_cast<int>(args.size());
+            std::vector<std::string> args    = parse_arglist(is);
+            int                      argsize = static_cast<int>(args.size());
 
             if (defs[i].min_args > argsize || defs[i].max_args < argsize)
                 set_error(std::string("Invalid number of arguments for operator ") + opname, is);
             else {
-                auto it = std::find_if(spec.preprocess_ops.begin(), spec.preprocess_ops.end(),
-                                [&target](QuerySpec::PreprocessSpec& s){
-                                    return s.target == target;
-                            });
+                auto it = std::find_if(
+                    spec.preprocess_ops.begin(),
+                    spec.preprocess_ops.end(),
+                    [&target](QuerySpec::PreprocessSpec& s) { return s.target == target; }
+                );
 
                 if (it == spec.preprocess_ops.end()) {
                     pspec.target = target;
-                    pspec.op = QuerySpec::AggregationOp(defs[i], args);
+                    pspec.op     = QuerySpec::AggregationOp(defs[i], args);
                 } else {
                     set_error(target + " defined twice", is);
                     return;
@@ -607,8 +593,8 @@ struct CalQLParser::CalQLParserImpl
             parse_clause_from_word(next_keyword, is);
     }
 
-    void
-    parse_clause(Clause clause, std::istream& is) {
+    void parse_clause(Clause clause, std::istream& is)
+    {
         switch (clause) {
         case Aggregate:
             parse_aggregate(is);
@@ -639,12 +625,12 @@ struct CalQLParser::CalQLParserImpl
         }
     }
 
-    void
-    parse_clause_from_word(std::string w, std::istream& is) {
+    void parse_clause_from_word(std::string w, std::istream& is)
+    {
         Clause clause = get_clause_from_word(w);
 
         if (clause == None) {
-            set_error(std::string("Expected clause keyword, got ")+w, is);
+            set_error(std::string("Expected clause keyword, got ") + w, is);
         } else {
             // special handling for "group" and "sort"
             if (clause == Group || clause == Sort) {
@@ -661,8 +647,8 @@ struct CalQLParser::CalQLParserImpl
         }
     }
 
-    void
-    parse(std::istream& is) {
+    void parse(std::istream& is)
+    {
         while (!error && is.good()) {
             std::string w = util::read_word(is, ",;=<>()\n");
 
@@ -677,12 +663,11 @@ struct CalQLParser::CalQLParserImpl
             char c = util::read_char(is);
 
             if (is.good() && c != '\0' && c != '\n')
-                set_error(std::string("Expected clause, got ")+c, is);
+                set_error(std::string("Expected clause, got ") + c, is);
         }
     }
 
-    CalQLParserImpl()
-        : error(false), error_pos(std::istream::pos_type(-1))
+    CalQLParserImpl() : error(false), error_pos(std::istream::pos_type(-1))
     {
         spec.aggregate.selection = QuerySpec::AggregationSelection::None;
         spec.groupby.selection   = QuerySpec::AttributeSelection::Default;
@@ -693,14 +678,12 @@ struct CalQLParser::CalQLParserImpl
     }
 };
 
-CalQLParser::CalQLParser(std::istream& is)
-    : mP(new CalQLParserImpl)
+CalQLParser::CalQLParser(std::istream& is) : mP(new CalQLParserImpl)
 {
     mP->parse(is);
 }
 
-CalQLParser::CalQLParser(const char* str)
-    : mP(new CalQLParserImpl)
+CalQLParser::CalQLParser(const char* str) : mP(new CalQLParserImpl)
 {
     std::istringstream is(str);
     mP->parse(is);
@@ -711,26 +694,22 @@ CalQLParser::~CalQLParser()
     mP.reset();
 }
 
-bool
-CalQLParser::error() const
+bool CalQLParser::error() const
 {
     return mP->error;
 }
 
-std::string
-CalQLParser::error_msg() const
+std::string CalQLParser::error_msg() const
 {
     return mP->error_msg;
 }
 
-std::istream::pos_type
-CalQLParser::error_pos()
+std::istream::pos_type CalQLParser::error_pos()
 {
     return mP->error_pos;
 }
 
-QuerySpec
-CalQLParser::spec() const
+QuerySpec CalQLParser::spec() const
 {
     return mP->spec;
 }
