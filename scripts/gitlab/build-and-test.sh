@@ -210,19 +210,10 @@ then
     then
         module unload rocm
     fi
-    if [[ "${truehostname}" == "lassen" || "${truehostname}" == "tioga" ]]
-    then
-        $cmake_exe \
-          -C ${hostconfig_path} \
-          -DCMAKE_INSTALL_PREFIX=${install_dir} \
-          -DRUN_MPI_TESTS=Off \
-          ${project_dir}
-    else
-        $cmake_exe \
-          -C ${hostconfig_path} \
-          -DCMAKE_INSTALL_PREFIX=${install_dir} \
-          ${project_dir}
-    fi
+    $cmake_exe \
+      -C ${hostconfig_path} \
+      -DCMAKE_INSTALL_PREFIX=${install_dir} \
+      ${project_dir}
     if ! $cmake_exe --build . -j ${core_counts[$truehostname]}
     then
         echo "[Error]: Compilation failed, building with verbose output..."
