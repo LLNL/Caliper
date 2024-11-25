@@ -3,6 +3,7 @@ project(caliper-examples)
 include_directories("../../src/interface/c_fortran")
 
 set(CALIPER_CXX_EXAMPLE_APPS
+  async_event
   cxx-example
   cali-memtracking
   cali-memtracking-macros
@@ -53,3 +54,5 @@ target_link_libraries(cali-memtracking
   caliper-tools-util)
 target_link_libraries(cali-memtracking-macros
   caliper-tools-util)
+target_link_libraries(async_event
+  Threads::Threads)

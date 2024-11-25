@@ -3,6 +3,7 @@
 
 #include "MpiPattern.h"
 
+#include "caliper/AsyncEvent.h"
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -41,6 +42,8 @@ struct MpiPattern::MpiPatternImpl {
         int          count;
         MPI_Datatype type;
         int          size;
+
+        TimedAsyncEvent timer;
     };
 
     std::unordered_map<MPI_Request, RequestInfo> req_map;
@@ -184,6 +187,7 @@ struct MpiPattern::MpiPatternImpl {
         info.tag           = tag;
         info.type          = type;
         info.count         = count;
+        info.timer         = TimedAsyncEvent::begin("irecv.req_wait_gap");
 
         std::lock_guard<std::mutex> g(req_map_lock);
 
@@ -230,6 +234,20 @@ struct MpiPattern::MpiPatternImpl {
 
             if (info.op == RequestInfo::Send)
                 push_send_event(c, chn, info.size, info.target, info.tag);
+        }
+    }
+
+    void handle_pre_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+    {
+        for (int i = 0; i < nreq; ++i) {
+            std::lock_guard<std::mutex> g(req_map_lock);
+
+            auto it = req_map.find(reqs[i]);
+            if (it == req_map.end())
+                continue;
+
+            if (it->second.op == RequestInfo::Recv)
+                it->second.timer.end();
         }
     }
 
@@ -396,6 +414,11 @@ void MpiPattern::handle_recv_init(
 void MpiPattern::handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
 {
     mP->handle_start(c, chn, nreq, reqs);
+}
+
+void MpiPattern::handle_pre_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+{
+    mP->handle_pre_completion(c, chn, nreq, reqs);
 }
 
 void MpiPattern::handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses)

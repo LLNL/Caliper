@@ -1,6 +1,7 @@
 set(CALIPER_RUNTIME_SOURCES
   Annotation.cpp
   AnnotationBinding.cpp
+  AsyncEvent.cpp
   Blackboard.cpp
   Caliper.cpp
   ChannelController.cpp
