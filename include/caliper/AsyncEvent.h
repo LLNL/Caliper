@@ -27,7 +27,11 @@ class TimedAsyncEvent
 
 public:
 
+#if __cplusplus >= 201402L
     constexpr TimedAsyncEvent() : end_tree_node_ { nullptr } { }
+#else
+    TimedAsyncEvent() : end_tree_node_ { nullptr } { }
+#endif
 
     void end();
 
