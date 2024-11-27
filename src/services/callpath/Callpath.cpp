@@ -61,23 +61,18 @@ class Callpath
         char strbuf[MAX_PATH][NAMELEN];
 
         // Init unwind context
-        unw_cursor_t unw_cursor;
+        unw_cursor_t ucursor;
 
         Entry e;
         if (ucursor_attr)
             e = info.get(ucursor_attr);
         if (!e.empty()) {
-            unw_cursor = *static_cast<unw_cursor_t*>(e.value().get_ptr());
+            ucursor = *static_cast<unw_cursor_t*>(e.value().get_ptr());
         } else {
-            unw_context_t unw_ctx;
+            unw_context_t uctx;
+            unw_getcontext(&uctx);
 
-#ifdef __aarch64__
-            unw_getcontext(unw_ctx);
-#else
-            unw_getcontext(&unw_ctx);
-#endif
-
-            if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+            if (unw_init_local(&ucursor, &uctx) < 0) {
                 Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
                 return;
             }
@@ -87,17 +82,17 @@ class Callpath
 
         size_t n = 0;
 
-        for (n = skip_frames; n > 0 && unw_step(&unw_cursor) > 0; --n)
+        for (n = skip_frames; n > 0 && unw_step(&ucursor) > 0; --n)
             ;
 
         if (n > 0)
             return;
 
-        while (n < MAX_PATH && unw_step(&unw_cursor) > 0) {
+        while (n < MAX_PATH && unw_step(&ucursor) > 0) {
 
             // skip stack frames inside caliper
             unw_word_t ip;
-            unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+            unw_get_reg(&ucursor, UNW_REG_IP, &ip);
 
             if (skip_internal && (ip >= caliper_start_addr && ip < caliper_end_addr))
                 continue;
@@ -110,7 +105,7 @@ class Callpath
             if (use_name) {
                 unw_word_t offs;
 
-                if (unw_get_proc_name(&unw_cursor, strbuf[n], NAMELEN, &offs) < 0)
+                if (unw_get_proc_name(&ucursor, strbuf[n], NAMELEN, &offs) < 0)
                     strncpy(strbuf[n], "UNKNOWN", NAMELEN);
 
                 v_name[MAX_PATH - (n + 1)] = Variant(CALI_TYPE_STRING, strbuf[n], strlen(strbuf[n]));
@@ -148,19 +143,19 @@ class Callpath
         dwfl_report_end(dwfl, nullptr, nullptr);
 
         // Init unwind context
-        unw_context_t unw_ctx;
-        unw_cursor_t  unw_cursor;
+        unw_context_t uctx;
+        unw_cursor_t  ucursor;
 
-        unw_getcontext(&unw_ctx);
+        unw_getcontext(&uctx);
 
-        if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+        if (unw_init_local(&ucursor, &uctx) < 0) {
             Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind" << endl;
             return;
         }
 
         // Get current (caliper) module
         unw_word_t ip;
-        unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+        unw_get_reg(&ucursor, UNW_REG_IP, &ip);
 
         Dwfl_Module* mod   = dwfl_addrmodule(dwfl, ip);
         Dwarf_Addr   start = 0;
