@@ -84,15 +84,15 @@ void on_prof(int sig, siginfo_t* info, void* context)
 #endif
 
 #ifdef CALIPER_HAVE_LIBUNWIND
-    unw_context_t unw_ctx;
-    unw_cursor_t  unw_cursor;
+    unw_context_t uctx;
+    unw_cursor_t  ucursor;
 
-    unw_getcontext(&unw_ctx);
+    unw_getcontext(&uctx);
 
-    if (unw_init_local(&unw_cursor, &unw_ctx) >= 0) {
-        unw_step(&unw_cursor); // get us out of the sample handler frame
+    if (unw_init_local(&ucursor, &uctx) >= 0) {
+        unw_step(&ucursor); // get us out of the sample handler frame
 
-        Variant v_cursor(cali_make_variant_from_ptr(&unw_cursor));
+        Variant v_cursor(cali_make_variant_from_ptr(&ucursor));
         data[count++] = Entry(ucursor_attr, v_cursor);
     }
 #endif
