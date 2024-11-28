@@ -1189,6 +1189,131 @@ const char* builtin_papi_hsw_option_specs = R"json(
 ]
 )json";
 
+const char* builtin_papi_skl_option_specs = R"json(
+[
+{
+ "name"        : "topdown.toplevel",
+ "description" : "Top-down analysis for Intel CPUs (top level)",
+ "type"        : "bool",
+ "category"    : "metric",
+ "services"    : [ "topdown" ],
+ "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
+ "query"  :
+ [
+  { "level": "local", "select":
+   [
+    "any(topdown.retiring) as \"Retiring\"",
+    "any(topdown.backend_bound) as \"Backend bound\"",
+    "any(topdown.frontend_bound) as \"Frontend bound\"",
+    "any(topdown.bad_speculation) as \"Bad speculation\""
+   ]
+  },
+  { "level": "cross", "select":
+   [
+    "any(any#topdown.retiring) as \"Retiring\"",
+    "any(any#topdown.backend_bound) as \"Backend bound\"",
+    "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+    "any(any#topdown.bad_speculation) as \"Bad speculation\""
+   ]
+  }
+ ]
+},
+{
+ "name"        : "topdown.all",
+ "description" : "Top-down analysis for Intel CPUs (all levels)",
+ "type"        : "bool",
+ "category"    : "metric",
+ "services"    : [ "topdown" ],
+ "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
+ "query"  :
+ [
+  { "level": "local", "select":
+   [
+    "any(topdown.retiring) as \"Retiring\"",
+    "any(topdown.backend_bound) as \"Backend bound\"",
+    "any(topdown.frontend_bound) as \"Frontend bound\"",
+    "any(topdown.bad_speculation) as \"Bad speculation\"",
+   ]
+  },
+  { "level": "cross", "select":
+   [
+    "any(any#topdown.retiring) as \"Retiring\"",
+    "any(any#topdown.backend_bound) as \"Backend bound\"",
+    "any(any#topdown.frontend_bound) as \"Frontend bound\"",
+    "any(any#topdown.bad_speculation) as \"Bad speculation\"",
+   ]
+  }
+ ]
+},
+  {
+   "name"        : "topdown-counters.toplevel",
+   "description" : "Raw counter values for Intel top-down analysis (top level)",
+   "type"        : "bool",
+   "category"    : "metric",
+   "services"    : [ "papi" ],
+   "config"      :
+   {
+     "CALI_PAPI_COUNTERS":
+       "IDQ_UOPS_NOT_DELIVERED:CORE,UOPS_ISSUED:ANY,UOPS_RETIRED:RETIRE_SLOTS,INT_MISC:RECOVERY_CYCLES,CPU_CLK_UNHALTED:THREAD"
+   },
+   "query"  :
+   [
+    { "level": "local", "select":
+     [
+      "inclusive_sum(sum#IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_not_delivered",
+      "inclusive_sum(sum#UOPS_ISSUED:ANY) as uops_issued",
+      "inclusive_sum(sum#UOPS_RETIRED:RETIRE_SLOTS) as uops_retired_retire_slots",
+      "inclusive_sum(sum#INT_MISC:RECOVERY_CYCLES) as int_misc_recovery_cycles",
+      "inclusive_sum(sum#CPU_CLK_UNHALTED:THREAD) as cpu_clock_unhalted_thread"
+     ]
+    },
+    { "level": "cross", "select":
+     [
+      "sum(inclusive#sum#IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_not_delivered",
+      "sum(inclusive#sum#UOPS_ISSUED:ANY) as uops_issued",
+      "sum(inclusive#sum#UOPS_RETIRED:RETIRE_SLOTS) as uops_retired_retire_slots",
+      "sum(inclusive#sum#INT_MISC:RECOVERY_CYCLES) as int_misc_recovery_cycles",
+      "sum(inclusive#sum#CPU_CLK_UNHALTED:THREAD) as cpu_clock_unhalted_thread"
+     ]
+    }
+   ]
+  },
+  {
+   "name"        : "topdown-counters.all",
+   "description" : "Raw counter values for Intel top-down analysis (all levels)",
+   "type"        : "bool",
+   "category"    : "metric",
+   "services"    : [ "papi" ],
+   "config"      :
+   {
+     "CALI_PAPI_COUNTERS":
+       "IDQ_UOPS_NOT_DELIVERED:CORE,UOPS_ISSUED:ANY,UOPS_RETIRED:RETIRE_SLOTS,INT_MISC:RECOVERY_CYCLES,CPU_CLK_UNHALTED:THREAD"
+   },
+   "query"  :
+   [
+    { "level": "local", "select":
+     [
+      "inclusive_sum(sum#IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_not_delivered",
+      "inclusive_sum(sum#UOPS_ISSUED:ANY) as uops_issued",
+      "inclusive_sum(sum#UOPS_RETIRED:RETIRE_SLOTS) as uops_retired_retire_slots",
+      "inclusive_sum(sum#INT_MISC:RECOVERY_CYCLES) as int_misc_recovery_cycles",
+      "inclusive_sum(sum#CPU_CLK_UNHALTED:THREAD) as cpu_clock_unhalted_thread"
+     ]
+    },
+    { "level": "cross", "select":
+     [
+      "sum(inclusive#sum#IDQ_UOPS_NOT_DELIVERED:CORE) as idq_uops_not_delivered",
+      "sum(inclusive#sum#UOPS_ISSUED:ANY) as uops_issued",
+      "sum(inclusive#sum#UOPS_RETIRED:RETIRE_SLOTS) as uops_retired_retire_slots",
+      "sum(inclusive#sum#INT_MISC:RECOVERY_CYCLES) as int_misc_recovery_cycles",
+      "sum(inclusive#sum#CPU_CLK_UNHALTED:THREAD) as cpu_clock_unhalted_thread"
+     ]
+    }
+   ]
+  }
+]
+)json";
+
 #ifdef CALIPER_WITH_PAPI_RDPMC
 const char* builtin_papi_spr_option_specs = R"json(
 [
