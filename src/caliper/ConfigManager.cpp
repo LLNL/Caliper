@@ -1413,6 +1413,7 @@ struct ConfigManager::ConfigManagerImpl {
 #ifdef CALIPER_HAVE_PAPI
 #ifdef CALIPER_HAVE_ARCH
         std::string cali_arch = CALIPER_HAVE_ARCH;
+        Log(0).stream() << "ConfigManager: detected architecture " << cali_arch << std::endl;
         if (cali_arch == "sapphirerapids") {
             builtin_option_specs_list.push_back(builtin_papi_spr_option_specs);
         } else if (cali_arch == "skylake" || cali_arch == "skylake_avx512" || cali_arch == "cascadelake") {
