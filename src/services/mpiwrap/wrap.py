@@ -606,7 +606,7 @@ def enumerate_mpi_declarations(mpicc, includes):
             arg_list = list(map(lambda s: s.strip(), arg_string.split(",")))
 
             # Handle functions that take no args specially
-            if arg_list == ['void']:
+            if arg_list == ['void'] or arg_list == ['']:
                 arg_list = []
 
             # Parse formal parameter descriptors out of args
