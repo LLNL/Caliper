@@ -1372,8 +1372,8 @@ void Caliper::finalize()
 
     Log(1).stream() << "Finalizing ... " << std::endl;
 
-    auto channels_copy = sG->all_channels;
-    for (auto& channel : channels_copy) {
+    while (!sG->all_channels.empty()) {
+        auto channel = sG->all_channels.front();
         if (channel.mP->flush_on_exit)
             flush_and_write(&channel, SnapshotView());
         delete_channel(channel);
