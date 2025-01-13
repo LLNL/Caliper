@@ -18,13 +18,13 @@ SkylakeTopdown::SkylakeTopdown(IntelTopdownLevel level)
         ",UOPS_ISSUED:ANY"
         ",UOPS_RETIRED:RETIRE_SLOTS"
         ",INT_MISC:RECOVERY_CYCLES"
-        ",CPU_CLK_UNHALTED:THREAD",
+        ",CPU_CLK_UNHALTED:THREAD_P",
         // all_counters
         "IDQ_UOPS_NOT_DELIVERED:CORE"
         ",UOPS_ISSUED:ANY"
         ",UOPS_RETIRED:RETIRE_SLOTS"
         ",INT_MISC:RECOVERY_CYCLES"
-        ",CPU_CLK_UNHALTED:THREAD"
+        ",CPU_CLK_UNHALTED:THREAD_P"
         ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
         ",BR_MISP_RETIRED:ALL_BRANCHES"
         ",MACHINE_CLEARS:COUNT"
@@ -32,15 +32,18 @@ SkylakeTopdown::SkylakeTopdown(IntelTopdownLevel level)
         ",EXE_ACTIVITY:BOUND_ON_STORES"
         ",CYCLE_ACTIVITY:STALLS_TOTAL"
         ",EXE_ACTIVITY:1_PORTS_UTIL"
-        ",EXE_ACTIVITY:2_PORTS_UTIL"
-        ",UOPS_RETIRED:MACRO_FUSED"
-        ",INST_RETIRED:ANY",
+        ",EXE_ACTIVITY:2_PORTS_UTIL",
+        // Note: PAPI doesn't seem to have UOPS_RETIRED.MACRO_FUSED,
+        //       so we can't currently calculate L2 metrics under retiring.
+        //       The commented counters below are unique to these metrics.
+        // ",UOPS_RETIRED:MACRO_FUSED"
+        // ",INST_RETIRED:ANY_P"
         // res_top
         { "retiring", "backend_bound", "frontend_bound", "bad_speculation" },
         // res_all
         { "retiring",
-          "light_operations",
-          "heavy_operations",
+          // "light_operations",
+          // "heavy_operations",
           "backend_bound",
           "memory_bound",
           "core_bound",
@@ -73,7 +76,7 @@ std::vector<Entry> SkylakeTopdown::compute_toplevel(const std::vector<Entry>& re
     Variant v_uops_issued_any             = get_val_from_rec(rec, "UOPS_ISSUED:ANY");
     Variant v_uops_retired_retire_slots   = get_val_from_rec(rec, "UOPS_RETIRED:RETIRE_SLOTS");
     Variant v_int_misc_recovery_cycles    = get_val_from_rec(rec, "INT_MISC:RECOVERY_CYCLES");
-    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD");
+    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD_P");
 
     bool is_incomplete = v_idq_uops_not_delivered_core.empty() || v_uops_issued_any.empty()
                          || v_uops_retired_retire_slots.empty() || v_int_misc_recovery_cycles.empty()
@@ -119,40 +122,43 @@ std::size_t SkylakeTopdown::get_num_expected_toplevel() const
 std::vector<Entry> SkylakeTopdown::compute_retiring(const std::vector<Entry>& rec)
 {
     std::vector<Entry> ret;
+    
+    // TODO uncomment when we can figure out the raw counter corresponding to
+    //      UOPS_RETIRED:MACRO_FUSED
 
-    Variant v_uops_retired_retire_slots = get_val_from_rec(rec, "UOPS_RETIRED:RETIRE_SLOTS");
-    Variant v_uops_retired_macro_fused  = get_val_from_rec(rec, "UOPS_RETIRED:MACRO_FUSED");
-    Variant v_inst_retired_any          = get_val_from_rec(rec, "INST_RETIRED:ANY");
-    Variant v_cpu_clk_unhalted_thread   = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD");
+    // Variant v_uops_retired_retire_slots = get_val_from_rec(rec, "UOPS_RETIRED:RETIRE_SLOTS");
+    // Variant v_uops_retired_macro_fused  = get_val_from_rec(rec, "UOPS_RETIRED:MACRO_FUSED");
+    // Variant v_inst_retired_any          = get_val_from_rec(rec, "INST_RETIRED:ANY_P");
+    // Variant v_cpu_clk_unhalted_thread   = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD_P");
 
-    bool is_incomplete = v_uops_retired_retire_slots.empty() || v_uops_retired_macro_fused.empty()
-                         || v_inst_retired_any.empty() || v_cpu_clk_unhalted_thread.empty();
+    // bool is_incomplete = v_uops_retired_retire_slots.empty() || v_uops_retired_macro_fused.empty()
+    //                      || v_inst_retired_any.empty() || v_cpu_clk_unhalted_thread.empty();
 
-    double thread_slots = 4 * v_cpu_clk_unhalted_thread.to_double();
+    // double thread_slots = 4 * v_cpu_clk_unhalted_thread.to_double();
 
-    if (is_incomplete || !(thread_slots > 1.0)) {
-        return ret;
-    }
+    // if (is_incomplete || !(thread_slots > 1.0)) {
+    //     return ret;
+    // }
 
-    double retiring = std::max(v_uops_retired_retire_slots.to_double() / thread_slots, 0.0);
+    // double retiring = std::max(v_uops_retired_retire_slots.to_double() / thread_slots, 0.0);
 
-    double heavy_operations = std::max(
-        (v_uops_retired_retire_slots.to_double() + v_uops_retired_macro_fused.to_double()
-         - v_inst_retired_any.to_double())
-            / thread_slots,
-        0.0
-    );
+    // double heavy_operations = std::max(
+    //     (v_uops_retired_retire_slots.to_double() + v_uops_retired_macro_fused.to_double()
+    //      - v_inst_retired_any.to_double())
+    //         / thread_slots,
+    //     0.0
+    // );
 
-    ret.reserve(2);
-    ret.push_back(Entry(m_result_attrs["heavy_operations"], Variant(heavy_operations)));
-    ret.push_back(Entry(m_result_attrs["light_operations"], Variant(std::max(retiring - heavy_operations, 0.0))));
+    // ret.reserve(2);
+    // ret.push_back(Entry(m_result_attrs["heavy_operations"], Variant(heavy_operations)));
+    // ret.push_back(Entry(m_result_attrs["light_operations"], Variant(std::max(retiring - heavy_operations, 0.0))));
 
     return ret;
 }
 
 std::size_t SkylakeTopdown::get_num_expected_retiring() const
 {
-    return 2;
+    return 0;
 }
 
 std::vector<Entry> SkylakeTopdown::compute_backend_bound(const std::vector<Entry>& rec)
@@ -169,7 +175,7 @@ std::vector<Entry> SkylakeTopdown::compute_backend_bound(const std::vector<Entry
     Variant v_uops_issued_any             = get_val_from_rec(rec, "UOPS_ISSUED:ANY");
     Variant v_uops_retired_retire_slots   = get_val_from_rec(rec, "UOPS_RETIRED:RETIRE_SLOTS");
     Variant v_int_misc_recovery_cycles    = get_val_from_rec(rec, "INT_MISC:RECOVERY_CYCLES");
-    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD");
+    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD_P");
 
     bool is_incomplete = v_idq_uops_not_delivered_core.empty() || v_uops_issued_any.empty()
                          || v_uops_retired_retire_slots.empty() || v_int_misc_recovery_cycles.empty()
@@ -220,7 +226,7 @@ std::vector<Entry> SkylakeTopdown::compute_frontend_bound(const std::vector<Entr
     Variant v_idq_uops_not_delivered_cycles_0_uops_deliv_core =
         get_val_from_rec(rec, "IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE");
     Variant v_idq_uops_not_delivered_core = get_val_from_rec(rec, "IDQ_UOPS_NOT_DELIVERED:CORE");
-    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD");
+    Variant v_cpu_clk_unhalted_thread     = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD_P");
 
     bool is_incomplete = v_idq_uops_not_delivered_cycles_0_uops_deliv_core.empty()
                          || v_idq_uops_not_delivered_core.empty() || v_cpu_clk_unhalted_thread.empty();
@@ -257,7 +263,7 @@ std::vector<Entry> SkylakeTopdown::compute_bad_speculation(const std::vector<Ent
     Variant v_uops_issued_any              = get_val_from_rec(rec, "UOPS_ISSUED:ANY");
     Variant v_uops_retired_retire_slots    = get_val_from_rec(rec, "UOPS_RETIRED:RETIRE_SLOTS");
     Variant v_int_misc_recovery_cycles     = get_val_from_rec(rec, "INT_MISC:RECOVERY_CYCLES");
-    Variant v_cpu_clk_unhalted_thread      = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD");
+    Variant v_cpu_clk_unhalted_thread      = get_val_from_rec(rec, "CPU_CLK_UNHALTED:THREAD_P");
 
     bool is_incomplete = v_br_misp_retired_all_branches.empty() || v_machine_clears_count.empty()
                          || v_uops_issued_any.empty() || v_uops_retired_retire_slots.empty()
