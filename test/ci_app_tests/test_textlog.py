@@ -12,7 +12,7 @@ class CaliperTextlogTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'      : 'event,textlog',
-            'CALI_TEXTLOG_TRIGGER'      : 'iteration#main\ loop',
+            'CALI_TEXTLOG_TRIGGER'      : 'iteration#main\\ loop',
             'CALI_TEXTLOG_FORMATSTRING' : '%region% iteration: %[2]iteration#main loop%',
             'CALI_LOG_VERBOSITY'        : '0',
         }

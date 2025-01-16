@@ -14,7 +14,7 @@ class CaliperTestMonitor(unittest.TestCase):
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'loop_monitor,trace,report',
             'CALI_LOOP_MONITOR_ITERATION_INTERVAL' : '5',
-            'CALI_REPORT_CONFIG'     : 'select * where iteration#main\ loop format expand',
+            'CALI_REPORT_CONFIG'     : 'select * where iteration#main\\ loop format expand',
             'CALI_REPORT_FILENAME'   : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
