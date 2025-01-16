@@ -52,7 +52,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select *,count() group by path,iteration#main\ loop format expand',
+            'CALI_REPORT_CONFIG'     : 'select *,count() group by path,iteration#main\\ loop format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -97,7 +97,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select *,count() as my\\ count\\ alias group by path,iteration#main\ loop format expand',
+            'CALI_REPORT_CONFIG'     : 'select *,count() as my\\ count\\ alias group by path,iteration#main\\ loop format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 

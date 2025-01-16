@@ -115,7 +115,7 @@ class CaliperLoopReportTest(unittest.TestCase):
     """ Loop statistics option """
     def test_loop_stats(self):
         target_cmd = [ './ci_test_macros', '10', 'spot,loop.stats,output=stdout' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'let r=leaf() select * where r=main\ loop format json' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'let r=leaf() select * where r=main\\ loop format json' ]
 
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, None) )
 
