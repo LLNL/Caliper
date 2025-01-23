@@ -41,6 +41,19 @@ public:
                 output.append(ext);
         }
 
+        const char* local_let =
+            "act_count=first(sum#count,count) if rocm.activity"
+            ",dmin=scale(min#rocm.activity.duration,1e-9)"
+            ",davg=scale(avg#rocm.activity.duration,1e-9)"
+            ",dmax=scale(max#rocm.activity.duration,1e-9)";
+        const char* local_select =
+            "*,scale(sum#time.duration.ns,1e-9) as time"
+            ",scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\""
+            ",min(dmin) as \"min time/inst\""
+            ",avg(davg) as \"avg time/inst\""
+            ",max(dmax) as \"max time/inst\""
+            ",sum(act_count) as count";
+
         auto avail_services = services::get_available_services();
         bool have_mpi = std::find(avail_services.begin(), avail_services.end(), "mpireport") != avail_services.end();
         bool have_adiak =
@@ -63,22 +76,20 @@ public:
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
             config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query(
                 "local",
-                { { "select",
-                               "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                                          " ,scale(sum#time.duration.ns,1e-9) as \"time\" unit sec" },
-                             { "group by", "path,rocm.kernel.name,rocm.activity.kind,mpi.rank" },
-                             { "format", format } }
+                { { "let",    local_let },
+                  { "select", local_select },
+                  { "group by", "path,rocm.kernel.name,rocm.activity.kind,mpi.rank" },
+                  { "format", format } }
             );
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = output;
             config()["CALI_REPORT_CONFIG"]   = opts.build_query(
                 "local",
-                { { "select",
-                      "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                        " ,scale(sum#time.duration.ns,1e-9) as \"time\" unit sec" },
-                    { "group by", "path,rocm.kernel.name,rocm.activity.kind" },
-                    { "format", format } }
+                { { "let", local_let },
+                  { "select", local_select },
+                  { "group by", "path,rocm.kernel.name,rocm.activity.kind" },
+                  { "format", format } }
             );
         }
 
