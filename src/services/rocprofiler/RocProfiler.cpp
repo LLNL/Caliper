@@ -180,6 +180,14 @@ class RocProfilerService
         Caliper c;
         c.begin(s_instance->m_flush_region_attr, Variant("ROCPROFILER FLUSH"));
 
+        Entry mpi_rank_entry;
+
+        {
+            Attribute mpi_rank_attr = c.get_attribute("mpi.rank");
+            if (mpi_rank_attr)
+                mpi_rank_entry = c.get(mpi_rank_attr);
+        }
+
         for (size_t i = 0; i < num_headers; ++i) {
             auto* header = headers[i];
 
@@ -216,8 +224,11 @@ class RocProfilerService
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
-                FixedSizeSnapshotRecord<6> snapshot;
+                FixedSizeSnapshotRecord<8> snapshot;
                 c.make_record(6, attr, data, snapshot.builder(), correlation);
+                if (!mpi_rank_entry.empty())
+                    snapshot.builder().append(mpi_rank_entry);
+
                 s_instance->m_channel.events()
                     .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
 
@@ -253,8 +264,11 @@ class RocProfilerService
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
-                FixedSizeSnapshotRecord<6> snapshot;
+                FixedSizeSnapshotRecord<8> snapshot;
                 c.make_record(6, attr, data, snapshot.builder(), correlation);
+                if (!mpi_rank_entry.empty())
+                    snapshot.builder().append(mpi_rank_entry);
+
                 s_instance->m_channel.events()
                     .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
 
