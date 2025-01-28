@@ -93,6 +93,8 @@ class RocProfilerService
     std::map<uint64_t, std::string> m_kernel_info;
     std::mutex                      m_kernel_info_mutex;
 
+    std::map<uint64_t, const rocprofiler_agent_t*> agent_info_map;
+
     Channel m_channel;
 
     static RocProfilerService* s_instance;
@@ -102,8 +104,6 @@ class RocProfilerService
     static rocprofiler_context_id_t rocprofiler_ctx;
 
     static rocprofiler_buffer_id_t activity_buf;
-
-    static std::map<uint64_t, const rocprofiler_agent_t*> s_agents;
 
     void create_attributes(Caliper* c)
     {
@@ -211,7 +211,7 @@ class RocProfilerService
 
                 const char* kernel_name = s_instance->get_kernel_name(record->dispatch_info.kernel_id);
 
-                uint64_t agent = s_agents.at(record->dispatch_info.agent_id.handle)->logical_node_id;
+                uint64_t agent = s_instance->agent_info_map.at(record->dispatch_info.agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
                     Variant(CALI_TYPE_STRING, activity_name, len),
@@ -250,8 +250,8 @@ class RocProfilerService
                     &len
                 ));
 
-                uint64_t src_agent = s_agents.at(record->src_agent_id.handle)->logical_node_id;
-                uint64_t dst_agent = s_agents.at(record->dst_agent_id.handle)->logical_node_id;
+                uint64_t src_agent = s_instance->agent_info_map.at(record->src_agent_id.handle)->logical_node_id;
+                uint64_t dst_agent = s_instance->agent_info_map.at(record->dst_agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
                     Variant(CALI_TYPE_STRING, activity_name, len),
@@ -378,6 +378,26 @@ class RocProfilerService
         m_enable_snapshot_timestamps = config.get("enable_snapshot_timestamps").to_bool();
 
         create_attributes(c);
+
+        // initialize rocprofiler agents
+        //
+
+        rocprofiler_query_available_agents_cb_t iterate_agents =
+            [](rocprofiler_agent_version_t, const void** agents_arr, size_t num_agents, void* usr) {
+                for (size_t i = 0; i < num_agents; ++i) {
+                    const auto* agent_v = static_cast<const rocprofiler_agent_v0_t*>(agents_arr[i]);
+                    RocProfilerService* instance = static_cast<RocProfilerService*>(usr);
+                    instance->agent_info_map.emplace(agent_v->id.handle, agent_v);
+                }
+                return ROCPROFILER_STATUS_SUCCESS;
+            };
+
+        ROCPROFILER_CALL(rocprofiler_query_available_agents(
+            ROCPROFILER_AGENT_INFO_VERSION_0,
+            iterate_agents,
+            sizeof(rocprofiler_agent_t),
+            this
+        ));
     }
 
 public:
@@ -455,21 +475,6 @@ public:
             nullptr
         ));
 
-        rocprofiler_query_available_agents_cb_t iterate_agents =
-            [](rocprofiler_agent_version_t, const void** agents_arr, size_t num_agents, void*) {
-                for (size_t i = 0; i < num_agents; ++i) {
-                    const auto* agent_v = static_cast<const rocprofiler_agent_v0_t*>(agents_arr[i]);
-                    s_agents.emplace(agent_v->id.handle, agent_v);
-                }
-                return ROCPROFILER_STATUS_SUCCESS;
-            };
-
-        ROCPROFILER_CALL(rocprofiler_query_available_agents(
-            ROCPROFILER_AGENT_INFO_VERSION_0,
-            iterate_agents,
-            sizeof(rocprofiler_agent_t),
-            nullptr
-        ));
         // auto client_thread = rocprofiler_callback_thread_t{};
         // ROCPROFILER_CALL(
         //     rocprofiler_create_callback_thread(&client_thread));
@@ -534,8 +539,6 @@ rocprofiler_context_id_t RocProfilerService::activity_ctx    = {};
 rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx = {};
 
 rocprofiler_buffer_id_t RocProfilerService::activity_buf = {};
-
-std::map<uint64_t, const rocprofiler_agent_t*> RocProfilerService::s_agents;
 
 const char* RocProfilerService::s_spec = R"json(
 {
