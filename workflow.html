@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Architecture and workflow &#8212; Caliper 2.11.0-dev documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
+    <title>Architecture and workflow &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Caliper services" href="services.html" />
     <link rel="prev" title="Manual configuration" href="configuration.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="configuration.html" title="Manual configuration"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Architecture and workflow</a></li> 
       </ul>
     </div>  
@@ -44,7 +44,7 @@
           <div class="body" role="main">
             
   <section id="architecture-and-workflow">
-<h1>Architecture and workflow<a class="headerlink" href="#architecture-and-workflow" title="Permalink to this heading">¶</a></h1>
+<h1>Architecture and workflow<a class="headerlink" href="#architecture-and-workflow" title="Link to this heading">¶</a></h1>
 <p>Caliper’s highly modular architecture allows for a wide range of use
 cases. For example, it can be used as a library to access application
 context information from third-party tools, or it can be configured as
@@ -54,11 +54,12 @@ set up a data recording pipeline by enabling appropriate services on
 each pipeline stage. The following figure illustrates the recording
 pipeline:</p>
 <figure class="align-default" id="id1">
-<a class="reference internal image-reference" href="_images/caliper-services-workflow.png"><img alt="_images/caliper-services-workflow.png" src="_images/caliper-services-workflow.png" style="width: 947.4px; height: 600.0px;" /></a>
+<a class="reference internal image-reference" href="_images/caliper-services-workflow.png"><img alt="_images/caliper-services-workflow.png" src="_images/caliper-services-workflow.png" style="width: 947.4px; height: 600.0px;" />
+</a>
 <figcaption>
 <p><span class="caption-text">Caliper components and the data recording pipeline. The orange boxes
 are core components of the Caliper runtime library, the blue boxes
-are services.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+are services.</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 <p>Caliper services can be used in any combination. However, to produce
@@ -81,7 +82,7 @@ stage while others are active:</p>
 </div>
 <p>The following sections discuss the pipeline stages in detail.</p>
 <section id="context-information-and-event-hooks">
-<h2>Context Information and Event Hooks<a class="headerlink" href="#context-information-and-event-hooks" title="Permalink to this heading">¶</a></h2>
+<h2>Context Information and Event Hooks<a class="headerlink" href="#context-information-and-event-hooks" title="Link to this heading">¶</a></h2>
 <p>Context information is the key:value data provided by Caliper’s
 annotation API. For example, an application can mark a section of code
 with the <code class="docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code> and <code class="docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code> macros, or export
@@ -100,7 +101,7 @@ snapshots (see below) or connect Caliper annotations to a third-party
 instrumentation API.</p>
 </section>
 <section id="runtime-data-sources">
-<h2>Runtime Data Sources<a class="headerlink" href="#runtime-data-sources" title="Permalink to this heading">¶</a></h2>
+<h2>Runtime Data Sources<a class="headerlink" href="#runtime-data-sources" title="Link to this heading">¶</a></h2>
 <p>Runtime data sources provide the context and performance data that
 Caliper records. The primary data source is the <em>blackboard</em>, which
 contains all information provided by the annotation API. Context
@@ -118,7 +119,7 @@ default and must be explicitly activated if needed.</p>
 actual data collection happens through <em>snapshots</em>.</p>
 </section>
 <section id="snapshots">
-<h2>Snapshots<a class="headerlink" href="#snapshots" title="Permalink to this heading">¶</a></h2>
+<h2>Snapshots<a class="headerlink" href="#snapshots" title="Link to this heading">¶</a></h2>
 <p>Snapshots are Caliper’s mechanism to make performance measurements and
 collect data. Specifically, a snapshot collects data from all active
 runtime data sources and creates a snapshot record. The snapshot
@@ -141,7 +142,7 @@ code regions that have not been annotated. Event and sampled snapshot
 triggers can be active at the same time.</p>
 </section>
 <section id="snapshot-buffering-processing">
-<h2>Snapshot Buffering/Processing<a class="headerlink" href="#snapshot-buffering-processing" title="Permalink to this heading">¶</a></h2>
+<h2>Snapshot Buffering/Processing<a class="headerlink" href="#snapshot-buffering-processing" title="Link to this heading">¶</a></h2>
 <p>The snapshot processing stage defines what to do with snapshot records
 at runtime. Caliper provides two options: tracing and aggregation. The
 <a class="reference internal" href="services.html#trace-service"><span class="std std-ref">trace</span></a> service simply stores each snapshot record in an in-memory
@@ -152,7 +153,7 @@ reduce the amount of data that needs to be kept, especially for
 long-running, iterative programs.</p>
 </section>
 <section id="flush-and-snapshot-post-processing">
-<h2>Flush and Snapshot Post-Processing<a class="headerlink" href="#flush-and-snapshot-post-processing" title="Permalink to this heading">¶</a></h2>
+<h2>Flush and Snapshot Post-Processing<a class="headerlink" href="#flush-and-snapshot-post-processing" title="Link to this heading">¶</a></h2>
 <p>A flush will push the trace buffer and/or aggregation database
 contents into the reporting and I/O stage. Flushing can be triggered
 explicitly through Caliper’s API. Caliper will automatically trigger a
@@ -164,7 +165,7 @@ line number, and function name information from binary program
 addresses provided by e.g. the <a class="reference internal" href="services.html#callpath-service"><span class="std std-ref">callpath</span></a> or <a class="reference internal" href="services.html#sampler-service"><span class="std std-ref">sampler</span></a> service.</p>
 </section>
 <section id="reporting-and-i-o">
-<h2>Reporting and I/O<a class="headerlink" href="#reporting-and-i-o" title="Permalink to this heading">¶</a></h2>
+<h2>Reporting and I/O<a class="headerlink" href="#reporting-and-i-o" title="Link to this heading">¶</a></h2>
 <p>The final pipeline stage formats and writes the collected
 records. There are multiple options here.</p>
 <p>The <a class="reference internal" href="services.html#recorder-service"><span class="std std-ref">recorder</span></a> service writes records into Caliper-specific
@@ -185,10 +186,10 @@ produce JSON or human-readable output as well as <code class="docutils literal n
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -222,7 +223,7 @@ produce JSON or human-readable output as well as <code class="docutils literal n
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -230,13 +231,13 @@ produce JSON or human-readable output as well as <code class="docutils literal n
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -251,13 +252,13 @@ produce JSON or human-readable output as well as <code class="docutils literal n
         <li class="right" >
           <a href="configuration.html" title="Manual configuration"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Architecture and workflow</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     </div>
   </body>
 </html>

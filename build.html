@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Building Caliper &#8212; Caliper 2.11.0-dev documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
+    <title>Building Caliper &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Annotation API reference" href="AnnotationAPI.html" />
-    <link rel="prev" title="Sample profiling" href="SampleProfiling.html" /> 
+    <link rel="prev" title="Python support" href="PythonSupport.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -31,9 +31,9 @@
           <a href="AnnotationAPI.html" title="Annotation API reference"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="SampleProfiling.html" title="Sample profiling"
+          <a href="PythonSupport.html" title="Python support"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>  
@@ -44,7 +44,7 @@
           <div class="body" role="main">
             
   <section id="building-caliper">
-<h1>Building Caliper<a class="headerlink" href="#building-caliper" title="Permalink to this heading">¶</a></h1>
+<h1>Building Caliper<a class="headerlink" href="#building-caliper" title="Link to this heading">¶</a></h1>
 <p>Building and installing Caliper requires cmake, a current C++11-compatible
 compiler, and a Python interpreter. To build Caliper manually, clone it from the
 <a class="reference external" href="https://github.com/LLNL/Caliper">github repository</a>.
@@ -58,7 +58,7 @@ $<span class="w"> </span>make<span class="w"> </span>install
 </div>
 <p>This is a minimal configuration, see below for additional CMake configuration flags.</p>
 <section id="cmake-flags">
-<h2>CMake Flags<a class="headerlink" href="#cmake-flags" title="Permalink to this heading">¶</a></h2>
+<h2>CMake Flags<a class="headerlink" href="#cmake-flags" title="Link to this heading">¶</a></h2>
 <p>Configure Caliper using the usual CMake flags to select the C and C++ compiler,
 build type, and install prefix (CMAKE_C_COMPILER, CMAKE_CXX_COMPILER,
 CMAKE_BUILD_TYPE, and CMAKE_INSTALL_PREFIX).
@@ -78,6 +78,8 @@ module, e.g. with <code class="docutils literal notranslate"><span class="pre">-
 calls and CUDA activity tracing).</p>
 </dd>
 <dt>WITH_FORTRAN</dt><dd><p>Build the Fortran wrappers.</p>
+</dd>
+<dt>WITH_PYTHON_BINDINGS</dt><dd><p>Build the Python bindings.</p>
 </dd>
 <dt>WITH_GOTCHA</dt><dd><p>Enable Gotcha support. Allows pthread, IO, and malloc/free tracking, and
 enables dynamic wrapping of MPI functions.
@@ -101,10 +103,15 @@ Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.</p>
 </dd>
 <dt>WITH_PAPI</dt><dd><p>Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.</p>
 </dd>
+<dt>WITH_PAPI_RDPMC</dt><dd><p>Specify that PAPI is built to use <code class="code docutils literal notranslate"><span class="pre">rdpmc</span></code> by default for reading counters.</p>
+</dd>
 <dt>WITH_ROCTX</dt><dd><p>Build adapters to forward Caliper annotations to AMD’s roctx annotation API.</p>
 </dd>
 <dt>WITH_ROCTRACER</dt><dd><p>Enable support for ROCm/HIP performance analysis (runtime API profiling and
 GPU activity tracing).</p>
+</dd>
+<dt>WITH_ROCPROFILER</dt><dd><p>Enable roctx adapters and support for ROCm/HIP performance analysis with the
+rocprofiler-sdk API (available with ROCm 6.2 and higher).</p>
 </dd>
 <dt>WITH_SAMPLER</dt><dd><p>Enable time-based sampling on Linux.</p>
 </dd>
@@ -113,10 +120,13 @@ GPU activity tracing).</p>
 <dt>WITH_VTUNE</dt><dd><p>Build adapters to forward Caliper annotations to Intel’s VTune annotation API.
 Set Intel ITT API installation dir in <code class="docutils literal notranslate"><span class="pre">ITT_PREFIX</span></code>.</p>
 </dd>
+<dt>WITH_ARCH</dt><dd><p>Specify the architecture for which you are building to enable
+architecture-specific functionality (e.g., topdown calculations).</p>
+</dd>
 </dl>
 <p>All options are off by default. On Linux, Gotcha is enabled by default.</p>
 <section id="linking-caliper-programs">
-<h3>Linking Caliper programs<a class="headerlink" href="#linking-caliper-programs" title="Permalink to this heading">¶</a></h3>
+<h3>Linking Caliper programs<a class="headerlink" href="#linking-caliper-programs" title="Link to this heading">¶</a></h3>
 <p>Typically, all that is needed to create a Caliper-enabled program is
 to link it with the Caliper runtime library, which resides in
 <cite>libcaliper.so</cite>. An example link command for a C++ program built
@@ -129,7 +139,7 @@ g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 </section>
 </section>
 <section id="using-caliper-in-cmake-projects">
-<h2>Using Caliper in CMake projects<a class="headerlink" href="#using-caliper-in-cmake-projects" title="Permalink to this heading">¶</a></h2>
+<h2>Using Caliper in CMake projects<a class="headerlink" href="#using-caliper-in-cmake-projects" title="Link to this heading">¶</a></h2>
 <p>Caliper creates a CMake package file (caliper-config.cmake) and
 installs it in &lt;caliper-installation-dir&gt;/lib64/cmake/caliper. The
 package file defines Caliper’s include directories and exports targets
@@ -155,19 +165,17 @@ Caliper installation with <cite>caliper_DIR</cite>:</p>
 <tr class="row-even"><td><p>caliper</p></td>
 <td><p>The Caliper runtime library (target)</p></td>
 </tr>
-<tr class="row-odd"><td><p>caliper-tools-util</p></td>
-<td><p>Utilities for caliper tools (target)</p></td>
-</tr>
 </tbody>
 </table>
 <p>In most cases, just link the “caliper” target.</p>
 <section id="feature-and-build-option-overview">
-<h3>Feature and build option overview<a class="headerlink" href="#feature-and-build-option-overview" title="Permalink to this heading">¶</a></h3>
+<h3>Feature and build option overview<a class="headerlink" href="#feature-and-build-option-overview" title="Link to this heading">¶</a></h3>
 <p>The following table shows the features, recipes, and services that are enabled
 with the given Caliper and spack build options.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>CMake option</p></th>
+<th class="head"><p>Default value</p></th>
 <th class="head"><p>Spack option</p></th>
 <th class="head"><p>Enabled features/recipes</p></th>
 <th class="head"><p>Enabled services</p></th>
@@ -175,6 +183,7 @@ with the given Caliper and spack build options.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>WITH_ADIAK</p></td>
+<td><p>False</p></td>
 <td><p>+adiak</p></td>
 <td><p>Import adiak metadata in
 most config recipes</p></td>
@@ -182,6 +191,7 @@ most config recipes</p></td>
 adiak_export</p></td>
 </tr>
 <tr class="row-odd"><td><p>WITH_MPI</p></td>
+<td><p>False</p></td>
 <td><p>+mpi</p></td>
 <td><ul class="simple">
 <li><p>mpi-report recipe</p></li>
@@ -196,6 +206,7 @@ aggregation</p></li>
 <td><p>mpi, mpireport</p></td>
 </tr>
 <tr class="row-even"><td><p>WITH_PAPI</p></td>
+<td><p>False</p></td>
 <td><p>+papi</p></td>
 <td><ul class="simple">
 <li><p>topdown.all,
@@ -208,7 +219,18 @@ x86 systems</p></li>
 </td>
 <td><p>papi, topdown</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_LIBDW</p></td>
+<tr class="row-odd"><td><p>WITH_PAPI_RDPMC</p></td>
+<td><p>True</p></td>
+<td><p>not available
+yet</p></td>
+<td><p>Topdown calculations
+based on different
+approaches to reading
+counters in PAPI</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>WITH_LIBDW</p></td>
+<td><p>False</p></td>
 <td><p>+libdw</p></td>
 <td><ul class="simple">
 <li><p>source.module,
@@ -220,14 +242,16 @@ recipe options</p></li>
 </td>
 <td><p>symbollookup</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_LIBPFM</p></td>
+<tr class="row-odd"><td><p>WITH_LIBPFM</p></td>
+<td><p>False</p></td>
 <td><p>+libpfm</p></td>
 <td><p>PerfEvent counter
 collection and precise
 event sampling</p></td>
 <td><p>libpfm</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_LIBUNWIND</p></td>
+<tr class="row-even"><td><p>WITH_LIBUNWIND</p></td>
+<td><p>False</p></td>
 <td><p>+libunwind</p></td>
 <td><ul class="simple">
 <li><p>callpath option for
@@ -239,7 +263,8 @@ event-trace recipes
 </td>
 <td><p>callpath</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_SAMPLER</p></td>
+<tr class="row-odd"><td><p>WITH_SAMPLER</p></td>
+<td><p>False</p></td>
 <td><p>+sampler</p></td>
 <td><ul class="simple">
 <li><p>sample-report,
@@ -252,7 +277,8 @@ event-trace recipe</p></li>
 </td>
 <td><p>sampler</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_CUPTI</p></td>
+<tr class="row-even"><td><p>WITH_CUPTI</p></td>
+<td><p>False</p></td>
 <td rowspan="2"><p>+cuda</p></td>
 <td><ul class="simple">
 <li><p>cuda-activity-report
@@ -268,7 +294,8 @@ options</p></li>
 </td>
 <td><p>cupti, cuptitrace</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_NVTX</p></td>
+<tr class="row-odd"><td><p>WITH_NVTX</p></td>
+<td><p>False</p></td>
 <td><ul class="simple">
 <li><p>nvtx recipe</p></li>
 <li><p>Caliper-to-NVTX region
@@ -277,7 +304,8 @@ forwarding</p></li>
 </td>
 <td><p>nvtx</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_ROCTRACER</p></td>
+<tr class="row-even"><td><p>WITH_ROCTRACER</p></td>
+<td><p>False</p></td>
 <td rowspan="2"><p>+rocm</p></td>
 <td><ul class="simple">
 <li><p>rocm-activity-report,
@@ -293,7 +321,8 @@ options</p></li>
 </td>
 <td><p>roctracer</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_ROCTX</p></td>
+<tr class="row-odd"><td><p>WITH_ROCTX</p></td>
+<td><p>False</p></td>
 <td><ul class="simple">
 <li><p>roctx recipe</p></li>
 <li><p>Caliper-to-ROCTX region
@@ -302,7 +331,8 @@ forwarding</p></li>
 </td>
 <td><p>roctx</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_OMPT</p></td>
+<tr class="row-even"><td><p>WITH_OMPT</p></td>
+<td><p>False</p></td>
 <td><p>not available
 yet</p></td>
 <td><ul class="simple">
@@ -318,7 +348,11 @@ target offload)</p></li>
 </td>
 <td><p>ompt</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_GOTCHA</p></td>
+<tr class="row-odd"><td><p>WITH_GOTCHA</p></td>
+<td><p>True on
+Linux;
+False
+otherwise</p></td>
 <td><p>+gotcha</p></td>
 <td><ul class="simple">
 <li><p>io.bytes.*,
@@ -334,19 +368,22 @@ instead of PMPI</p></li>
 <td><p>io, pthread,
 sysalloc</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_UMPIRE</p></td>
+<tr class="row-even"><td><p>WITH_UMPIRE</p></td>
+<td><p>False</p></td>
 <td><p>not available
 yet</p></td>
 <td><p>umpire.totals,
 umpire.allocators options</p></td>
 <td><p>umpire</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_VARIORUM</p></td>
+<tr class="row-odd"><td><p>WITH_VARIORUM</p></td>
+<td><p>False</p></td>
 <td><p>+variorum</p></td>
 <td><p>Read variorum counters</p></td>
 <td><p>variorum</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_PCP</p></td>
+<tr class="row-even"><td><p>WITH_PCP</p></td>
+<td><p>False</p></td>
 <td><p>not available
 yet</p></td>
 <td><ul class="simple">
@@ -360,30 +397,48 @@ CoPilot counters</p></li>
 </td>
 <td><p>pcp, pcp.memory</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_VTUNE</p></td>
+<tr class="row-odd"><td><p>WITH_VTUNE</p></td>
+<td><p>False</p></td>
 <td><p>not available
 yet</p></td>
 <td><p>Intel ITT API annotation
 forwarding</p></td>
 <td><p>vtune</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_CRAYPAT</p></td>
+<tr class="row-even"><td><p>WITH_CRAYPAT</p></td>
+<td><p>False</p></td>
 <td><p>not available
 yet</p></td>
 <td><p>HPE CrayPAT API
 annotation forwarding</p></td>
 <td><p>craypat</p></td>
 </tr>
-<tr class="row-even"><td><p>WITH_KOKKOS</p></td>
+<tr class="row-odd"><td><p>WITH_KOKKOS</p></td>
+<td><p>True</p></td>
 <td><p>+kokkos</p></td>
 <td><p>Enable Kokkos tool API
 bindings</p></td>
 <td><p>kokkostime,
 kokkoslookup</p></td>
 </tr>
-<tr class="row-odd"><td><p>WITH_FORTRAN</p></td>
+<tr class="row-even"><td><p>WITH_FORTRAN</p></td>
+<td><p>False</p></td>
 <td><p>+fortran</p></td>
 <td><p>Enable Fortran API</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>WITH_PYTHON_BINDINGS</p></td>
+<td><p>False</p></td>
+<td><p>+python</p></td>
+<td><p>Enable Python API</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>WITH_ARCH</p></td>
+<td><p>No default</p></td>
+<td><p>not available
+yet</p></td>
+<td><p>Enable microarchitecture-
+specific features</p></td>
 <td></td>
 </tr>
 </tbody>
@@ -397,10 +452,10 @@ kokkoslookup</p></td>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -421,8 +476,8 @@ kokkoslookup</p></td>
   </div>
   <div>
     <h4>Previous topic</h4>
-    <p class="topless"><a href="SampleProfiling.html"
-                          title="previous chapter">Sample profiling</a></p>
+    <p class="topless"><a href="PythonSupport.html"
+                          title="previous chapter">Python support</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -436,7 +491,7 @@ kokkoslookup</p></td>
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -444,13 +499,13 @@ kokkoslookup</p></td>
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -463,15 +518,15 @@ kokkoslookup</p></td>
           <a href="AnnotationAPI.html" title="Annotation API reference"
              >next</a> |</li>
         <li class="right" >
-          <a href="SampleProfiling.html" title="Sample profiling"
+          <a href="PythonSupport.html" title="Python support"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     </div>
   </body>
 </html>

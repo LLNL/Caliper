@@ -66,6 +66,7 @@ This section lists how-to articles for various use cases.
    SampleProfiling
    ThirdPartyTools
    FortranSupport
+   PythonSupport
 
 Reference documentation
 -------------------------------

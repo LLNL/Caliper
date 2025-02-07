@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Python support &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
+    
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building Caliper" href="build.html" />
+    <link rel="prev" title="Fortran support" href="FortranSupport.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Building Caliper"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="FortranSupport.html" title="Fortran support"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python support</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="python-support">
+<h1>Python support<a class="headerlink" href="#python-support" title="Link to this heading">¶</a></h1>
+<p>Caliper provides Python bindings based on <a class="reference external" href="https://pybind11.readthedocs.io/en/stable/">pybind11</a>
+for the annotation and <code class="code docutils literal notranslate"><span class="pre">ConfigManager</span></code> APIs. To build Caliper with Python support, enable
+the <code class="code docutils literal notranslate"><span class="pre">WITH_PYTHON_BINDINGS</span></code> option in the CMake configuration:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>cmake<span class="w"> </span>-DWITH_PYTHON_BINDINGS<span class="o">=</span>On<span class="w"> </span>..
+</pre></div>
+</div>
+<section id="using-the-python-module">
+<h2>Using the Python module<a class="headerlink" href="#using-the-python-module" title="Link to this heading">¶</a></h2>
+<p>The Python module requires pybind11 and an installation of Python that both supports
+pybind11 and provides development headers (e.g., <code class="code docutils literal notranslate"><span class="pre">Python.h</span></code>) and libraries
+(e.g., <code class="code docutils literal notranslate"><span class="pre">libpython3.8.so</span></code>).</p>
+<p>The Caliper Python module is installed in either <code class="code docutils literal notranslate"><span class="pre">lib/pythonX.Y/site-packages/</span></code> and/or
+<code class="code docutils literal notranslate"><span class="pre">lib64/pythonX.Y/site-packages</span></code> in the Caliper installation directory. In these paths,
+<code class="code docutils literal notranslate"><span class="pre">X.Y</span></code> corresponds to the major and minor version numbers of the Python installation used.
+Additionally, <code class="code docutils literal notranslate"><span class="pre">lib/</span></code> and <code class="code docutils literal notranslate"><span class="pre">lib64/</span></code> will be used in accordance with the configuration
+of the Python installed. To better understand the rules for where Python modules are installed,
+see <a class="reference external" href="https://discuss.python.org/t/understanding-site-packages-directories/12959">this thread</a>
+from the Python Software Foundation Discuss.</p>
+<p>To use the Caliper Python module, simply add the directories above to <code class="code docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">sys.path</span></code>. Note that the module will be automatically added to <code class="code docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> when
+loading the Caliper package with Spack if the <code class="code docutils literal notranslate"><span class="pre">python</span></code> variant is enabled.
+The module can then be imported with <code class="code docutils literal notranslate"><span class="pre">import</span> <span class="pre">pycaliper</span></code>.</p>
+</section>
+<section id="caliper-python-api">
+<h2>Caliper Python API<a class="headerlink" href="#caliper-python-api" title="Link to this heading">¶</a></h2>
+<p>The Caliper Python API supports a significant subset of the C and C++ annotation APIs.
+The simplest options are the <code class="code docutils literal notranslate"><span class="pre">pycaliper.begin_region()</span></code> and <code class="code docutils literal notranslate"><span class="pre">pycaliper.end_region()</span></code>
+functions. Caliper’s Python API also provides the <code class="code docutils literal notranslate"><span class="pre">pycaliper.annotate_function</span></code> decorator
+as a higher-level way of annotating functions.</p>
+<p>The Python API also supports the Caliper <code class="code docutils literal notranslate"><span class="pre">ConfigManager</span></code> API (<a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">ConfigManager API reference</span></a>).
+The example is examples/apps/py-example.py demonstrates the annotation and
+<code class="code docutils literal notranslate"><span class="pre">ConfigManager</span></code> APIs for Python:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copyright (c) 2024, Lawrence Livermore National Security, LLC.</span>
+<span class="c1"># See top-level LICENSE file for details.</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pycaliper.high_level</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotate_function</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pycaliper.config_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pycaliper.instrumentation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">set_global_byname</span><span class="p">,</span>
+    <span class="n">begin_region</span><span class="p">,</span>
+    <span class="n">end_region</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pycaliper.loop</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loop</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_available_specs_doc</span><span class="p">(</span><span class="n">mgr</span><span class="p">:</span> <span class="n">ConfigManager</span><span class="p">):</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">mgr</span><span class="o">.</span><span class="n">available_config_specs</span><span class="p">():</span>
+        <span class="n">doc</span> <span class="o">+=</span> <span class="n">mgr</span><span class="o">.</span><span class="n">get_documentation_for_spec</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+        <span class="n">doc</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="k">return</span> <span class="n">doc</span>
+
+
+<span class="nd">@annotate_function</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">nsecs</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">100000</span><span class="p">)</span>
+    <span class="n">secs</span> <span class="o">=</span> <span class="n">nsecs</span> <span class="o">/</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">secs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">i</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">mgr</span> <span class="o">=</span> <span class="n">ConfigManager</span><span class="p">()</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--caliper_config&quot;</span><span class="p">,</span> <span class="s2">&quot;-P&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Configuration for Caliper</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">get_available_specs_doc</span><span class="p">(</span><span class="n">mgr</span><span class="p">)))</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Number of iterations&quot;</span><span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+    
+    <span class="n">mgr</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">caliper_config</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">mgr</span><span class="o">.</span><span class="n">error</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Caliper config error:&quot;</span><span class="p">,</span> <span class="n">mgr</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+    <span class="n">mgr</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="n">set_global_byname</span><span class="p">(</span><span class="s2">&quot;iterations&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">iterations</span><span class="p">)</span>
+    <span class="n">set_global_byname</span><span class="p">(</span><span class="s2">&quot;caliper.config&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">caliper_config</span><span class="p">)</span>
+    
+    <span class="n">begin_region</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    
+    <span class="n">begin_region</span><span class="p">(</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">end_region</span><span class="p">(</span><span class="s2">&quot;init&quot;</span><span class="p">)</span>
+    
+    <span class="n">loop_ann</span> <span class="o">=</span> <span class="n">Loop</span><span class="p">(</span><span class="s2">&quot;mainloop&quot;</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">iterations</span><span class="p">):</span>
+        <span class="n">loop_ann</span><span class="o">.</span><span class="n">start_iteration</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">*=</span> <span class="n">foo</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">loop_ann</span><span class="o">.</span><span class="n">end_iteration</span><span class="p">()</span>
+
+    <span class="n">loop_ann</span><span class="o">.</span><span class="n">end</span><span class="p">()</span>
+
+    <span class="n">end_region</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    
+    <span class="n">mgr</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+    
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+    
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
+            </a></p>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Python support</a><ul>
+<li><a class="reference internal" href="#using-the-python-module">Using the Python module</a></li>
+<li><a class="reference internal" href="#caliper-python-api">Caliper Python API</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="FortranSupport.html"
+                          title="previous chapter">Fortran support</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="build.html"
+                          title="next chapter">Building Caliper</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/PythonSupport.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Building Caliper"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="FortranSupport.html" title="Fortran support"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python support</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    </div>
+  </body>
+</html>

@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>The CalQL query language &#8212; Caliper 2.11.0-dev documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
+    <title>The CalQL query language &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Output formatting" href="OutputFormats.html" />
     <link rel="prev" title="Caliper services" href="services.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="services.html" title="Caliper services"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>  
@@ -44,7 +44,7 @@
           <div class="body" role="main">
             
   <section id="the-calql-query-language">
-<h1>The CalQL query language<a class="headerlink" href="#the-calql-query-language" title="Permalink to this heading">¶</a></h1>
+<h1>The CalQL query language<a class="headerlink" href="#the-calql-query-language" title="Link to this heading">¶</a></h1>
 <p>The Caliper Query Language (CalQL) is used to filter, aggregate, and
 create reports from Caliper data in Caliper’s data processing tools
 (cali-query) and report services. Its syntax is very similar to SQL.</p>
@@ -59,7 +59,7 @@ table, sorted by time, is accomplished with the following statement:</p>
 </pre></div>
 </div>
 <section id="quick-reference">
-<h2>Quick reference<a class="headerlink" href="#quick-reference" title="Permalink to this heading">¶</a></h2>
+<h2>Quick reference<a class="headerlink" href="#quick-reference" title="Link to this heading">¶</a></h2>
 <p>This table contains a quick reference of all CalQL statements:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                   <span class="c1"># Compute additional attributes in input records</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">c</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>     <span class="c1"># computes a = &lt;b&gt;/&lt;c&gt;*S</span>
@@ -123,7 +123,7 @@ table, sorted by time, is accomplished with the following statement:</p>
 </div>
 </section>
 <section id="let">
-<h2>LET<a class="headerlink" href="#let" title="Permalink to this heading">¶</a></h2>
+<h2>LET<a class="headerlink" href="#let" title="Link to this heading">¶</a></h2>
 <p>The LET statement applies computation operators on input record entries
 and adds the results as a new entries in the input records. The new entries
 can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
@@ -183,7 +183,7 @@ ratio(work,time.duration.ns) AS Efficiency</p>
 </div></blockquote>
 </section>
 <section id="select">
-<h2>SELECT<a class="headerlink" href="#select" title="Permalink to this heading">¶</a></h2>
+<h2>SELECT<a class="headerlink" href="#select" title="Link to this heading">¶</a></h2>
 <p>The SELECT statement selects which attributes in snapshot records
 should be printed, and defines aggregations. <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span></code> selects all
 attributes. <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">op(arg)</span></code> enables aggregation operation <cite>op</cite> with
@@ -233,7 +233,7 @@ the inclusive percent-of-total for <cite>time.duration.ns</cite>. Example output
 </div>
 </section>
 <section id="where">
-<h2>WHERE<a class="headerlink" href="#where" title="Permalink to this heading">¶</a></h2>
+<h2>WHERE<a class="headerlink" href="#where" title="Link to this heading">¶</a></h2>
 <p>The WHERE statement can be used to filter the records to aggregate/print.
 The statement takes a comma-separated list of clauses. Records that don’t
 match all of the clauses are filtered out. Filters can only be defined on
@@ -261,7 +261,7 @@ level. The above example matches the following:</p>
 records without <code class="docutils literal notranslate"><span class="pre">iteration#mainloop</span></code> attributes.</p>
 </section>
 <section id="group-by">
-<h2>GROUP BY<a class="headerlink" href="#group-by" title="Permalink to this heading">¶</a></h2>
+<h2>GROUP BY<a class="headerlink" href="#group-by" title="Link to this heading">¶</a></h2>
 <p>The GROUP BY statement defines the <cite>aggregation key</cite> for aggregation
 operations. The aggregation key defines for which attributes separate
 (aggregate) records will be kept. That is, the aggregator will
@@ -291,14 +291,14 @@ function profile:</p>
 </div>
 </section>
 <section id="format">
-<h2>FORMAT<a class="headerlink" href="#format" title="Permalink to this heading">¶</a></h2>
+<h2>FORMAT<a class="headerlink" href="#format" title="Link to this heading">¶</a></h2>
 <p>The FORMAT statement selects the output format option. Caliper can
 produce machine-readable (e.g., json or Caliper’s own csv-style) or
 human-readable output (text tables or a tree representation).</p>
 <p>See <a class="reference internal" href="OutputFormats.html"><span class="doc">Output formatting</span></a> for a list of available formatters.</p>
 </section>
 <section id="order-by">
-<h2>ORDER BY<a class="headerlink" href="#order-by" title="Permalink to this heading">¶</a></h2>
+<h2>ORDER BY<a class="headerlink" href="#order-by" title="Link to this heading">¶</a></h2>
 <p>Sort output records by the given sort criteria. The statement defines
 a list of attributes to sort output records by. Records can be sorted
 ascending (using the ASC keyword) or descending (using DESC).
@@ -335,10 +335,10 @@ attribute name and not an alias assigned with <code class="docutils literal notr
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -373,7 +373,7 @@ attribute name and not an alias assigned with <code class="docutils literal notr
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -381,13 +381,13 @@ attribute name and not an alias assigned with <code class="docutils literal notr
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -402,13 +402,13 @@ attribute name and not an alias assigned with <code class="docutils literal notr
         <li class="right" >
           <a href="services.html" title="Caliper services"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">The CalQL query language</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     </div>
   </body>
 </html>

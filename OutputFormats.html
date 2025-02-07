@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Output formatting &#8212; Caliper 2.11.0-dev documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
+    <title>Output formatting &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Caliper tools" href="tools.html" />
     <link rel="prev" title="The CalQL query language" href="calql.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>  
@@ -44,13 +44,13 @@
           <div class="body" role="main">
             
   <section id="output-formatting">
-<h1>Output formatting<a class="headerlink" href="#output-formatting" title="Permalink to this heading">¶</a></h1>
+<h1>Output formatting<a class="headerlink" href="#output-formatting" title="Link to this heading">¶</a></h1>
 <p>Caliper provides a variety of formatters to create machine or
 human-readable output. These can be used in all I/O services and tools
 that process CalQL, e.g. <cite>cali-query</cite>, the <cite>report</cite> and <cite>mpireport</cite>
 services, as well as the report generation API.</p>
 <section id="formatter-configuration">
-<h2>Formatter configuration<a class="headerlink" href="#formatter-configuration" title="Permalink to this heading">¶</a></h2>
+<h2>Formatter configuration<a class="headerlink" href="#formatter-configuration" title="Link to this heading">¶</a></h2>
 <p>To select a formatter, use the <cite>FORMAT</cite> statement in CalQL. Some
 formatters, e.g. <cite>tree</cite>, take additional arguments in a “function
 call” syntax, e.g.</p>
@@ -65,13 +65,13 @@ the <cite>SELECT</cite> statement.</p>
 to print records in a given order, but not all of them do.</p>
 </section>
 <section id="cali">
-<h2>Cali<a class="headerlink" href="#cali" title="Permalink to this heading">¶</a></h2>
+<h2>Cali<a class="headerlink" href="#cali" title="Link to this heading">¶</a></h2>
 <p>The <cite>cali</cite> formatter writes Caliper raw data that can be read by
 <cite>cali-query</cite>, the <a class="reference internal" href="pythonreader.html"><span class="doc">Python reader API</span></a>, and the <code class="docutils literal notranslate"><span class="pre">caliper_native_reader</span></code>
 importer in <a class="reference external" href="https://github.com/LLNL/hatchet">Hatchet</a>.</p>
 </section>
 <section id="expand">
-<h2>Expand<a class="headerlink" href="#expand" title="Permalink to this heading">¶</a></h2>
+<h2>Expand<a class="headerlink" href="#expand" title="Link to this heading">¶</a></h2>
 <p>The <cite>expand</cite> formatter writes records as comma-separated key-value
 lists, with each record in a single line. Hierachical values are
 written with slash <code class="docutils literal notranslate"><span class="pre">/</span></code> separators.</p>
@@ -91,7 +91,7 @@ written with slash <code class="docutils literal notranslate"><span class="pre">
 </div>
 </section>
 <section id="table">
-<h2>Table<a class="headerlink" href="#table" title="Permalink to this heading">¶</a></h2>
+<h2>Table<a class="headerlink" href="#table" title="Link to this heading">¶</a></h2>
 <p>The <cite>table</cite> formatter prints a human-readable text table with
 automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <p>Example:</p>
@@ -128,7 +128,7 @@ automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 </div>
 </section>
 <section id="tree">
-<h2>Tree<a class="headerlink" href="#tree" title="Permalink to this heading">¶</a></h2>
+<h2>Tree<a class="headerlink" href="#tree" title="Link to this heading">¶</a></h2>
 <p>The <cite>tree</cite> formatter prints records in hierarchical form based on the
 input data, such as nested functions and regions.</p>
 <p>The attribute used to build the hierarchy can be given as an argument
@@ -170,7 +170,7 @@ annotations.</p>
 </div>
 </section>
 <section id="json">
-<span id="json-format"></span><h2>Json<a class="headerlink" href="#json" title="Permalink to this heading">¶</a></h2>
+<span id="json-format"></span><h2>Json<a class="headerlink" href="#json" title="Link to this heading">¶</a></h2>
 <p>The <cite>json</cite> formatter writes a list-of-dicts style json file, where
 each Caliper record is a JSON object with attribute:value
 entries. Hierarchical values are written as a single string with a
@@ -201,7 +201,7 @@ produces larger files than <cite>json-split</cite>.</p>
 </div>
 </section>
 <section id="json-split">
-<span id="json-split-format"></span><h2>Json-split<a class="headerlink" href="#json-split" title="Permalink to this heading">¶</a></h2>
+<span id="json-split-format"></span><h2>Json-split<a class="headerlink" href="#json-split" title="Link to this heading">¶</a></h2>
 <p>The <cite>json-split</cite> formatter writes a JSON file with separate fields for
 Caliper records and metadata. It is generally a more efficient format
 than the list-of-dicts produced by the <cite>json</cite> formatter, and
@@ -284,10 +284,10 @@ in the array.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -322,7 +322,7 @@ in the array.</p>
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -330,13 +330,13 @@ in the array.</p>
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -351,13 +351,13 @@ in the array.</p>
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     </div>
   </body>
 </html>

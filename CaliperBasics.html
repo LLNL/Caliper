@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html lang="en" data-content_root="./">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Caliper Basics &#8212; Caliper 2.11.0-dev documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b76e3c8a" />
-    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=89b800e6" />
+    <title>Caliper Basics &#8212; Caliper 2.12.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css?v=2bf1fcf8" />
     
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=251b1d02"></script>
-    <script src="_static/doctools.js?v=888ff710"></script>
-    <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/documentation_options.js?v=20401a9d"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="GPU profiling" href="GPUProfiling.html" />
     <link rel="prev" title="Caliper: A Performance Analysis Toolbox in a Library" href="index.html" /> 
   </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -33,7 +33,7 @@
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>  
@@ -44,7 +44,7 @@
           <div class="body" role="main">
             
   <section id="caliper-basics">
-<h1>Caliper Basics<a class="headerlink" href="#caliper-basics" title="Permalink to this heading">¶</a></h1>
+<h1>Caliper Basics<a class="headerlink" href="#caliper-basics" title="Link to this heading">¶</a></h1>
 <p>Caliper is a library to integrate performance profiling capabilities
 into applications. To use Caliper, developers mark code regions of
 interest using Caliper’s annotation API. Applications can then enable
@@ -58,7 +58,7 @@ Most of the examples shown here use the <code class="docutils literal notranslat
 Caliper Git repository. There is a complete listing at the end of
 this tutorial: <a class="reference internal" href="#cxx-example"><span class="std std-ref">C++ example program</span></a>.</p>
 <section id="build-and-install">
-<h2>Build and install<a class="headerlink" href="#build-and-install" title="Permalink to this heading">¶</a></h2>
+<h2>Build and install<a class="headerlink" href="#build-and-install" title="Link to this heading">¶</a></h2>
 <p>You can install Caliper with <a class="reference external" href="https://github.com/spack/spack">Spack</a>, or
 clone it directly from Github:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/LLNL/Caliper.git
@@ -92,7 +92,7 @@ Caliper installation with <cite>caliper_DIR</cite>:</p>
 </div>
 </section>
 <section id="region-profiling">
-<h2>Region profiling<a class="headerlink" href="#region-profiling" title="Permalink to this heading">¶</a></h2>
+<h2>Region profiling<a class="headerlink" href="#region-profiling" title="Link to this heading">¶</a></h2>
 <p>Caliper’s source-code annotation API allows you to mark source-code regions
 of interest in your program. Much of Caliper’s functionality depends on these
 region annotations.</p>
@@ -129,9 +129,9 @@ API reference: <a class="reference internal" href="AnnotationAPI.html"><span cla
 By default, Caliper does not record data - we have to activate performance
 profiling at runtime.
 An easy way to do this is to use one of Caliper’s built-in measurement
-configurations. For example, the <cite>runtime-report</cite> config prints out the time
+recipes. For example, the <cite>runtime-report</cite> recipe prints out the time
 spent in the annotated regions. You can activate built-in measurement
-configurations with the <a class="reference internal" href="#configmgr-api"><span class="std std-ref">ConfigManager API</span></a> or with the
+recipes with the <a class="reference internal" href="#configmgr-api"><span class="std std-ref">ConfigManager API</span></a> or with the
 <span class="target" id="index-0"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a> environment variable.
 Let’s try this on Caliper’s cxx-example program:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Caliper/build
@@ -144,7 +144,7 @@ main<span class="w">            </span><span class="m">0</span>.000119<span clas
 <span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000017<span class="w">      </span><span class="m">0</span>.000017<span class="w">      </span><span class="m">0</span>.000017<span class="w">  </span><span class="m">1</span>.011303
 </pre></div>
 </div>
-<p>Like most built-in configurations, the runtime-report config works for MPI and
+<p>Like most built-in recipes, the runtime-report config works for MPI and
 non-MPI programs. By default, it reports the minimum, maximum, and average
 exclusive time (seconds) spent in each marked code region across MPI ranks
 (the three values are identical in non-MPI programs). Exclusive time is the
@@ -162,14 +162,14 @@ main<span class="w">            </span><span class="m">0</span>.000658<span clas
 <span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000003<span class="w">      </span><span class="m">0</span>.000003<span class="w">      </span><span class="m">0</span>.000003<span class="w">  </span><span class="m">0</span>.251889
 </pre></div>
 </div>
-<p>Caliper provides many more performance measurement configurations in addition
-to <cite>runtime-report</cite> that make use of region annotations. For example,
+<p>Caliper provides many more performance measurement configurations that
+make use of region annotations. For example,
 <cite>hatchet-region-profile</cite> writes a .cali file with region times for processing
 with <a class="reference external" href="https://github.com/LLNL/hatchet">Hatchet</a>. See
 <a class="reference internal" href="#more-on-configurations"><span class="std std-ref">More on configurations</span></a> below to learn more about different
 configurations and their options.</p>
 <section id="region-levels-and-filtering">
-<h3>Region levels and filtering<a class="headerlink" href="#region-levels-and-filtering" title="Permalink to this heading">¶</a></h3>
+<h3>Region levels and filtering<a class="headerlink" href="#region-levels-and-filtering" title="Link to this heading">¶</a></h3>
 <p>Caliper supports region levels to allow collection of profiling data at different
 granularities. The default regions have region level 0 (the finest level).
 Caliper also provides “phase” region macros to mark larger program phases, such
@@ -189,7 +189,7 @@ will only measure regions that have at least “phase” level.</p>
 <a class="reference internal" href="RegionFiltering.html"><span class="doc">Region filtering</span></a> to learn more.</p>
 </section>
 <section id="notes-on-multi-threading">
-<span id="notes-on-threading"></span><h3>Notes on multi-threading<a class="headerlink" href="#notes-on-multi-threading" title="Permalink to this heading">¶</a></h3>
+<span id="notes-on-threading"></span><h3>Notes on multi-threading<a class="headerlink" href="#notes-on-multi-threading" title="Link to this heading">¶</a></h3>
 <p>Some care must be taken when annotating multi-threaded programs. Regions are
 <em>either</em> visible only on the thread that creates them, <em>or</em> shared by all
 threads. You can set the visibility scope (<code class="docutils literal notranslate"><span class="pre">thread</span></code> or <code class="docutils literal notranslate"><span class="pre">process</span></code>) with the
@@ -248,16 +248,16 @@ threads. However, the “main” region is only visible on the master thread.</p
 </section>
 </section>
 <section id="configmanager-api">
-<span id="configmgr-api"></span><h2>ConfigManager API<a class="headerlink" href="#configmanager-api" title="Permalink to this heading">¶</a></h2>
+<span id="configmgr-api"></span><h2>ConfigManager API<a class="headerlink" href="#configmanager-api" title="Link to this heading">¶</a></h2>
 <p>A distinctive Caliper feature is the ability to enable performance
 measurements programmatically with the ConfigManager API. For example, we often
 let users activate performance measurements with a command-line argument.</p>
 <p>The ConfigManager API provides access to Caliper’s built-in measurement
-configurations (see <a class="reference internal" href="#more-on-configurations"><span class="std std-ref">More on configurations</span></a> below). The ConfigManager
+recipes (see <a class="reference internal" href="#more-on-configurations"><span class="std std-ref">More on configurations</span></a> below). The ConfigManager
 interprets a short configuration string that can be hard-coded in the program
 or provided by the user in some form, e.g. as a command-line parameter or
 in the program’s configuration file.</p>
-<p>To access and control the built-in configurations, create a
+<p>To use the ConfigManager API, create a
 <a class="reference internal" href="ConfigManagerAPI.html#_CPPv4N4cali13ConfigManagerE" title="cali::ConfigManager"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::ConfigManager</span></code></a> object. Add a configuration string with
 <code class="docutils literal notranslate"><span class="pre">add()</span></code>, start the requested configuration channels with <code class="docutils literal notranslate"><span class="pre">start()</span></code>,
 and trigger output with <code class="docutils literal notranslate"><span class="pre">flush()</span></code>. In MPI programs, the <code class="docutils literal notranslate"><span class="pre">flush()</span></code> method
@@ -316,24 +316,20 @@ configurations.</p></li>
 </ul>
 </section>
 <section id="more-on-configurations">
-<span id="id1"></span><h2>More on configurations<a class="headerlink" href="#more-on-configurations" title="Permalink to this heading">¶</a></h2>
+<span id="id1"></span><h2>More on configurations<a class="headerlink" href="#more-on-configurations" title="Link to this heading">¶</a></h2>
 <p>A configuration string for the ConfigManager API or the
-<span class="target" id="index-2"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a> environment variable is a comma-separated list of
-<em>configs</em> and <em>parameters</em>.</p>
-<p>A <em>config</em> is the name of one of Caliper’s built-in measurement configurations,
-e.g. <cite>runtime-report</cite>. Multiple configs can be specified, separated by comma.</p>
-<p>Most configs have optional parameters, e.g. <cite>output</cite> to name an output file.
-Parameters can be specified as a list of key-value pairs in parentheses after
-the config name, e.g. <cite>runtime-report(output=report.txt,io.bytes)</cite>. For
+<span class="target" id="index-2"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a> environment variable is a list of
+<em>configs</em> (like <cite>runtime-report</cite>) and <em>parameters</em>.
+Multiple configs can be specified, separated by comma.</p>
+<p>Parameters can configure output options or enable additional functionality.
+They can be specified as a list of key-value pairs in parentheses
+after the config name, e.g. <cite>runtime-report(output=report.txt,io.bytes)</cite>. For
 boolean parameters, only the key needs to be added to enable it; for example,
 <cite>io.bytes</cite> is equal to <cite>io.bytes=true</cite>. You can also add parameters outside
 of parentheses; these apply to all configs.</p>
-<p>Many optional parameters enable additional Caliper functionality. For example,
-the <cite>profile.mpi</cite> option enables MPI function profiling, the <cite>io.bytes</cite> option
-reports I/O bytes written and read, and the <cite>mem.highwatermark</cite> option reports
-the memory high-watermark. In the example below, the <cite>mem.highwatermark</cite>
-option for <cite>runtime-report</cite> adds the “Allocated MB” column that shows the
-maximum amount of memory that was allocated in each region:</p>
+<p>In the example below, we enable the <cite>mem.highwatermark</cite> option in
+<cite>runtime-report</cite>. This adds the “Allocated MB” column that shows the maximum
+amount of memory that was allocated in each region:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>runtime-report,mem.highwatermark
 Path<span class="w">       </span>Min<span class="w"> </span>time/rank<span class="w"> </span>Max<span class="w"> </span>time/rank<span class="w"> </span>Avg<span class="w"> </span>time/rank<span class="w"> </span>Time<span class="w"> </span>%<span class="w">   </span>Allocated<span class="w"> </span>MB
 main<span class="w">            </span><span class="m">0</span>.000179<span class="w">      </span><span class="m">0</span>.000179<span class="w">      </span><span class="m">0</span>.000179<span class="w"> </span><span class="m">2</span>.054637<span class="w">     </span><span class="m">0</span>.000047
@@ -342,11 +338,10 @@ main<span class="w">            </span><span class="m">0</span>.000179<span clas
 <span class="w">  </span>init<span class="w">          </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w">      </span><span class="m">0</span>.000020<span class="w"> </span><span class="m">0</span>.229568<span class="w">     </span><span class="m">0</span>.000000
 </pre></div>
 </div>
-<p>You can use the cali-query program to list available configs and their parameters.
-For example, <code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=configs</span></code> lists all configs and their options.
-You can also query parameters for a specific config, e.g.
+<p>You can use <code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=configs</span></code> to list all available recipes and their
+parameters. You can also query parameters for a specific recipe, e.g.
 <code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">--help=runtime-report</span></code>.</p>
-<p>Some available performance measurement configs include:</p>
+<p>Some available performance measurement recipes include:</p>
 <dl class="simple">
 <dt>runtime-report</dt><dd><p>Print a time profile for annotated regions.</p>
 </dd>
@@ -384,7 +379,7 @@ configuration string syntax and available configs and parameters, see
 configuring Caliper services manually. See <a class="reference internal" href="configuration.html"><span class="doc">Manual configuration</span></a> to learn more.</p>
 </section>
 <section id="loop-profiling">
-<h2>Loop profiling<a class="headerlink" href="#loop-profiling" title="Permalink to this heading">¶</a></h2>
+<h2>Loop profiling<a class="headerlink" href="#loop-profiling" title="Link to this heading">¶</a></h2>
 <p>Loop profiling allows analysis of performance over time in iterative programs.
 To use loop profiling, annotate loops and loop iterations with Caliper’s loop
 annotation macros:</p>
@@ -404,9 +399,19 @@ end macros, as well as a user-defined name for the loop (here: “mainloop”).<
 <p>Like other region annotations, loop and iteration annotations are meant for
 high-level regions, not small, frequently executed loops inside kernels.
 We recommend to only annotate top-level loops, such as the main timestepping
-loop in a simulation code.
-With the loop annotations in place, we can use the loop-report config to print
-loop performance information:</p>
+loop in a simulation code.</p>
+<p>With loop annotations in place, we can use the <cite>loop.stats</cite> option to print
+the minimum, maximum, and average time per loop iteration:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>runtime-report,loop.stats<span class="w"> </span><span class="m">5000</span>
+Path<span class="w">       </span>Time<span class="w"> </span><span class="o">(</span>E<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>I<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span>%<span class="w"> </span><span class="o">(</span>E<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span>%<span class="w"> </span><span class="o">(</span>I<span class="o">)</span><span class="w"> </span>Iterations<span class="w"> </span>Time/iter<span class="w"> </span><span class="o">(</span>min<span class="o">)</span><span class="w"> </span>Time/iter<span class="w"> </span><span class="o">(</span>avg<span class="o">)</span><span class="w"> </span>Time/iter<span class="w"> </span><span class="o">(</span>max<span class="o">)</span>
+main<span class="w">       </span><span class="m">0</span>.000070<span class="w"> </span><span class="m">8</span>.010493<span class="w">   </span><span class="m">0</span>.000870<span class="w">  </span><span class="m">99</span>.995709
+<span class="w">  </span>init<span class="w">     </span><span class="m">0</span>.000004<span class="w"> </span><span class="m">0</span>.000004<span class="w">   </span><span class="m">0</span>.000047<span class="w">   </span><span class="m">0</span>.000047
+<span class="w">  </span>mainloop<span class="w"> </span><span class="m">0</span>.172615<span class="w"> </span><span class="m">8</span>.010420<span class="w">   </span><span class="m">2</span>.154765<span class="w">  </span><span class="m">99</span>.994792<span class="w">       </span><span class="m">5000</span><span class="w">        </span><span class="m">0</span>.000110<span class="w">        </span><span class="m">0</span>.001591<span class="w">        </span><span class="m">0</span>.003317
+<span class="w">    </span>foo<span class="w">    </span><span class="m">7</span>.837805<span class="w"> </span><span class="m">7</span>.837805<span class="w">  </span><span class="m">97</span>.840027<span class="w">  </span><span class="m">97</span>.840027
+</pre></div>
+</div>
+<p>More detailed loop timing information is available with the loop-report
+recipe:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>loop-report<span class="w"> </span><span class="m">5000</span>
 Loop<span class="w"> </span>summary:
 ------------
@@ -518,7 +523,7 @@ with other configs, notably the <cite>spot</cite> config producing output for th
 performance visualization web framework.</p>
 </section>
 <section id="recording-program-metadata">
-<h2>Recording program metadata<a class="headerlink" href="#recording-program-metadata" title="Permalink to this heading">¶</a></h2>
+<h2>Recording program metadata<a class="headerlink" href="#recording-program-metadata" title="Link to this heading">¶</a></h2>
 <p>Caliper can record and store program metadata, such as the system and program
 configuration, in its output files. This is useful for studies that compare
 data from multiple runs, such as scaling studies.</p>
@@ -529,24 +534,6 @@ save global attributes in the form of key-value pairs:</p>
 <span class="n">cali_set_global_string_byname</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </pre></div>
 </div>
-<p>Most machine-readable output formats, e.g. the hatchet JSON format written by the
-hatchet-region-profile config, include this data:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>./examples/apps/cxx-example<span class="w"> </span>-P<span class="w"> </span>hatchet-region-profile,output<span class="o">=</span>stdout
-<span class="o">{</span>
-<span class="s2">&quot;data&quot;</span>:<span class="w"> </span><span class="o">[</span>
-<span class="w">    </span>...
-<span class="o">]</span>,
-...
-<span class="s2">&quot;caliper.config&quot;</span>:<span class="w"> </span><span class="s2">&quot;hatchet-region-profile,output=stdout&quot;</span>,
-<span class="s2">&quot;iterations&quot;</span>:<span class="w"> </span><span class="s2">&quot;4&quot;</span>,
-<span class="s2">&quot;cali.caliper.version&quot;</span>:<span class="w"> </span><span class="s2">&quot;2.5.0-dev&quot;</span>,
-<span class="s2">&quot;cali.channel&quot;</span>:<span class="w"> </span><span class="s2">&quot;hatchet-region-profile&quot;</span>
-<span class="o">}</span>
-</pre></div>
-</div>
-<p>Note how the “iterations” and “caliper.config” attributes are stored as
-top-level attributes in the JSON output. Caliper adds some built-in metadata
-attributes as well, such as the Caliper version (“cali.caliper.version”).</p>
 <p>An even better way to record metadata is the <a class="reference external" href="https://github.com/LLNL/Adiak">Adiak</a>
 library. Adiak makes metadata attributes accessible to multiple tools, and
 provides built-in functionality to record common information such as user
@@ -561,13 +548,30 @@ above, and also the user name, launch date, and MPI job size:</p>
 <span class="n">adiak</span><span class="o">::</span><span class="n">value</span><span class="p">(</span><span class="s">&quot;caliper.config&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">configstr</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
 </pre></div>
 </div>
-<p>Most Caliper configs automatically import metadata attributes set through
+<p>Most Caliper recipes automatically import metadata attributes set through
 Adiak (Adiak support must be enabled in the Caliper build configuration). The
 spot config for the Spot web visualization framework requires that metadata
 attributes are recorded through Adiak.</p>
+<p>Finally, metadata can be added through the <code class="docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code> and ConfigManager
+configuration strings with the <code class="docutils literal notranslate"><span class="pre">metadata</span></code> keyword:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nv">CALI_CONFIG</span><span class="o">=</span><span class="s2">&quot;runtime-report,print.metadata,metadata(foo=fooval,bar=barval)&quot;</span><span class="w"> </span>./examples/apps/cxx-example
+caliper.config<span class="w">        </span>:
+iterations<span class="w">            </span>:<span class="w"> </span><span class="m">4</span>
+cali.caliper.version<span class="w">  </span>:<span class="w"> </span><span class="m">2</span>.12.0-dev
+opts:print.metadata<span class="w">   </span>:<span class="w"> </span><span class="nb">true</span>
+opts:output.append<span class="w">    </span>:<span class="w"> </span><span class="nb">true</span>
+opts:order_as_visited<span class="w"> </span>:<span class="w"> </span><span class="nb">true</span>
+foo<span class="w">                   </span>:<span class="w"> </span>fooval
+bar<span class="w">                   </span>:<span class="w"> </span>barval
+cali.channel<span class="w">          </span>:<span class="w"> </span>runtime-report
+Path<span class="w">       </span>Time<span class="w"> </span><span class="o">(</span>E<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span><span class="o">(</span>I<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span>%<span class="w"> </span><span class="o">(</span>E<span class="o">)</span><span class="w"> </span>Time<span class="w"> </span>%<span class="w"> </span><span class="o">(</span>I<span class="o">)</span>
+main<span class="w">       </span><span class="m">0</span>.000014<span class="w"> </span><span class="m">0</span>.000547<span class="w">   </span><span class="m">2</span>.118374<span class="w">  </span><span class="m">85</span>.205938
+...
+</pre></div>
+</div>
 </section>
 <section id="third-party-tool-support-nvidia-nsight-intel-vtune">
-<h2>Third-party tool support (NVidia NSight, Intel VTune)<a class="headerlink" href="#third-party-tool-support-nvidia-nsight-intel-vtune" title="Permalink to this heading">¶</a></h2>
+<h2>Third-party tool support (NVidia NSight, Intel VTune)<a class="headerlink" href="#third-party-tool-support-nvidia-nsight-intel-vtune" title="Link to this heading">¶</a></h2>
 <p>Caliper provides bindings to export Caliper-annotated source code regions to
 third-party tools. Currently, Nvidia’s NVTX API for the NVProf/NSight
 profilers and Intel’s ITT API for Intel VTune Amplifier are supported.</p>
@@ -589,7 +593,7 @@ and counters” checkbox.</p></li>
 analysis views.</p>
 </section>
 <section id="c-example-program">
-<span id="cxx-example"></span><h2>C++ example program<a class="headerlink" href="#c-example-program" title="Permalink to this heading">¶</a></h2>
+<span id="cxx-example"></span><h2>C++ example program<a class="headerlink" href="#c-example-program" title="Link to this heading">¶</a></h2>
 <div class="highlight-C++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.</span>
 <span class="c1">// See top-level LICENSE file for details.</span>
 
@@ -628,10 +632,13 @@ analysis views.</p>
 <span class="w">    </span><span class="c1">// and automatically closes it at the end of the function.</span>
 <span class="w">    </span><span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">sleeptime</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="o">&lt;</span><span class="kt">time_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">100000</span><span class="p">)</span><span class="w"> </span><span class="p">};</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">timespec</span><span class="w"> </span><span class="n">sleeptime</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="o">&lt;</span><span class="kt">time_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="mi">100000</span><span class="p">)</span>
+<span class="w">    </span><span class="p">};</span>
+
 <span class="w">    </span><span class="n">nanosleep</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sleeptime</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mf">0.5</span><span class="o">*</span><span class="n">i</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">i</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">argv</span><span class="p">[])</span>
@@ -639,11 +646,12 @@ analysis views.</p>
 <span class="w">    </span><span class="c1">//   The ConfigManager manages built-in or custom Caliper measurement</span>
 <span class="w">    </span><span class="c1">// configurations, and provides an API to control performance profiling.</span>
 <span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span><span class="w"> </span><span class="n">mgr</span><span class="p">;</span>
+<span class="w">    </span><span class="n">mgr</span><span class="p">.</span><span class="n">set_default_parameter</span><span class="p">(</span><span class="s">&quot;aggregate_across_ranks&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;false&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">//   Parse command-line arguments. Let users choose a Caliper performance</span>
 <span class="w">    </span><span class="c1">// profiling configuration via the &quot;-P&quot; command-line argument.</span>
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">configstr</span><span class="p">;</span>
-<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">         </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">argc</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;-h&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">strcmp</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;--help&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -661,9 +669,7 @@ analysis views.</p>
 <span class="w">            </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">iterations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">stoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]);</span>
 <span class="w">            </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">invalid_argument</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Invalid argument: </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
-<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">. Expected a number.&quot;</span>
-<span class="w">                          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<span class="w">                </span><span class="n">std</span><span class="o">::</span><span class="n">cerr</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Invalid argument: </span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">argv</span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">. Expected a number.&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 <span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
@@ -725,10 +731,10 @@ analysis views.</p>
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
         <div class="sphinxsidebarwrapper">
             <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo of Caliper"/>
             </a></p>
   <div>
     <h3><a href="index.html">Table of Contents</a></h3>
@@ -768,7 +774,7 @@ analysis views.</p>
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
-<div id="searchbox" style="display: none" role="search">
+<search id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
@@ -776,13 +782,13 @@ analysis views.</p>
       <input type="submit" value="Go" />
     </form>
     </div>
-</div>
+</search>
 <script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related" role="navigation" aria-label="Related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -797,13 +803,13 @@ analysis views.</p>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.11.0-dev documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.12.1 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Caliper Basics</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
     &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.1.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     </div>
   </body>
 </html>
