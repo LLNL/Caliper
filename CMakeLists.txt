@@ -380,7 +380,7 @@ if (WITH_ROCTX OR WITH_ROCM)
     list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTX_LIBRARIES})
   else()
     message(WARNING "RocTX support requested but ROCm was not found!\n"
-      "Set ROCM_PREFIX to installation path and re-run cmake.")
+      "Set ROCM_PATH to installation path and re-run cmake.")
   endif()
 endif()
 
@@ -392,7 +392,7 @@ if (WITH_ROCTRACER OR WITH_ROCM)
     list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTRACER_LIBRARIES})
   else()
     message(WARNING "RocTracer support requested but ROCm was not found!\n"
-      "Set ROCM_PREFIX to installation path and re-run cmake.")
+      "Set ROCM_PATH to installation path and re-run cmake.")
   endif()
 endif()
 
