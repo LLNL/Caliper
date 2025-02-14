@@ -37,31 +37,36 @@ public:
         config()["CALI_SAMPLER_FREQUENCY"] = std::to_string(freq);
 
         // Config for first aggregation step in MPI mode (process-local aggregation)
-        std::string local_select = std::string("count() as \"Samples\",scale_count(") + std::to_string(1.0 / freq)
-                                   + ") as \"Time (sec)\" unit sec";
+        std::string q_local = std::string(" select count() as \"Samples\",scale_count(")
+            + std::to_string(1.0 / freq) + ") as \"Time (sec)\" unit sec ";
 
         // Config for second aggregation step in MPI mode (cross-process aggregation)
-        std::string cross_select =
-            " min(scount) as \"Min time/rank\" unit sec"
+        std::string q_cross =
+            " select min(scount) as \"Min time/rank\" unit sec"
             ",max(scount) as \"Max time/rank\" unit sec"
             ",avg(scount) as \"Avg time/rank\" unit sec"
             ",sum(scount) as \"Total time\" unit sec"
-            ",percent_total(scount) as \"Time %\"";
+            ",percent_total(scount) as \"Time %\" ";
 
         auto avail_services = services::get_available_services();
         bool have_pthread = std::find(avail_services.begin(), avail_services.end(), "pthread") != avail_services.end();
 
         bool use_callpath = opts.is_enabled("callpath");
 
-        const char* groupby = "path";
+        const char* groupby = " group by path ";
         const char* fmt_in  = "";
 
         if (use_callpath) {
-            groupby = "source.function#callpath.address";
+            groupby = " group by source.function#callpath.address ";
             fmt_in  = "path-attributes=source.function#callpath.address";
         }
 
-        std::string format = util::build_tree_format_spec(config(), opts, fmt_in);
+        std::string fmt_spec = util::build_tree_format_spec(config(), opts, fmt_in);
+
+        q_local.append(groupby);
+        q_local.append(" format ").append(fmt_spec);
+        q_cross.append(groupby);
+        q_cross.append(" format ").append(fmt_spec);
 
         if (have_pthread)
             config()["CALI_SERVICES_ENABLE"].append(",pthread");
@@ -71,20 +76,13 @@ public:
             config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr");
             config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append");
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-            config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                opts.build_query("local", { { "select", local_select }, { "group by", groupby } });
-            config()["CALI_MPIREPORT_CONFIG"] = opts.build_query(
-                "cross",
-                { { "select", cross_select }, { "group by", groupby }, { "format", format } }
-            );
+            config()["CALI_MPIREPORT_LOCAL_CONFIG"]      = opts.build_query("local", q_local);
+            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query("cross", q_cross);
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr");
             config()["CALI_REPORT_APPEND"]   = opts.get("output.append");
-            config()["CALI_REPORT_CONFIG"]   = opts.build_query(
-                "local",
-                { { "select", local_select }, { "group by", groupby }, { "format", format } }
-            );
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", q_local);
         }
 
         opts.update_channel_config(config());

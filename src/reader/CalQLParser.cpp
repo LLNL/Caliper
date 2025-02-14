@@ -256,8 +256,6 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-
-        spec.groupby.use_path = extract_path_keyword(spec.groupby.list);
     }
 
     void parse_select(std::istream& is)
@@ -369,8 +367,6 @@ struct CalQLParser::CalQLParserImpl {
 
             c = util::read_char(is);
         } while (!error && is.good() && c == ',');
-
-        spec.select.use_path = extract_path_keyword(spec.select.list);
 
         if (c)
             is.unget();
@@ -665,6 +661,9 @@ struct CalQLParser::CalQLParserImpl {
             if (is.good() && c != '\0' && c != '\n')
                 set_error(std::string("Expected clause, got ") + c, is);
         }
+
+        spec.select.use_path = extract_path_keyword(spec.select.list);
+        spec.groupby.use_path = extract_path_keyword(spec.groupby.list);
     }
 
     CalQLParserImpl() : error(false), error_pos(std::istream::pos_type(-1))

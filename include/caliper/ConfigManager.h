@@ -116,22 +116,19 @@ public:
         ///    according to the selected options
         void update_channel_metadata(info_map_t& metadata) const;
 
-        /// \brief Returns a CalQL query based on the fields in \a input
-        ///   and option list.
+        /// \brief Returns a CalQL query based on the query \a in
+        ///   and the selected options.
         ///
-        /// Construct a CalQL query for the option list. Example:
+        /// Construct a CalQL query for the selected options. Example:
         /// \code
-        /// auto query = opts.build_query("cross", {
-        ///         { "select",   "sum(inclusive#sum#time.duration) as Total unit sec" },
-        ///         { "group by", "prop:nested" },
-        ///         { "format",   "tree" }
-        ///     });
+        /// auto query = opts.build_query("cross",
+        ///    "select sum(inclusive#sum#time.duration.ns) as Time unit sec group by path format tree");
         /// \endcode
         ///
         /// \param level The aggreatation level ("local" or "cross")
         /// \param in Base CalQL clauses as needed by the controller
         /// \return Complete CalQL query statement
-        std::string build_query(const char* level, const std::map<std::string, std::string>& in) const;
+        std::string build_query(const char* level, const std::string& in) const;
 
         friend class ConfigManager;
     };
