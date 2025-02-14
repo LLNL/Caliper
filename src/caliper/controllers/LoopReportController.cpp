@@ -85,45 +85,34 @@ class LoopReportController : public cali::internal::CustomOutputController
 
     Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db)
     {
-        const char* select =
-            " loop"
+        const char* query_str =
+            " let iter_per_sec=ratio(loop.iterations,time.duration.ns,1e-9)"
+            " select loop"
             ",count()"
             ",sum(loop.iterations)"
             ",scale(time.duration.ns,1e-9)"
             ",min(iter_per_sec)"
             ",max(iter_per_sec)"
-            ",avg(iter_per_sec)";
+            ",avg(iter_per_sec)"
+            " group by loop where loop";
 
-        std::string query = m_opts.build_query(
-            "local",
-            { { "let", "iter_per_sec = ratio(loop.iterations,time.duration.ns,1e9)" },
-              { "select", select },
-              { "group by", "loop" },
-              { "where", "loop" } }
-        );
+        std::string query = m_opts.build_query("local", query_str);
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
 
     QuerySpec summary_query()
     {
-        const char* select =
-            " loop as Loop"
+        const char* query_str =
+            " select loop as Loop"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(scale#time.duration.ns) as \"Time (s)\""
             ",min(min#iter_per_sec) as \"Iter/s (min)\""
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
-            ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\"";
+            ",ratio(sum#loop.iterations,scale#time.duration.ns) as \"Iter/s (avg)\""
+            " aggregate max(count) group by loop format table";
 
-        std::string query = m_opts.build_query(
-            "cross",
-            {
-                { "select", select },
-                { "aggregate", "max(count)" },
-                { "group by", "loop" },
-                { "format", "table" },
-            }
-        );
+        std::string query = m_opts.build_query("cross", query_str);
 
         return CalQLParser(query.c_str()).spec();
     }
@@ -135,38 +124,30 @@ class LoopReportController : public cali::internal::CustomOutputController
         int                blocksize
     )
     {
-        const char* select =
-            " Block"
+        std::string query =
+            " select Block"
             ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
-            ",ratio(loop.iterations,time.duration.ns,1e9)";
+            ",ratio(loop.iterations,time.duration.ns,1e9)"
+            " group by Block";
+        query.append(" let Block=truncate(loop.start_iteration,").append(std::to_string(blocksize)).append(") ");
+        query.append(" where loop=\"").append(loopname).append("\" ");
 
-        std::string block = std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
-
-        std::string query = m_opts.build_query(
-            "local",
-            { { "let", block },
-              { "select", select },
-              { "group by", "Block" },
-              { "where", std::string("loop=\"") + loopname + "\"" } }
-        );
+        query = m_opts.build_query("local", query);
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
 
     QuerySpec timeseries_spec()
     {
-        const char* select =
-            " Block"
+        const char* q_cross =
+            " select Block"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(scale#time.duration.ns) as \"Time (s)\""
-            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\"";
+            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\""
+            " group by Block format table order by Block ";
 
-        std::string query = m_opts.build_query(
-            "cross",
-            { { "select", select }, { "group by", "Block" }, { "format", "table order by Block" } }
-        );
-
+        std::string query = m_opts.build_query("cross", q_cross);
         CalQLParser parser(query.c_str());
 
         if (parser.error())

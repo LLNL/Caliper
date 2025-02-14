@@ -132,19 +132,17 @@ const char* mpireport_spec = R"json(
  "name"        : "mpi-report",
  "services"    : [ "aggregate", "event", "mpi", "mpireport", "timer" ],
  "description" : "Print time spent in MPI functions",
- "categories"  : [ "event" ],
+ "categories"  : [ "event", "output" ],
  "config"      :
- { "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",
-   "CALI_AGGREGATE_KEY"               : "mpi.function",
-   "CALI_EVENT_TRIGGER"               : "mpi.function",
-   "CALI_EVENT_ENABLE_SNAPSHOT_INFO"  : "false",
-   "CALI_TIMER_SNAPSHOT_DURATION"     : "true",
-   "CALI_TIMER_INCLUSIVE_DURATION"    : "false",
-   "CALI_TIMER_UNIT"                  : "sec",
-   "CALI_MPI_BLACKLIST"    :
+ { "CALI_CHANNEL_FLUSH_ON_EXIT": "false",
+   "CALI_AGGREGATE_KEY": "mpi.function",
+   "CALI_EVENT_TRIGGER": "mpi.function",
+   "CALI_EVENT_ENABLE_SNAPSHOT_INFO": "false",
+   "CALI_TIMER_INCLUSIVE_DURATION": "false",
+   "CALI_MPI_BLACKLIST":
      "MPI_Comm_size,MPI_Comm_rank,MPI_Wtime",
    "CALI_MPIREPORT_WRITE_ON_FINALIZE" : "false",
-   "CALI_MPIREPORT_CONFIG" :
+   "CALI_MPIREPORT_CONFIG":
      "let
         sum#time.duration=scale(sum#time.duration.ns,1e-9)
       select
@@ -239,20 +237,15 @@ const char* builtin_base_option_specs = R"json(
  "type"        : "bool",
  "category"    : "metric",
  "query"  :
- [
-  { "level"   : "local",
-    "let"     : [ "rc.count=first(sum#region.count,region.count)" ],
-    "select"  : [ "sum(rc.count) as Calls unit count" ]
-  },
-  { "level"   : "cross", "select":
-   [
-    "min(sum#rc.count) as \"Calls/rank (min)\" unit count",
-    "avg(sum#rc.count) as \"Calls/rank (avg)\" unit count",
-    "max(sum#rc.count) as \"Calls/rank (max)\" unit count",
-    "sum(sum#rc.count) as \"Calls (total)\" unit count"
-   ]
-  }
- ]
+ {
+  "local": "let rc.count=first(sum#region.count,region.count) select sum(rc.count) as Calls unit count",
+  "cross":
+  "select
+    min(sum#rc.count) as \"Calls/rank (min)\" unit count,
+    avg(sum#rc.count) as \"Calls/rank (avg)\" unit count,
+    max(sum#rc.count) as \"Calls/rank (max)\" unit count,
+    sum(sum#rc.count) as \"Calls (total)\" unit count"
+ }
 },{
  "name"        : "region.stats",
  "description" : "Detailed region timing statistics (min/max/avg time per visit)",
@@ -265,33 +258,27 @@ const char* builtin_base_option_specs = R"json(
   "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "true"
  },
  "query"  :
- [
-  { "level": "local",
-    "let":
-    [
-     "rs.count=first(sum#region.count,region.count)",
-     "rs.min=scale(min#time.inclusive.duration.ns,1e-9)",
-     "rs.max=scale(max#time.inclusive.duration.ns,1e-9)",
-     "rs.sum=scale(sum#time.inclusive.duration.ns,1e-9)"
-    ],
-    "aggregate": [ "sum(rs.sum)" ],
-    "select":
-    [
-     "sum(rs.count) as Visits unit count",
-     "min(rs.min) as \"Min time/visit\" unit sec",
-     "ratio(rs.sum,rs.count) as \"Avg time/visit\" unit sec",
-     "max(rs.max) as \"Max time/visit\" unit sec"
-    ]
-  },
-  { "level": "cross", "select":
-    [
-     "sum(sum#rs.count) as Visits unit count",
-     "min(min#rs.min) as \"Min time/visit\" unit sec",
-     "ratio(sum#rs.sum,sum#rs.count) as \"Avg time/visit\" unit sec",
-     "max(max#rs.max) as \"Max time/visit\" unit sec"
-    ]
-  }
- ]
+ {
+  "local":
+  "let
+   rs.count=first(sum#region.count,region.count),
+   rs.min=scale(min#time.inclusive.duration.ns,1e-9),
+   rs.max=scale(max#time.inclusive.duration.ns,1e-9),
+   rs.sum=scale(sum#time.inclusive.duration.ns,1e-9)
+  aggregate
+   sum(rs.sum)
+  select
+   sum(rs.count) as Visits unit count,
+   min(rs.min) as \"Min time/visit\" unit sec,
+   ratio(rs.sum,rs.count) as \"Avg time/visit\" unit sec,
+   max(rs.max) as \"Max time/visit\" unit sec",
+  "cross":
+  "select
+    sum(sum#rs.count) as Visits unit count,
+    min(min#rs.min) as \"Min time/visit\" unit sec,
+    ratio(sum#rs.sum,sum#rs.count) as \"Avg time/visit\" unit sec,
+    max(max#rs.max) as \"Max time/visit\" unit sec"
+ }
 },{
  "name"        : "loop.stats",
  "description" : "Loop iteration count and time statistics",
@@ -299,31 +286,22 @@ const char* builtin_base_option_specs = R"json(
  "category"    : "metric",
  "services"    : [ "loop_statistics" ],
  "query"  :
- [
-  { "level"   : "local",
-    "let"     :
-    [
-     "ls.min=scale(min#iter.duration.ns,1e-9)",
-     "ls.avg=scale(avg#iter.duration.ns,1e-9)",
-     "ls.max=scale(max#iter.duration.ns,1e-9)"
-    ],
-    "select"  :
-    [
-     "max(max#iter.count) as \"Iterations\" unit count",
-     "min(ls.min) as \"Time/iter (min)\" unit sec",
-     "avg(ls.avg) as \"Time/iter (avg)\" unit sec",
-     "max(ls.max) as \"Time/iter (max)\" unit sec"
-    ]
-  },
-  { "level"   : "cross", "select":
-   [
-    "max(max#max#iter.count) as \"Iterations\" unit count",
-    "min(min#ls.min) as \"Time/iter (min)\" unit sec",
-    "avg(avg#ls.avg) as \"Time/iter (avg)\" unit sec",
-    "max(max#ls.max) as \"Time/iter (max)\" unit sec"
-   ]
-  }
- ]
+ {
+  "local":
+  "let
+    ls.min=scale(min#iter.duration.ns,1e-9),ls.avg=scale(avg#iter.duration.ns,1e-9),ls.max=scale(max#iter.duration.ns,1e-9)
+   select
+    max(max#iter.count) as \"Iterations\" unit count,
+    min(ls.min) as \"Time/iter (min)\" unit sec,
+    avg(ls.avg) as \"Time/iter (avg)\" unit sec,
+    max(ls.max) as \"Time/iter (max)\" unit sec",
+  "cross":
+  "select
+    max(max#max#iter.count) as \"Iterations\" unit count,
+    min(min#ls.min) as \"Time/iter (min)\" unit sec,
+    avg(avg#ls.avg) as \"Time/iter (avg)\" unit sec,
+    max(max#ls.max) as \"Time/iter (max)\" unit sec"
+ }
 },{
  "name"        : "async_events",
  "description" : "Report timed asynchronous events",
@@ -331,45 +309,30 @@ const char* builtin_base_option_specs = R"json(
  "category"    : "metric",
  "services"    : [ "async_event" ],
  "query":
- [
-  {
-   "level"    : "local",
-   "group by" : "async.end",
-   "let"      :
-   [
-    "as.min=scale(min#event.duration.ns,1e-9)",
-    "as.avg=scale(avg#event.duration.ns,1e-9)",
-    "as.max=scale(max#event.duration.ns,1e-9)"
-   ],
-   "select":
-   [
-    "async.end as \"Event\"",
-    "min(as.min) as \"Event time (min)\"",
-    "avg(as.avg) as \"Event time (avg)\"",
-    "max(as.max) as \"Event time (max)\""
-   ]
-  },{
-   "level"    : "cross",
-   "group by" : "async.end",
-   "select":
-   [
-    "async.end as \"Event\"",
-    "min(min#as.min) as \"Event time (min)\"",
-    "avg(avg#as.avg) as \"Event time (avg)\"",
-    "max(max#as.max) as \"Event time (max)\""
-   ]
-  }
- ]
+ {
+  "local":
+  "let
+    as.count=first(count) if async.end,as.min=scale(min#event.duration.ns,1e-9),as.avg=scale(avg#event.duration.ns,1e-9),as.max=scale(max#event.duration.ns,1e-9)
+   select
+    async.end as \"Event\",sum(as.count) as Count,min(as.min) as \"Event time (min)\",avg(as.avg) as \"Event time (avg)\",max(as.max) as \"Event time (max)\"
+   group by
+    async.end",
+  "cross":
+  "select
+    async.end as \"Event\",sum(sum#as.count) as Count,min(min#as.min) as \"Event time (min)\",avg(avg#as.avg) as \"Event time (avg)\",max(max#as.max) as \"Event time (max)\"
+   group by
+    async.end"
+ }
 },{
  "name"        : "node.order",
  "description" : "Report order in which regions first appeared",
  "type"        : "bool",
  "category"    : "metric",
- "query"  :
- [
-  { "level": "local", "select": [ "min(aggregate.slot) as \"Node order\"" ] },
-  { "level": "cross", "select": [ "min(min#aggregate.slot) as \"Node order\"" ] }
- ]
+ "query":
+ {
+  "local": "select min(aggregate.slot) as \"Node order\"",
+  "cross": "select min(min#aggregate.slot) as \"Node order\""
+ }
 },{
  "name"        : "output",
  "description" : "Output location ('stdout', 'stderr', or filename)",
@@ -396,18 +359,11 @@ const char* builtin_base_option_specs = R"json(
  "type"        : "bool",
  "description" : "Print tree nodes in the original visit order",
  "category"    : "treeformatter",
- "query"       :
- [
-  { "level":     "local",
-    "let":       [ "o_a_v.slot=first(aggregate.slot)" ],
-    "aggregate": [ "min(o_a_v.slot)" ],
-    "order by":  [ "min#o_a_v.slot"  ]
-  },
-  { "level":     "cross",
-    "aggregate": [ "min(min#o_a_v.slot)" ],
-    "order by":  [ "min#min#o_a_v.slot"  ]
-  }
- ]
+ "query":
+ {
+  "local": "let o_a_v.slot=first(aggregate.slot) aggregate min(o_a_v.slot) order by min#o_a_v.slot",
+  "cross": "aggregate min(min#o_a_v.slot) order by min#min#o_a_v.slot"
+ }
 }
 ]
 )json";
@@ -444,27 +400,22 @@ const char* builtin_mpi_option_specs = R"json(
  "services"   : [ "mpi" ],
  "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
  "query"      :
- [
-  { "level"   : "local",
-    "let"     : [
-      "mpimsg.min=first(min#mpi.msg.size,mpi.msg.size)",
-      "mpimsg.avg=first(avg#mpi.msg.size,mpi.msg.size)",
-      "mpimsg.max=first(max#mpi.msg.size,mpi.msg.size)"
-    ],
-    "select"  : [
-      "min(mpimsg.min) as \"Msg size (min)\" unit Byte",
-      "avg(mpimsg.avg) as \"Msg size (avg)\" unit Byte",
-      "max(mpimsg.max) as \"Msg size (max)\" unit Byte"
-    ]
-  },
-  { "level"   : "cross",
-    "select"  : [
-      "min(min#mpimsg.min) as \"Msg size (min)\" unit Byte",
-      "avg(avg#mpimsg.avg) as \"Msg size (avg)\" unit Byte",
-      "max(max#mpimsg.max) as \"Msg size (max)\" unit Byte"
-    ]
-  }
- ]
+ {
+  "local":
+  "let
+    mms.min=first(min#mpi.msg.size,mpi.msg.size),
+    mms.avg=first(avg#mpi.msg.size,mpi.msg.size),
+    mms.max=first(max#mpi.msg.size,mpi.msg.size)
+   select
+    min(mms.min) as \"Msg size (min)\" unit Byte,
+    avg(mms.avg) as \"Msg size (avg)\" unit Byte,
+    max(mms.max) as \"Msg size (max)\" unit Byte",
+  "cross":
+  "select
+    min(min#mms.min) as \"Msg size (min)\" unit Byte,
+    avg(avg#mms.avg) as \"Msg size (avg)\" unit Byte,
+    max(max#mms.avg) as \"Msg size (avg)\" unit Byte"
+ }
 },
 {
  "name"       : "mpi.message.count",
@@ -474,29 +425,24 @@ const char* builtin_mpi_option_specs = R"json(
  "services"   : [ "mpi" ],
  "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
  "query"      :
- [
-  { "level"   : "local",
-    "let"     : [
-      "mpicount.recv=first(sum#mpi.recv.count,mpi.recv.count)",
-      "mpicount.send=first(sum#mpi.send.count,mpi.send.count)",
-      "mpicount.coll=first(sum#mpi.coll.count,mpi.coll.count)"
-    ],
-    "select"  : [
-      "sum(mpicount.send) as \"Msgs sent\"   unit count",
-      "sum(mpicount.recv) as \"Msgs recvd\"  unit count",
-      "sum(mpicount.coll) as \"Collectives\" unit count"
-    ]
-  },
-  { "level"   : "cross",
-    "select"  : [
-      "avg(sum#mpicount.send) as \"Msgs sent (avg)\"   unit count",
-      "max(sum#mpicount.send) as \"Msgs sent (max)\"   unit count",
-      "avg(sum#mpicount.recv) as \"Msgs recvd (avg)\"  unit count",
-      "max(sum#mpicount.recv) as \"Msgs recvd (max)\"  unit count",
-      "max(sum#mpicount.coll) as \"Collectives (max)\" unit count"
-    ]
-  }
- ]
+ {
+  "local":
+  "let
+    mmc.recv=first(sum#mpi.recv.count,mpi.recv.count),
+    mmc.send=first(sum#mpi.send.count,mpi.send.count),
+    mmc.coll=first(sum#mpi.coll.count,mpi.coll.count)
+   select
+    sum(mmc.send) as \"Msgs sent\" unit count,
+    sum(mmc.recv) as \"Msgs recvd\" unit count,
+    sum(mmc.coll) as \"Collectives\" unit count",
+  "cross":
+  "select
+    avg(sum#mmc.send) as \"Msgs sent (avg)\" unit count,
+    max(sum#mmc.send) as \"Msgs sent (max)\" unit count,
+    avg(sum#mmc.recv) as \"Msgs recvd (avg)\" unit count,
+    max(sum#mmc.recv) as \"Msgs recvd (max)\" unit count,
+    max(sum#mmc.coll) as \"Collectives (max)\" unit count"
+ }
 },
 {
  "name"        : "comm.stats",
@@ -580,7 +526,7 @@ const char* builtin_gotcha_option_specs = R"json(
  "description" : "Only include measurements from the main thread in results.",
  "category"    : "region",
  "services"    : [ "pthread" ],
- "query"       : [ { "level": "local", "where": "pthread.is_master=true" } ]
+ "query"       : { "local": "where pthread.is_master=true" }
 },{
   "name"        : "io.bytes.written",
   "description" : "Report I/O bytes written",
@@ -588,17 +534,10 @@ const char* builtin_gotcha_option_specs = R"json(
   "category"    : "metric",
   "services"    : [ "io" ],
   "query"  :
-  [
-    { "level"   : "local",
-      "let"     : [ "ibw.bytes.written=first(sum#io.bytes.written,io.bytes.written)" ],
-      "select"  : [ "sum(ibw.bytes.written) as \"Bytes written\" unit Byte" ]
-    },
-    { "level"   : "cross", "select":
-      [ "avg(sum#ibw.bytes.written) as \"Avg written\" unit Byte",
-        "sum(sum#ibw.bytes.written) as \"Total written\" unit Byte"
-      ]
-    }
-  ]
+  {
+   "local": "let ibw.bytes=first(sum#io.bytes.written,io.bytes.written) select sum(ibw.bytes) as \"Bytes written\" unit Byte",
+   "cross": "select avg(sum#ibw.bytes) as \"Avg written\" unit Byte,sum(sum#ibw.bytes) as \"Total written\" unit Byte"
+  }
 },{
  "name"        : "io.bytes.read",
  "description" : "Report I/O bytes read",
@@ -606,17 +545,10 @@ const char* builtin_gotcha_option_specs = R"json(
  "category"    : "metric",
  "services"    : [ "io" ],
  "query"  :
- [
-  { "level"   : "local",
-    "let"     : [ "ibr.bytes.read=first(sum#io.bytes.read,io.bytes.read)" ],
-    "select"  : [ "sum(ibr.bytes.read) as \"Bytes read\" unit Byte" ]
-  },
-  { "level"   : "cross", "select":
-    [ "avg(sum#ibr.bytes.read) as \"Avg read\"   unit Byte",
-      "sum(sum#ibr.bytes.read) as \"Total read\" unit Byte"
-    ]
-  }
- ]
+ {
+  "local": "let ibr.bytes=first(sum#io.bytes.read,io.bytes.read) select sum(ibr.bytes) as \"Bytes read\" unit Byte",
+  "cross": "select avg(sum#ibr.bytes) as \"Avg read\" unit Byte,sum(sum#ibr.bytes) as \"Total read\" unit Byte"
+ }
 },{
  "name"        : "io.bytes",
  "description" : "Report I/O bytes written and read",
@@ -628,57 +560,23 @@ const char* builtin_gotcha_option_specs = R"json(
  "description" : "Report I/O read bandwidth",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "io" ],
+ "inherit"     : [ "io.bytes.read" ],
  "query"  :
- [
-  { "level"    : "local",
-    "group by" : "io.region",
-    "let"      :
-      [
-        "irb.bytes.read=first(sum#io.bytes.read,io.bytes.read)",
-        "irb.time.ns=first(sum#time.duration.ns,time.duration.ns)"
-      ],
-    "select"   :
-      [
-      "io.region as I/O",
-      "ratio(irb.bytes.read,irb.time.ns,8e3) as \"Read Mbit/s\" unit Mb/s"
-      ]
-  },
-  { "level": "cross", "select":
-    [
-    "avg(ratio#irb.bytes_read/irb.time.ns) as \"Avg read Mbit/s\" unit Mb/s",
-    "max(ratio#irb.bytes_read/irb.time.ns) as \"Max read Mbit/s\" unit Mb/s"
-    ]
-  }
- ]
+ {
+  "local": "select io.region as I/O,ratio(ibr.bytes,time.duration.ns,8e3) as \"Read Mbit/s\" unit Mb/s group by io.region",
+  "cross": "select avg(ratio#ibr.bytes/time.duration.ns) as \"Avg read Mbit/s\",max(ratio#ibr.bytes/time.duration.ns) as \"Max read Mbit/s\""
+ }
 },{
  "name"        : "io.write.bandwidth",
  "description" : "Report I/O write bandwidth",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "io" ],
+ "inherit"     : [ "io.bytes.written" ],
  "query"  :
- [
-  { "level"    : "local",
-    "group by" : "io.region",
-    "let"      :
-    [
-     "iwb.bytes.written=first(sum#io.bytes.written,io.bytes.written)",
-     "iwb.time.ns=first(sum#time.duration.ns,time.duration.ns)"
-    ],
-    "select"   :
-    [
-     "io.region as I/O",
-     "ratio(iwb.bytes.written,iwb.time.ns,8e3) as \"Write Mbit/s\" unit Mb/s"
-    ]
-  },
-  { "level": "cross", "select":
-    [
-     "avg(ratio#iwb.bytes.written/iwb.time) as \"Avg write Mbit/s\" unit Mb/s",
-     "max(ratio#iwb.bytes.written/iwb.time) as \"Max write Mbit/s\" unit Mb/s"
-    ]
-  }
- ]
+ {
+  "local": "select io.region as I/O,ratio(ibw.bytes,time.duration.ns,8e3) as \"Write Mbit/s\" unit Mb/s group by io.region",
+  "cross": "select avg(ratio#ibw.bytes/time.duration.ns) as \"Avg write Mbit/s\",max(ratio#ibw.bytes/time.duration.ns) as \"Max write Mbit/s\""
+ }
 },{
  "name"        : "mem.highwatermark",
  "description" : "Report memory high-water mark",
@@ -687,16 +585,14 @@ const char* builtin_gotcha_option_specs = R"json(
  "services"    : [ "alloc", "sysalloc" ],
  "config"      : { "CALI_ALLOC_TRACK_ALLOCATIONS": "false", "CALI_ALLOC_RECORD_HIGHWATERMARK": "true" },
  "query":
- [
-  { "level"  : "local",
-    "let"    :
-    [ "mem.highwatermark.bytes = first(max#alloc.region.highwatermark,alloc.region.highwatermark)",
-      "mem.highwatermark = scale(mem.highwatermark.bytes,1e-6)"
-    ],
-    "select" : [ "max(mem.highwatermark) as \"Allocated MB\" unit MB" ]
-  },
-  { "level": "cross", "select": [ "max(max#mem.highwatermark) as \"Allocated MB\" unit MB" ] }
- ]
+ {
+  "local":
+  "let
+    mhwm.bytes=first(max#alloc.region.highwatermark,alloc.region.highwatermark),mhwm=scale(mhwm.bytes,1e-6)
+   select
+    max(mhwm) as \"Allocated MB\" unit MB",
+  "cross": "select max(max#mhwm) as \"Allocated MB\" unit MB"
+ }
 },{
  "name"        : "mem.pages",
  "description" : "Memory pages used via /proc/self/statm",
@@ -704,29 +600,18 @@ const char* builtin_gotcha_option_specs = R"json(
  "category"    : "metric",
  "services"    : [ "memstat" ],
  "query"  :
- [
-  { "level"   : "local",
-    "let"     :
-    [ "mem.vmsize = first(max#memstat.vmsize,memstat.vmsize)",
-      "mem.vmrss = first(max#memstat.vmrss,memstat.vmrss)",
-      "mem.data = first(max#memstat.data,memstat.data)"
-    ],
-    "select"  :
-    [
-     "max(mem.vmsize) as VmSize unit pages",
-     "max(mem.vmrss) as VmRSS unit pages",
-     "max(mem.data) as Data unit pages"
-    ]
-  },
-  { "level"   : "cross",
-    "select"  :
-    [
-     "max(max#mem.vmsize) as \"VmSize (max)\" unit pages",
-     "max(max#mem.vmrss) as \"VmRSS (max)\" unit pages",
-     "max(max#mem.data) as \"Data (max)\" unit pages"
-    ]
-  }
- ]
+ {
+  "local":
+  "let
+    mem.vmsize=first(max#memstat.vmsize,memstat.vmsize),
+    mem.vmrss=first(max#memstat.vmrss,memstat.vmrss),
+    mem.data = first(max#memstat.data,memstat.data)
+   select
+    max(mem.vmsize) as VmSize unit pages,max(mem.vmrss) as VmRSS unit pages,max(mem.data) as Data unit pages",
+  "cross":
+  "select
+    max(max#mem.vmsize) as VmSize unit pages,max(max#mem.vmrss) as VmRSS unit pages,max(max#mem.data) as Data unit pages"
+ }
 }
 ]
 )json";
@@ -925,14 +810,10 @@ const char* builtin_libdw_option_specs = R"json(
  "services"    : [ "symbollookup" ],
  "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_MODULE": "true" },
  "query":
- [
-  { "level": "local", "group by": "module#cali.sampler.pc",
-    "select": [ "module#cali.sampler.pc as \"Module\"" ]
-  },
-  { "level": "cross", "group by": "module#cali.sampler.pc",
-    "select": [ "module#cali.sampler.pc as \"Module\"" ]
-  }
- ]
+ {
+  "local": "select module#cali.sampler.pc as Module group by module#cali.sampler.pc",
+  "cross": "select module#cali.sampler.pc as Module group by module#cali.sampler.pc"
+ }
 },
 {
  "name"        : "source.function",
@@ -942,14 +823,10 @@ const char* builtin_libdw_option_specs = R"json(
  "services"    : [ "symbollookup" ],
  "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_FUNCTION": "true" },
  "query":
- [
-  { "level": "local", "group by": "source.function#cali.sampler.pc",
-    "select": [ "source.function#cali.sampler.pc as \"Function\"" ]
-  },
-  { "level": "cross", "group by": "source.function#cali.sampler.pc",
-    "select": [ "source.function#cali.sampler.pc as \"Function\"" ]
-  }
- ]
+ {
+  "local": "select source.function#cali.sampler.pc as Function group by source.function#cali.sampler.pc",
+  "cross": "select source.function#cali.sampler.pc as Function group by source.function#cali.sampler.pc"
+ }
 },
 {
  "name"        : "source.location",
@@ -959,14 +836,10 @@ const char* builtin_libdw_option_specs = R"json(
  "services"    : [ "symbollookup" ],
  "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC": "true" },
  "query":
- [
-  { "level": "local", "group by": "sourceloc#cali.sampler.pc",
-    "select": [ "sourceloc#cali.sampler.pc as \"Source\"" ]
-  },
-  { "level": "cross", "group by": "sourceloc#cali.sampler.pc",
-    "select": [ "sourceloc#cali.sampler.pc as \"Source\"" ]
-  }
- ]
+ {
+  "local": "select sourceloc#cali.sampler.pc as Source group by sourceloc#cali.sampler.pc",
+  "cross": "select sourceloc#cali.sampler.pc as Source group by sourceloc#cali.sampler.pc"
+ }
 }
 ]
 )json";

@@ -141,19 +141,18 @@ std::string join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
-void join_stringlist(std::string& in, const std::vector<std::string>& list)
+std::string join_stringlist(const std::vector<StringConverter>& list)
 {
-    for (const auto& s : list) {
-        if (!in.empty())
-            in.append(",");
-        in.append(s);
-    }
-}
+    std::string ret;
+    int c = 0;
 
-std::string find_or(const std::map<std::string, std::string>& m, const std::string& k, const std::string v = "")
-{
-    auto it = m.find(k);
-    return it != m.end() ? it->second : v;
+    for (const StringConverter& sc : list) {
+        if (c++ > 0)
+            ret.append(",");
+        ret.append(sc.to_string());
+    }
+
+    return ret;
 }
 
 std::string expand_variables(const std::string& in, const std::string& val)
@@ -340,15 +339,6 @@ void add_metadata(const std::string& args, info_map_t& info)
 
 class ConfigManager::OptionSpec
 {
-    struct query_arg_t {
-        std::vector<std::string> select;
-        std::vector<std::string> groupby;
-        std::vector<std::string> let;
-        std::vector<std::string> where;
-        std::vector<std::string> aggregate;
-        std::vector<std::string> orderby;
-    };
-
     struct option_spec_t {
         std::string type;
         std::string description;
@@ -357,7 +347,7 @@ class ConfigManager::OptionSpec
         std::vector<std::string> services;
         std::vector<std::string> inherited_specs;
 
-        std::map<std::string, query_arg_t> query_args;
+        std::map<std::string, std::string> query;
         std::map<std::string, std::string> config;
     };
 
@@ -372,8 +362,10 @@ class ConfigManager::OptionSpec
         m_error_msg = msg;
     }
 
-    void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg)
+    std::string parse_select(const std::vector<StringConverter>& list)
     {
+        std::string ret;
+
         for (const StringConverter& sc : list) {
             bool                                   is_a_dict = false;
             std::map<std::string, StringConverter> dict      = sc.rec_dict(&is_a_dict);
@@ -397,42 +389,50 @@ class ConfigManager::OptionSpec
                     str.append(it->second.to_string());
                     str.append("\"");
                 }
-                qarg.select.push_back(str);
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(str);
             } else {
-                qarg.select.push_back(sc.to_string());
-            }
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(sc.to_string());
+           }
         }
+
+        return ret.empty() ? ret : std::string(" select ") + ret;
     }
 
     void parse_query_args(const std::vector<StringConverter>& list, option_spec_t& opt)
     {
+        // parses the deprecated list-of-dicts form of the query args
+
         for (const StringConverter& sc : list) {
             std::map<std::string, StringConverter> dict = sc.rec_dict();
-            query_arg_t                            qarg;
+            std::string query;
 
             auto it = dict.find("group by");
             if (it != dict.end())
-                qarg.groupby = ::to_stringlist(it->second.rec_list());
+                query.append(" group by ").append(::join_stringlist(it->second.rec_list()));
 
             it = dict.find("let");
             if (it != dict.end())
-                qarg.let = ::to_stringlist(it->second.rec_list());
+                query.append(" let ").append(::join_stringlist(it->second.rec_list()));
 
             it = dict.find("where");
             if (it != dict.end())
-                qarg.where = ::to_stringlist(it->second.rec_list());
+                query.append(" where ").append(::join_stringlist(it->second.rec_list()));
 
             it = dict.find("aggregate");
             if (it != dict.end())
-                qarg.aggregate = ::to_stringlist(it->second.rec_list());
+                query.append(" aggregate ").append(::join_stringlist(it->second.rec_list()));
 
             it = dict.find("order by");
             if (it != dict.end())
-                qarg.orderby = ::to_stringlist(it->second.rec_list());
+                query.append(" order by ").append(::join_stringlist(it->second.rec_list()));
 
             it = dict.find("select");
             if (it != dict.end())
-                parse_select(it->second.rec_list(), qarg);
+                query.append(parse_select(it->second.rec_list()));
 
             it = dict.find("level");
             if (it == dict.end()) {
@@ -440,7 +440,7 @@ class ConfigManager::OptionSpec
                 continue;
             }
 
-            opt.query_args[it->second.to_string()] = qarg;
+            opt.query[it->second.to_string()] = std::move(query);
         }
     }
 
@@ -468,8 +468,17 @@ class ConfigManager::OptionSpec
         if (ok && !m_error && it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
         it = dict.find("query");
-        if (ok && !m_error && it != dict.end())
-            parse_query_args(it->second.rec_list(&ok), opt);
+        if (ok && !m_error && it != dict.end()) {
+            bool is_dict = false;
+            auto query_dict = it->second.rec_dict(&is_dict);
+            if (is_dict) {
+                for (const auto &query_entry : query_dict)
+                    opt.query[query_entry.first] = query_entry.second.to_string();
+            } else {
+                // try parsing deprecated form of query args
+                parse_query_args(it->second.rec_list(&ok), opt);
+            }
+        }
         it = dict.find("type");
         if (ok && !m_error && it != dict.end())
             opt.type = it->second.to_string();
@@ -691,49 +700,21 @@ struct ConfigManager::Options::OptionsImpl {
         }
     }
 
-    std::string build_query(const char* level, const std::map<std::string, std::string>& in) const
+    std::string build_query(const char* level, const std::string& in) const
     {
-        std::string q_let       = ::find_or(in, "let");
-        std::string q_select    = ::find_or(in, "select");
-        std::string q_groupby   = ::find_or(in, "group by");
-        std::string q_where     = ::find_or(in, "where");
-        std::string q_aggregate = ::find_or(in, "aggregate");
-        std::string q_orderby   = ::find_or(in, "order by");
-        std::string q_format    = ::find_or(in, "format");
+        std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
             auto s_it = spec.data.find(opt);
             if (s_it == spec.data.end())
                 continue;
 
-            auto l_it = s_it->second.query_args.find(level);
-            if (l_it != s_it->second.query_args.end()) {
-                const auto& q = l_it->second;
-                ::join_stringlist(q_let, q.let);
-                ::join_stringlist(q_select, q.select);
-                ::join_stringlist(q_groupby, q.groupby);
-                ::join_stringlist(q_where, q.where);
-                ::join_stringlist(q_aggregate, q.aggregate);
-                ::join_stringlist(q_orderby, q.orderby);
+            auto l_it = s_it->second.query.find(level);
+            if (l_it != s_it->second.query.end()) {
+                ret.append(" ");
+                ret.append(l_it->second);
             }
         }
-
-        std::string ret;
-
-        if (!q_let.empty())
-            ret.append(" let ").append(q_let);
-        if (!q_select.empty())
-            ret.append(" select ").append(q_select);
-        if (!q_groupby.empty())
-            ret.append(" group by ").append(q_groupby);
-        if (!q_where.empty())
-            ret.append(" where ").append(q_where);
-        if (!q_aggregate.empty())
-            ret.append(" aggregate ").append(q_aggregate);
-        if (!q_orderby.empty())
-            ret.append(" order by ").append(q_orderby);
-        if (!q_format.empty())
-            ret.append(" format ").append(q_format);
 
         return ret;
     }
@@ -858,7 +839,7 @@ void ConfigManager::Options::update_channel_metadata(info_map_t& metadata) const
     mP->update_channel_metadata(metadata);
 }
 
-std::string ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in) const
+std::string ConfigManager::Options::build_query(const char* level, const std::string& in) const
 {
     return mP->build_query(level, in);
 }

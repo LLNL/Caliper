@@ -157,23 +157,19 @@ public:
         Aggregator&        output_agg
     )
     {
-        const char* select =
-            " cali.channel"
+        std::string q_local =
+            " select cali.channel"
             ",loop"
             ",block"
             ",scale(time.duration.ns,1e-9)"
             ",sum(loop.iterations)"
-            ",ratio(loop.iterations,time.duration.ns,1e9)";
+            ",ratio(loop.iterations,time.duration.ns,1e9)"
+            " group by cali.channel,loop,block ";
 
-        std::string block = std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+        q_local.append(" let block = truncate(loop.start_iteration,").append(std::to_string(blocksize)).append(") ");
+        q_local.append(" where loop.start_iteration,loop=\"").append(loopname).append("\" ");
 
-        std::string query = m_opts.build_query(
-            "local",
-            { { "let", block },
-              { "select", select },
-              { "group by", "cali.channel,loop,block" },
-              { "where", std::string("loop.start_iteration,loop=\"") + loopname + "\"" } }
-        );
+        std::string query = m_opts.build_query("local", q_local);
 
         Channel chn = channel();
         if (chn)
@@ -182,16 +178,16 @@ public:
 
     QuerySpec timeseries_spec()
     {
-        const char* select =
-            " cali.channel"
+        const char* q_cross =
+            " select cali.channel"
             ",loop"
             ",block"
             ",max(sum#loop.iterations) as \"Iterations\" unit iterations"
             ",max(scale#time.duration.ns) as \"Time (s)\" unit sec"
-            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\" unit iter/s";
+            ",avg(ratio#loop.iterations/time.duration.ns) as \"Iter/s\" unit iter/s"
+            " group by cali.channel,loop,block ";
 
-        std::string query =
-            m_opts.build_query("cross", { { "select", select }, { "group by", "cali.channel,loop,block" } });
+        std::string query = m_opts.build_query("cross", q_cross);
 
         return parse_spec(query.c_str());
     }
@@ -374,14 +370,15 @@ class SpotController : public cali::internal::CustomOutputController
     void flush_regionprofile(Caliper& c, CaliWriter& writer, Comm& comm)
     {
         // --- Setup output reduction aggregator (final cross-process aggregation)
-        const char* cross_select =
-            " *"
+        const char* q_cross =
+            " select *"
             ",min(inclusive#sum#time.duration) as \"Min time/rank\" unit sec"
             ",max(inclusive#sum#time.duration) as \"Max time/rank\" unit sec"
             ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec"
-            ",sum(inclusive#sum#time.duration) as \"Total time\"    unit sec";
+            ",sum(inclusive#sum#time.duration) as \"Total time\"    unit sec"
+            " group by path ";
 
-        std::string cross_query = m_opts.build_query("cross", { { "select", cross_select }, { "group by", "path" } });
+        std::string cross_query = m_opts.build_query("cross", q_cross);
 
         QuerySpec  output_spec(parse_spec(cross_query.c_str()));
         Aggregator output_agg(output_spec);
@@ -392,14 +389,12 @@ class SpotController : public cali::internal::CustomOutputController
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times
         {
-            std::string query = m_opts.build_query(
-                "local",
-                {
-                    { "let", "sum#time.duration=scale(sum#time.duration.ns,1e-9)" },
-                    { "select", "inclusive_sum(sum#time.duration)" },
-                    { "group by", "path" },
-                }
-            );
+            const char* q_local =
+                " let sum#time.duration=scale(sum#time.duration.ns,1e-9)"
+                " select inclusive_sum(sum#time.duration)"
+                " group by path ";
+
+            std::string query = m_opts.build_query("local", q_local);
 
             Channel chn = channel();
             local_aggregate(query.c_str(), c, chn, m_db, output_agg);

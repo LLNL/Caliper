@@ -32,50 +32,49 @@ public:
     )
         : ChannelController(name, 0, initial_cfg)
     {
-        std::string local_let = "sum#time.duration=scale(sum#time.duration.ns,1e-9)";
+        std::string q_let = " let report.time=scale(sum#time.duration.ns,1e-9) ";
 
-        // Config for first aggregation step in MPI mode (process-local aggregation)
-        std::string local_select = " sum(sum#time.duration)";
-        // Config for serial-mode aggregation
-        std::string serial_select =
-            " sum(sum#time.duration) as \"Time (E)\""
-            ",inclusive_sum(sum#time.duration) as \"Time (I)\""
-            ",percent_total(sum#time.duration) as \"Time % (E)\""
-            ",inclusive_percent_total(sum#time.duration) as \"Time % (I)\"";
+        // Query for first aggregation step in MPI mode (process-local aggregation)
+        std::string q_local = " select sum(report.time)" + q_let;
+        // Query for serial-mode aggregation
+        std::string q_serial =
+            " select sum(report.time) as \"Time (E)\""
+            ",inclusive_sum(report.time) as \"Time (I)\""
+            ",percent_total(report.time) as \"Time % (E)\""
+            ",inclusive_percent_total(report.time) as \"Time % (I)\""
+            " group by path " + q_let;
 
-        std::string tmetric = "sum#sum#time.duration";
-        std::string pmetric = "percent_total(sum#sum#time.duration)";
+        std::string tmetric = "sum#report.time";
+        std::string pmetric = "percent_total(sum#report.time)";
 
         if (opts.is_enabled("calc.inclusive")) {
-            local_select += ",inclusive_sum(sum#time.duration)";
-            tmetric = "inclusive#sum#time.duration";
-            pmetric = "inclusive_percent_total(sum#sum#time.duration)";
+            q_local.append(" select inclusive_sum(report.time) ");
+            tmetric = "inclusive#report.time";
+            pmetric = "inclusive_percent_total(sum#report.time)";
         }
 
-        std::string format = util::build_tree_format_spec(config(), opts);
-
         // Config for second aggregation step in MPI mode (cross-process aggregation)
-        std::string cross_select = std::string(" min(") + tmetric + ") as \"Min time/rank\"" + std::string(",max(")
+        std::string q_cross = std::string(" select min(") + tmetric + ") as \"Min time/rank\"" + std::string(",max(")
                                    + tmetric + ") as \"Max time/rank\"" + std::string(",avg(") + tmetric
-                                   + ") as \"Avg time/rank\"" + std::string(",") + pmetric + "  as \"Time %\"";
+                                   + ") as \"Avg time/rank\"" + std::string(",") + pmetric + "  as \"Time %\" ";
+
+        std::string format = std::string(" format ") + util::build_tree_format_spec(config(), opts);
+
+        q_serial.append(format);
+        q_cross.append(format);
 
         if (use_mpi) {
             config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
             config()["CALI_MPIREPORT_FILENAME"]          = opts.get("output", "stderr");
             config()["CALI_MPIREPORT_APPEND"]            = opts.get("output.append");
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-            config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                opts.build_query("local", { { "let", local_let }, { "select", local_select }, { "group by", "path" } });
-            config()["CALI_MPIREPORT_CONFIG"] =
-                opts.build_query("cross", { { "select", cross_select }, { "group by", "path" }, { "format", format } });
+            config()["CALI_MPIREPORT_LOCAL_CONFIG"]      = opts.build_query("local", q_local);
+            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query("cross", q_cross);
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = opts.get("output", "stderr");
             config()["CALI_REPORT_APPEND"]   = opts.get("output.append");
-            config()["CALI_REPORT_CONFIG"]   = opts.build_query(
-                "local",
-                { { "let", local_let }, { "select", serial_select }, { "group by", "path" }, { "format", format } }
-            );
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", q_serial);
         }
 
         opts.update_channel_config(config());
@@ -144,11 +143,11 @@ const char* runtime_report_spec = R"json(
    [
     {
      "level": "local",
-     "order by": [ "sum#sum#time.duration\ desc" ]
+     "order by": [ "sum#report.time\ desc" ]
     },{
      "level": "cross",
-     "aggregate": "sum(sum#sum#time.duration)",
-     "order by" : [ "sum#sum#sum#time.duration\ desc" ]
+     "aggregate": "sum(sum#report.time)",
+     "order by" : [ "sum#sum#report.time\ desc" ]
     }
    ]
   },{

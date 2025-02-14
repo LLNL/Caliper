@@ -8,6 +8,28 @@
 
 using namespace cali;
 
+namespace
+{
+
+std::string normalize(const char* str)
+{
+    std::string ret;
+    bool skip_space = true;
+    for (const char* p = str; *p; ++p) {
+        if (isspace(*p)) {
+            if (!skip_space)
+                ret.push_back(*p);
+            skip_space = true;
+        } else {
+            ret.push_back(*p);
+            skip_space = false;
+        }
+    }
+    return ret;
+}
+
+}
+
 TEST(ConfigManagerTest, ParseErrors)
 {
     {
@@ -147,7 +169,7 @@ public:
         return a == b;
     }
 
-    std::string get_query(const char* level, const std::map<std::string, std::string>& in) const
+    std::string get_query(const char* level, const std::string& in) const
     {
         return opts.build_query(level, in);
     }
@@ -188,13 +210,10 @@ const char* testcontroller_spec = R"json(
        "name": "boolopt",
        "type": "bool",
        "description": "A boolean option",
-       "query": 
-        [
-         { "level": "local", "group by": "g", "let": "x=scale(y,2)", "select": 
-           [ { "expr": "sum(x)", "as": X, "unit": "Foos" } ],
-           "aggregate": [ "min(y)", "max(y)" ], "order by": [ "min#y desc" ]
-         }
-        ]
+       "query":
+       {
+        "local": "let x=scale(y,2) select sum(x) as X unit Foos aggregate min(y),max(y) order by min#y desc"
+       }
       },
       {
        "name": "another_opt",
@@ -364,41 +383,19 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
-        std::string q1 = tP->get_query(
-            "local",
-            { { "select", "me" },
-              { "format", "expand" },
-              { "let", "a=first(b,c)" },
-              { "where", "xyz=42" },
-              { "group by", "z" } }
-        );
-        const char* expect =
-            " let a=first(b,c),x=scale(y,2)"
-            " select me,sum(x) as \"X\" unit \"Foos\""
-            " group by z,g"
-            " where xyz=42"
-            " aggregate min(y),max(y)"
-            " order by min#y desc"
-            " format expand";
+        std::string q1 = tP->get_query("local", "let a=first(b,c) select me group by z where xyz=42 format expand");
+        const char* expect_q1 = 
+            " let a=first(b,c) select me group by z where xyz=42 format expand"
+            " let x=scale(y,2) select sum(x) as X unit Foos aggregate min(y),max(y) order by min#y desc";
 
-        EXPECT_STREQ(q1.c_str(), expect);
+        EXPECT_EQ(::normalize(q1.c_str()), ::normalize(expect_q1));
 
-        std::string q2 = tP->get_query(
-            "local",
-            {
-                { "select", "me" },
-                { "format", "expand" },
-            }
-        );
-        expect =
-            " let x=scale(y,2)"
-            " select me,sum(x) as \"X\" unit \"Foos\""
-            " group by g"
-            " aggregate min(y),max(y)"
-            " order by min#y desc"
-            " format expand";
+        std::string q2 = tP->get_query("local", "select me format expand");
+        const char* expect_q2 = 
+            " select me format expand"
+            " let x=scale(y,2) select sum(x) as X unit Foos aggregate min(y),max(y) order by min#y desc";
 
-        EXPECT_STREQ(q2.c_str(), expect);
+        EXPECT_EQ(::normalize(q2.c_str()), ::normalize(expect_q2));
     }
 
     {
@@ -413,33 +410,13 @@ TEST(ConfigManagerTest, BuildQuery)
 
         EXPECT_FALSE(tP->is_enabled("boolopt"));
 
-        std::string q3 = tP->get_query(
-            "local",
-            { { "select", "me" },
-              { "format", "expand" },
-              { "let", "a=first(b,c)" },
-              { "where", "xyz=42" },
-              { "group by", "z" } }
-        );
-        const char* expect =
-            " let a=first(b,c)"
-            " select me"
-            " group by z"
-            " where xyz=42"
-            " format expand";
+        std::string q3 = tP->get_query("local", "let a=first(b,c) select me group by z where xyz=42 format expand");
+        const char* expect = "let a=first(b,c) select me group by z where xyz=42 format expand";
 
         EXPECT_STREQ(q3.c_str(), expect);
 
-        std::string q4 = tP->get_query(
-            "local",
-            {
-                { "select", "me" },
-                { "format", "expand" },
-            }
-        );
-        expect =
-            " select me"
-            " format expand";
+        std::string q4 = tP->get_query("local", "select me format expand");
+        expect = "select me format expand";
 
         EXPECT_STREQ(q4.c_str(), expect);
     }

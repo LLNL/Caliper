@@ -27,7 +27,7 @@ public:
         const char*                   name,
         const config_map_t&           initial_cfg,
         const ConfigManager::Options& opts,
-        const std::string&            format
+        const std::string&            format_spec
     )
         : ChannelController(name, 0, initial_cfg)
     {
@@ -35,7 +35,7 @@ public:
 
         if (output != "stdout" && output != "stderr") {
             auto        pos = output.find_last_of('.');
-            std::string ext = (format == "cali" ? ".cali" : ".json");
+            std::string ext = (format_spec == "cali" ? ".cali" : ".json");
 
             if (pos == std::string::npos || output.substr(pos) != ext)
                 output.append(ext);
@@ -56,30 +56,24 @@ public:
             config()["CALI_ADIAK_IMPORT_CATEGORIES"] = opts.get("adiak.import_categories", "2,3");
         }
 
+        std::string query =
+            " select *,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
+            ",scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec"
+            " group by path,cupti.kernel.name,cupti.activity.kind,mpi.rank "
+            " format ";
+
+        query.append(format_spec);
+
         if (use_mpi) {
             config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
             config()["CALI_AGGREGATE_KEY"]               = "*,mpi.rank";
             config()["CALI_MPIREPORT_FILENAME"]          = output;
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query(
-                "local",
-                { { "select",
-                               "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                                          " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec" },
-                             { "group by", "path,cupti.kernel.name,cupti.activity.kind,mpi.rank" },
-                             { "format", format } }
-            );
+            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query("local", query);
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = output;
-            config()["CALI_REPORT_CONFIG"]   = opts.build_query(
-                "local",
-                { { "select",
-                      "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                        " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec" },
-                    { "group by", "path,cupti.kernel.name,cupti.activity.kind" },
-                    { "format", format } }
-            );
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", query);
         }
 
         opts.update_channel_config(config());

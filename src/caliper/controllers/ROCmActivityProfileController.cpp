@@ -27,7 +27,7 @@ public:
         const char*                   name,
         const config_map_t&           initial_cfg,
         const ConfigManager::Options& opts,
-        const std::string&            format
+        const std::string&            format_spec
     )
         : ChannelController(name, 0, initial_cfg)
     {
@@ -35,24 +35,27 @@ public:
 
         if (output != "stdout" && output != "stderr") {
             auto        pos = output.find_last_of('.');
-            std::string ext = (format == "cali" ? ".cali" : ".json");
+            std::string ext = (format_spec == "cali" ? ".cali" : ".json");
 
             if (pos == std::string::npos || output.substr(pos) != ext)
                 output.append(ext);
         }
 
-        const char* local_let =
-            "act_count=first(sum#count,count) if rocm.activity"
+        std::string q_local =
+            " let act_count=first(sum#count,count) if rocm.activity"
             ",dmin=scale(min#rocm.activity.duration,1e-9)"
             ",davg=scale(avg#rocm.activity.duration,1e-9)"
-            ",dmax=scale(max#rocm.activity.duration,1e-9)";
-        const char* local_select =
-            "*,scale(sum#time.duration.ns,1e-9) as time"
+            ",dmax=scale(max#rocm.activity.duration,1e-9)"
+            " select *,scale(sum#time.duration.ns,1e-9) as time"
             ",scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\""
             ",min(dmin) as \"min time/inst\""
             ",avg(davg) as \"avg time/inst\""
             ",max(dmax) as \"max time/inst\""
-            ",sum(act_count) as count";
+            ",sum(act_count) as count"
+            " group by path,rocm.kernel.name,rocm.activity.kind,mpi.rank "
+            " format ";
+
+        q_local.append(format_spec);
 
         auto avail_services = services::get_available_services();
         bool have_mpi = std::find(avail_services.begin(), avail_services.end(), "mpireport") != avail_services.end();
@@ -74,23 +77,11 @@ public:
             config()["CALI_AGGREGATE_KEY"]               = "*,mpi.rank";
             config()["CALI_MPIREPORT_FILENAME"]          = output;
             config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query(
-                "local",
-                { { "let",    local_let },
-                  { "select", local_select },
-                  { "group by", "path,rocm.kernel.name,rocm.activity.kind,mpi.rank" },
-                  { "format", format } }
-            );
+            config()["CALI_MPIREPORT_CONFIG"]            = opts.build_query("local", q_local);
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = output;
-            config()["CALI_REPORT_CONFIG"]   = opts.build_query(
-                "local",
-                { { "let", local_let },
-                  { "select", local_select },
-                  { "group by", "path,rocm.kernel.name,rocm.activity.kind" },
-                  { "format", format } }
-            );
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", q_local);
         }
 
         opts.update_channel_config(config());
