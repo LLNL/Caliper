@@ -1,17 +1,17 @@
 # Find RocTX libraries/headers
 
-find_path(ROCM_ROOT_DIR
+find_path(ROCM_PATH
   NAMES include/roctracer/roctx.h
 )
 
 find_library(ROCTX_LIBRARIES
   NAMES roctx64
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 
 find_path(ROCTX_INCLUDE_DIRS
   NAMES roctx.h
-  HINTS ${ROCM_ROOT_DIR}/include/roctracer
+  HINTS ${ROCM_PATH}/include/roctracer
 )
 
 include(FindPackageHandleStandardArgs)

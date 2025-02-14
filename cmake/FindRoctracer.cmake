@@ -1,38 +1,38 @@
 # Find ROCTracer libraries/headers
 
-find_path(ROCM_ROOT_DIR
+find_path(ROCM_PATH
   NAMES include/roctracer/roctracer.h
 )
 
 find_library(ROCTRACER_LIBROCTRACER
   NAMES roctracer64
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 find_library(ROCTRACER_LIBHSARUNTIME
   NAMES hsa-runtime64
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 find_library(ROCTRACER_LIBHSAKMT
   NAMES hsakmt
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 find_library(ROCTRACER_LIBHSAKMT
   NAMES hsakmt
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 find_library(ROCTRACER_AMDHIP64
   NAMES amdhip64
-  HINTS ${ROCM_ROOT_DIR}/lib
+  HINTS ${ROCM_PATH}/lib
 )
 
 find_path(ROCTRACER_INCLUDE_DIR
   NAMES roctracer.h
-  HINTS ${ROCM_ROOT_DIR}/include/roctracer
+  HINTS ${ROCM_PATH}/include/roctracer
 )
 
 find_path(HIP_INCLUDE_DIR
   NAMES hip/hip_runtime.h
-  HINTS ${ROCM_ROOT_DIR}/include)
+  HINTS ${ROCM_PATH}/include)
 
 set(ROCTRACER_INCLUDE_DIRS 
   ${ROCTRACER_INCLUDE_DIR}
