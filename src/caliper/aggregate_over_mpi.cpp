@@ -81,12 +81,12 @@ void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& agg
 
 size_t receive_and_merge_nodes(int source, CaliperMetadataDB& db, IdMap& idmap, MPI_Comm comm)
 {
-    unsigned count;
+    unsigned count = 0;
 
     MPI_Recv(&count, 1, MPI_UNSIGNED, source, 1, comm, MPI_STATUS_IGNORE);
 
     MPI_Status status;
-    int        size;
+    int        size = 0;
 
     MPI_Probe(source, 2, comm, &status);
     MPI_Get_count(&status, MPI_BYTE, &size);
@@ -110,12 +110,12 @@ size_t receive_and_merge_snapshots(
     MPI_Comm           comm
 )
 {
-    unsigned count;
+    unsigned count = 0;
 
-    MPI_Recv(&count, 3, MPI_UNSIGNED, source, 3, comm, MPI_STATUS_IGNORE);
+    MPI_Recv(&count, 1, MPI_UNSIGNED, source, 3, comm, MPI_STATUS_IGNORE);
 
     MPI_Status status;
-    int        size;
+    int        size = 0;
 
     MPI_Probe(source, 4, comm, &status);
     MPI_Get_count(&status, MPI_BYTE, &size);
@@ -161,8 +161,8 @@ namespace cali
 
 void aggregate_over_mpi(CaliperMetadataDB& metadb, Aggregator& aggr, MPI_Comm comm)
 {
-    int commsize;
-    int rank;
+    int commsize = 1;
+    int rank = 0;
 
     MPI_Comm_size(comm, &commsize);
     MPI_Comm_rank(comm, &rank);
