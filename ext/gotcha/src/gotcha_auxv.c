@@ -35,11 +35,11 @@ static unsigned int auxv_pagesz = 0;
 
 int parse_auxv_contents() {
   char name[] = "/proc/self/auxv";
-  int fd, done = 0;
-  char buffer[BUFFER_LEN];
+  int fd = -1, done = 0;
+  char buffer[BUFFER_LEN] = {'\0'};
   const ssize_t buffer_size = BUFFER_LEN;
-  ssize_t offset = 0, result;
-  ElfW(auxv_t) * auxv, *a;
+  ssize_t offset = 0, result = 0;
+  ElfW(auxv_t) *auxv = NULL, *a = NULL;
   static int parsed_auxv = 0;
 
   if (parsed_auxv) return parsed_auxv == -1 ? parsed_auxv : 0;
@@ -86,7 +86,7 @@ int parse_auxv_contents() {
 }
 
 struct link_map *get_vdso_from_auxv() {
-  struct link_map *m;
+  struct link_map *m = NULL;
 
   ElfW(Phdr) *vdso_phdrs = NULL;
   ElfW(Half) vdso_phdr_num, p;
@@ -114,7 +114,7 @@ struct link_map *get_vdso_from_auxv() {
 }
 
 unsigned int get_auxv_pagesize() {
-  int result;
+  int result = 0;
   result = parse_auxv_contents();
   return result == -1 ? 0 : auxv_pagesz;
 }
@@ -122,8 +122,8 @@ unsigned int get_auxv_pagesize() {
 static char *vdso_aliases[] = {"linux-vdso.so", "linux-gate.so", NULL};
 
 struct link_map *get_vdso_from_aliases() {
-  struct link_map *m;
-  char **aliases;
+  struct link_map *m = NULL;
+  char **aliases = NULL;
 
   for (m = _r_debug.r_map; m; m = m->l_next) {
     for (aliases = vdso_aliases; *aliases; aliases++) {
@@ -136,7 +136,7 @@ struct link_map *get_vdso_from_aliases() {
 }
 
 static int read_line(char *line, int size, int fd) {
-  int i;
+  int i = 0;
   for (i = 0; i < size - 1; i++) {
     int result = gotcha_read(fd, line + i, 1);
     if (result == -1 && errno == EINTR) continue;  // GCOVR_EXCL_LINE
@@ -201,10 +201,10 @@ static int read_word(char *str, char *word, int word_size) {
 }
 
 struct link_map *get_vdso_from_maps() {
-  int maps, hit_eof;
-  ElfW(Addr) addr_begin, addr_end, dynamic;
-  char name[BUFFER_LEN], line[BUFFER_LEN], *line_pos;
-  struct link_map *m;
+  int maps = 0, hit_eof = 0;
+  ElfW(Addr) addr_begin = 0, addr_end = 0, dynamic = 0;
+  char name[BUFFER_LEN] = {'\0'}, line[BUFFER_LEN] = {'\0'}, *line_pos = NULL;
+  struct link_map *m = NULL;
   maps = gotcha_open("/proc/self/maps", O_RDONLY);
   for (;;) {
     hit_eof = read_line(line, BUFFER_LEN, maps);
@@ -239,7 +239,7 @@ struct link_map *get_vdso_from_maps() {
 int is_vdso(const struct link_map *map) {
   static int vdso_checked = 0;
   static struct link_map *vdso = NULL;
-  struct link_map *result;
+  struct link_map *result = NULL;
 
   if (!map) return 0;
   if (vdso_checked) return (map == vdso);

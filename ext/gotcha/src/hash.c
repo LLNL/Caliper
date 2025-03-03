@@ -34,8 +34,8 @@ typedef struct hash_entry_t hash_entry_t;
 
 int create_hashtable(hash_table_t *table, size_t initial_size,
                      hash_func_t hashfunc, hash_cmp_t keycmp) {
-  hash_entry_t *newtable;
-  int entries_per_page;
+  hash_entry_t *newtable = NULL;
+  int entries_per_page = 0;
 
   entries_per_page = gotcha_getpagesize() / sizeof(hash_entry_t);
   if (initial_size % entries_per_page)
@@ -86,9 +86,9 @@ static hash_entry_t *insert(hash_table_t *table, hash_key_t key,
 }
 
 int grow_hashtable(hash_table_t *table, size_t new_size) {
-  hash_table_t newtable;
-  hash_entry_t *result;
-  size_t i;
+  hash_table_t newtable = EMPTY_HASH_TABLE;
+  hash_entry_t *result = NULL;
+  size_t i = 0;
 
   newtable.table_size = new_size;
   newtable.entry_count = 0;
@@ -126,8 +126,8 @@ int destroy_hashtable(hash_table_t *table) {
 }
 
 static int lookup(hash_table_t *table, hash_key_t key, hash_entry_t **entry) {
-  size_t index, startindex;
-  hash_hashvalue_t hashval;
+  size_t index = 0, startindex = 0;
+  hash_hashvalue_t hashval = 0;
 
   hashval = table->hashfunc(key);
   index = hashval % table->table_size;
@@ -149,8 +149,8 @@ static int lookup(hash_table_t *table, hash_key_t key, hash_entry_t **entry) {
 }
 
 int lookup_hashtable(hash_table_t *table, hash_key_t key, hash_data_t *data) {
-  hash_entry_t *entry;
-  int result;
+  hash_entry_t *entry = NULL;
+  int result = 0;
 
   result = lookup(table, key, &entry);
   if (result == -1) return -1;
@@ -159,10 +159,10 @@ int lookup_hashtable(hash_table_t *table, hash_key_t key, hash_data_t *data) {
 }
 
 int addto_hashtable(hash_table_t *table, hash_key_t key, hash_data_t data) {
-  size_t newsize;
-  int result;
-  hash_hashvalue_t val;
-  hash_entry_t *entry;
+  size_t newsize = 0;
+  int result = 0;
+  hash_hashvalue_t val = 0;
+  hash_entry_t *entry = NULL;
 
   newsize = table->table_size;
   while (table->entry_count > newsize / 2) newsize *= 2;
@@ -179,8 +179,8 @@ int addto_hashtable(hash_table_t *table, hash_key_t key, hash_data_t data) {
 }
 
 int removefrom_hashtable(hash_table_t *table, hash_key_t key) {
-  hash_entry_t *entry;
-  int result;
+  hash_entry_t *entry = NULL;
+  int result = 0;
 
   result = lookup(table, key, &entry);
   if (result == -1) return -1;
@@ -202,8 +202,8 @@ int removefrom_hashtable(hash_table_t *table, hash_key_t key) {
 int foreach_hash_entry(hash_table_t *table, void *opaque,
                        int (*cb)(hash_key_t key, hash_data_t data,
                                  void *opaque)) {
-  int result;
-  struct hash_entry_t *i;
+  int result = 0;
+  struct hash_entry_t *i = NULL;
   for (i = table->head; i != NULL; i = i->next) {
     result = cb(i->key, i->data, opaque);
     if (result != 0) return result;  // GCOVR_EXCL_LINE
@@ -213,7 +213,7 @@ int foreach_hash_entry(hash_table_t *table, void *opaque,
 
 hash_hashvalue_t strhash(const char *str) {
   unsigned long hash = 5381;
-  int c;
+  int c = 0;
 
   while ((c = *str++)) hash = hash * 33 + c;
 

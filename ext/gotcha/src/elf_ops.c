@@ -48,9 +48,9 @@ static uint32_t gnu_hash_func(const char *str) {
 signed long lookup_gnu_hash_symbol(const char *name, ElfW(Sym) * syms,
                                    ElfW(Half) * versym, char *symnames,
                                    void *sheader) {
-  uint32_t *buckets, *vals;
-  uint32_t hash_val;
-  uint32_t cur_sym, cur_sym_hashval;
+  uint32_t *buckets = NULL, *vals = NULL;
+  uint32_t hash_val = 0;
+  uint32_t cur_sym = 0, cur_sym_hashval = 0;
   signed long latest_sym = -1;
   ElfW(Half) latest_sym_ver = 0;
   struct gnu_hash_header *header = (struct gnu_hash_header *)(sheader);
@@ -89,7 +89,7 @@ signed long lookup_gnu_hash_symbol(const char *name, ElfW(Sym) * syms,
 }
 
 static unsigned long elf_hash(const unsigned char *name) {
-  unsigned int h = 0, g;
+  unsigned int h = 0, g = 0;
   while (*name != '\0') {
     h = (h << 4) + *name++;
     if ((g = h & 0xf0000000)) {

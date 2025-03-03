@@ -54,7 +54,7 @@ static void setInternalBindingAddressPointer(void **in, void *value) {
 
 long lookup_exported_symbol(const char *name, const struct link_map *lib,
                             void **symbol) {
-  long result;
+  long result = 0;
   if (is_vdso(lib)) {
     debug_printf(2, "Skipping VDSO library at 0x%lx with name %s\n",
                  lib->l_addr, LIB_NAME(lib));
@@ -96,8 +96,8 @@ long lookup_exported_symbol(const char *name, const struct link_map *lib,
 }
 
 int prepare_symbol(struct internal_binding_t *binding) {
-  int result;
-  struct link_map *lib;
+  int result = 0;
+  struct link_map *lib = NULL;
   struct gotcha_binding_t *user_binding = binding->user_binding;
 
   debug_printf(2, "Looking up exported symbols for %s\n", user_binding->name);
@@ -162,7 +162,7 @@ static int rewrite_wrapper_orders(struct internal_binding_t *binding) {
                insert_priority);
 
   struct internal_binding_t *head;
-  int hash_result;
+  int hash_result = 0;
   hash_result =
       lookup_hashtable(&function_hash_table, (void *)name, (void **)&head);
   if (hash_result != 0) {
@@ -209,9 +209,9 @@ static int rewrite_wrapper_orders(struct internal_binding_t *binding) {
 static int update_lib_bindings(ElfW(Sym) * symbol KNOWN_UNUSED, char *name,
                                ElfW(Addr) offset, struct link_map *lmap,
                                hash_table_t *lookuptable) {
-  int result;
-  struct internal_binding_t *internal_binding;
-  void **got_address;
+  int result = 0;
+  struct internal_binding_t *internal_binding = NULL;
+  void **got_address = NULL;
 
   result = lookup_hashtable(lookuptable, name, (void **)&internal_binding);
   if (result != 0) return -1;
@@ -391,7 +391,7 @@ static int update_library_got(struct link_map *map,
 }
 
 void update_all_library_gots(hash_table_t *bindings) {
-  struct link_map *lib_iter;
+  struct link_map *lib_iter = NULL;
   debug_printf(2, "Searching all callsites for %lu bindings\n",
                (unsigned long)bindings->entry_count);
   for (lib_iter = _r_debug.r_map; lib_iter != 0; lib_iter = lib_iter->l_next) {
@@ -402,9 +402,9 @@ void update_all_library_gots(hash_table_t *bindings) {
 GOTCHA_EXPORT enum gotcha_error_t gotcha_wrap(
     struct gotcha_binding_t *user_bindings, int num_actions,
     const char *tool_name) {
-  int i, not_found = 0, new_bindings_count = 0;
-  tool_t *tool;
-  hash_table_t new_bindings;
+  int i = 0, not_found = 0, new_bindings_count = 0;
+  tool_t *tool = NULL;
+  hash_table_t new_bindings = EMPTY_HASH_TABLE;
 
   gotcha_init();
 
