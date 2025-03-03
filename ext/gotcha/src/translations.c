@@ -18,9 +18,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "gotcha_utils.h"
 
-int main_wrapped;
-gotcha_wrappee_handle_t gotcha_internal_libc_main_wrappee_handle;
-gotcha_wrappee_handle_t gotcha_internal_main_wrappee_handle;
+int main_wrapped = 0;
+gotcha_wrappee_handle_t gotcha_internal_libc_main_wrappee_handle = NULL;
+gotcha_wrappee_handle_t gotcha_internal_main_wrappee_handle = NULL;
 /**
  * This function is excluded from coverage as this is only required for our
  * wrapper to call main.

@@ -83,7 +83,7 @@ tool_t *create_tool(const char *tool_name) {
 }
 
 tool_t *get_tool(const char *tool_name) {
-  tool_t *t;
+  tool_t *t = NULL;
   for (t = tools; t; t = t->next_tool) {
     if (gotcha_strcmp(tool_name, t->tool_name) == 0) {
       return t;
@@ -95,8 +95,8 @@ tool_t *get_tool(const char *tool_name) {
 binding_t *add_binding_to_tool(tool_t *tool,
                                struct gotcha_binding_t *user_binding,
                                int user_binding_size) {
-  binding_t *newbinding;
-  int result, i;
+  binding_t *newbinding = NULL;
+  int result = 0, i = 0;
   newbinding = (binding_t *)gotcha_malloc(sizeof(binding_t));
   newbinding->tool = tool;
   struct internal_binding_t *internal_bindings =
@@ -149,7 +149,7 @@ binding_t *get_bindings() { return all_bindings; }
 binding_t *get_tool_bindings(tool_t *tool) { return tool->binding; }
 
 struct gotcha_configuration_t get_default_configuration() {
-  struct gotcha_configuration_t result;
+  struct gotcha_configuration_t result = EMPTY_CONFIGURATION;
   result.priority = UNSET_PRIORITY;
   return result;
 }

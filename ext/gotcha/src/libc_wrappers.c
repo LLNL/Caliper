@@ -46,7 +46,7 @@ static malloc_link_t *free_list = NULL;
 
 static void split_allocation(malloc_link_t *allocation, size_t new_size) {
   size_t orig_size = allocation->header.size;
-  malloc_link_t *newalloc;
+  malloc_link_t *newalloc = NULL;
 
   if (orig_size - new_size <= sizeof(malloc_link_t)) return;
 
@@ -58,10 +58,10 @@ static void split_allocation(malloc_link_t *allocation, size_t new_size) {
 }
 
 void *gotcha_malloc(size_t size) {
-  malloc_link_t *cur, *prev, *newalloc;
-  malloc_link_t *best_fit = NULL, *best_fit_prev;
-  ssize_t best_fit_diff, diff, block_size;
-  void *result;
+  malloc_link_t *cur = NULL, *prev = NULL, *newalloc = NULL;
+  malloc_link_t *best_fit = NULL, *best_fit_prev = NULL;
+  ssize_t best_fit_diff = SIZE_MAX, diff = 0, block_size = 0;
+  void *result = NULL;
 
   if (size < MIN_SIZE) size = MIN_SIZE;
   if (size % 8) size += 8 - (size % 8);
@@ -107,8 +107,8 @@ void *gotcha_malloc(size_t size) {
 }
 
 void *gotcha_realloc(void *buffer, size_t size) {
-  void *newbuffer;
-  malloc_link_t *alloc;
+  void *newbuffer = NULL;
+  malloc_link_t *alloc = NULL;
 
   alloc = (malloc_link_t *)(((malloc_header_t *)buffer) - 1);
 
@@ -124,7 +124,7 @@ void *gotcha_realloc(void *buffer, size_t size) {
 }
 
 void gotcha_free(void *buffer) {
-  malloc_link_t *alloc;
+  malloc_link_t *alloc = NULL;
   alloc = (malloc_link_t *)(((malloc_header_t *)buffer) - 1);
 
   alloc->next = free_list;
@@ -132,7 +132,7 @@ void gotcha_free(void *buffer) {
 }
 
 void gotcha_memcpy(void *dest, void *src, size_t size) {
-  size_t i;
+  size_t i = 0;
   for (i = 0; i < size; i++) {
     ((unsigned char *)dest)[i] = ((unsigned char *)src)[i];
   }
@@ -164,7 +164,7 @@ int gotcha_strcmp(const char *in_one, const char *in_two) {
 }
 
 char *gotcha_strstr(const char *searchIn, const char *searchFor) {
-  int i, j;
+  int i = 0, j = 0;
   if (!searchFor[0]) return NULL;  // GCOVR_EXCL_LINE
 
   for (i = 0; searchIn[i]; i++) {
@@ -183,23 +183,23 @@ ssize_t gotcha_write(int fd, const void *buf, size_t count) {
 }
 
 size_t gotcha_strlen(const char *s) {
-  size_t i;
+  size_t i = 0;
   for (i = 0; s[i]; i++)
     ;
   return i;
 }
 
 size_t gotcha_strnlen(const char *s, size_t max_length) {
-  size_t i;
-  for (i = 0; s[i] && i < max_length; i++)
+  size_t i = 0;
+  for (i = 0; i < max_length && s[i]; i++)
     ;
   return i;
 }
 
 static int ulong_to_hexstr(unsigned long num, char *str, int strlen,
                            int uppercase) {
-  int len, i;
-  unsigned long val;
+  int len = 0, i = 0;
+  unsigned long val = 0UL;
   char base_char = uppercase ? 'A' : 'a';
 
   if (num == 0) {
@@ -224,8 +224,8 @@ static int ulong_to_hexstr(unsigned long num, char *str, int strlen,
 }
 
 static int ulong_to_str(unsigned long num, char *str, int strlen) {
-  int len, i;
-  unsigned long val;
+  int len = 0, i = 0;
+  unsigned long val = 0UL;
 
   if (num == 0) {
     if (strlen < 2) return -1;  // GCOVR_EXCL_LINE
@@ -248,7 +248,7 @@ static int ulong_to_str(unsigned long num, char *str, int strlen) {
 }
 
 static int slong_to_str(signed long num, char *str, int strlen) {
-  int result;
+  int result = 0;
   if (num >= 0) return ulong_to_str((unsigned long)num, str, strlen);
 
   result = ulong_to_str((unsigned long)(num * -1), str + 1, strlen - 1);
@@ -259,8 +259,8 @@ static int slong_to_str(signed long num, char *str, int strlen) {
 // GCOVR_EXCL_START
 void gotcha_assert_fail(const char *s, const char *file, unsigned int line,
                         const char *function) {
-  char linestr[64];
-  int result;
+  char linestr[64] = {'\0'};
+  int result = 0;
 
   result = ulong_to_str(line, linestr, sizeof(linestr) - 1);
   if (result == -1) linestr[0] = '\0';
@@ -279,8 +279,8 @@ void gotcha_assert_fail(const char *s, const char *file, unsigned int line,
 
 extern char **__environ;
 char *gotcha_getenv(const char *name) {
-  char **s;
-  int name_len;
+  char **s = NULL;
+  int name_len = 0;
 
   name_len = gotcha_strlen(name);
   for (s = __environ; *s; s++) {
@@ -307,7 +307,7 @@ unsigned int gotcha_getpagesize() {
 int gotcha_open(const char *pathname, int flags, ...) {
   mode_t mode;
   va_list args;
-  long result;
+  long result = 0;
 
   va_start(args, flags);
   if (flags & O_CREAT) {
@@ -330,7 +330,7 @@ int gotcha_open(const char *pathname, int flags, ...) {
 
 void *gotcha_mmap(void *addr, size_t length, int prot, int flags, int fd,
                   off_t offset) {
-  long result;
+  long result = 0;
 
   result = syscall(SYS_mmap, addr, length, prot, flags, fd, offset);
   return (void *)result;
@@ -338,7 +338,7 @@ void *gotcha_mmap(void *addr, size_t length, int prot, int flags, int fd,
 
 int gotcha_atoi(const char *nptr) {
   int neg = 1, len, val = 0, mult = 1;
-  const char *cur;
+  const char *cur = NULL;
 
   while (*nptr == '-') {
     neg = neg * -1;
@@ -392,9 +392,10 @@ int gotcha_int_printf(int fd, const char *format, ...) {
   va_list args;
   const char *str = format;
   int buffer_pos = 0;
-  int char_width, short_width, long_width, long_long_width, size_width;
+  int char_width = 0, short_width = 0, long_width = 0, long_long_width = 0;
+  int size_width = 0;
   int num_printed = 0;
-  char buffer[4096];
+  char buffer[4096] = {'\0'};
 
   va_start(args, format);
   while (*str) {
@@ -426,8 +427,8 @@ int gotcha_int_printf(int fd, const char *format, ...) {
     }
 
     if (*str == 'd' || *str == 'i') {
-      signed long val;
-      char numstr[64];
+      signed long val = 0;
+      char numstr[64] = {'\0'};
       if (char_width)
         val = (signed long)(signed char)va_arg(args, signed int);
       else if (short_width)
@@ -444,8 +445,8 @@ int gotcha_int_printf(int fd, const char *format, ...) {
       add_to_buffer(numstr, fd, &buffer_pos, buffer, sizeof(buffer),
                     &num_printed, 1);
     } else if (*str == 'u') {
-      unsigned long val;
-      char numstr[64];
+      unsigned long val = 0;
+      char numstr[64] = {'\0'};
       if (char_width)
         val = (unsigned long)(unsigned char)va_arg(args, unsigned int);
       else if (short_width)
@@ -462,8 +463,8 @@ int gotcha_int_printf(int fd, const char *format, ...) {
       add_to_buffer(numstr, fd, &buffer_pos, buffer, sizeof(buffer),
                     &num_printed, 1);
     } else if (*str == 'x' || *str == 'X' || *str == 'p') {
-      unsigned long val;
-      char numstr[64];
+      unsigned long val = 0;
+      char numstr[64] = {'\0'};
       if (*str != 'p') {
         if (char_width)
           val = (unsigned long)(unsigned char)va_arg(args, unsigned int);
@@ -486,7 +487,7 @@ int gotcha_int_printf(int fd, const char *format, ...) {
       add_to_buffer(numstr, fd, &buffer_pos, buffer, sizeof(buffer),
                     &num_printed, 1);
     } else if (*str == 'c') {
-      char cbuf[2];
+      char cbuf[2] = {'\0'};
       cbuf[0] = (unsigned char)va_arg(args, unsigned int);
       cbuf[1] = '\0';
       add_to_buffer(cbuf, fd, &buffer_pos, buffer, sizeof(buffer), &num_printed,
@@ -499,7 +500,7 @@ int gotcha_int_printf(int fd, const char *format, ...) {
       add_to_buffer("%", fd, &buffer_pos, buffer, sizeof(buffer), &num_printed,
                     1);
     } else {
-      char s[3];
+      char s[3] = {'\0'};
       s[0] = '%';
       s[1] = *str;
       s[2] = '\0';
@@ -517,7 +518,7 @@ done:  // GCOVR_EXCL_LINE
 }
 
 void *gotcha_memset(void *s, int c, size_t n) {
-  size_t i;
+  size_t i = 0;
   unsigned char byte = (unsigned char)c;
   for (i = 0; i < n; i++) {
     ((unsigned char *)s)[i] = byte;

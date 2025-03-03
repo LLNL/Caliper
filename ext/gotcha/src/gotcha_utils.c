@@ -28,7 +28,7 @@ int debug_level;
 static void debug_init() {
   static int debug_initialized = 0;
 
-  char *debug_str;
+  char *debug_str = NULL;
   if (debug_initialized) {
     return;  // GCOVR_EXCL_LINE
   }
@@ -48,9 +48,9 @@ static void debug_init() {
 hash_table_t function_hash_table;
 hash_table_t notfound_binding_table;
 
-static hash_table_t library_table;
+static hash_table_t library_table = EMPTY_HASH_TABLE;
 static library_t *library_list = NULL;
-unsigned int current_generation;
+unsigned int current_generation = 0;
 
 static hash_hashvalue_t link_map_hash(struct link_map *map) {
   hash_hashvalue_t hashval = (hash_hashvalue_t)((unsigned long)map);
@@ -72,8 +72,8 @@ static void setup_hash_tables() {
 }
 
 struct library_t *get_library(struct link_map *map) {
-  library_t *lib;
-  int result;
+  library_t *lib = NULL;
+  int result = 0;
   result =
       lookup_hashtable(&library_table, (hash_key_t)map, (hash_data_t *)&lib);
   if (result == -1) return NULL;

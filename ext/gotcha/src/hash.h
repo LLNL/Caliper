@@ -35,6 +35,8 @@ typedef struct {
   struct hash_entry_t *table;
   struct hash_entry_t *head;
 } hash_table_t;
+#define EMPTY_HASH_TABLE \
+  {0, 0, NULL, NULL, NULL, NULL}
 
 int create_hashtable(hash_table_t *table, size_t initial_size, hash_func_t func,
                      hash_cmp_t keycmp);
