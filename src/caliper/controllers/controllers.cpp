@@ -579,7 +579,7 @@ const char* builtin_gotcha_option_specs = R"json(
  }
 },{
  "name"        : "mem.highwatermark",
- "description" : "Report memory high-water mark",
+ "description" : "Report memory high-water mark per region",
  "type"        : "bool",
  "category"    : "metric",
  "services"    : [ "alloc", "sysalloc" ],
@@ -590,8 +590,29 @@ const char* builtin_gotcha_option_specs = R"json(
   "let
     mhwm.bytes=first(max#alloc.region.highwatermark,alloc.region.highwatermark),mhwm=scale(mhwm.bytes,1e-6)
    select
-    max(mhwm) as \"Allocated MB\" unit MB",
-  "cross": "select max(max#mhwm) as \"Allocated MB\" unit MB"
+    max(mhwm) as \"Mem HWM MB\" unit MB",
+  "cross": "select max(max#mhwm) as \"Mem HWM MB\" unit MB"
+ }
+},{
+ "name"        : "alloc.stats",
+ "description" : "Report per-region memory allocation info",
+ "type"        : "bool",
+ "category"    : "metric",
+ "services"    : [ "allocsize", "sysalloc" ],
+ "query":
+ {
+  "local":
+  "let
+    as.hwm=scale(alloc.hwm,1e-6),as.avg=scale(avg#alloc.size,1e-6)
+   select
+    max(as.hwm) as \"Alloc HWM (MB)\" unit MB,
+    sum(alloc.count) as \"Alloc count\",
+    avg(as.avg) as \"Avg alloc size (MB)\"",
+  "cross":
+  "select
+    max(max#as.hwm) as \"Alloc HWM (MB)\" unit MB,
+    sum(sum#alloc.count) as \"Alloc count\",
+    avg(avg#as.avg) as \"Avg alloc size (MB)\""
  }
 },{
  "name"        : "mem.pages",
