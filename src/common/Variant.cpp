@@ -302,6 +302,24 @@ Variant& Variant::max(const Variant& val)
     return *this;
 }
 
+Variant Variant::div(unsigned count)
+{
+    cali_attr_type type = this->type();
+
+    switch (type) {
+    case CALI_TYPE_DOUBLE:
+        return Variant(m_v.value.v_double / static_cast<double>(count));
+    case CALI_TYPE_INT:
+        return Variant(cali_make_variant_from_int64(m_v.value.v_int / static_cast<int64_t>(count)));
+    case CALI_TYPE_UINT:
+        return Variant(cali_make_variant_from_uint(m_v.value.v_uint / count));
+    default:
+        break;
+    }
+
+    return Variant();
+}
+
 void Variant::update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val)
 {
     if (min_val.empty()) {

@@ -723,7 +723,7 @@ TEST(AggregatorTest, StatisticsKernels)
 
     EXPECT_EQ(dict[attr_min.id()].value().to_int(), -4);
     EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
-    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
+    EXPECT_EQ(dict[attr_avg.id()].value().to_int(), 16);
     EXPECT_DOUBLE_EQ(dict[attr_var.id()].value().to_double(), 2018.0 / 4.0 - (16.5 * 16.5));
 }
 

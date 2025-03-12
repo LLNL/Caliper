@@ -286,12 +286,10 @@ struct AggregationDB::AggregationDBImpl {
                 if (k->count == 0)
                     continue;
 
-                double avg = k->sum.to_double() / k->count;
-
-                rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
-                rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
-                rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
-                rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(avg)));
+                rec.push_back(Entry(info.result_attrs[a].min_attr, k->min));
+                rec.push_back(Entry(info.result_attrs[a].max_attr, k->max));
+                rec.push_back(Entry(info.result_attrs[a].sum_attr, k->sum));
+                rec.push_back(Entry(info.result_attrs[a].avg_attr, k->sum.div(k->count)));
 #ifdef CALIPER_ENABLE_HISTOGRAMS
                 for (int ii = 0; ii < CALI_AGG_HISTOGRAM_BINS; ii++) {
                     rec.push_back(Entry(

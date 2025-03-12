@@ -116,7 +116,7 @@ class Aggregate
         res.min_attr = c->create_attribute(std::string("min#") + name, type, prop);
         res.max_attr = c->create_attribute(std::string("max#") + name, type, prop);
         res.sum_attr = c->create_attribute(std::string("sum#") + name, type, prop);
-        res.avg_attr = c->create_attribute(std::string("avg#") + name, CALI_TYPE_DOUBLE, prop);
+        res.avg_attr = c->create_attribute(std::string("avg#") + name, type, prop);
 #ifdef CALIPER_ENABLE_HISTOGRAMS
         for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
             res.histogram_attr[jj] = c->create_attribute(
