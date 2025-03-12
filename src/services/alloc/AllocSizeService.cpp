@@ -35,6 +35,7 @@ class AllocSizeService
     struct RegionInfo {
         uint64_t current_bytes;
         uint64_t total_bytes;
+        uint64_t max_bytes;
         uint64_t hwm;
         uint64_t count;
         cali::Node* path;
@@ -92,11 +93,12 @@ class AllocSizeService
             std::lock_guard<std::mutex> g(g_region_map_lock);
             auto it = g_region_map.find(path->id());
             if (it == g_region_map.end()) {
-                RegionInfo info { size, size, size, 1ull, path };
+                RegionInfo info { size, size, size, size, 1ull, path };
                 g_region_map[path->id()] = info;
             } else {
                 it->second.current_bytes += size;
                 it->second.total_bytes += size;
+                it->second.max_bytes = std::max(it->second.max_bytes, size);
                 it->second.hwm = std::max(it->second.hwm, it->second.current_bytes);
                 ++it->second.count;
             }
@@ -147,19 +149,22 @@ class AllocSizeService
             c->create_attribute("alloc.count", CALI_TYPE_UINT,
                 CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         Attribute avg_alloc_size_attr =
-            c->create_attribute("avg#alloc.size", CALI_TYPE_DOUBLE,
+            c->create_attribute("avg#alloc.size", CALI_TYPE_UINT,
                 CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
-
+        Attribute max_alloc_size_attr =
+            c->create_attribute("max#alloc.size", CALI_TYPE_UINT,
+                CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
+    
         std::lock_guard<std::mutex> g(g_region_map_lock);
 
         for (const auto& it : g_region_map) {
             std::vector<Entry> rec;
-            rec.reserve(4);
+            rec.reserve(5);
             rec.emplace_back(it.second.path);
             rec.emplace_back(alloc_hwm_attr, cali_make_variant_from_uint(it.second.hwm));
             rec.emplace_back(alloc_count_attr, cali_make_variant_from_uint(it.second.count));
-            double avg_alloc_size = static_cast<double>(it.second.total_bytes) / static_cast<double>(it.second.count);
-            rec.emplace_back(avg_alloc_size_attr, Variant(avg_alloc_size));
+            rec.emplace_back(max_alloc_size_attr, cali_make_variant_from_uint(it.second.max_bytes));
+            rec.emplace_back(avg_alloc_size_attr, cali_make_variant_from_uint(it.second.total_bytes/it.second.count));
             flush_fn(*c, rec);
         }
 

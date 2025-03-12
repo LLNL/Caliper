@@ -603,16 +603,18 @@ const char* builtin_gotcha_option_specs = R"json(
  {
   "local":
   "let
-    as.hwm=scale(alloc.hwm,1e-6),as.avg=scale(avg#alloc.size,1e-6)
+    as.hwm=scale(alloc.hwm,1e-6)
    select
-    max(as.hwm) as \"Alloc HWM (MB)\" unit MB,
+    max(as.hwm) as \"Alloc HWM MB\" unit MB,
     sum(alloc.count) as \"Alloc count\",
-    avg(as.avg) as \"Avg alloc size (MB)\"",
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\"",
   "cross":
   "select
-    max(max#as.hwm) as \"Alloc HWM (MB)\" unit MB,
+    max(max#as.hwm) as \"Alloc HWM MB\" unit MB,
     sum(sum#alloc.count) as \"Alloc count\",
-    avg(avg#as.avg) as \"Avg alloc size (MB)\""
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
  "name"        : "mem.pages",
