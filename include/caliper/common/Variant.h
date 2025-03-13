@@ -88,6 +88,7 @@ public:
 
     Variant& min(const Variant& val);
     Variant& max(const Variant& val);
+    Variant  div(unsigned count);
 
     static void update_minmaxsum(const Variant& val, Variant& min_val, Variant& max_val, Variant& sum_val);
 

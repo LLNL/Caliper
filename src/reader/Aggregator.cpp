@@ -646,11 +646,11 @@ public:
 
             int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
-            m_stat_attrs.avg = db.create_attribute("avg#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop);
+            m_stat_attrs.avg = db.create_attribute("avg#" + m_target_attr_name, m_target_attr.type(), prop);
             m_stat_attrs.count =
                 db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT, prop | CALI_ATTR_HIDDEN);
             m_stat_attrs.sum =
-                db.create_attribute("avg.sum#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop | CALI_ATTR_HIDDEN);
+                db.create_attribute("avg.sum#" + m_target_attr_name, m_target_attr.type(), prop | CALI_ATTR_HIDDEN);
 
             a = m_stat_attrs;
             return true;
@@ -663,7 +663,7 @@ public:
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg.front()); }
     };
 
-    AvgKernel(Config* config) : m_count(0), m_sum(0.0), m_config(config) {}
+    AvgKernel(Config* config) : m_count(0), m_config(config) {}
 
     const AggregateKernelConfig* config() { return m_config; }
 
@@ -679,10 +679,10 @@ public:
 
         for (const Entry& e : list) {
             if (e.attribute() == target_attr.id()) {
-                m_sum += e.value().to_double();
+                m_sum += e.value();
                 ++m_count;
             } else if (e.attribute() == stat_attr.sum.id()) {
-                m_sum += e.value().to_double();
+                m_sum += e.value();
             } else if (e.attribute() == stat_attr.count.id()) {
                 m_count += e.value().to_uint();
             }
@@ -697,8 +697,8 @@ public:
             if (!m_config->get_statistics_attributes(db, stat_attr))
                 return;
 
-            list.push_back(Entry(stat_attr.avg, Variant(m_sum / m_count)));
-            list.push_back(Entry(stat_attr.sum, Variant(m_sum)));
+            list.push_back(Entry(stat_attr.avg, m_sum.div(m_count)));
+            list.push_back(Entry(stat_attr.sum, m_sum));
             list.push_back(Entry(stat_attr.count, Variant(cali_make_variant_from_uint(m_count))));
         }
     }
@@ -706,7 +706,7 @@ public:
 private:
 
     unsigned m_count;
-    double   m_sum;
+    Variant  m_sum;
 
     std::mutex m_lock;
 
