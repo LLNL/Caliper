@@ -41,9 +41,7 @@ class AllocSizeService
         cali::Node* path;
     };
 
-    Attribute alloc_hwm_attr;
-    Attribute alloc_count_attr;
-    Attribute avg_alloc_size_attr;
+    Attribute hwm_attr;
 
     std::unordered_map<uint64_t, AllocInfo>  g_alloc_map;
     std::mutex                               g_alloc_map_lock;
@@ -108,7 +106,6 @@ class AllocSizeService
             std::lock_guard<std::mutex> g(g_hwm_lock);
 
             g_active_mem += size;
-            g_hwm        = std::max(g_hwm, g_active_mem);
             g_region_hwm = std::max(g_region_hwm, g_active_mem);
         }
     }
@@ -141,9 +138,21 @@ class AllocSizeService
         }
     }
 
+    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView, SnapshotBuilder& rec) {
+        uint64_t hwm = 0;
+
+        {
+            std::lock_guard<std::mutex> g(g_hwm_lock);
+            hwm = g_region_hwm;
+            g_region_hwm = g_active_mem;
+        }
+
+        rec.append(hwm_attr, cali_make_variant_from_uint(hwm));
+    }
+
     void flush_cb(Caliper* c, Channel* channel, SnapshotView, SnapshotFlushFn flush_fn) {
-        Attribute alloc_hwm_attr =
-            c->create_attribute("alloc.hwm", CALI_TYPE_UINT,
+        Attribute alloc_tally_attr =
+            c->create_attribute("alloc.tally", CALI_TYPE_UINT,
                 CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         Attribute alloc_count_attr =
             c->create_attribute("alloc.count", CALI_TYPE_UINT,
@@ -154,14 +163,14 @@ class AllocSizeService
         Attribute max_alloc_size_attr =
             c->create_attribute("max#alloc.size", CALI_TYPE_UINT,
                 CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
-    
+
         std::lock_guard<std::mutex> g(g_region_map_lock);
 
         for (const auto& it : g_region_map) {
             std::vector<Entry> rec;
             rec.reserve(5);
             rec.emplace_back(it.second.path);
-            rec.emplace_back(alloc_hwm_attr, cali_make_variant_from_uint(it.second.hwm));
+            rec.emplace_back(alloc_tally_attr, cali_make_variant_from_uint(it.second.hwm));
             rec.emplace_back(alloc_count_attr, cali_make_variant_from_uint(it.second.count));
             rec.emplace_back(max_alloc_size_attr, cali_make_variant_from_uint(it.second.max_bytes));
             rec.emplace_back(avg_alloc_size_attr, cali_make_variant_from_uint(it.second.total_bytes/it.second.count));
@@ -183,8 +192,18 @@ class AllocSizeService
                         << std::endl;
     }
 
-    AllocSizeService(Caliper* c, Channel* chn)
-    { }
+    AllocSizeService(Caliper* c, Channel* channel)
+    {
+        bool record_hwm = services::init_config_from_spec(channel->config(), s_spec).get("record_highwatermark").to_bool();
+
+        if (record_hwm) {
+            hwm_attr = c->create_attribute("alloc.region.highwatermark", CALI_TYPE_UINT,
+                CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+            channel->events().snapshot.connect([this](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec){
+                    this->snapshot_cb(c, chn, info, rec);
+                });
+        }
+    }
 
 public:
 
@@ -226,7 +245,15 @@ public:
 const char* AllocSizeService::s_spec = R"json(
 {
  "name" : "allocsize",
- "description" : "Track memory high-water mark per region"
+ "description" : "Track memory high-water mark per region",
+ "config":
+ [
+  { "name": "record_highwatermark",
+    "description": "Record memory high-water mark",
+    "type": "bool",
+    "value": "false"
+  }
+ ]
 }
 )json";
 

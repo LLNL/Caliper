@@ -582,8 +582,8 @@ const char* builtin_gotcha_option_specs = R"json(
  "description" : "Report memory high-water mark per region",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "alloc", "sysalloc" ],
- "config"      : { "CALI_ALLOC_TRACK_ALLOCATIONS": "false", "CALI_ALLOC_RECORD_HIGHWATERMARK": "true" },
+ "services"    : [ "allocsize", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSIZE_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":
@@ -599,19 +599,20 @@ const char* builtin_gotcha_option_specs = R"json(
  "type"        : "bool",
  "category"    : "metric",
  "services"    : [ "allocsize", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSIZE_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":
-  "let
-    as.hwm=scale(alloc.hwm,1e-6)
-   select
-    max(as.hwm) as \"Alloc HWM MB\" unit MB,
+  "select
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(alloc.tally) as \"Alloc tMax\",
     sum(alloc.count) as \"Alloc count\",
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\"",
   "cross":
   "select
-    max(max#as.hwm) as \"Alloc HWM MB\" unit MB,
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#alloc.tally) as \"Alloc tMax\",
     sum(sum#alloc.count) as \"Alloc count\",
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\""
