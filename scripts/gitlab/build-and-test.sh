@@ -256,7 +256,7 @@ then
 
     timed_message "Preparing tests xml reports for export"
     tree Testing
-    xsltproc -o junit.xml ${project_dir}/scripts/ctest-to-junit.xsl Testing/*/Test.xml
+    xsltproc -o junit.xml ${project_dir}/scripts/radiuss-spack-configs/utilities/ctest-to-junit.xsl Testing/*/Test.xml
     mv junit.xml ${project_dir}/junit.xml
 
     if grep -q "Errors while running CTest" ./tests_output.txt
