@@ -6,6 +6,7 @@
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
+#include <cstdlib>
 #include <string>
 
 // test C and C++ macros
@@ -58,6 +59,8 @@ int main(int argc, char* argv[])
     CALI_MARK_FUNCTION_BEGIN;
 
     int count = 4;
+    // allocate some memory for alloc stats test
+    void* ptr = malloc(2000);
 
     {
         CALI_CXX_MARK_SCOPE("before_loop");
@@ -66,6 +69,8 @@ int main(int argc, char* argv[])
         if (argc > 3)
             count = std::max(1, std::stoi(argv[3]));
     }
+
+    free(ptr);
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
     for (int i = 0; i < count; ++i) {
