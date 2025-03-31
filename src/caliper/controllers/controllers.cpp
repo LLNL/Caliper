@@ -582,8 +582,8 @@ const char* builtin_gotcha_option_specs = R"json(
  "description" : "Report memory high-water mark per region",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "allocsize", "sysalloc" ],
- "config"      : { "CALI_ALLOCSIZE_RECORD_HIGHWATERMARK": "true" },
+ "services"    : [ "allocstats", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":
@@ -598,8 +598,8 @@ const char* builtin_gotcha_option_specs = R"json(
  "description" : "Report per-region memory allocation info",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "allocsize", "sysalloc" ],
- "config"      : { "CALI_ALLOCSIZE_RECORD_HIGHWATERMARK": "true" },
+ "services"    : [ "allocstats", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":

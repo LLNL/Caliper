@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2015-2025, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 // Service for hooking memory allocation calls
@@ -25,7 +25,7 @@ using namespace util;
 namespace
 {
 
-class AllocSizeService
+class AllocStatsService
 {
     struct AllocInfo {
         uint64_t bytes;
@@ -177,7 +177,7 @@ class AllocSizeService
             flush_fn(*c, rec);
         }
 
-        Log(1).stream() << channel->name() << ": allocsize: flushed " << g_region_map.size() << " records\n";
+        Log(1).stream() << channel->name() << ": AllocStats: flushed " << g_region_map.size() << " records\n";
     }
 
     void clear_cb(Caliper*, Channel*) {
@@ -187,12 +187,12 @@ class AllocSizeService
 
     void finish_cb(Caliper* c, Channel* chn)
     {
-        Log(1).stream() << chn->name() << ": allocsize: " << g_total_tracked << " memory allocations tracked (max "
+        Log(1).stream() << chn->name() << ": allocstats: " << g_total_tracked << " memory allocations tracked (max "
                         << g_max_tracked << " simultaneous), " << g_failed_untrack << " untrack lookups failed."
                         << std::endl;
     }
 
-    AllocSizeService(Caliper* c, Channel* channel)
+    AllocStatsService(Caliper* c, Channel* channel)
     {
         bool record_hwm = services::init_config_from_spec(channel->config(), s_spec).get("record_highwatermark").to_bool();
 
@@ -209,9 +209,9 @@ public:
 
     static const char* s_spec;
 
-    static void allocsizeservice_initialize(Caliper* c, Channel* chn)
+    static void initialize(Caliper* c, Channel* chn)
     {
-        AllocSizeService* instance = new AllocSizeService(c, chn);
+        AllocStatsService* instance = new AllocStatsService(c, chn);
 
         chn->events().track_mem_evt.connect([instance](
                                                 Caliper*         c,
@@ -238,13 +238,13 @@ public:
             delete instance;
         });
 
-        Log(1).stream() << chn->name() << ": Registered allocsize service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered allocstats service" << std::endl;
     }
 };
 
-const char* AllocSizeService::s_spec = R"json(
+const char* AllocStatsService::s_spec = R"json(
 {
- "name" : "allocsize",
+ "name" : "allocstats",
  "description" : "Track memory high-water mark per region",
  "config":
  [
@@ -262,6 +262,6 @@ const char* AllocSizeService::s_spec = R"json(
 namespace cali
 {
 
-CaliperService allocsize_service { ::AllocSizeService::s_spec, ::AllocSizeService::allocsizeservice_initialize };
+CaliperService allocstats_service { ::AllocStatsService::s_spec, ::AllocStatsService::initialize };
 
 }

@@ -1,7 +1,7 @@
 set(CALIPER_ALLOC_SOURCES
     AllocService.cpp
-    AllocSizeService.cpp)
+    AllocStatsService.cpp)
 
 add_service_sources(${CALIPER_ALLOC_SOURCES})
 add_caliper_service("alloc")
-add_caliper_service("allocsize")
+add_caliper_service("allocstats")
