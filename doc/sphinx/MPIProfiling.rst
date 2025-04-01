@@ -1,4 +1,4 @@
-MPI Profiling
+MPI profiling
 ================================
 
 Caliper's built-in profiling recipes support MPI natively and automatically
