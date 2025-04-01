@@ -7,7 +7,7 @@ then
 fi
 
 ###############################################################################
-# Copyright (c) 2016-25, Lawrence Livermore National Security, LLC and Caliper
+# Copyright (c) 2016-24, Lawrence Livermore National Security, LLC and Caliper
 # project contributors. See the Caliper/LICENSE file for details.
 #
 # SPDX-License-Identifier: (BSD-3-Clause)
@@ -33,9 +33,9 @@ push_to_registry=${PUSH_TO_REGISTRY:-true}
 # REGISTRY_TOKEN allows you to provide your own personal access token to the CI
 # registry. Be sure to set the token with at least read access to the registry.
 registry_token=${REGISTRY_TOKEN:-""}
+ci_registry_user=${CI_REGISTRY_USER:-"${USER}"}
 ci_registry_image=${CI_REGISTRY_IMAGE:-"czregistry.llnl.gov:5050/radiuss/caliper"}
-export ci_registry_user=${CI_REGISTRY_USER:-"${USER}"}
-export ci_registry_token=${CI_JOB_TOKEN:-"${registry_token}"}
+ci_registry_token=${CI_JOB_TOKEN:-"${registry_token}"}
 
 timed_message ()
 {
@@ -59,7 +59,9 @@ fi
 
 if [[ -n ${module_list} ]]
 then
-    timed_message "Modules to load: ${module_list}"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    echo "~~~~~ Modules to load: ${module_list}"
+    echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
     module load ${module_list}
 fi
 
@@ -83,7 +85,7 @@ then
     prefix="${prefix}-${job_unique_id}"
 else
     # We set the prefix in the parent directory so that spack dependencies are not installed inside the source tree.
-    prefix="${project_dir}/../spack-and-build-root"
+    prefix="$(pwd)/../spack-and-build-root"
 fi
 
 echo "Creating directory ${prefix}"
@@ -128,7 +130,7 @@ then
     if [[ -n ${ci_registry_token} ]]
     then
         timed_message "GitLab registry as Spack Buildcache"
-        ${spack_cmd} -D ${spack_env_path} mirror add --unsigned --oci-username-variable ci_registry_user --oci-password-variable ci_registry_token gitlab_ci oci://${ci_registry_image}
+        ${spack_cmd} -D ${spack_env_path} mirror add --unsigned --oci-username ${ci_registry_user} --oci-password ${ci_registry_token} gitlab_ci oci://${ci_registry_image}
     fi
 
     timed_message "Spack build of dependencies"
@@ -204,23 +206,19 @@ then
     mkdir -p ${build_dir} && cd ${build_dir}
 
     timed_message "Building Caliper"
-    # We set the MPI tests command to allow overlapping.
-    # Shared allocation: Allows build_and_test.sh to run within a sub-allocation (see CI config).
-    # Use /dev/shm: Prevent MPI tests from running on a node where the build dir doesn't exist.
-    cmake_options=""
-    if [[ "${truehostname}" == "ruby" || "${truehostname}" == "poodle" ]]
+    if [[ "${truehostname}" == "lassen" || "${truehostname}" == "tioga" ]]
     then
-        cmake_options="-DBLT_MPI_COMMAND_APPEND:STRING=--overlap"
-    elif [[ "${truehostname}" == "lassen" || "${truehostname}" == "tioga" ]]
-    then
-        cmake_options="-DRUN_MPI_TESTS=Off"
+        $cmake_exe \
+          -C ${hostconfig_path} \
+          -DCMAKE_INSTALL_PREFIX=${install_dir} \
+          -DRUN_MPI_TESTS=Off \
+          ${project_dir}
+    else
+        $cmake_exe \
+          -C ${hostconfig_path} \
+          -DCMAKE_INSTALL_PREFIX=${install_dir} \
+          ${project_dir}
     fi
-
-    $cmake_exe \
-      -C ${hostconfig_path} \
-      ${cmake_options} \
-      -DCMAKE_INSTALL_PREFIX=${install_dir} \
-      ${project_dir}
     if ! $cmake_exe --build . -j ${core_counts[$truehostname]}
     then
         echo "[Error]: Compilation failed, building with verbose output..."
@@ -256,7 +254,7 @@ then
 
     timed_message "Preparing tests xml reports for export"
     tree Testing
-    xsltproc -o junit.xml ${project_dir}/scripts/radiuss-spack-configs/utilities/ctest-to-junit.xsl Testing/*/Test.xml
+    xsltproc -o junit.xml ${project_dir}/scripts/ctest-to-junit.xsl Testing/*/Test.xml
     mv junit.xml ${project_dir}/junit.xml
 
     if grep -q "Errors while running CTest" ./tests_output.txt
