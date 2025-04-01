@@ -1,16 +1,41 @@
 Caliper Basics
 ================================
 
-Caliper is a library to integrate performance profiling capabilities
-into applications. To use Caliper, developers mark code regions of
-interest using Caliper's annotation API. Applications can then enable
-performance profiling at runtime with Caliper's configuration API.
-Alternatively, you can configure Caliper through environment variables
-or config files.
+Unlike many traditional performance tools, Caliper is a library that lives as
+part of the application. This way, performance analysis can always be enabled
+without requiring special tool-specific workflows. Profiling can even be
+always-on, say to write a basic performance report at the end of each run.
 
-This tutorial covers basic Caliper usage, including source-code
-annotations and using Caliper's built-in performance measurement
-configurations.
+The downside to integrated performance tools is the manual effort of adding the
+library to the application. Similar to any other library, Caliper has an API
+that must be called by the application. In addition, Caliper works alongside
+another library, Adiak, to collect application run metadata. This is extremely
+useful for comparing large numbers of runs with analysis frameworks like
+`Thicket <https://github.com/LLNL/thicket>`_ and TreeScape.
+
+There are several steps to integrate Caliper into an application:
+
+* Add Caliper (and, optionally, Adiak) to the application's build system.
+* Add Caliper annotations to interesting regions of the code. These
+  annotations put labels over code regions that take a relevant amount of
+  time to execute.
+* Decide on a policy of what level of performance analysis should be on
+  by default, if any.
+* Optionally, add infrastructure to allow users to specify what level
+  of performance analysis they want. This could be in the form of a
+  command-line argument or input deck argument. Alternatively, users can
+  use the ``CALI_CONFIG`` environment variable to control profiling.
+* Optionally, initialize Adiak and pass name/value pairs that describe
+  metadata about this run, such as a problem size or set of enabled
+  physics packages. We will cover metadata collection in the
+  :ref:`recording_metadata` section.
+  of performance analysis they want.
+
+Most of these steps are relatively easy and involve only a few lines of code.
+Adding annotations throughout the code can be significant effort, though it
+can also be done in stages with only a minimal level at the beginning and further
+annotations refining the performance analysis data.
+
 Most of the examples shown here use the ``cxx-example`` program in the
 Caliper Git repository. There is a complete listing at the end of
 this tutorial: :ref:`cxx-example`.
@@ -51,11 +76,12 @@ a dependency on Caliper in CMake: ::
   add_executable(MyExample MyExample.cpp)
   target_link_libraries(MyExample PRIVATE caliper)
 
-When configuring the target program, point CMake to the desired
-Caliper installation with `caliper_DIR`: ::
+The Caliper CMake package file lives in `share/cmake/caliper` inside the
+Caliper installation directory. If the Caliper installation directory is not
+already in the CMake package search path you can point the CMake executable to
+it with `-Dcaliper_DIR`: ::
 
   cmake -Dcaliper_DIR=<caliper-installation-dir>/share/cmake/caliper ..
-
 
 Region profiling
 --------------------------------
@@ -81,7 +107,8 @@ functions, loops, or sections of source-code. For example, use
 You can mark arbitrary code regions with the :c:macro:`CALI_MARK_BEGIN`
 and :c:macro:`CALI_MARK_END` macros or the corresponding
 :cpp:func:`cali_begin_region()` and :cpp:func:`cali_end_region()`
-functions:
+functions. In C++, you can use :c:macro:`CALI_CXX_MARK_SCOPE` to mark a
+region that automatically closes when exiting the current C++ scope.
 
 .. code-block:: c++
 
@@ -92,9 +119,13 @@ functions:
     // ...
     CALI_MARK_END("my region");
 
-You can have as many regions as you like. Regions can be nested, but they
-must be stacked properly, i.e. the name in an `end region` call must match
-the current innermost open region.
+    {
+        CALI_CXX_MARK_SCOPE("my scope region");
+        // scope region automatically closes when leaving the current C++ scope
+    }
+
+Regions can be nested, but they must be stacked properly, i.e. the name
+in an `end region` call must match the current innermost open region.
 For more details, including C and Fortran examples, refer to the annotation
 API reference: :doc:`AnnotationAPI`.
 
@@ -388,7 +419,9 @@ hatchet-sample-profile
    See :doc:`SampleProfiling`.
 
 spot
-   Record a time profile for the Spot web visualization framework.
+   Record a time profile for Spot (internal LLNL visualization tool) or
+   `Thicket <https://github.com/LLNL/thicket>`_, a Python performance analysis
+   framework for comparing performance profiles from many program configurations.
 
 We discuss some of these configurations below. For a complete reference of the
 configuration string syntax and available configs and parameters, see
@@ -562,47 +595,194 @@ to learn about all loop-report options. Loop profiling is also available
 with other configs, notably the `spot` config producing output for the Spot
 performance visualization web framework.
 
+.. _recording_metadata:
+
 Recording program metadata
 --------------------------------
 
-Caliper can record and store program metadata, such as the system and program
-configuration, in its output files. This is useful for studies that compare
-data from multiple runs, such as scaling studies.
+Caliper is often used for performance comparison studies involving large
+collections of runs - for example, automatic performance regression testing,
+scaling studies, or comparing different program configurations. To that end,
+Caliper can store metadata name-value pairs to describe and distinguish
+performance profiles from different runs.
 
-The Caliper annotation API provides the
-``cali_set_global_(double|int|string|uint)_byname()`` family of functions to
-save global attributes in the form of key-value pairs:
+There are several complementary ways to record metadata name-value pairs
+in a Caliper profile:
+
+* Using the `Adiak <https://github.com/LLNL/Adiak>`_ library
+* Using Caliper metadata attributes
+* Providing metadata name-value pairs in the Caliper config string
+* Reading metadata name-value pairs from a JSON file
+
+We recommend using Adiak, which provides a user-friendly API as well as
+built-in functionality to record common information provided by the OS
+and runtime systems.
+Generally, we recommend recording any variables that are relevant to
+distinguishing and understanding the run generating the performance
+profile, such as:
+
+* The version / build date / git hash of the code
+* Build information, like the compiler and optimization level used
+* Versions of important libraries
+* Application configuration and input parameters, such as problem size and
+  decomposition settings, enabled physics packages, algorithms used, etc.
+* Machine and execution information, e.g. OS version, machine name,
+  date/time of the run
+* Information about the kind/purpose of the run, such as a test or experiment
+  name
+* Application-generated figure-of-merit metrics
+
+Using Adiak
+................................
+
+Caliper works together with `Adiak <https://github.com/LLNL/Adiak>`_, a C/C++
+library to record program metadata. Detailed documentation for Adiak is
+available `here <https://software.llnl.gov/Adiak>`_. This section covers basic
+use of Adiak for recording run metadata in an application.
+
+At its core, Adiak is an in-memory key-value store. To use Adiak, an application
+first initializes Adiak and then registers name-value pairs with Adiak's data
+collection API. By default, Adiak makes deep copies of all passed-in values: it
+is not intended for storing large datasets, but for collecting descriptive
+run metadata.
+
+Caliper automatically imports all name-value pairs collected with Adiak as run
+metadata in .cali or .json output files. They can also be printed in text-based
+recipes like runtime-report with the ``print.metadata`` option, e.g.
+``CALI_CONFIG=runtime-report,print.metadata``.
+
+Like Caliper, Adiak provides a CMake package file. The Adiak CMake package
+contains the ``adiak::adiak`` target, which should be linked to the target code: ::
+
+    find_package(adiak)
+    target_link_libraries(basic_example adiak::adiak)
+
+The Adiak CMake package file lives in ``lib/cmake/adiak`` inside the Adiak
+installation directory. Set ``-Dadiak_DIR`` to point CMake to the Adiak package: ::
+  
+    $ cmake -Dadiak_DIR=/path-to-adiak/lib/cmake/adiak
+
+C++ source files using Adiak should include ``adiak.hpp``. C sources should
+include ``adiak.h``.
+
+Adiak should be initialized with ``adiak::init(void*)`` (in C++) or
+``adiak_init(void*)`` (in C). The initialization function takes a pointer to
+an MPI communicator, or ``nullptr`` in a non-MPI program. Initializing
+Adiak with an MPI communicator allows it to collect certain MPI-specific
+information, such as the MPI job size and MPI library version.
+
+At exit, Adiak should be finalized with ``adiak::fini()`` in C++ or ``adiak_fini()``
+in C. Calling fini is important for collecting end-of-process data (such as job
+runtime) and flushing data. If used in an MPI-enabled adiak, then fini should be
+called before MPI_Finalize():
 
 .. code-block:: c++
 
-    cali_set_global_int_byname("iterations", iterations);
-    cali_set_global_string_byname("caliper.config", configstr.c_str());
+    #include <adiak.hpp>
 
-An even better way to record metadata is the `Adiak <https://github.com/LLNL/Adiak>`_
-library. Adiak makes metadata attributes accessible to multiple tools, and
-provides built-in functionality to record common information such as user
-name, executable name, command-line arguments, etc. The example below uses
-Adiak to record the "iterations" and "caliper.config" attributes as shown
-above, and also the user name, launch date, and MPI job size:
+    int main(int argc, char* argv[])
+    {
+        MPI_Init(&argc, &argv);
+        MPI_Comm adk_comm = MPI_COMM_WORLD;
+        // Pass a pointer to an MPI communicator or NULL to skip MPI support
+        adiak::init(&adk_comm);
+        // ...
+        adiak::fini(); // Call adiak::fini() before MPI_Finalize
+        MPI_Finalize();
+    }
+
+Adiak has two types of functions:
+
+* An implicit interface to collect system-level values stored under standardized names
+* An explicit interface to collect application-level data under user-defined names
+
+The implicit interface has a set of functions like ``adiak::launchdate()`` or
+``adiak::user()`` to collect system-provided information like the launch date or
+user name. A complete list of functions is available in the Adiak
+documentation. We recommend using the convenient collect_all shorthand, which
+collects all available implicit Adiak variables:
 
 .. code-block:: c++
 
-    adiak::user();
-    adiak::launchdate();
-    adiak::jobsize();
+    bool adiak::collect_all(); // C++ version to collect all implicit Adiak variables
+    int adiak_collect_all(); // C version
 
-    adiak::value("iterations", iterations);
-    adiak::value("caliper.config", configstr.c_str());
+Program-specific data can be recorded with the ``adiak::value`` template in C++:
 
-Most Caliper recipes automatically import metadata attributes set through
-Adiak (Adiak support must be enabled in the Caliper build configuration). The
-spot config for the Spot web visualization framework requires that metadata
-attributes are recorded through Adiak.
+.. code-block:: c++
 
-Finally, metadata can be added through the ``CALI_CONFIG`` and ConfigManager
-configuration strings with the ``metadata`` keyword:
+    template<typename T>
+    bool value(std::string name, T value, int category = adiak_general, std::string subcategory = "")
 
-.. code-block:: sh
+It takes two required and two optional parameters:
+
+* The name under which the value is stored
+* The value. Adiak accepts many C++ datatypes, including compound types like STL vectors.
+* (Optional) a category. Typical run metadata should use the default `adiak_general` category.
+* (Optional) a user-defined subcategory. Typically left empty.
+
+Adiak's internal type system supports many common datatypes, including
+integrals (integers and floating-point values), strings, UNIX time objects,
+as well as compound types like lists and tuples. There are also specialized
+types such as "path" and "version" for strings that represent file paths or
+program versions, respectively. The ``adiak::value`` template automatically
+derives an appropriate Adiak datatype from the passed-in value. There are also
+converters like ``adiak::path`` and ``adiak::version`` to convert strings to the
+specialized "path" and "version" types. Here are a few examples:
+
+.. code-block:: c++
+
+    adiak::value("maxtemperature", 70.2);
+    adiak::value("compiler", adiak::version("gcc@13.3.0"));
+    adiak::value("input_file", adiak::path("/home/user/in.dat"));
+
+    std::array<int, 3> dims = { 8, 8, 16 };
+    adiak::value("dimensions", dims);
+
+C programs should use the `adiak_namevalue` function, which uses a printf-style
+type descriptor to describe the desired datatype:
+
+.. code-block:: c++
+
+    int adiak_namevalue(const char *name, int category, const char *subcategory, const char *typestr, ...);
+
+Supported data types include integers (`%d`, `%u`), strings (`%s`), specialized
+strings like program versions (`%v`), and even compound types like arrays and
+structs. See `adiak_namevalue <https://software.llnl.gov/Adiak/ApplicationAPI.html#_CPPv415adiak_namevaluePKciPKcPKcz>`_
+in the Adiak documentation for more details. Examples:
+
+.. code-block:: c++
+
+    adiak_namevalue("numrecords", adiak_general, NULL, "%d", 10);
+    adiak_namevalue("buildcompiler", adiak_general, NULL, "%v", "gcc@4.7.3");
+
+    double gridvalues[] = { 5.4, 18.1, 24.0, 92.8 };
+    adiak_namevalue("gridvals", adiak_general, NULL, "[%f]", gridvalues, 4);
+
+    struct { int pos; const char *val; } letters[3] = { {1, 'a'}, {2, 'b'}, {3, 'c'} };
+    adiak_namevalue("alphabet", adiak_general, NULL, "[(%u, %s)]", letters, 3, 2);
+
+Using the Caliper global value API
+..................................
+
+Internally, Caliper stores metadata values as attributes with the
+`CALI_ATTR_GLOBAL` property. These can be created and set conveniently with
+the `cali_set_global_string|int|uint|double_byname` function family in C
+and C++:
+
+.. code-block:: c++
+
+    cali_set_global_double_byname("maxtemperature", 70.2);
+    cali_set_global_string_byname("version", "0.99");
+
+Unlike Adiak the Caliper functions do not support complex or custom
+datatypes.
+
+Providing metadata in config strings
+....................................
+
+You can also pass in metadata name-value pairs in a `CALI_CONFIG`
+or ConfigManager config string using the `metadata` keyword like so: ::
 
     $ CALI_CONFIG="runtime-report,print.metadata,metadata(foo=fooval,bar=barval)" ./examples/apps/cxx-example
     caliper.config        :
@@ -617,6 +797,33 @@ configuration strings with the ``metadata`` keyword:
     Path       Time (E) Time (I) Time % (E) Time % (I)
     main       0.000014 0.000547   2.118374  85.205938
     ...
+
+Values passed in through the `metadata` keyword are always recorded as strings.
+
+Finally, Caliper can read metadata name-value pairs from a JSON file at
+runtime. To do so, specify a file name and (optionally) a list of dictionary
+keys to read in a `metadata` entry in a Caliper config string with the
+special `file` and `keys` arguments:
+
+.. code-block:: sh
+
+    CALI_CONFIG="spot,metadata(file=data.json,keys=\"experiment,expected_result\")"
+
+The JSON file should contain a dictionary: ::
+
+    {
+     "experiment": "metadata_test", "expected_result": 42, "extra": { "val": 4242 }
+    }
+
+If a list of keys was provided, Caliper will only read the specified dictionary
+entries from the file, otherwise it will read all entries. The
+dictionaries can be nested. In this case Caliper will record a name-value pair
+for each sub-entry where the name is the path of keys separated with ".". For
+example, with the file above Caliper would create a `extra.val=4242` name-value
+pair.
+
+There can be multiple `metadata` entries in a Caliper config string, each
+with a list of name-value pairs or a file specification.
 
 Third-party tool support (NVidia NSight, Intel VTune)
 -----------------------------------------------------
