@@ -579,19 +579,43 @@ const char* builtin_gotcha_option_specs = R"json(
  }
 },{
  "name"        : "mem.highwatermark",
- "description" : "Report memory high-water mark",
+ "description" : "Report memory high-water mark per region",
  "type"        : "bool",
  "category"    : "metric",
- "services"    : [ "alloc", "sysalloc" ],
- "config"      : { "CALI_ALLOC_TRACK_ALLOCATIONS": "false", "CALI_ALLOC_RECORD_HIGHWATERMARK": "true" },
+ "services"    : [ "allocstats", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":
   "let
     mhwm.bytes=first(max#alloc.region.highwatermark,alloc.region.highwatermark),mhwm=scale(mhwm.bytes,1e-6)
    select
-    max(mhwm) as \"Allocated MB\" unit MB",
-  "cross": "select max(max#mhwm) as \"Allocated MB\" unit MB"
+    max(mhwm) as \"Mem HWM MB\" unit MB",
+  "cross": "select max(max#mhwm) as \"Mem HWM MB\" unit MB"
+ }
+},{
+ "name"        : "alloc.stats",
+ "description" : "Report per-region memory allocation info",
+ "type"        : "bool",
+ "category"    : "metric",
+ "services"    : [ "allocstats", "sysalloc" ],
+ "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
+ "query":
+ {
+  "local":
+  "select
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(alloc.tally) as \"Alloc tMax\",
+    sum(alloc.count) as \"Alloc count\",
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\"",
+  "cross":
+  "select
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#alloc.tally) as \"Alloc tMax\",
+    sum(sum#alloc.count) as \"Alloc count\",
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
  "name"        : "mem.pages",
