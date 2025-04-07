@@ -23,7 +23,7 @@ Features include:
 * Low-overhead source-code annotation API
 * Recording program metadata for analyzing collections of runs
 * Fully threadsafe implementation
-* Support for parallel programming models like MPI, OpenMP, Kokkos, CUDA, and ROCm
+* Support for parallel programming models like MPI, OpenMP, Kokkos, CUDA, ROCm, and RAJA
 * Event-based and sample-based performance measurements
 * Trace and profile recording
 * Connection to third-party tools, e.g. NVidia's NSight tools, AMD
