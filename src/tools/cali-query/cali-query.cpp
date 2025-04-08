@@ -25,13 +25,10 @@
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/StringConverter.h"
 
-#include <atomic>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <mutex>
 #include <sstream>
-#include <thread>
 
 using namespace cali;
 using namespace std;
@@ -158,15 +155,14 @@ const char* progress_config_spec =
     "{"
     " \"name\"        : \"caliquery-progress\","
     " \"description\" : \"Print cali-query progress (when processing multiple files)\","
-    " \"services\"    : [ \"event\", \"textlog\", \"timestamp\" ],"
+    " \"services\"    : [ \"event\", \"textlog\", \"timer\" ],"
     " \"config\"      : {"
     "   \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\","
-    "   \"CALI_TIMER_UNIT\"            : \"sec\","
     "   \"CALI_EVENT_TRIGGER\"         : \"cali-query.stream\","
     "   \"CALI_TEXTLOG_TRIGGER\"       : \"cali-query.stream\","
     "   \"CALI_TEXTLOG_FILENAME\"      : \"stderr\","
     "   \"CALI_TEXTLOG_FORMATSTRING\"  : "
-    "     \"cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[6]time.inclusive.duration% us\""
+    "     \"cali-query: Processed %[52]cali-query.stream% %[6]time.duration.ns% ns\""
     "  }"
     "}";
 
@@ -308,65 +304,31 @@ int main(int argc, const char* argv[])
     if (files.empty())
         files.push_back(""); // read from stdin if no files are given
 
-    unsigned num_threads = std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
-
-    if (verbose)
-        std::cerr << "cali-query: Processing " << files.size() << " files using " << num_threads << " thread"
-                  << (num_threads == 1 ? "." : "s.") << std::endl;
-
-    cali_set_global_int_byname("cali-query.num-threads", num_threads);
-
     CALI_MARK_END("Initialization");
 
     //
-    // --- Thread processing function
+    // --- Process files
     //
 
     CALI_MARK_BEGIN("Processing");
 
-    CaliperMetadataDB     metadb;
-    std::atomic<unsigned> index(0);
-    std::mutex            msgmutex;
+    CaliperMetadataDB metadb;
 
     metadb.add_attribute_aliases(spec.aliases);
     metadb.add_attribute_units(spec.units);
 
-    auto thread_fn = [&](unsigned t) {
-        Annotation::Guard g_t(Annotation("thread", CALI_ATTR_SCOPE_THREAD).begin(static_cast<int>(t)));
+    for (const std::string& file : files) {
+        Annotation::Guard g_f(Annotation("cali-query.stream").begin(file.empty() ? "stdin" : file.c_str()));
 
-        for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write
-            const char* filename = (files[i].empty() ? "stdin" : files[i].c_str());
+        if (verbose)
+            std::cerr << "cali-query: Reading " << file << std::endl;
 
-            Annotation::Guard g_s(Annotation("cali-query.stream", CALI_ATTR_SCOPE_THREAD).begin(filename));
+        CaliReader reader;
+        reader.read(file, metadb, node_proc, snap_proc);
 
-            if (verbose) {
-                std::lock_guard<std::mutex> g(msgmutex);
-
-                std::cerr << "cali-query: Reading " << filename << std::endl;
-            }
-
-            CaliReader reader;
-            reader.read(files[i], metadb, node_proc, snap_proc);
-
-            if (reader.error()) {
-                std::lock_guard<std::mutex> g(msgmutex);
-
-                std::cerr << "cali-query: Error reading " << filename << ": " << reader.error_msg() << std::endl;
-            }
-        }
-    };
-
-    std::vector<std::thread> threads;
-
-    //
-    // --- Fill thread vector and process
-    //
-
-    for (unsigned t = 0; t < num_threads; ++t)
-        threads.emplace_back(thread_fn, t);
-
-    for (auto& t : threads)
-        t.join();
+        if (reader.error())
+            std::cerr << "cali-query: Error reading " << file << ": " << reader.error_msg() << std::endl;
+    }
 
     CALI_MARK_END("Processing");
 
