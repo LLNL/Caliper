@@ -57,7 +57,11 @@ public:
     /// attribute id.
     cali_id_t attribute() const
     {
-        return Attribute::is_attribute(m_node) ? m_node->id() : (m_node ? m_node->attribute() : CALI_INV_ID);
+        if (m_node) {
+            cali_id_t node_attr_id = m_node->attribute();
+            return node_attr_id == Attribute::NAME_ATTR_ID ? m_node->id() : node_attr_id;
+        }
+        return CALI_INV_ID;
     }
 
     /// \brief Count instances of attribute \a attr_id in this entry
