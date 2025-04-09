@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 
     int count = 4;
     // allocate some memory for alloc stats test
-    void* ptr = malloc(2000);
+    void *volatile ptr = malloc(2000);
 
     {
         CALI_CXX_MARK_SCOPE("before_loop");
