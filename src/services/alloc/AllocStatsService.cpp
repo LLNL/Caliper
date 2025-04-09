@@ -49,7 +49,6 @@ class AllocStatsService
     std::mutex                               g_region_map_lock;
 
     uint64_t   g_active_mem { 0 };
-    uint64_t   g_hwm { 0 };
     uint64_t   g_region_hwm { 0 };
     std::mutex g_hwm_lock;
 
