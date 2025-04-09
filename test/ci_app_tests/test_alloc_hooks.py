@@ -80,8 +80,8 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.helper_test_hook('realloc')
 
 
-    def test_mem_highwatermark_option(self):
-        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json,mem.highwatermark' ]
+    def test_allocstats(self):
+        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json,alloc.stats' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'
@@ -90,7 +90,9 @@ class CaliperAllocServiceTest(unittest.TestCase):
         obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
         self.assertEqual(obj[1]['path'], 'main')
-        self.assertTrue(float(obj[1]['Allocated MB']) > 0.0)
+        self.assertTrue(int(obj[1]['Mem HWM']) >= 2000)
+        self.assertTrue(int(obj[1]['Alloc tMax']) >= 2000)
+        self.assertTrue(int(obj[1]['Alloc count']) >= 1)
 
 if __name__ == "__main__":
     unittest.main()
