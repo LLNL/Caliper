@@ -84,7 +84,6 @@ const Args::Table option_table[] = {
       nullptr },
     { "path-attributes", "path-attributes", 0, true, "Select the path attributes for tree printers", "ATTRIBUTES" },
     { "json", "json", 'j', false, "Print given attributes in web-friendly json format", "ATTRIBUTES" },
-    { "threads", "threads", 0, true, "Use this many threads (applicable only with multiple files)", "THREADS" },
     { "query", "query", 'q', true, "Execute a query in CalQL format", "QUERY STRING" },
     { "query-file", "query-file", 'Q', true, "Read a CalQL query from a file", "FILENAME" },
     { "caliper-config",
@@ -205,9 +204,7 @@ int main(int argc, const char* argv[])
 
         if (i < argc) {
             cerr << "cali-query: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
-
             args.print_available_options(cerr);
-
             return -1;
         }
 
