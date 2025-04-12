@@ -1263,6 +1263,8 @@ Variant Caliper::exchange(const Attribute& attr, const Variant& data)
         blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
         blackboard = &sG->process_blackboard;
+    } else {
+        return Variant();
     }
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
