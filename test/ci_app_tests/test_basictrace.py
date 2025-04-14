@@ -167,6 +167,18 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertFalse('other' in obj.keys())
         self.assertFalse('host.cluster' in obj.keys())
 
+    def test_augment_query_option(self):
+        target_cmd = [ './ci_test_macros', '0', 'spot,region.count,local_query="select scale(sum#region.count,10)",cross_query="select sum(scale#sum#region.count) as tenXcount",output=stdout' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-j' ]
+
+        recs = json.loads(cat.run_test_with_query(target_cmd, query_cmd, {}))
+        correct_recs = 0
+        for rec in recs:
+            if 'path' in rec:
+                self.assertEqual(10*int(rec['sum#sum#rc.count']), int(rec['sum#scale#sum#region.count']))
+                correct_recs = correct_recs + 1
+        self.assertGreaterEqual(correct_recs, 2)
+
     def test_esc(self):
         target_cmd = [ './ci_test_basic', 'newline' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j', '-s', 'cali.event.set' ]
