@@ -244,7 +244,7 @@ const char* testcontroller_spec = R"json(
        "name": "varopt",
        "type": "string",
        "description": "An option that uses its argument",
-       "config": { "config_var_with_arg": "hello{_{}! \\\{\\\}" }
+       "config": { "config_var_with_arg": "hello_{}" }
       }
      ]
     };
@@ -363,7 +363,7 @@ TEST(ConfigManagerTest, VariableOption)
         EXPECT_TRUE(tP->is_enabled("boolopt"));
         EXPECT_TRUE(tP->is_enabled("varopt"));
 
-        EXPECT_EQ(tP->get_config("config_var_with_arg"), std::string("hello{_world! {}"));
+        EXPECT_EQ(tP->get_config("config_var_with_arg"), std::string("hello_world"));
     }
 }
 

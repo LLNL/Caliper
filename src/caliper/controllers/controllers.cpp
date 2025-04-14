@@ -324,15 +324,23 @@ const char* builtin_base_option_specs = R"json(
     async.end"
  }
 },{
- "name"        : "node.order",
- "description" : "Report order in which regions first appeared",
- "type"        : "bool",
- "category"    : "metric",
- "query":
- {
-  "local": "select min(aggregate.slot) as \"Node order\"",
-  "cross": "select min(min#aggregate.slot) as \"Node order\""
- }
+ "name": "node.order",
+ "description": "Report order in which regions first appeared",
+ "type": "bool",
+ "category": "metric",
+ "query": { "local": "select min(aggregate.slot) as \"Node order\"", "cross": "select min(min#aggregate.slot) as \"Node order\"" }
+},{
+ "name": "local_query",
+ "description": "Augment process-local aggregation query",
+ "type": "string",
+ "category": "metric",
+ "query" : { "local": "{}" }
+},{
+ "name": "cross_query",
+ "description": "Augment cross-process aggregation query",
+ "type": "string",
+ "category": "metric",
+ "query" : { "cross": "{}" }
 },{
  "name"        : "output",
  "description" : "Output location ('stdout', 'stderr', or filename)",

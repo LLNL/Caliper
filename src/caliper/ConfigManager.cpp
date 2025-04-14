@@ -160,20 +160,10 @@ std::string expand_variables(const std::string& in, const std::string& val)
     std::string        ret;
     std::istringstream is(in);
 
-    bool esc = false;
-
     while (is.good()) {
         char c = is.get();
 
-        if (c == '\\') {
-            c = is.get();
-            if (is.good())
-                ret.push_back(c);
-            continue;
-        } else if (c == '"') {
-            esc = !esc;
-            continue;
-        } else if (c == '{') {
+        if (c == '{') {
             c = is.get();
             if (c == '}') {
                 ret.append(val);
@@ -705,14 +695,18 @@ struct ConfigManager::Options::OptionsImpl {
         std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
-            auto s_it = spec.data.find(opt);
-            if (s_it == spec.data.end())
+            auto spec_it = spec.data.find(opt);
+            if (spec_it == spec.data.end())
                 continue;
 
-            auto l_it = s_it->second.query.find(level);
-            if (l_it != s_it->second.query.end()) {
+            auto qlvl_it = spec_it->second.query.find(level);
+            if (qlvl_it != spec_it->second.query.end()) {
+                // replace "{}" placeholders in spec with argument string, if any
+                auto arg_it = std::find_if(args.begin(), args.end(), [&opt](const std::pair<std::string,std::string>& p){
+                    return opt == p.first;
+                });
                 ret.append(" ");
-                ret.append(l_it->second);
+                ret.append(::expand_variables(qlvl_it->second, arg_it == args.end() ? std::string() : arg_it->second));
             }
         }
 
@@ -723,11 +717,11 @@ struct ConfigManager::Options::OptionsImpl {
     {
         std::vector<std::string> ret;
 
-        auto it = spec.data.find(name);
-        if (it == spec.data.end())
+        auto spec_it = spec.data.find(name);
+        if (spec_it == spec.data.end())
             return ret;
 
-        for (const std::string& inh : it->second.inherited_specs) {
+        for (const std::string& inh : spec_it->second.inherited_specs) {
             auto tmp = get_inherited_specs(inh);
             ret.insert(ret.end(), tmp.begin(), tmp.end());
             ret.push_back(inh);
@@ -741,14 +735,14 @@ struct ConfigManager::Options::OptionsImpl {
         std::vector<std::string> vec;
 
         for (const auto& argp : args) {
-            auto s_it = spec.data.find(argp.first);
-            if (s_it == spec.data.end())
+            auto spec_it = spec.data.find(argp.first);
+            if (spec_it == spec.data.end())
                 continue;
 
             //   Non-boolean options are enabled if they are present in args.
             // For boolean options, check if they are set to false or true.
             bool enabled = true;
-            if (s_it->second.type == "bool")
+            if (spec_it->second.type == "bool")
                 enabled = StringConverter(argp.second).to_bool();
             if (enabled) {
                 vec.push_back(argp.first);

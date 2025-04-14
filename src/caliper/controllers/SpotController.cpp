@@ -35,8 +35,10 @@ QuerySpec parse_spec(const char* query)
 {
     CalQLParser parser(query);
 
-    if (parser.error())
-        Log(0).stream() << "[spot controller]: Internal query parse error: " << parser.error_msg() << std::endl;
+    if (parser.error()) {
+        Log(0).stream() << "[spot controller]: Internal query parse error:\n    " << parser.error_msg()
+            << "\n  in query:\n   " << query << std::endl;
+    }
 
     return parser.spec();
 }
