@@ -11,90 +11,85 @@ namespace
 
 const char* event_trace_spec = R"json(
 {
- "name"        : "event-trace",
- "description" : "Record a trace of region enter/exit events in .cali format",
- "services"    : [ "async_event", "event", "recorder", "timer", "trace" ],
- "categories"  : [ "output", "metadata", "event" ],
- "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
+ "name": "event-trace",
+ "description": "Record a trace of region enter/exit events in .cali format",
+ "services": [ "async_event", "event", "recorder", "timer", "trace" ],
+ "categories": [ "output", "metadata", "event" ],
+ "config": { "CALI_CHANNEL_FLUSH_ON_EXIT" : "false" },
  "options":
  [
   {
-   "name"        : "outdir",
-   "description" : "Output directory",
-   "type"        : "string",
-   "config"      : { "CALI_RECORDER_DIRECTORY": "{}" }
+   "name": "outdir",
+   "description": "Output directory",
+   "type": "string",
+   "config": { "CALI_RECORDER_DIRECTORY": "{}" }
   },{
-   "name"        : "trace.io",
-   "description" : "Trace I/O events",
-   "type"        : "bool",
-   "services"    : [ "io" ]
+   "name": "trace.io",
+   "description": "Trace I/O events",
+   "type": "bool",
+   "services": [ "io" ]
   },{
-   "name"        : "trace.mpi",
-   "description" : "Trace MPI events",
-   "type"        : "bool",
-   "services"    : [ "mpi" ],
-   "config"      : { "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_Comm_rank" }
+   "name": "trace.mpi",
+   "description": "Trace MPI events",
+   "type": "bool",
+   "services": [ "mpi" ],
+   "config": { "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_Comm_rank" }
   },{
-   "name"        : "trace.cuda",
-   "description" : "Trace CUDA API events",
-   "type"        : "bool",
-   "services"    : [ "cupti" ]
+   "name": "trace.cuda",
+   "description": "Trace CUDA API events",
+   "type": "bool",
+   "services": [ "cupti" ]
   },{
-   "name"        : "trace.io",
-   "description" : "Trace I/O events",
-   "type"        : "bool",
-   "services"    : [ "io" ]
+   "name": "trace.openmp",
+   "description": "Trace OpenMP events",
+   "type": "bool",
+   "services": [ "ompt" ]
   },{
-   "name"        : "trace.openmp",
-   "description" : "Trace OpenMP events",
-   "type"        : "bool",
-   "services"    : [ "ompt" ]
+   "name": "trace.kokkos",
+   "description": "Trace Kokkos kernels",
+   "type": "bool",
+   "services": [ "kokkostime" ]
   },{
-   "name"        : "trace.kokkos",
-   "description" : "Trace Kokkos kernels",
-   "type"        : "bool",
-   "services"    : [ "kokkostime" ]
+   "name": "time.inclusive",
+   "description": "Record inclusive region times",
+   "type": "bool",
+   "config": { "CALI_TIMER_INCLUSIVE_DURATION": "true" }
   },{
-   "name"        : "time.inclusive",
-   "description" : "Record inclusive region times",
-   "type"        : "bool",
-   "config"      : { "CALI_TIMER_INCLUSIVE_DURATION": "true" }
+   "name": "sampling",
+   "description": "Enable call-path sampling",
+   "type": "bool",
+   "services": [ "callpath", "pthread", "sampler", "symbollookup" ],
+   "config": { "CALI_SAMPLER_FREQUENCY": "200" }
   },{
-   "name"        : "sampling",
-   "description" : "Enable call-path sampling",
-   "type"        : "bool",
-   "services"    : [ "callpath", "pthread", "sampler", "symbollookup" ],
-   "config"      : { "CALI_SAMPLER_FREQUENCY": "200" }
+   "name": "sample.frequency",
+   "description": "Sampling frequency when sampling",
+   "type": "int",
+   "inherit": "sampling",
+   "config": { "CALI_SAMPLER_FREQUENCY": "{}" }
   },{
-   "name"        : "sample.frequency",
-   "description" : "Sampling frequency when sampling",
-   "type"        : "int",
-   "inherit"     : "sampling",
-   "config"      : { "CALI_SAMPLER_FREQUENCY": "{}" }
+   "name": "papi.counters",
+   "description": "List of PAPI counters to read",
+   "type": "string",
+   "services": [ "papi" ],
+   "config": { "CALI_PAPI_COUNTERS": "{}" }
   },{
-   "name"        : "papi.counters",
-   "description" : "List of PAPI counters to read",
-   "type"        : "string",
-   "services"    : [ "papi" ],
-   "config"      : { "CALI_PAPI_COUNTERS": "{}" }
+   "name": "cuda.activities",
+   "description": "Trace CUDA activities",
+   "type": "bool",
+   "services": [ "cuptitrace" ],
+   "config": { "CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS": "true" }
   },{
-   "name"        : "cuda.activities",
-   "description" : "Trace CUDA activities",
-   "type"        : "bool",
-   "services"    : [ "cuptitrace" ],
-   "config"      : { "CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS": "true" }
+   "name": "rocm.activities",
+   "description": "Trace ROCm activities",
+   "type": "bool",
+   "services": [ "roctracer" ],
+   "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
   },{
-   "name"        : "rocm.activities",
-   "description" : "Trace ROCm activities",
-   "type"        : "bool",
-   "services"    : [ "roctracer" ],
-   "config"      : { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
-  },{
-   "name"        : "umpire.allocators",
-   "description" : "Umpire per-allocator allocation statistics",
-   "type"        : "bool",
-   "services"    : [ "umpire" ],
-   "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "true" }
+   "name": "umpire.allocators",
+   "description": "Umpire per-allocator allocation statistics",
+   "type": "bool",
+   "services": [ "umpire" ],
+   "config": { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "true" }
   }
  ]
 }
@@ -102,28 +97,28 @@ const char* event_trace_spec = R"json(
 
 const char* nvprof_spec = R"json(
 {
- "name"        : "nvprof",
- "services"    : [ "nvtx" ],
- "description" : "Forward Caliper regions to NVidia nvprof (deprecated; use nvtx)",
- "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
+ "name": "nvprof",
+ "services": [ "nvtx" ],
+ "description": "Forward Caliper regions to NVidia nvprof (deprecated; use nvtx)",
+ "config": { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
 }
 )json";
 
 const char* nvtx_spec = R"json(
 {
- "name"        : "nvtx",
- "services"    : [ "nvtx" ],
- "description" : "Forward Caliper regions to NVidia NSight/NVprof",
- "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
+ "name": "nvtx",
+ "services": [ "nvtx" ],
+ "description": "Forward Caliper regions to NVidia NSight/NVprof",
+ "config": { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
 }
 )json";
 
 const char* roctx_spec = R"json(
 {
- "name"        : "roctx",
- "services"    : [ "roctx" ],
- "description" : "Forward Caliper regions to ROCm rocprofiler",
- "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
+ "name": "roctx",
+ "services": [ "roctx" ],
+ "description": "Forward Caliper regions to ROCm rocprofiler",
+ "config": { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" }
 }
 )json";
 
@@ -208,84 +203,62 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_
 const char* builtin_base_option_specs = R"json(
 [
 {
- "name"        : "level",
- "type"        : "string",
- "description" : "Minimum region level that triggers snapshots",
- "category"    : "event",
- "config"      : { "CALI_EVENT_REGION_LEVEL": "{}" }
+ "name": "level",
+ "type": "string",
+ "description": "Minimum region level that triggers snapshots",
+ "category": "event",
+ "config": { "CALI_EVENT_REGION_LEVEL": "{}" }
 },{
- "name"        : "include_branches",
- "type"        : "string",
- "description" : "Only take snapshots for branches with the given region names.",
- "category"    : "event",
- "config"      : { "CALI_EVENT_INCLUDE_BRANCHES": "{}" }
+ "name": "include_branches",
+ "type": "string",
+ "description": "Only take snapshots for branches with the given region names.",
+ "category": "event",
+ "config": { "CALI_EVENT_INCLUDE_BRANCHES": "{}" }
 },{
- "name"        : "include_regions",
- "type"        : "string",
- "description" : "Only take snapshots for the given region names/patterns.",
- "category"    : "event",
- "config"      : { "CALI_EVENT_INCLUDE_REGIONS": "{}" }
+ "name": "include_regions",
+ "type": "string",
+ "description": "Only take snapshots for the given region names/patterns.",
+ "category": "event",
+ "config": { "CALI_EVENT_INCLUDE_REGIONS": "{}" }
 },{
- "name"        : "exclude_regions",
- "type"        : "string",
- "description" : "Do not take snapshots for the given region names/patterns.",
- "category"    : "event",
- "config"      : { "CALI_EVENT_EXCLUDE_REGIONS": "{}" }
+ "name": "exclude_regions",
+ "type": "string",
+ "description": "Do not take snapshots for the given region names/patterns.",
+ "category": "event",
+ "config": { "CALI_EVENT_EXCLUDE_REGIONS": "{}" }
 },{
- "name"        : "region.count",
- "description" : "Report number of begin/end region instances",
- "type"        : "bool",
- "category"    : "metric",
- "query"  :
+ "name": "region.count",
+ "description": "Report number of begin/end region instances",
+ "type": "bool",
+ "category": "metric",
+ "query":
  {
   "local": "let rc.count=first(sum#region.count,region.count) select sum(rc.count) as Calls unit count",
-  "cross":
-  "select
-    min(sum#rc.count) as \"Calls/rank (min)\" unit count,
-    avg(sum#rc.count) as \"Calls/rank (avg)\" unit count,
-    max(sum#rc.count) as \"Calls/rank (max)\" unit count,
-    sum(sum#rc.count) as \"Calls (total)\" unit count"
+  "cross": "select min(sum#rc.count) as \"Calls/rank (min)\" unit count,avg(sum#rc.count) as \"Calls/rank (avg)\" unit count,max(sum#rc.count) as \"Calls/rank (max)\" unit count,sum(sum#rc.count) as \"Calls (total)\" unit count"
  }
 },{
- "name"        : "region.stats",
- "description" : "Detailed region timing statistics (min/max/avg time per visit)",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "timer", "event" ],
- "config"      :
+ "name": "region.stats",
+ "description": "Detailed region timing statistics (min/max/avg time per visit)",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "timer", "event" ],
+ "config":
  {
   "CALI_TIMER_INCLUSIVE_DURATION"   : "true",
   "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "true"
  },
- "query"  :
+ "query":
  {
-  "local":
-  "let
-   rs.count=first(sum#region.count,region.count),
-   rs.min=scale(min#time.inclusive.duration.ns,1e-9),
-   rs.max=scale(max#time.inclusive.duration.ns,1e-9),
-   rs.sum=scale(sum#time.inclusive.duration.ns,1e-9)
-  aggregate
-   sum(rs.sum)
-  select
-   sum(rs.count) as Visits unit count,
-   min(rs.min) as \"Min time/visit\" unit sec,
-   ratio(rs.sum,rs.count) as \"Avg time/visit\" unit sec,
-   max(rs.max) as \"Max time/visit\" unit sec",
-  "cross":
-  "select
-    sum(sum#rs.count) as Visits unit count,
-    min(min#rs.min) as \"Min time/visit\" unit sec,
-    ratio(sum#rs.sum,sum#rs.count) as \"Avg time/visit\" unit sec,
-    max(max#rs.max) as \"Max time/visit\" unit sec"
+  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#time.inclusive.duration.ns,sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
+  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#sum#time.inclusive.duration.ns,sum#sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
  }
 },{
- "name"        : "loop.stats",
- "description" : "Loop iteration count and time statistics",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "loop_statistics" ],
- "query"  :
+ "name": "loop.stats",
+ "description": "Loop iteration count and time statistics",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "loop_statistics" ],
+ "query":
  {
   "local":
   "let
@@ -303,11 +276,11 @@ const char* builtin_base_option_specs = R"json(
     max(max#ls.max) as \"Time/iter (max)\" unit sec"
  }
 },{
- "name"        : "async_events",
- "description" : "Report timed asynchronous events",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "async_event" ],
+ "name": "async_events",
+ "description": "Report timed asynchronous events",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "async_event" ],
  "query":
  {
   "local":
@@ -342,31 +315,31 @@ const char* builtin_base_option_specs = R"json(
  "category": "metric",
  "query" : { "cross": "{}" }
 },{
- "name"        : "output",
- "description" : "Output location ('stdout', 'stderr', or filename)",
- "type"        : "string",
- "category"    : "output"
+ "name": "output",
+ "description": "Output location ('stdout', 'stderr', or filename)",
+ "type": "string",
+ "category": "output"
 },{
- "name"        : "adiak.import_categories",
- "services"    : [ "adiak_import" ],
- "description" : "Adiak import categories. Comma-separated list of integers.",
- "type"        : "string",
- "category"    : "adiak"
+ "name": "adiak.import_categories",
+ "services": [ "adiak_import" ],
+ "description": "Adiak import categories. Comma-separated list of integers.",
+ "type": "string",
+ "category": "adiak"
 },{
- "name"        : "max_column_width",
- "type"        : "int",
- "description" : "Maximum column width in the tree display",
- "category"    : "treeformatter"
+ "name": "max_column_width",
+ "type": "int",
+ "description": "Maximum column width in the tree display",
+ "category": "treeformatter"
 },{
- "name"        : "print.metadata",
- "type"        : "bool",
- "description" : "Print program metadata (Caliper globals and Adiak data)",
- "category"    : "treeformatter"
+ "name": "print.metadata",
+ "type": "bool",
+ "description": "Print program metadata (Caliper globals and Adiak data)",
+ "category": "treeformatter"
 },{
- "name"        : "order_as_visited",
- "type"        : "bool",
- "description" : "Print tree nodes in the original visit order",
- "category"    : "treeformatter",
+ "name": "order_as_visited",
+ "type": "bool",
+ "description": "Print tree nodes in the original visit order",
+ "category": "treeformatter",
  "query":
  {
   "local": "let o_a_v.slot=first(aggregate.slot) aggregate min(o_a_v.slot) order by min#o_a_v.slot",
@@ -379,35 +352,35 @@ const char* builtin_base_option_specs = R"json(
 const char* builtin_mpi_option_specs = R"json(
 [
 {
- "name"        : "profile.mpi",
- "type"        : "bool",
- "description" : "Profile MPI functions",
- "category"    : "region",
- "services"    : [ "mpi" ],
+ "name": "profile.mpi",
+ "type": "bool",
+ "description": "Profile MPI functions",
+ "category": "region",
+ "services": [ "mpi" ],
  "config": { "CALI_MPI_BLACKLIST": "MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime" }
 },
 {
- "name"        : "mpi.include",
- "type"        : "string",
- "description" : "Only instrument these MPI functions.",
- "category"    : "region",
- "config"      : { "CALI_MPI_WHITELIST": "{}" }
+ "name": "mpi.include",
+ "type": "string",
+ "description": "Only instrument these MPI functions.",
+ "category": "region",
+ "config": { "CALI_MPI_WHITELIST": "{}" }
 },
 {
- "name"        : "mpi.exclude",
- "type"        : "string",
- "description" : "Do not instrument these MPI functions.",
- "category"    : "region",
- "config"      : { "CALI_MPI_BLACKLIST": "{}" }
+ "name": "mpi.exclude",
+ "type": "string",
+ "description": "Do not instrument these MPI functions.",
+ "category": "region",
+ "config": { "CALI_MPI_BLACKLIST": "{}" }
 },
 {
- "name"       : "mpi.message.size",
+ "name": "mpi.message.size",
  "description": "MPI message size",
- "type"       : "bool",
- "category"   : "metric",
- "services"   : [ "mpi" ],
- "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
- "query"      :
+ "type": "bool",
+ "category": "metric",
+ "services": [ "mpi" ],
+ "config": { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
+ "query":
  {
   "local":
   "let
@@ -426,13 +399,13 @@ const char* builtin_mpi_option_specs = R"json(
  }
 },
 {
- "name"       : "mpi.message.count",
+ "name": "mpi.message.count",
  "description": "Number of MPI send/recv/collective operations",
- "type"       : "bool",
- "category"   : "metric",
- "services"   : [ "mpi" ],
- "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
- "query"      :
+ "type": "bool",
+ "category": "metric",
+ "services": [ "mpi" ],
+ "config": { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
+ "query":
  {
   "local":
   "let
@@ -453,13 +426,13 @@ const char* builtin_mpi_option_specs = R"json(
  }
 },
 {
- "name"        : "comm.stats",
- "description" : "MPI message statistics in marked communication regions",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "async_event", "mpi" ],
- "config"      : { "CALI_MPI_MSG_PATTERN": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
- "query"       :
+ "name": "comm.stats",
+ "description": "MPI message statistics in marked communication regions",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "async_event", "mpi" ],
+ "config": { "CALI_MPI_MSG_PATTERN": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
+ "query":
  [
   { "level"    : "local",
     "let"      :
@@ -529,85 +502,81 @@ const char* builtin_mpi_option_specs = R"json(
 const char* builtin_gotcha_option_specs = R"json(
 [
 {
- "name"        : "main_thread_only",
- "type"        : "bool",
- "description" : "Only include measurements from the main thread in results.",
- "category"    : "region",
- "services"    : [ "pthread" ],
- "query"       : { "local": "where pthread.is_master=true" }
+ "name": "main_thread_only",
+ "type": "bool",
+ "description": "Only include measurements from the main thread in results.",
+ "category": "region",
+ "services": [ "pthread" ],
+ "query": { "local": "where pthread.is_master=true" }
 },{
-  "name"        : "io.bytes.written",
-  "description" : "Report I/O bytes written",
-  "type"        : "bool",
-  "category"    : "metric",
-  "services"    : [ "io" ],
-  "query"  :
+  "name": "io.bytes.written",
+  "description": "Report I/O bytes written",
+  "type": "bool",
+  "category": "metric",
+  "services": [ "io" ],
+  "query":
   {
    "local": "let ibw.bytes=first(sum#io.bytes.written,io.bytes.written) select sum(ibw.bytes) as \"Bytes written\" unit Byte",
    "cross": "select avg(sum#ibw.bytes) as \"Avg written\" unit Byte,sum(sum#ibw.bytes) as \"Total written\" unit Byte"
   }
 },{
- "name"        : "io.bytes.read",
- "description" : "Report I/O bytes read",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "io" ],
- "query"  :
+ "name": "io.bytes.read",
+ "description": "Report I/O bytes read",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "io" ],
+ "query":
  {
   "local": "let ibr.bytes=first(sum#io.bytes.read,io.bytes.read) select sum(ibr.bytes) as \"Bytes read\" unit Byte",
   "cross": "select avg(sum#ibr.bytes) as \"Avg read\" unit Byte,sum(sum#ibr.bytes) as \"Total read\" unit Byte"
  }
 },{
- "name"        : "io.bytes",
- "description" : "Report I/O bytes written and read",
- "type"        : "bool",
- "category"    : "metric",
- "inherit"     : [ "io.bytes.read", "io.bytes.written" ]
+ "name": "io.bytes",
+ "description": "Report I/O bytes written and read",
+ "type": "bool",
+ "category": "metric",
+ "inherit": [ "io.bytes.read", "io.bytes.written" ]
 },{
- "name"        : "io.read.bandwidth",
- "description" : "Report I/O read bandwidth",
- "type"        : "bool",
- "category"    : "metric",
- "inherit"     : [ "io.bytes.read" ],
- "query"  :
+ "name": "io.read.bandwidth",
+ "description": "Report I/O read bandwidth",
+ "type": "bool",
+ "category": "metric",
+ "inherit": [ "io.bytes.read" ],
+ "query":
  {
   "local": "select io.region as I/O,ratio(ibr.bytes,time.duration.ns,8e3) as \"Read Mbit/s\" unit Mb/s group by io.region",
   "cross": "select avg(ratio#ibr.bytes/time.duration.ns) as \"Avg read Mbit/s\",max(ratio#ibr.bytes/time.duration.ns) as \"Max read Mbit/s\""
  }
 },{
- "name"        : "io.write.bandwidth",
- "description" : "Report I/O write bandwidth",
- "type"        : "bool",
- "category"    : "metric",
- "inherit"     : [ "io.bytes.written" ],
- "query"  :
+ "name": "io.write.bandwidth",
+ "description": "Report I/O write bandwidth",
+ "type": "bool",
+ "category": "metric",
+ "inherit": [ "io.bytes.written" ],
+ "query":
  {
   "local": "select io.region as I/O,ratio(ibw.bytes,time.duration.ns,8e3) as \"Write Mbit/s\" unit Mb/s group by io.region",
   "cross": "select avg(ratio#ibw.bytes/time.duration.ns) as \"Avg write Mbit/s\",max(ratio#ibw.bytes/time.duration.ns) as \"Max write Mbit/s\""
  }
 },{
- "name"        : "mem.highwatermark",
- "description" : "Report memory high-water mark per region",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "allocstats", "sysalloc" ],
- "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
+ "name": "mem.highwatermark",
+ "description": "Report memory high-water mark per region",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "allocstats", "sysalloc" ],
+ "config": { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
-  "local":
-  "let
-    mhwm.bytes=first(max#alloc.region.highwatermark,alloc.region.highwatermark),mhwm=scale(mhwm.bytes,1e-6)
-   select
-    max(mhwm) as \"Mem HWM MB\" unit MB",
+  "local": "let mhwm.bytes=first(max#alloc.region.highwatermark,alloc.region.highwatermark),mhwm=scale(mhwm.bytes,1e-6) select max(mhwm) as \"Mem HWM MB\" unit MB",
   "cross": "select max(max#mhwm) as \"Mem HWM MB\" unit MB"
  }
 },{
- "name"        : "alloc.stats",
- "description" : "Report per-region memory allocation info",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "allocstats", "sysalloc" ],
- "config"      : { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
+ "name": "alloc.stats",
+ "description": "Report per-region memory allocation info",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "allocstats", "sysalloc" ],
+ "config": { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true" },
  "query":
  {
   "local":
@@ -626,12 +595,12 @@ const char* builtin_gotcha_option_specs = R"json(
     max(max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
- "name"        : "mem.pages",
- "description" : "Memory pages used via /proc/self/statm",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "memstat" ],
- "query"  :
+ "name": "mem.pages",
+ "description": "Memory pages used via /proc/self/statm",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "memstat" ],
+ "query":
  {
   "local":
   "let
@@ -651,32 +620,32 @@ const char* builtin_gotcha_option_specs = R"json(
 const char* builtin_cuda_option_specs = R"json(
 [
 {
-  "name"        : "profile.cuda",
-  "type"        : "bool",
-  "description" : "Profile CUDA API functions",
-  "category"    : "region",
-  "services"    : [ "cupti" ]
+  "name": "profile.cuda",
+  "type": "bool",
+  "description": "Profile CUDA API functions",
+  "category": "region",
+  "services": [ "cupti" ]
 },
 {
-  "name"        : "cuda.memcpy",
-  "description" : "Report MB copied between host and device with cudaMemcpy",
-  "type"        : "bool",
-  "category"    : "cuptitrace.metric",
-  "query"  :
+  "name": "cuda.memcpy",
+  "description": "Report MB copied between host and device with cudaMemcpy",
+  "type": "bool",
+  "category": "cuptitrace.metric",
+  "query":
   [
-    { "level"   : "local",
-      "let"     :
+    { "level": "local",
+      "let":
       [
       "cuda.memcpy.dtoh=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=DtoH",
       "cuda.memcpy.htod=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=HtoD"
       ],
-      "select"  :
+      "select":
       [
       "sum(cuda.memcpy.htod) as \"Copy CPU->GPU\" unit MB",
       "sum(cuda.memcpy.dtoh) as \"Copy GPU->CPU\" unit MB"
       ]
     },
-    { "level"   : "cross", "select":
+    { "level": "cross", "select":
       [
         "avg(sum#cuda.memcpy.htod) as \"Copy CPU->GPU (avg)\" unit MB",
         "max(sum#cuda.memcpy.htod) as \"Copy CPU->GPU (max)\" unit MB",
@@ -687,28 +656,16 @@ const char* builtin_cuda_option_specs = R"json(
   ]
 },
 {
-  "name"        : "cuda.gputime",
-  "description" : "Report GPU time in CUDA activities",
-  "type"        : "bool",
-  "category"    : "metric",
-  "services"    : [ "cuptitrace" ],
-  "query"  :
-  [
-    { "level"   : "local",
-      "select"  :
-      [
-      "inclusive_scale(cupti.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
-      ]
-    },
-    { "level"   : "cross", "select":
-      [
-        "avg(iscale#cupti.activity.duration) as \"Avg GPU time/rank\" unit sec",
-        "min(iscale#cupti.activity.duration) as \"Min GPU time/rank\" unit sec",
-        "max(iscale#cupti.activity.duration) as \"Max GPU time/rank\" unit sec",
-        "sum(iscale#cupti.activity.duration) as \"Total GPU time\" unit sec"
-      ]
-    }
-  ]
+ "name": "cuda.gputime",
+ "description": "Report GPU time in CUDA activities",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "cuptitrace" ],
+ "query":
+ { 
+  "local": "select inclusive_scale(cupti.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
+  "cross": "select avg(iscale#cupti.activity.duration) as \"Avg GPU time/rank\" unit sec,min(iscale#cupti.activity.duration) as \"Min GPU time/rank\" unit sec,max(iscale#cupti.activity.duration) as \"Max GPU time/rank\" unit sec,sum(iscale#cupti.activity.duration) as \"Total GPU time\" unit sec"
+ }
 }
 ]
 )json";
@@ -716,35 +673,25 @@ const char* builtin_cuda_option_specs = R"json(
 const char* builtin_rocm_option_specs = R"json(
 [
 {
- "name"        : "profile.hip",
- "type"        : "bool",
- "description" : "Profile HIP API functions",
- "category"    : "region",
- "services"    : [ "roctracer" ],
- "config"      : { "CALI_ROCTRACER_TRACE_ACTIVITIES": "false" }
+ "name": "profile.hip",
+ "type": "bool",
+ "description": "Profile HIP API functions",
+ "category": "region",
+ "services": [ "roctracer" ],
+ "config": { "CALI_ROCTRACER_TRACE_ACTIVITIES": "false" }
 },
 {
- "name"        : "rocm.gputime",
- "description" : "Report GPU time in AMD ROCm activities",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "roctracer" ],
- "config"      : { "CALI_ROCTRACER_TRACE_ACTIVITIES": "true", "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "false" },
- "query"  :
- [
-  { "level"   : "local",
-    "select"  : [ "inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU time (I)\" unit sec" ]
-  },
-  { "level"   : "cross",
-    "select"  :
-    [
-     "avg(iscale#sum#rocm.activity.duration) as \"Avg GPU time/rank\" unit sec",
-     "min(iscale#sum#rocm.activity.duration) as \"Min GPU time/rank\" unit sec",
-     "max(iscale#sum#rocm.activity.duration) as \"Max GPU time/rank\" unit sec",
-     "sum(iscale#sum#rocm.activity.duration) as \"Total GPU time\" unit sec"
-    ]
-  }
- ]
+ "name": "rocm.gputime",
+ "description": "Report GPU time in AMD ROCm activities",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "roctracer" ],
+ "config": { "CALI_ROCTRACER_TRACE_ACTIVITIES": "true", "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "false" },
+ "query":
+ { 
+  "local": "select inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
+  "cross": "select avg(iscale#sum#rocm.activity.duration) as \"Avg GPU time/rank\" unit sec,min(iscale#sum#rocm.activity.duration) as \"Min GPU time/rank\" unit sec,max(iscale#sum#rocm.activity.duration) as \"Max GPU time/rank\" unit sec,sum(iscale#sum#rocm.activity.duration) as \"Total GPU time\" unit sec"
+ }
 }
 ]
 )json";
@@ -835,12 +782,12 @@ const char* builtin_openmp_option_specs = R"json(
 const char* builtin_libdw_option_specs = R"json(
 [
 {
- "name"        : "source.module",
- "type"        : "bool",
- "category"    : "sampling",
- "description" : "Report source module (.so/.exe)",
- "services"    : [ "symbollookup" ],
- "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_MODULE": "true" },
+ "name": "source.module",
+ "type": "bool",
+ "category": "sampling",
+ "description": "Report source module (.so/.exe)",
+ "services": [ "symbollookup" ],
+ "config": { "CALI_SYMBOLLOOKUP_LOOKUP_MODULE": "true" },
  "query":
  {
   "local": "select module#cali.sampler.pc as Module group by module#cali.sampler.pc",
@@ -848,12 +795,12 @@ const char* builtin_libdw_option_specs = R"json(
  }
 },
 {
- "name"        : "source.function",
- "type"        : "bool",
- "category"    : "sampling",
- "description" : "Report source function symbol names",
- "services"    : [ "symbollookup" ],
- "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_FUNCTION": "true" },
+ "name": "source.function",
+ "type": "bool",
+ "category": "sampling",
+ "description": "Report source function symbol names",
+ "services": [ "symbollookup" ],
+ "config": { "CALI_SYMBOLLOOKUP_LOOKUP_FUNCTION": "true" },
  "query":
  {
   "local": "select source.function#cali.sampler.pc as Function group by source.function#cali.sampler.pc",
@@ -861,12 +808,12 @@ const char* builtin_libdw_option_specs = R"json(
  }
 },
 {
- "name"        : "source.location",
- "type"        : "bool",
- "category"    : "sampling",
- "description" : "Report source location (file+line)",
- "services"    : [ "symbollookup" ],
- "config"      : { "CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC": "true" },
+ "name": "source.location",
+ "type": "bool",
+ "category": "sampling",
+ "description": "Report source location (file+line)",
+ "services": [ "symbollookup" ],
+ "config": { "CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC": "true" },
  "query":
  {
   "local": "select sourceloc#cali.sampler.pc as Source group by sourceloc#cali.sampler.pc",
@@ -1381,11 +1328,11 @@ const char* builtin_papi_spr_option_specs = R"json(
 const char* builtin_kokkos_option_specs = R"json(
 [
 {
- "name"        : "profile.kokkos",
- "type"        : "bool",
- "description" : "Profile Kokkos functions",
- "category"    : "region",
- "services"    : [ "kokkostime" ]
+ "name": "profile.kokkos",
+ "type": "bool",
+ "description": "Profile Kokkos functions",
+ "category": "region",
+ "services": [ "kokkostime" ]
 }
 ]
 )json";
