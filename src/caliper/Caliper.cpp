@@ -889,6 +889,25 @@ void Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
     channel->mP->events.process_snapshot(this, trigger_info, sT->snapshot.view());
 }
 
+void Caliper::push_snapshot_replace(Channel* channel, SnapshotView trigger_info, Entry target)
+{
+    std::lock_guard<::siglock> g(sT->lock);
+
+    sT->snapshot.reset();
+    SnapshotBuilder& rec = sT->snapshot.builder();
+
+    sT->thread_blackboard.snapshot(rec);
+    sT->update_process_snapshot(sG->process_blackboard);
+    rec.append(sT->process_snapshot.view());
+
+    // remove/replace target entry from blackboard snapshot
+    rec.remove(target);
+    rec.append(trigger_info);
+    channel->mP->events.snapshot(this, trigger_info, rec);
+
+    channel->mP->events.process_snapshot(this, trigger_info, rec.view());
+}
+
 void Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock> g(sT->lock);
@@ -1148,6 +1167,27 @@ Entry Caliper::get(const Attribute& attr)
     std::lock_guard<::siglock> g(sT->lock);
 
     return blackboard->get(key).get(attr);
+}
+
+Entry Caliper::get_blackboard_entry(const Attribute& attr)
+{
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+
+    Blackboard* blackboard = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        blackboard = &sT->thread_blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        blackboard = &sG->process_blackboard;
+    } else {
+        return Entry();
+    }
+
+    cali_id_t key = get_blackboard_key(attr.id(), prop);
+
+    std::lock_guard<::siglock> g(sT->lock);
+    return blackboard->get(key);
 }
 
 Entry Caliper::get(Channel* channel, const Attribute& attr)

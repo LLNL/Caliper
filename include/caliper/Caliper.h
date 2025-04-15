@@ -338,6 +338,14 @@ public:
     ///   returned snapshot record.
     void push_snapshot(Channel* channel, SnapshotView trigger_info);
 
+    /// \brief Specialized snapshot trigger function which replaces a given blackboard entry.
+    ///
+    /// Internal-use snapshot trigger function which removes a given blackboard
+    /// snapshot entry before processing the record. This allows for an optimization
+    /// when creating event trigger info entries where we replace the context entry
+    /// with an augmented entry from \a trigger_info.
+    void push_snapshot_replace(Channel* channel, SnapshotView trigger_info, Entry target);
+
     /// \brief Return context data from blackboards.
     ///
     /// This function updates the caller-provided snapshot record builder
@@ -505,6 +513,14 @@ public:
     /// \return The top-most entry on the blackboard for the given attribute key.
     ///   An empty Entry object if this attribute is not set.
     Entry get(Channel* channel, const Attribute& attr);
+
+    /// \brief Retrieve the current top-most entry in \a attr's blackboard slot
+    ///
+    /// A special-purpose function which retrieves the current top-most entry in
+    /// \a attr's blackboard slot. This is not necessarily \a attr itself because
+    /// reference attributes typically share a single slot. Usually
+    /// \ref Caliper::get(const Attribute) should be used instead.
+    Entry get_blackboard_entry(const Attribute& attr);
 
     /// \brief Retrieve the current path entry from the blackboard.
     Entry get_path_node();
