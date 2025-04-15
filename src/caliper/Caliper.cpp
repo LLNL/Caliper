@@ -889,7 +889,7 @@ void Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
     channel->mP->events.process_snapshot(this, trigger_info, sT->snapshot.view());
 }
 
-void Caliper::push_snapshot_replace(Channel* channel, SnapshotView trigger_info, Entry target)
+void Caliper::push_snapshot_replace(Channel* channel, SnapshotView trigger_info, const Entry& target)
 {
     std::lock_guard<::siglock> g(sT->lock);
 

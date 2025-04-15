@@ -344,7 +344,7 @@ public:
     /// snapshot entry before processing the record. This allows for an optimization
     /// when creating event trigger info entries where we replace the context entry
     /// with an augmented entry from \a trigger_info.
-    void push_snapshot_replace(Channel* channel, SnapshotView trigger_info, Entry target);
+    void push_snapshot_replace(Channel* channel, SnapshotView trigger_info, const Entry& target);
 
     /// \brief Return context data from blackboards.
     ///

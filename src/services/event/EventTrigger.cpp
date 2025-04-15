@@ -180,10 +180,14 @@ class EventTrigger
                 c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
                 c->push_snapshot(chn, trigger_info.view());
             } else {
-                //   As an optimization we attach the trigger info entries directly to its
-                // current context node. This drastically reduces the search space for the
-                // trigger info nodes and needs one less slot in the snapshot record.
-                // We use the special-purpose push_snapshot_replace() function for this.
+                //   As an optimization we attach the trigger info entries directly to their
+                // current context node. This drastically reduces the search space in the
+                // metadata tree as otherwise all trigger info nodes anywhere would be in a
+                // very wide branch under a single root node which has to be sequentially
+                // searched. We also now occupy one less slot in the snapshot record.
+                //   To do this we use the special-purpose push_snapshot_replace() function
+                // to replace the original blackboard entry in the snapshot record with the
+                // augmented entry in trigger_info.
                 Entry bb_entry = c->get_blackboard_entry(attr);
                 c->make_record(2, attrs, vals, trigger_info.builder(), bb_entry.empty() ? &event_root_node : bb_entry.node());
                 c->push_snapshot_replace(chn, trigger_info.view(), bb_entry);
