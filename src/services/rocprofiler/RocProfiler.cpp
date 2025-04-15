@@ -229,8 +229,7 @@ class RocProfilerService
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
-                s_instance->m_channel.events()
-                    .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_TRACING && header->kind == ROCPROFILER_BUFFER_TRACING_MEMORY_COPY) {
@@ -313,7 +312,7 @@ class RocProfilerService
         }
     }
 
-    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot)
     {
         auto ts = rocprofiler_timestamp_t {};
         rocprofiler_get_timestamp(&ts);
@@ -345,8 +344,8 @@ class RocProfilerService
             c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
 
             channel->events().snapshot.connect(
-                [this](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
-                    this->snapshot_cb(c, channel, trigger_info, snapshot);
+                [this](Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
+                    this->snapshot_cb(c, trigger_info, snapshot);
                 }
             );
         }

@@ -21,6 +21,8 @@ namespace
 
 class UmpireService
 {
+    Channel m_channel;
+
     Attribute m_alloc_name_attr;
     Attribute m_alloc_current_size_attr;
     Attribute m_alloc_actual_size_attr;
@@ -72,10 +74,10 @@ class UmpireService
         rec.builder().append(context);
 
         c->make_record(5, attr, data, rec.builder(), &m_root_node);
-        channel->events().process_snapshot(c, channel, SnapshotView(), rec.view());
+        m_channel.events().process_snapshot(c, SnapshotView(), rec.view());
     }
 
-    void snapshot(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec)
+    void snapshot(Caliper* c, SnapshotView info, SnapshotBuilder& rec)
     {
         //   Bit of a hack: We create one record for each allocator for
         // allocator-specific info. This way we can use generic allocator.name
@@ -116,7 +118,7 @@ class UmpireService
             total_hwm += alloc.getHighWatermark();
 
             if (m_per_allocator_stats)
-                process_allocator(c, channel, s, alloc, context.view());
+                process_allocator(c, s, alloc, context.view());
         }
 
         rec.append(m_total_size_attr, Variant(total_size));
@@ -186,7 +188,7 @@ class UmpireService
         );
     }
 
-    UmpireService(Caliper* c, Channel* channel) : m_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
+    UmpireService(Caliper* c, Channel* channel) : m_channel { *channel }, m_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
     {
         auto config = services::init_config_from_spec(channel->config(), s_spec);
 

@@ -27,11 +27,11 @@ using namespace cali;
 namespace
 {
 
-std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
+std::ostream& print_snapshot(Caliper* c, std::ostream& os)
 {
     FixedSizeSnapshotRecord<120> snapshot;
 
-    c->pull_snapshot(chn, SnapshotView(), snapshot.builder());
+    c->pull_context(snapshot.builder());
 
     os << "{ ";
 
@@ -114,7 +114,6 @@ class ValidatorService
 
                 print_snapshot(
                     c,
-                    chn,
                     Log(0).stream() << "validator: end(\"" << attr.name() << "\"=\"" << value.to_string() << "\") "
                                     << " has no matching begin().\n    context: "
                 ) << std::endl;
@@ -129,7 +128,6 @@ class ValidatorService
 
                     print_snapshot(
                         c,
-                        chn,
                         Log(0).stream() << "validator: incorrect nesting: trying to end \"" << attr.name() << "\"=\""
                                         << value.to_string() << "\" but current attribute is \""
                                         << c->get_attribute(v_stack_attr.to_id()).name() << "\".\n    context: "
@@ -139,7 +137,6 @@ class ValidatorService
 
                     print_snapshot(
                         c,
-                        chn,
                         Log(0).stream() << "validator: incorrect nesting: trying to end \"" << attr.name() << "\"=\""
                                         << value.to_string() << "\" but current value is \"" << v_stack_val.to_string()
                                         << "\".\n    context: "
@@ -187,7 +184,7 @@ class ValidatorService
     std::vector<StackValidator*> thread_stacks;
     std::mutex                   thread_stacks_mutex;
 
-    StackValidator* aquire_thread_stack(Caliper* c, Channel* chn)
+    StackValidator* aquire_thread_stack(Caliper* c)
     {
         StackValidator* tstack = static_cast<StackValidator*>(c->get(thread_stack_attr).value().get_ptr());
 
@@ -243,7 +240,7 @@ class ValidatorService
             if (proc_stack->check_begin(c, attr, value))
                 ++global_errors;
         } else {
-            StackValidator* v = aquire_thread_stack(c, chn);
+            StackValidator* v = aquire_thread_stack(c);
 
             if (v && v->check_begin(c, attr, value))
                 ++global_errors;
@@ -258,7 +255,7 @@ class ValidatorService
             if (proc_stack->check_end(c, chn, attr, value))
                 ++global_errors;
         } else {
-            StackValidator* v = aquire_thread_stack(c, chn);
+            StackValidator* v = aquire_thread_stack(c);
 
             if (v && v->check_end(c, chn, attr, value))
                 ++global_errors;

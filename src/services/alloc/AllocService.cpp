@@ -307,7 +307,7 @@ class AllocService
         }
     }
 
-    void record_highwatermark(Caliper* c, Channel* chn, SnapshotBuilder& rec)
+    void record_highwatermark(Caliper* c, SnapshotBuilder& rec)
     {
         uint64_t hwm = 0;
 
@@ -321,7 +321,7 @@ class AllocService
         rec.append(region_hwm_attr, Variant(hwm));
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& snapshot)
     {
         // Record currently active amount of allocated memory
         if (g_record_active_mem)
@@ -331,7 +331,7 @@ class AllocService
             resolve_addresses(c, info, snapshot);
 
         if (g_record_highwatermark)
-            record_highwatermark(c, chn, snapshot);
+            record_highwatermark(c, snapshot);
     }
 
     void make_address_attributes(Caliper* c, const Attribute& attr)
@@ -488,8 +488,8 @@ public:
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
-                    instance->snapshot_cb(c, chn, info, snapshot);
+                [instance](Caliper* c, SnapshotView info, SnapshotBuilder& snapshot) {
+                    instance->snapshot_cb(c, info, snapshot);
                 }
             );
 

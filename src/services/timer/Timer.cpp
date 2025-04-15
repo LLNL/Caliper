@@ -82,7 +82,7 @@ class TimerService
         return ti;
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& rec)
     {
         auto     now  = clock::now();
         uint64_t nsec = chrono::duration_cast<chrono::nanoseconds>(now - tstart).count();
@@ -210,8 +210,8 @@ public:
 
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_cb(c, chn); });
         chn->events().create_thread_evt.connect([instance](Caliper* c, Channel*) { instance->acquire_timerinfo(c); });
-        chn->events().snapshot.connect([instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
-            instance->snapshot_cb(c, chn, info, rec);
+        chn->events().snapshot.connect([instance](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+            instance->snapshot_cb(c, info, rec);
         });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
             instance->finish_cb(c, chn);

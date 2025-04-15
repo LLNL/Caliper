@@ -152,7 +152,7 @@ class TextLogService
         for (const Attribute& a : c->get_all_attributes())
             check_attribute(a);
 
-        chn->events().process_snapshot.connect([this](Caliper* c, Channel* chn, SnapshotView info, SnapshotView rec) {
+        chn->events().process_snapshot.connect([this](Caliper* c, SnapshotView info, SnapshotView rec) {
             process_snapshot(c, info, rec);
         });
     }

@@ -11,7 +11,7 @@ using namespace cali;
 namespace
 {
 
-void flush_cb(Caliper* c, Channel*, SnapshotView, SnapshotFlushFn flush_fn)
+void flush_cb(Caliper* c, SnapshotView, SnapshotFlushFn flush_fn)
 {
     Attribute snapshot_attr = c->create_attribute("tps.snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
@@ -21,7 +21,7 @@ void flush_cb(Caliper* c, Channel*, SnapshotView, SnapshotFlushFn flush_fn)
     flush_fn(*c, rec);
 }
 
-void postprocess_snapshot_cb(Caliper* c, Channel*, std::vector<Entry>& rec)
+void postprocess_snapshot_cb(Caliper* c, std::vector<Entry>& rec)
 {
     Attribute val_attr  = c->create_attribute("tps.postprocess.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
     Attribute node_attr = c->create_attribute("tps.postprocess.node", CALI_TYPE_INT, CALI_ATTR_DEFAULT);

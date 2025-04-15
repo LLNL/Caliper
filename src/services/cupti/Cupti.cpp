@@ -425,7 +425,7 @@ public:
             return;
 
         if (instance->event_sampling.is_enabled())
-            chn->events().snapshot.connect([instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec) {
+            chn->events().snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotBuilder& rec) {
                 instance->snapshot_cb(c, rec);
             });
 

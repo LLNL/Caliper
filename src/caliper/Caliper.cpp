@@ -864,7 +864,7 @@ void Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, Snapsho
     std::lock_guard<::siglock> g(sT->lock);
 
     rec.append(trigger_info);
-    channel->mP->events.snapshot(this, channel, trigger_info, rec);
+    channel->mP->events.snapshot(this, trigger_info, rec);
 
     // copy pull_context() functionality to avoid superfluous siglock update
     sT->thread_blackboard.snapshot(rec);
@@ -880,13 +880,13 @@ void Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
 
     // copy pull_snapshot() functionality to avoid superfluous siglock update
     sT->snapshot.builder().append(trigger_info);
-    channel->mP->events.snapshot(this, channel, trigger_info, sT->snapshot.builder());
+    channel->mP->events.snapshot(this, trigger_info, sT->snapshot.builder());
 
     sT->thread_blackboard.snapshot(sT->snapshot.builder());
     sT->update_process_snapshot(sG->process_blackboard);
     sT->snapshot.builder().append(sT->process_snapshot.view());
 
-    channel->mP->events.process_snapshot(this, channel, trigger_info, sT->snapshot.view());
+    channel->mP->events.process_snapshot(this, trigger_info, sT->snapshot.view());
 }
 
 void Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
@@ -896,16 +896,14 @@ void Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_
     chn->mP->events.pre_flush_evt(this, chn, flush_info);
 
     if (chn->mP->events.postprocess_snapshot.empty()) {
-        chn->mP->events.flush_evt(this, chn, flush_info, proc_fn);
+        chn->mP->events.flush_evt(this, flush_info, proc_fn);
     } else {
         chn->mP->events.flush_evt(
             this,
-            chn,
             flush_info,
             [this, chn, proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
                 std::vector<Entry> mrec(rec);
-
-                chn->mP->events.postprocess_snapshot(this, chn, mrec);
+                chn->mP->events.postprocess_snapshot(this, mrec);
                 proc_fn(*this, mrec);
             }
         );

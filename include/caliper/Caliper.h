@@ -60,13 +60,12 @@ public:
         typedef util::callback<void(Caliper*, Channel*, const Attribute&)>                 attribute_cbvec;
         typedef util::callback<void(Caliper*, Channel*, const Attribute&, const Variant&)> update_cbvec;
         typedef util::callback<void(Caliper*, Channel*)>                                   caliper_cbvec;
+        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                     event_cbvec;
 
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                   event_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, std::vector<Entry>&)>            edit_snapshot_cbvec;
-
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotFlushFn)> flush_cbvec;
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, std::vector<Entry>&)>            edit_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotFlushFn)>  flush_cbvec;
 
         typedef util::callback<
             void(Caliper*, Channel*, const void*, const char*, size_t, size_t, const size_t*, size_t, const Attribute*, const Variant*)>

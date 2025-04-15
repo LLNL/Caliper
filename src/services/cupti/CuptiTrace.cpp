@@ -130,6 +130,8 @@ class CuptiTraceService
 
     std::vector<std::string> flush_info_attributes;
 
+    Channel channel;
+
     static CuptiTraceService* s_instance;
 
     typedef std::unordered_map<uint32_t, uint64_t> correlation_id_map_t;
@@ -654,11 +656,10 @@ class CuptiTraceService
     // --- Caliper callbacks
     //
 
-    void flush_cb(Caliper* c, Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn)
+    void flush_cb(Caliper* c, SnapshotView flush_info, SnapshotFlushFn proc_fn)
     {
         size_t num_written = do_flush(c, flush_info, proc_fn);
-
-        Log(1).stream() << channel->name() << ": cuptitrace: Wrote " << num_written << " records." << std::endl;
+        Log(1).stream() << channel.name() << ": cuptitrace: Wrote " << num_written << " records." << std::endl;
     }
 
     void clear_cb(Caliper* c, Channel* chn)
@@ -841,7 +842,7 @@ class CuptiTraceService
             Log(0).stream() << "cuptitrace: selected activity \"" << s << "\" not found!" << std::endl;
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, const SnapshotView, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, const SnapshotView, SnapshotBuilder& snapshot)
     {
         uint64_t timestamp = 0;
         cuptiGetTimestamp(&timestamp);
@@ -855,7 +856,6 @@ class CuptiTraceService
 
     void snapshot_flush_activities_cb(
         Caliper*         c,
-        Channel*         channel,
         SnapshotView     trigger_info,
         SnapshotBuilder& snapshot
     )
@@ -865,11 +865,11 @@ class CuptiTraceService
         if (!flush_trigger_attr || trigger_info.get(flush_trigger_attr).empty())
             return;
 
-        do_flush(c, SnapshotView(), [c, channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
-            c->push_snapshot(channel, SnapshotView(rec.size(), rec.data()));
+        do_flush(c, SnapshotView(), [c, this](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+            c->push_snapshot(&channel, SnapshotView(rec.size(), rec.data()));
         });
 
-        clear_cb(c, channel);
+        clear_cb(c, &channel);
 
         ++num_snapshot_flushes;
     }
@@ -904,8 +904,8 @@ class CuptiTraceService
         if (record_host_timestamp || record_host_duration) {
             c->set(timestamp_attr, cali_make_variant_from_uint(starttime));
 
-            chn->events().snapshot.connect([](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
-                s_instance->snapshot_cb(c, chn, info, rec);
+            chn->events().snapshot.connect([](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+                s_instance->snapshot_cb(c, info, rec);
             });
         }
 
@@ -921,14 +921,14 @@ class CuptiTraceService
                         s_instance->flush_trigger_attr = attr;
                 });
 
-            chn->events().snapshot.connect([](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec) {
-                s_instance->snapshot_flush_activities_cb(c, channel, info, rec);
+            chn->events().snapshot.connect([](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+                s_instance->snapshot_flush_activities_cb(c, info, rec);
             });
 
             Log(1).stream() << chn->name() << ": cuptitrace: Using flush-on-snapshot mode."
                             << " Triggering on " << attr_name << std::endl;
         } else {
-            chn->events().flush_evt.connect([](Caliper* c, Channel* chn, SnapshotView info, SnapshotFlushFn flush_fn) {
+            chn->events().flush_evt.connect([](Caliper* c, SnapshotView info, SnapshotFlushFn flush_fn) {
                 s_instance->flush_cb(c, chn, info, flush_fn);
             });
             chn->events().clear_evt.connect([](Caliper* c, Channel* chn) { s_instance->clear_cb(c, chn); });
@@ -944,7 +944,7 @@ class CuptiTraceService
         Log(1).stream() << chn->name() << ": Registered cuptitrace service" << std::endl;
     }
 
-    CuptiTraceService(Caliper* c, Channel* chn)
+    CuptiTraceService(Caliper* c, Channel* chn) : channel { *chn }
     {
         Attribute unit_attr       = c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         Attribute addr_class_attr = c->get_attribute("class.memoryaddress");

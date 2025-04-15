@@ -58,10 +58,10 @@ void release_thread_cb(Caliper* c, Channel* chn)
     Log(1).stream() << chn->name() << ": Event: release_thread" << endl;
 }
 
-void snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotBuilder&)
+void snapshot_cb(Caliper* c, SnapshotView, SnapshotBuilder&)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: snapshot" << endl;
+    Log(1).stream() << ": Event: snapshot" << endl;
 }
 
 std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView rec)
@@ -80,11 +80,10 @@ std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView r
     return (os << " }");
 }
 
-void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotView rec)
+void process_snapshot_cb(Caliper* c, SnapshotView, SnapshotView rec)
 {
     lock_guard<mutex> lock(dbg_mutex);
-
-    print_snapshot_record(c, Log(1).stream() << chn->name() << ": Event: process_snapshot: ", rec) << std::endl;
+    print_snapshot_record(c, Log(1).stream() << "Event: process_snapshot: ", rec) << std::endl;
 }
 
 void finish_cb(Caliper* c, Channel* chn)
