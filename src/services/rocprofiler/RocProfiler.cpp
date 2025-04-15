@@ -268,8 +268,7 @@ class RocProfilerService
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
-                s_instance->m_channel.events()
-                    .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             }
