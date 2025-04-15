@@ -88,12 +88,13 @@ public:
     size_t skipped() const { return m_skipped; }
 
     void remove(const Entry& e) {
-        if (m_len > 0)
-            --m_len;
         size_t pos = 0;
-        for ( ; pos < m_len; ++pos)
-            if (e == m_data[pos])
+        for ( ; pos < m_len; ++pos) {
+            if (e == m_data[pos]) {
+                --m_len;
                 break;
+            }
+        }
         for ( ; pos < m_len; ++pos)
             m_data[pos] = m_data[pos+1];
     }
