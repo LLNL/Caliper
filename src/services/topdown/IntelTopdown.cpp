@@ -186,7 +186,7 @@ public:
             else
                 Log(0).stream() << channel->name() << ": topdown: Could not find counter attributes!" << std::endl;
         });
-        channel->events().postprocess_snapshot.connect([instance](Caliper*, Channel*, std::vector<Entry>& rec) {
+        channel->events().postprocess_snapshot.connect([instance](Caliper*, std::vector<Entry>& rec) {
             instance->postprocess_snapshot_cb(rec);
         });
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {
