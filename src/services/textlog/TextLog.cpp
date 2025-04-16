@@ -51,7 +51,7 @@ class TextLogService
     std::string create_default_formatstring(const std::vector<std::string>& attr_names)
     {
         if (attr_names.size() < 1)
-            return "%time.inclusive.duration%";
+            return "%time.inclusive.duration.ns%";
 
         int name_sizes = 0;
 
@@ -65,7 +65,7 @@ class TextLogService
         for (const std::string& s : attr_names)
             os << s << "=%[" << w << "]" << s << "% ";
 
-        os << "%[8r]time.inclusive.duration%";
+        os << "%[10r]time.inclusive.duration.ns%";
 
         return os.str();
     }
@@ -83,18 +83,17 @@ class TextLogService
         }
     }
 
-    bool is_triggering_event(const Attribute& event_attr, SnapshotView trigger_info)
+    bool is_triggering_event(Caliper* c, Entry info, const Attribute& target_evt_attr)
     {
-        if (!event_attr)
+        if (!target_evt_attr)
             return false;
 
-        Entry event = trigger_info.get(event_attr);
+        Attribute evt_attr = c->get_attribute(info.attribute());
+        Variant v_id = evt_attr.get(target_evt_attr);
 
-        if (!event.empty()) {
-            cali_id_t id = event.value().to_id();
-
+        if (v_id) {
+            cali_id_t id = v_id.to_id();
             std::lock_guard<std::mutex> g(trigger_attr_mutex);
-
             for (const Attribute& a : trigger_attributes)
                 if (id == a.id())
                     return true;
@@ -103,7 +102,7 @@ class TextLogService
         return false;
     }
 
-    bool is_triggering_snapshot(SnapshotView trigger_info)
+    bool is_triggering_snapshot(Caliper* c, SnapshotView trigger_info)
     {
         if (trigger_info.empty())
             return false;
@@ -119,12 +118,12 @@ class TextLogService
         }
 
         // check if there is a begin or end event with any of the textlog triggers
-        return is_triggering_event(end_event_attr, trigger_info) || is_triggering_event(set_event_attr, trigger_info);
+        return is_triggering_event(c, trigger_info[0], end_event_attr) || is_triggering_event(c, trigger_info[0], set_event_attr);
     }
 
     void process_snapshot(Caliper* c, SnapshotView trigger_info, SnapshotView snapshot)
     {
-        if (!is_triggering_snapshot(trigger_info))
+        if (!is_triggering_snapshot(c, trigger_info))
             return;
 
         std::vector<Entry> rec(snapshot.begin(), snapshot.end());

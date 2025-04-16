@@ -89,25 +89,25 @@ class EventTrigger
 
     void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr)
     {
-        cali_id_t evt_attr_ids[3] = { CALI_INV_ID };
-
-        struct evt_attr_setup_t {
-            std::string prefix;
-            int         index;
-        } evt_attr_setup[] = { { "event.begin#", 0 }, { "event.set#", 1 }, { "event.end#", 2 } };
-
         cali_attr_type type = attr.type();
         int            prop = attr.properties();
 
-        for (evt_attr_setup_t setup : evt_attr_setup) {
-            std::string s = setup.prefix;
-            s.append(attr.name());
+        int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
+        int flags = (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS;
 
-            int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
+        Variant v_id(cali_make_variant_from_uint(attr.id()));
 
-            evt_attr_ids[setup.index] =
-                c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
-        }
+        Attribute begin_attr =
+            c->create_attribute(std::string("event.begin#")+attr.name(), type, flags,
+                1, &trigger_begin_attr, &v_id);
+        Attribute set_attr =
+            c->create_attribute(std::string("event.set#")+attr.name(), type, flags,
+                1, &trigger_set_attr, &v_id);
+        Attribute end_attr =
+            c->create_attribute(std::string("event.end#")+attr.name(), type, flags,
+                1, &trigger_end_attr, &v_id);
+
+        cali_id_t evt_attr_ids[3] = { begin_attr.id(), set_attr.id(), end_attr.id() };
 
         c->make_tree_entry(marker_attr, Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)), attr.node());
 
@@ -172,13 +172,9 @@ class EventTrigger
             Attribute begin_attr = c->get_attribute(evt_info_attr_ids[0]);
 
             // Construct the trigger info entry
-            const Attribute attrs[2] = { trigger_begin_attr, begin_attr };
-            const Variant   vals[2]  = { Variant(attr.id()), value };
-            FixedSizeSnapshotRecord<2> trigger_info;
-
             if (attr.store_as_value()) {
-                c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
-                c->push_snapshot(chn, trigger_info.view());
+                Entry info(begin_attr, value);
+                c->push_snapshot(chn, SnapshotView(info));
             } else {
                 //   As an optimization we attach the trigger info entries directly to their
                 // current context node. This drastically reduces the search space in the
@@ -189,8 +185,8 @@ class EventTrigger
                 // to replace the original blackboard entry in the snapshot record with the
                 // augmented entry in trigger_info.
                 Entry bb_entry = c->get_blackboard_entry(attr);
-                c->make_record(2, attrs, vals, trigger_info.builder(), bb_entry.empty() ? &event_root_node : bb_entry.node());
-                c->push_snapshot_replace(chn, trigger_info.view(), bb_entry);
+                Entry info(c->make_tree_entry(begin_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
+                c->push_snapshot_replace(chn, SnapshotView(info), bb_entry);
             }
         } else {
             c->push_snapshot(chn, SnapshotView());
@@ -220,17 +216,13 @@ class EventTrigger
             Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
 
             // Construct the trigger info entry
-            const Attribute attrs[2] = { trigger_set_attr, set_attr };
-            const Variant   vals[2]  = { Variant(attr.id()), value };
-            FixedSizeSnapshotRecord<2> trigger_info;
-
             if (attr.store_as_value()) {
-                c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
-                c->push_snapshot(chn, trigger_info.view());
+                Entry info(set_attr, value);
+                c->push_snapshot(chn, SnapshotView(info));
             } else {
                 Entry bb_entry = c->get_blackboard_entry(attr);
-                c->make_record(2, attrs, vals, trigger_info.builder(), bb_entry.empty() ? &event_root_node : bb_entry.node());
-                c->push_snapshot_replace(chn, trigger_info.view(), bb_entry);
+                Entry info(c->make_tree_entry(set_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
+                c->push_snapshot_replace(chn, SnapshotView(info), bb_entry);
             }
         } else {
             c->push_snapshot(chn, SnapshotView());
@@ -259,19 +251,15 @@ class EventTrigger
 
             Attribute end_attr = c->get_attribute(evt_info_attr_ids[2]);
 
-            // Construct the trigger info entry with previous level
-
-            const Attribute attrs[3] = { trigger_end_attr, end_attr, region_count_attr };
-            const Variant   vals[3]  = { Variant(attr.id()), value, cali_make_variant_from_uint(1) };
-            FixedSizeSnapshotRecord<3> trigger_info;
-
+            // Construct the trigger info entry
             if (attr.store_as_value()) {
-                c->make_record(3, attrs, vals, trigger_info.builder(), &event_root_node);
-                c->push_snapshot(chn, trigger_info.view());
+                Entry info[2] = { Entry(end_attr, value), region_count_entry };
+                c->push_snapshot(chn, SnapshotView(2, info));
             } else {
                 Entry bb_entry = c->get_blackboard_entry(attr);
-                c->make_record(3, attrs, vals, trigger_info.builder(), bb_entry.node());
-                c->push_snapshot_replace(chn, trigger_info.view(), bb_entry);
+                Node* node = c->make_tree_entry(end_attr, value, bb_entry.node());
+                Entry info[2] = { Entry(node), region_count_entry };
+                c->push_snapshot_replace(chn, SnapshotView(2, info), bb_entry);
             }
         } else {
             c->push_snapshot(chn, SnapshotView(region_count_entry));

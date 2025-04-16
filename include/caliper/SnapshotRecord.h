@@ -87,7 +87,8 @@ public:
     size_t size() const { return m_len; }
     size_t skipped() const { return m_skipped; }
 
-    void remove(const Entry& e) {
+    void remove(const Entry& e)
+    {
         size_t pos = 0;
         for ( ; pos < m_len; ++pos) {
             if (e == m_data[pos]) {
