@@ -326,7 +326,7 @@ class RocProfilerService
     void post_init_cb(Caliper* c, Channel* channel)
     {
         if (m_enable_api_callbacks) {
-            channel->events().subscribe_attribute(c, channel, m_api_attr);
+            channel->events().subscribe_attribute(c, m_api_attr);
             ROCPROFILER_CALL(rocprofiler_start_context(hip_api_ctx));
         }
 

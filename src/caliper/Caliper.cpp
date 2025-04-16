@@ -751,7 +751,7 @@ Attribute Caliper::create_attribute(
     Attribute attr = Attribute::make_attribute(node);
 
     for (auto& channel : sG->all_channels)
-        channel.mP->events.create_attr_evt(this, &channel, attr);
+        channel.mP->events.create_attr_evt(this, attr);
 
     return attr;
 }

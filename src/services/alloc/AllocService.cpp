@@ -377,7 +377,7 @@ class AllocService
         for (auto attr : address_attrs)
             make_address_attributes(c, attr);
 
-        chn->events().create_attr_evt.connect([this](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([this](Caliper* c, const Attribute& attr) {
             this->create_attr_cb(c, attr);
         });
     }

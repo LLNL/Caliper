@@ -22,10 +22,10 @@ namespace
 
 mutex dbg_mutex;
 
-void create_attr_cb(Caliper* c, Channel* chn, const Attribute& attr)
+void create_attr_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: create_attribute (attr=" << attr << ")" << endl;
+    Log(1).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
 }
 
 void begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)

@@ -393,7 +393,7 @@ public:
     {
         Aggregate* instance = new Aggregate(c, chn);
 
-        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel*, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([instance](Caliper* c, const Attribute& attr) {
             instance->create_attribute_cb(c, attr);
         });
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_cb(c, chn); });

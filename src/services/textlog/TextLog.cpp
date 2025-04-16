@@ -173,7 +173,7 @@ public:
     {
         TextLogService* instance = new TextLogService(c, chn);
 
-        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([instance](Caliper*, const Attribute& attr) {
             instance->check_attribute(attr);
         });
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init(c, chn); });

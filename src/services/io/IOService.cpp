@@ -126,7 +126,7 @@ void handle_io(curious_callback_type_t type, void* usr_data, Record* record)
 
 void init_curious_in_channel(Caliper* c, Channel* channel)
 {
-    channel->events().subscribe_attribute(c, channel, io_region_attr);
+    channel->events().subscribe_attribute(c, io_region_attr);
 
     curious_t curious_inst = curious_init(CURIOUS_ALL_APIS);
     auto      data         = std::unique_ptr<user_data_t>(new user_data_t { curious_inst, *channel });

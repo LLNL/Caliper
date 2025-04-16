@@ -321,11 +321,11 @@ class CuptiService
         }
     }
 
-    void subscribe_attributes(Caliper* c, Channel* channel)
+    void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, channel, cupti_info.runtime_attr);
-        channel->events().subscribe_attribute(c, channel, cupti_info.driver_attr);
-        channel->events().subscribe_attribute(c, channel, cupti_info.nvtx_range_attr);
+        channel->events().subscribe_attribute(c, cupti_info.runtime_attr);
+        channel->events().subscribe_attribute(c, cupti_info.driver_attr);
+        channel->events().subscribe_attribute(c, cupti_info.nvtx_range_attr);
     }
 
     void create_attributes(Caliper* c)
@@ -430,7 +430,7 @@ public:
             });
 
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) {
-            instance->subscribe_attributes(c, channel);
+            instance->subscribe_attributes(c);
         });
         chn->events().pre_finish_evt.connect([instance](Caliper*, Channel*) { instance->pre_finish_cb(); });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {

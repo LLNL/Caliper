@@ -57,7 +57,8 @@ public:
 
     /// \brief Holds the %Caliper callbacks for a channel.
     struct Events {
-        typedef util::callback<void(Caliper*, Channel*, const Attribute&)>                 attribute_cbvec;
+        typedef util::callback<void(Caliper*, const Attribute&)> attribute_cbvec;
+
         typedef util::callback<void(Caliper*, Channel*, const Attribute&, const Variant&)> update_cbvec;
         typedef util::callback<void(Caliper*, Channel*)>                                   caliper_cbvec;
         typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                     event_cbvec;

@@ -92,7 +92,7 @@ public:
 
     const char* service_tag() const { return "nvtx"; }
 
-    void on_mark_attribute(Caliper* c, Channel*, const Attribute& attr)
+    void on_mark_attribute(Caliper* c, const Attribute& attr)
     {
         if (m_cycle_colors)
             return;

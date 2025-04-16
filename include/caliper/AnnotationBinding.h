@@ -74,8 +74,10 @@ class AnnotationBinding
     std::unique_ptr<RegionFilter> m_filter;
     std::vector<std::string> m_trigger_attr_names;
 
-    void mark_attribute(Caliper*, Channel*, const Attribute&);
-    void check_attribute(Caliper*, Channel*, const Attribute&);
+    std::string m_channel_name;
+
+    void mark_attribute(Caliper*, const Attribute&);
+    void check_attribute(Caliper*, const Attribute&);
 
     void base_pre_initialize(Caliper*, Channel*);
     void base_post_initialize(Caliper*, Channel*);
@@ -100,9 +102,8 @@ protected:
     /// annotation binding is found.
     ///
     /// \param c    The %Caliper instance
-    /// \param chn  The channel instance
     /// \param attr The attribute being marked
-    virtual void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {}
+    virtual void on_mark_attribute(Caliper* c, const Attribute& attr) {}
 
     /// \brief Callback for an annotation begin event
     /// \param c     Caliper instance
@@ -150,12 +151,12 @@ public:
         binding->initialize(c, chn);
         binding->base_post_initialize(c, chn);
 
-        chn->events().create_attr_evt.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([binding](Caliper* c, const Attribute& attr) {
             if (!is_subscription_attribute(attr))
-                binding->check_attribute(c, chn, attr);
+                binding->check_attribute(c, attr);
         });
-        chn->events().subscribe_attribute.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
-            binding->check_attribute(c, chn, attr);
+        chn->events().subscribe_attribute.connect([binding](Caliper* c, const Attribute& attr) {
+            binding->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
             [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {

@@ -123,9 +123,9 @@ class RocTracerService
         }
     }
 
-    void subscribe_attributes(Caliper* c, Channel* channel)
+    void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, channel, m_api_attr);
+        channel->events().subscribe_attribute(c, m_api_attr);
     }
 
     void push_correlation(uint64_t id, cali::Node* node)
@@ -452,7 +452,7 @@ class RocTracerService
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
-        subscribe_attributes(c, channel);
+        subscribe_attributes(c);
 
         uint64_t starttime = 0;
         roctracer_get_timestamp(&starttime);

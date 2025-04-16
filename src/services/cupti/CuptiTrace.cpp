@@ -916,7 +916,7 @@ class CuptiTraceService
             flush_trigger_attr    = c->get_attribute(attr_name);
 
             if (!flush_trigger_attr)
-                chn->events().create_attr_evt.connect([attr_name](Caliper* c, Channel*, const Attribute& attr) {
+                chn->events().create_attr_evt.connect([attr_name](Caliper* c, const Attribute& attr) {
                     if (attr.name() == attr_name)
                         s_instance->flush_trigger_attr = attr;
                 });

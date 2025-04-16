@@ -269,7 +269,7 @@ void post_init_cb(Caliper* c, Channel* channel)
     const Attribute sub_attrs[] = { region_attr, thread_type_attr, sync_attr, work_attr, thread_id_attr };
 
     for (const Attribute& attr : sub_attrs)
-        channel->events().subscribe_attribute(c, channel, attr);
+        channel->events().subscribe_attribute(c, attr);
 }
 
 void create_attributes(Caliper* c)

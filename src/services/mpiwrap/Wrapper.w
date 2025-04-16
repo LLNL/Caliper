@@ -272,7 +272,7 @@ mpi_init_cb(Caliper* c, Channel* chn)
 void
 post_init_cb(Caliper* c, Channel* channel)
 {
-    channel->events().subscribe_attribute(c, channel, mpifn_attr);
+    channel->events().subscribe_attribute(c, mpifn_attr);
 
     int initialized = 0;
     int finalized   = 0;

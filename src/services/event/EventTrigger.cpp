@@ -64,11 +64,13 @@ class EventTrigger
 
     std::vector<Variant> branch_filter_stack;
 
+    std::string channel_name;
+
     //
     // --- Helpers / misc
     //
 
-    void parse_region_level(Channel* channel, const std::string& str)
+    void parse_region_level(const std::string& str)
     {
         if (str == "phase") {
             region_level = phase_attr.level();
@@ -77,17 +79,17 @@ class EventTrigger
             int  level = StringConverter(str).to_int(&ok);
 
             if (!ok || level < 0 || level > 7) {
-                Log(0).stream() << channel->name() << ": event: Invalid region level \"" << str << "\"\n";
+                Log(0).stream() << channel_name << ": event: Invalid region level \"" << str << "\"\n";
                 region_level = 0;
             } else {
                 region_level = level;
             }
         }
 
-        Log(2).stream() << channel->name() << ": event: Using region level " << region_level << "\n";
+        Log(2).stream() << channel_name << ": event: Using region level " << region_level << "\n";
     }
 
-    void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+    void mark_attribute(Caliper* c, const Attribute& attr)
     {
         cali_attr_type type = attr.type();
         int            prop = attr.properties();
@@ -111,10 +113,10 @@ class EventTrigger
 
         c->make_tree_entry(marker_attr, Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)), attr.node());
 
-        Log(2).stream() << chn->name() << ": event: Marked attribute " << attr.name() << std::endl;
+        Log(2).stream() << channel_name << ": event: Marked attribute " << attr.name() << std::endl;
     }
 
-    void check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+    void check_attribute(Caliper* c, const Attribute& attr)
     {
         if (attr.id() < 12 /* skip fixed metadata attributes */ || attr.skip_events())
             return;
@@ -126,7 +128,7 @@ class EventTrigger
         if (attr.level() < region_level)
             return;
 
-        mark_attribute(c, chn, attr);
+        mark_attribute(c, attr);
     }
 
     const Node* find_marker(const Attribute& attr)
@@ -270,16 +272,17 @@ class EventTrigger
     // --- Constructor
     //
 
-    void check_existing_attributes(Caliper* c, Channel* chn)
+    void check_existing_attributes(Caliper* c)
     {
         auto attributes = c->get_all_attributes();
 
         for (const Attribute& attr : attributes)
             if (!is_subscription_attribute(attr))
-                check_attribute(c, chn, attr);
+                check_attribute(c, attr);
     }
 
-    EventTrigger(Caliper* c, Channel* channel) : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
+    EventTrigger(Caliper* c, Channel* channel) 
+        : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant()), channel_name { channel->name() }
     {
         region_count_attr = c->create_attribute(
             "region.count",
@@ -292,7 +295,7 @@ class EventTrigger
 
         trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
         enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
-        parse_region_level(channel, cfg.get("region_level").to_string());
+        parse_region_level(cfg.get("region_level").to_string());
 
         {
             std::string i_filter = cfg.get("include_regions").to_string();
@@ -333,7 +336,7 @@ class EventTrigger
             CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN
         );
 
-        check_existing_attributes(c, channel);
+        check_existing_attributes(c);
     }
 
 public:
@@ -344,12 +347,12 @@ public:
     {
         EventTrigger* instance = new EventTrigger(c, chn);
 
-        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([instance](Caliper* c, const Attribute& attr) {
             if (!is_subscription_attribute(attr))
-                instance->check_attribute(c, chn, attr);
+                instance->check_attribute(c, attr);
         });
-        chn->events().subscribe_attribute.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
-            instance->check_attribute(c, chn, attr);
+        chn->events().subscribe_attribute.connect([instance](Caliper* c, const Attribute& attr) {
+            instance->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
             [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {

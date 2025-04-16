@@ -75,7 +75,7 @@ bool AnnotationBinding::is_subscription_attribute(const Attribute& attr)
 AnnotationBinding::~AnnotationBinding()
 {}
 
-void AnnotationBinding::mark_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+void AnnotationBinding::mark_attribute(Caliper* c, const Attribute& attr)
 {
     // Add the binding marker for this attribute
 
@@ -84,13 +84,13 @@ void AnnotationBinding::mark_attribute(Caliper* c, Channel* chn, const Attribute
 
     // Invoke derived functions
 
-    on_mark_attribute(c, chn, attr);
+    on_mark_attribute(c, attr);
 
     Log(2).stream() << "Adding " << this->service_tag() << " bindings for attribute \"" << attr.name() << "\" in "
-                    << chn->name() << " channel" << std::endl;
+                    << m_channel_name << " channel" << std::endl;
 }
 
-void AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+void AnnotationBinding::check_attribute(Caliper* c, const Attribute& attr)
 {
     int prop = attr.properties();
 
@@ -107,7 +107,7 @@ void AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribut
             return;
     }
 
-    mark_attribute(c, chn, attr);
+    mark_attribute(c, attr);
 }
 
 void AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
@@ -132,6 +132,8 @@ void AnnotationBinding::end_cb(Caliper* c, Channel* chn, const Attribute& attr, 
 
 void AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
 {
+    m_channel_name = chn->name();
+
     const char* tag     = service_tag();
     std::string cfgname = std::string(tag) + "_binding";
 
@@ -168,7 +170,7 @@ void AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
 
     for (const Attribute& attr : attributes)
         if (!attr.skip_events() && !is_subscription_attribute(attr))
-            check_attribute(c, chn, attr);
+            check_attribute(c, attr);
 }
 
 AnnotationBinding::AnnotationBinding()
