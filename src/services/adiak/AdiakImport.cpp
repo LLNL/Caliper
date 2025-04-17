@@ -214,7 +214,7 @@ void nameval_cb(
         break;
     case adiak_ulonglong:
         set_val(
-            channel,
+            args->chB,
             name,
             Variant(cali_make_variant_from_uint(static_cast<uint64_t>(val->v_longlong))),
             t,
@@ -248,7 +248,7 @@ void nameval_cb(
     case adiak_catstring:
     case adiak_path:
         set_val(
-            channel,
+            args->chB,
             name,
             Variant(CALI_TYPE_STRING, val->v_ptr, strlen(static_cast<const char*>(val->v_ptr))),
             t,
@@ -303,16 +303,18 @@ void register_adiak_import(Caliper* c, Channel* channel)
     meta_attr[2] =
         c->create_attribute("adiak.subcategory", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
-    channel->events().pre_flush_evt.connect([categories](Caliper*, ChannelBody* chB, SnapshotView) {
+    std::string channel_name = channel->name();
+
+    channel->events().pre_flush_evt.connect([categories,channel_name](Caliper*, ChannelBody* chB, SnapshotView) {
         nameval_usr_args_t args { chB, 0 };
 
         for (int category : categories)
             adiak_list_namevals(1, static_cast<adiak_category_t>(category), nameval_cb, &args);
 
-        Log(1).stream() << channel->name() << ": adiak_import: Imported " << args.count << " adiak values" << std::endl;
+        Log(1).stream() << channel_name << ": adiak_import: Imported " << args.count << " adiak values" << std::endl;
     });
 
-    Log(1).stream() << channel->name() << ": Registered adiak_import service" << std::endl;
+    Log(1).stream() << channel_name << ": Registered adiak_import service" << std::endl;
 }
 
 } // namespace
