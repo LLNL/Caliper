@@ -35,6 +35,7 @@ class MpiReport
     QuerySpec   m_local_spec;
     std::string m_filename;
     bool        m_append_to_file;
+    std::string m_channel_name;
 
     void write_output_cb(Caliper* c, ChannelBody* chB, SnapshotView flush_info)
     {
@@ -47,7 +48,7 @@ class MpiReport
         PMPI_Finalized(&finalized);
 
         if (finalized) {
-            Log(0).stream() << channel->name() << ": mpireport: MPI is already finalized. Cannot aggregate output."
+            Log(0).stream() << m_channel_name << ": mpireport: MPI is already finalized. Cannot aggregate output."
                             << std::endl;
             return;
         }
@@ -91,8 +92,13 @@ class MpiReport
         });
     }
 
-    MpiReport(const QuerySpec& cross_spec, const QuerySpec& local_spec, const std::string& filename, bool append)
-        : m_cross_spec(cross_spec), m_local_spec(local_spec), m_filename(filename), m_append_to_file(append)
+    MpiReport(
+        const QuerySpec& cross_spec,
+        const QuerySpec& local_spec,
+        const std::string& filename,
+        bool append,
+        const std::string& chname)
+        : m_cross_spec(cross_spec), m_local_spec(local_spec), m_filename(filename), m_append_to_file(append), m_channel_name(chname)
     {}
 
 public:
@@ -120,7 +126,8 @@ public:
             cross_parser.spec(),
             local_parser.spec(),
             config.get("filename").to_string(),
-            config.get("append").to_bool()
+            config.get("append").to_bool(),
+            chn->name()
         );
 
         chn->events().write_output_evt.connect([instance](Caliper* c, ChannelBody* chB, SnapshotView info) {

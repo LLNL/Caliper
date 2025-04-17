@@ -15,6 +15,7 @@ namespace cali
 
 class Caliper;
 class Channel;
+struct ChannelBody;
 
 class MpiTracing
 {
@@ -34,10 +35,10 @@ public:
 
     // --- point-to-point
 
-    void handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+    void handle_send(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
     void handle_send_init(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          dest,
@@ -48,7 +49,7 @@ public:
 
     void handle_recv(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          src,
@@ -58,7 +59,7 @@ public:
     );
     void handle_irecv(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          src,
@@ -68,7 +69,7 @@ public:
     );
     void handle_recv_init(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          src,
@@ -77,19 +78,19 @@ public:
         MPI_Request* req
     );
 
-    void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs);
-    void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses);
+    void handle_start(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs);
+    void handle_completion(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs, MPI_Status* statuses);
 
-    void request_free(Caliper* c, Channel* chn, MPI_Request* req);
+    void request_free(Caliper* c, ChannelBody* chB, MPI_Request* req);
 
     // --- collectives
 
-    void handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
-    void handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
-    void handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm);
-    void handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm);
-    void handle_init(Caliper* c, Channel* chn);
-    void handle_finalize(Caliper* c, Channel* chn);
+    void handle_12n(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n21(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n2n(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, MPI_Comm comm);
+    void handle_barrier(Caliper* c, ChannelBody* chB, MPI_Comm comm);
+    void handle_init(Caliper* c, ChannelBody* chB);
+    void handle_finalize(Caliper* c, ChannelBody* chB);
 };
 
 } // namespace cali
