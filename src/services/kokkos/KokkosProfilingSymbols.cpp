@@ -138,3 +138,8 @@ extern "C" void kokkosp_end_deep_copy()
 {
     kokkosp_callbacks.kokkosp_end_deep_copy_callback();
 }
+#ifndef CALIPER_HAVE_ADIAK
+extern "C" void kokkosp_declare_metadata(const char* key, const char* value) {
+  cali::Annotation(key,CALI_ATTR_GLOBAL).set(value);
+}
+#endif
