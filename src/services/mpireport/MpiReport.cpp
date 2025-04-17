@@ -36,7 +36,7 @@ class MpiReport
     std::string m_filename;
     bool        m_append_to_file;
 
-    void write_output_cb(Caliper* c, Channel* channel, SnapshotView flush_info)
+    void write_output_cb(Caliper* c, ChannelBody* chB, SnapshotView flush_info)
     {
         // check if we can use MPI
 
@@ -71,7 +71,7 @@ class MpiReport
                 stream.set_filename(m_filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
         }
 
-        collective_flush(stream, *c, *channel, flush_info, m_local_spec, m_cross_spec, comm);
+        collective_flush(stream, *c, chB, flush_info, m_local_spec, m_cross_spec, comm);
 
         if (comm != MPI_COMM_NULL)
             MPI_Comm_free(&comm);
@@ -87,7 +87,7 @@ class MpiReport
         }
 
         events->mpi_finalize_evt.connect([](Caliper* c, Channel* channel) {
-            c->flush_and_write(channel, SnapshotView());
+            c->flush_and_write(channel->body(), SnapshotView());
         });
     }
 
@@ -123,8 +123,8 @@ public:
             config.get("append").to_bool()
         );
 
-        chn->events().write_output_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView info) {
-            instance->write_output_cb(c, chn, info);
+        chn->events().write_output_evt.connect([instance](Caliper* c, ChannelBody* chB, SnapshotView info) {
+            instance->write_output_cb(c, chB, info);
         });
         chn->events().finish_evt.connect([instance](Caliper*, Channel*) { delete instance; });
 

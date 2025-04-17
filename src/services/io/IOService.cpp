@@ -56,7 +56,7 @@ void handle_unique_record_data(Caliper& c, Channel& channel, curious_read_record
     if (record->bytes_read > 0) {
         // ...we care about how much data was read
         Entry data(io_bytes_read_attr, cali_make_variant_from_uint(record->bytes_read));
-        c.push_snapshot(&channel, SnapshotView(1, &data));
+        c.push_snapshot(channel.body(), SnapshotView(1, &data));
     }
 }
 
@@ -66,7 +66,7 @@ void handle_unique_record_data(Caliper& c, Channel& channel, curious_write_recor
     if (record->bytes_written > 0) {
         // ...we care about how much data was written
         Entry data(io_bytes_written_attr, cali_make_variant_from_uint(record->bytes_written));
-        c.push_snapshot(&channel, SnapshotView(1, &data));
+        c.push_snapshot(channel.body(), SnapshotView(1, &data));
     }
 }
 

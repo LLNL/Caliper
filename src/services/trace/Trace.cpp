@@ -125,7 +125,7 @@ class Trace
         case BufferPolicy::Flush:
             {
                 Log(1).stream() << m_channel.name() << ": trace: Trace buffer full, flushing.\n";
-                c->flush_and_write(&m_channel, SnapshotView());
+                c->flush_and_write(m_channel.body(), SnapshotView());
                 return tbuf;
             }
 

@@ -43,7 +43,7 @@ void add_channel_metadata(Caliper& c, Channel& channel, const info_map_t& metada
             CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_UNALIGNED
         );
 
-        c.set(&channel, attr, Variant(entry.second.c_str()));
+        c.set(channel.body(), attr, Variant(entry.second.c_str()));
     }
 }
 
@@ -52,6 +52,11 @@ void add_channel_metadata(Caliper& c, Channel& channel, const info_map_t& metada
 Channel ChannelController::channel()
 {
     return mP->channel;
+}
+
+ChannelBody* ChannelController::channel_body()
+{
+    return mP->channel.body();
 }
 
 config_map_t& ChannelController::config()
@@ -119,11 +124,16 @@ bool ChannelController::is_active() const
     return mP->channel && mP->channel.is_active();
 }
 
+bool ChannelController::is_instantiated() const
+{
+    return mP && mP->channel;
+}
+
 void ChannelController::flush()
 {
     Channel chn = channel();
     if (chn)
-        Caliper().flush_and_write(&chn, SnapshotView());
+        Caliper().flush_and_write(chn.body(), SnapshotView());
 }
 
 std::string ChannelController::name() const

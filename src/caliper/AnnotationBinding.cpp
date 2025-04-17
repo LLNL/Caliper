@@ -110,24 +110,24 @@ void AnnotationBinding::check_attribute(Caliper* c, const Attribute& attr)
     mark_attribute(c, attr);
 }
 
-void AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+void AnnotationBinding::begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->pass(value))
         return;
 
-    this->on_begin(c, chn, attr, value);
+    this->on_begin(c, attr, value);
 }
 
-void AnnotationBinding::end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+void AnnotationBinding::end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->pass(value))
         return;
 
-    this->on_end(c, chn, attr, value);
+    this->on_end(c, attr, value);
 }
 
 void AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)

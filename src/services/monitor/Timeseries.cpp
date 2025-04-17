@@ -54,7 +54,7 @@ class TimeseriesService
         Channel prof_chn = m_timeprofile->channel();
 
         c->flush(
-            &prof_chn,
+            prof_chn.body(),
             info,
             [this, c, info, ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec) {
                 std::vector<Entry> rec;

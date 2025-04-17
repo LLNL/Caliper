@@ -687,7 +687,7 @@ class CuptiTraceService
         }
     }
 
-    void post_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void post_begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         if (attr.is_nested()) {
             Entry e = c->get(attr);
@@ -702,7 +702,7 @@ class CuptiTraceService
         }
     }
 
-    void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         if (attr.is_nested()) {
             CUptiResult res = cuptiActivityPopExternalCorrelationId(CUPTI_EXTERNAL_CORRELATION_KIND_CUSTOM0, nullptr);
@@ -893,12 +893,12 @@ class CuptiTraceService
 
         if (config.get("correlate_context").to_bool()) {
             chn->events().post_begin_evt.connect(
-                [](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                    s_instance->post_begin_cb(c, chn, attr, value);
+                [](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                    s_instance->post_begin_cb(c, chB, attr, value);
                 }
             );
-            chn->events().pre_end_evt.connect([](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value
-                                              ) { s_instance->pre_end_cb(c, chn, attr, value); });
+            chn->events().pre_end_evt.connect([](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value
+                                              ) { s_instance->pre_end_cb(c, chB, attr, value); });
         }
 
         if (record_host_timestamp || record_host_duration) {

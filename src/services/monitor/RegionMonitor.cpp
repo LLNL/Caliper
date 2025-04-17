@@ -34,7 +34,7 @@ class RegionMonitor
 
     unsigned m_num_measured;
 
-    void post_begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant&)
+    void post_begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant&)
     {
         if (!attr.is_nested())
             return;
@@ -54,14 +54,14 @@ class RegionMonitor
         if (it != m_tracking_regions.end()) {
             if (it->second.inclusive_time > 2.0 * it->second.child_time) {
                 SnapshotBuilder tmp;
-                c->pull_snapshot(channel, SnapshotView(), tmp);
+                c->pull_snapshot(chB, SnapshotView(), tmp);
                 m_measuring = true;
                 m_skip      = 1;
             }
         }
     }
 
-    void pre_end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant&)
+    void pre_end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant&)
     {
         if (!attr.is_nested())
             return;
@@ -72,7 +72,7 @@ class RegionMonitor
 
             m_measuring = false;
             ++m_num_measured;
-            c->push_snapshot(channel, SnapshotView());
+            c->push_snapshot(chB, SnapshotView());
         }
 
         const Node* node = c->get(attr).node();
@@ -132,13 +132,13 @@ public:
         RegionMonitor* instance = new RegionMonitor(c, channel);
 
         channel->events().post_begin_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
-                instance->post_begin_cb(c, channel, attr, val);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& val) {
+                instance->post_begin_cb(c, chB, attr, val);
             }
         );
         channel->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
-                instance->pre_end_cb(c, channel, attr, val);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& val) {
+                instance->pre_end_cb(c, chB, attr, val);
             }
         );
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {

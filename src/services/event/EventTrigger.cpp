@@ -151,7 +151,7 @@ class EventTrigger
     // --- Callbacks
     //
 
-    void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -176,7 +176,7 @@ class EventTrigger
             // Construct the trigger info entry
             if (attr.store_as_value()) {
                 Entry info(begin_attr, value);
-                c->push_snapshot(chn, SnapshotView(info));
+                c->push_snapshot(chB, SnapshotView(info));
             } else {
                 //   As an optimization we attach the trigger info entries directly to their
                 // current context node. This drastically reduces the search space in the
@@ -188,14 +188,14 @@ class EventTrigger
                 // augmented entry in trigger_info.
                 Entry bb_entry = c->get_blackboard_entry(attr);
                 Entry info(c->make_tree_entry(begin_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
-                c->push_snapshot_replace(chn, SnapshotView(info), bb_entry);
+                c->push_snapshot_replace(chB, SnapshotView(info), bb_entry);
             }
         } else {
-            c->push_snapshot(chn, SnapshotView());
+            c->push_snapshot(chB, SnapshotView());
         }
     }
 
-    void pre_set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_set_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -220,18 +220,18 @@ class EventTrigger
             // Construct the trigger info entry
             if (attr.store_as_value()) {
                 Entry info(set_attr, value);
-                c->push_snapshot(chn, SnapshotView(info));
+                c->push_snapshot(chB, SnapshotView(info));
             } else {
                 Entry bb_entry = c->get_blackboard_entry(attr);
                 Entry info(c->make_tree_entry(set_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
-                c->push_snapshot_replace(chn, SnapshotView(info), bb_entry);
+                c->push_snapshot_replace(chB, SnapshotView(info), bb_entry);
             }
         } else {
-            c->push_snapshot(chn, SnapshotView());
+            c->push_snapshot(chB, SnapshotView());
         }
     }
 
-    void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -256,15 +256,15 @@ class EventTrigger
             // Construct the trigger info entry
             if (attr.store_as_value()) {
                 Entry info[2] = { Entry(end_attr, value), region_count_entry };
-                c->push_snapshot(chn, SnapshotView(2, info));
+                c->push_snapshot(chB, SnapshotView(2, info));
             } else {
                 Entry bb_entry = c->get_blackboard_entry(attr);
                 Node* node = c->make_tree_entry(end_attr, value, bb_entry.node());
                 Entry info[2] = { Entry(node), region_count_entry };
-                c->push_snapshot_replace(chn, SnapshotView(2, info), bb_entry);
+                c->push_snapshot_replace(chB, SnapshotView(2, info), bb_entry);
             }
         } else {
-            c->push_snapshot(chn, SnapshotView(region_count_entry));
+            c->push_snapshot(chB, SnapshotView(region_count_entry));
         }
     }
 
@@ -355,18 +355,18 @@ public:
             instance->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_begin_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_begin_cb(c, chB, attr, value);
             }
         );
         chn->events().pre_set_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_set_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_set_cb(c, chB, attr, value);
             }
         );
         chn->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_end_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_end_cb(c, chB, attr, value);
             }
         );
         chn->events().finish_evt.connect([instance](Caliper*, Channel*) { delete instance; });

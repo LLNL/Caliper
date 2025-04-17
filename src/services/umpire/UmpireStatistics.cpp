@@ -48,7 +48,6 @@ class UmpireService
 
     void process_allocator(
         Caliper*           c,
-        Channel*           channel,
         const std::string& name,
         umpire::Allocator& alloc,
         SnapshotView       context
@@ -126,7 +125,7 @@ class UmpireService
         rec.append(m_total_hwm_attr, Variant(total_hwm));
     }
 
-    void record_global_highwatermarks(Caliper* c, Channel* channel)
+    void record_global_highwatermarks(Caliper* c, ChannelBody* chB)
     {
         auto& rm = umpire::ResourceManager::getInstance();
 
@@ -139,7 +138,7 @@ class UmpireService
 
             uint64_t hwm = rm.getAllocator(s).getHighWatermark();
 
-            c->set(channel, attr, Variant(hwm));
+            c->set(chB, attr, Variant(hwm));
         }
     }
 
@@ -221,8 +220,8 @@ public:
         });
 
         if (instance->m_record_global_hwm)
-            channel->events().pre_flush_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView) {
-                instance->record_global_highwatermarks(c, channel);
+            channel->events().pre_flush_evt.connect([instance](Caliper* c, ChannelBody* chB, SnapshotView) {
+                instance->record_global_highwatermarks(c, chB);
             });
 
         Log(1).stream() << channel->name() << ": Registered umpire service" << std::endl;

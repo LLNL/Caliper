@@ -29,55 +29,49 @@ namespace
 
 class Report
 {
+    QuerySpec m_spec;
+    ConfigSet m_config;
+
     //
     // --- callback functions
     //
 
-    void write_output(Caliper* c, Channel* channel, SnapshotView flush_info)
+    void write_output(Caliper* c, ChannelBody* chB, SnapshotView flush_info)
     {
-        ConfigSet   config = services::init_config_from_spec(channel->config(), s_spec);
-        CalQLParser parser(config.get("config").to_string().c_str());
-
-        if (parser.error()) {
-            Log(0).stream() << channel->name() << ": Report: config parse error: " << parser.error_msg() << std::endl;
-            return;
-        }
-
-        QuerySpec spec(parser.spec());
-
         // set format default to table if it hasn't been set in the query config
-        if (spec.format.opt == QuerySpec::FormatSpec::Default)
-            spec.format = CalQLParser("format table").spec().format;
+        if (m_spec.format.opt == QuerySpec::FormatSpec::Default)
+            m_spec.format = CalQLParser("format table").spec().format;
 
         OutputStream stream;
-
         stream.set_stream(OutputStream::StdOut);
 
-        std::string filename = config.get("filename").to_string();
-
+        std::string filename = m_config.get("filename").to_string();
         if (!filename.empty())
             stream.set_filename(filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
-        if (config.get("append").to_bool() == true)
+        if (m_config.get("append").to_bool() == true)
             stream.set_mode(OutputStream::Mode::Append);
 
         CaliperMetadataDB db;
-        QueryProcessor    queryP(spec, stream);
+        QueryProcessor    queryP(m_spec, stream);
 
-        db.add_attribute_aliases(spec.aliases);
-        db.add_attribute_units(spec.units);
+        db.add_attribute_aliases(m_spec.aliases);
+        db.add_attribute_units(m_spec.units);
 
         c->flush(
-            channel,
+            chB,
             flush_info,
             [&queryP, &db](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
                 queryP.process_record(db, db.merge_snapshot(in_db, rec));
             }
         );
 
-        db.import_globals(*c, c->get_globals(*channel));
-
+        db.import_globals(*c, c->get_globals(chB));
         queryP.flush(db);
     }
+
+    Report(const QuerySpec& spec, const ConfigSet& cfg)
+        : m_spec { spec }, m_config { cfg }
+    { }
 
 public:
 
@@ -87,10 +81,18 @@ public:
 
     static void create(Caliper* c, Channel* channel)
     {
-        Report* instance = new Report;
+        ConfigSet   config = services::init_config_from_spec(channel->config(), s_spec);
+        CalQLParser parser(config.get("config").to_string().c_str());
 
-        channel->events().write_output_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView info) {
-            instance->write_output(c, channel, info);
+        if (parser.error()) {
+            Log(0).stream() << channel->name() << ": Report: config parse error: " << parser.error_msg() << std::endl;
+            return;
+        }
+
+        Report* instance = new Report(parser.spec(), config);
+
+        channel->events().write_output_evt.connect([instance](Caliper* c, ChannelBody* chB, SnapshotView info) {
+            instance->write_output(c, chB, info);
         });
         channel->events().finish_evt.connect([instance](Caliper*, Channel*) { delete instance; });
 

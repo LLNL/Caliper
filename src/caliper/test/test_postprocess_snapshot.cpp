@@ -45,7 +45,7 @@ TEST(PostprocessSnapshotTest, PostprocessSnapshot)
 
     std::vector<std::vector<Entry>> output;
 
-    c.flush(&channel, SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+    c.flush(channel.body(), SnapshotView(), [&output](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
         output.push_back(rec);
     });
 

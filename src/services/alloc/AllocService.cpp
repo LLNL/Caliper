@@ -150,7 +150,7 @@ class AllocService
 
     void track_mem_snapshot(
         Caliper*       c,
-        Channel*       chn,
+        ChannelBody*   chB,
         cali::Node*    label_node,
         const Variant& v_size,
         const Variant& v_uid,
@@ -162,12 +162,12 @@ class AllocService
                          { alloc_addr_attr, v_addr },
                          { label_node } };
 
-        c->push_snapshot(chn, SnapshotView(4, data));
+        c->push_snapshot(chB, SnapshotView(4, data));
     }
 
     void track_mem_cb(
         Caliper*         c,
-        Channel*         chn,
+        ChannelBody*     chB,
         const void*      ptr,
         const char*      label,
         size_t           elem_size,
@@ -208,7 +208,7 @@ class AllocService
         if (g_track_allocations)
             track_mem_snapshot(
                 c,
-                chn,
+                chB,
                 info.alloc_label_node,
                 Variant(static_cast<int>(total_size)),
                 info.v_uid,
@@ -233,7 +233,7 @@ class AllocService
         }
     }
 
-    void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr)
+    void untrack_mem_cb(Caliper* c, ChannelBody* chB, const void* ptr)
     {
         AllocInfo info;
 
@@ -256,7 +256,7 @@ class AllocService
         if (g_track_allocations)
             track_mem_snapshot(
                 c,
-                chn,
+                chB,
                 info.free_label_node,
                 Variant(-static_cast<int>(info.total_size)),
                 info.v_uid,
@@ -470,7 +470,7 @@ public:
 
         chn->events().track_mem_evt.connect([instance](
                                                 Caliper*         c,
-                                                Channel*         chn,
+                                                ChannelBody*     chB,
                                                 const void*      ptr,
                                                 const char*      label,
                                                 size_t           elem_size,
@@ -480,10 +480,10 @@ public:
                                                 const Attribute* attrs,
                                                 const Variant*   vals
                                             ) {
-            instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims, n, attrs, vals);
+            instance->track_mem_cb(c, chB, ptr, label, elem_size, ndims, dims, n, attrs, vals);
         });
-        chn->events().untrack_mem_evt.connect([instance](Caliper* c, Channel* chn, const void* ptr) {
-            instance->untrack_mem_cb(c, chn, ptr);
+        chn->events().untrack_mem_evt.connect([instance](Caliper* c, ChannelBody* chB, const void* ptr) {
+            instance->untrack_mem_cb(c, chB, ptr);
         });
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)

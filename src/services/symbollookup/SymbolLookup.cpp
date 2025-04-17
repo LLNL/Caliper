@@ -281,7 +281,7 @@ public:
     {
         SymbolLookup* instance = new SymbolLookup(c, chn);
 
-        chn->events().pre_flush_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView) {
+        chn->events().pre_flush_evt.connect([instance](Caliper* c, ChannelBody*, SnapshotView) {
             instance->check_attributes(c);
             instance->init_lookup();
         });

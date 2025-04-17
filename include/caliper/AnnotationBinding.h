@@ -89,8 +89,8 @@ class AnnotationBinding
     /// User code should instead use on_mark_attribute(),
     /// on_begin(), and on_end().
 
-    void begin_cb(Caliper*, Channel*, const Attribute&, const Variant&);
-    void end_cb(Caliper*, Channel*, const Attribute&, const Variant&);
+    void begin_cb(Caliper*, const Attribute&, const Variant&);
+    void end_cb(Caliper*, const Attribute&, const Variant&);
 
     static bool is_subscription_attribute(const Attribute& attr);
 
@@ -109,13 +109,13 @@ protected:
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper begin event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
+    virtual void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {}
 
     /// \brief Callback for an annotation end event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper end event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
+    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value) {}
 
     /// \brief Initialization callback. Invoked after the %Caliper
     ///   initialization completed.
@@ -159,13 +159,13 @@ public:
             binding->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                binding->begin_cb(c, chn, attr, value);
+            [binding](Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value) {
+                binding->begin_cb(c, attr, value);
             }
         );
         chn->events().pre_end_evt.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                binding->end_cb(c, chn, attr, value);
+            [binding](Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value) {
+                binding->end_cb(c, attr, value);
             }
         );
         chn->events().finish_evt.connect([binding](Caliper* c, Channel* chn) {

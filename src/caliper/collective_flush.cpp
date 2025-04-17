@@ -26,7 +26,7 @@ namespace cali
 void collective_flush(
     OutputStream&    stream,
     Caliper&         c,
-    Channel&         channel,
+    ChannelBody*     chB,
     SnapshotView     flush_info,
     const QuerySpec& local_query,
     const QuerySpec& cross_query,
@@ -49,7 +49,7 @@ void collective_flush(
 
     // flush this rank's caliper data into local aggregator
     c.flush(
-        &channel,
+        chB,
         flush_info,
         [&db,
          &local_agg,
@@ -88,7 +88,7 @@ void collective_flush(
     //   create a formatter and print it out
     if (rank == 0) {
         // import globals from runtime Caliper object
-        db.import_globals(c, c.get_globals(channel));
+        db.import_globals(c, c.get_globals(chB));
 
         QuerySpec spec = cross_query;
 

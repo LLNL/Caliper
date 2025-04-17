@@ -118,7 +118,7 @@ class CuptiService
         Caliper                    c;
 
         c.make_record(4, attr, vals, trigger_info.builder());
-        c.push_snapshot(&channel, trigger_info.view());
+        c.push_snapshot(channel.body(), trigger_info.view());
     }
 
     void handle_context_event(CUcontext context, const Attribute& name_attr, const Variant& v_name)
@@ -140,7 +140,7 @@ class CuptiService
         Caliper                    c;
 
         c.make_record(3, attr, vals, trigger_info.builder());
-        c.push_snapshot(&channel, trigger_info.view());
+        c.push_snapshot(channel.body(), trigger_info.view());
     }
 
     void handle_resource(CUpti_CallbackIdResource cbid, CUpti_ResourceData* cbInfo)

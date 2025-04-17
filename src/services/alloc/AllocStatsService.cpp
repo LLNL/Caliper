@@ -61,15 +61,11 @@ class AllocStatsService
 
     void track_mem_cb(
         Caliper*         c,
-        Channel*         chn,
         const void*      ptr,
         const char*      label,
         size_t           elem_size,
         size_t           ndims,
-        const size_t*    dims,
-        size_t           nextra,
-        const Attribute* extra_attrs,
-        const Variant*   extra_vals
+        const size_t*    dims
     )
     {
         uint64_t    size = std::accumulate(dims, dims + ndims, elem_size, std::multiplies<size_t>());
@@ -111,7 +107,7 @@ class AllocStatsService
         }
     }
 
-    void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr)
+    void untrack_mem_cb(Caliper* c, const void* ptr)
     {
         uint64_t addr = reinterpret_cast<uint64_t>(ptr);
         AllocInfo alloc_info { 0, nullptr };
@@ -217,7 +213,7 @@ public:
 
         chn->events().track_mem_evt.connect([instance](
                                                 Caliper*         c,
-                                                Channel*         chn,
+                                                ChannelBody*     chn,
                                                 const void*      ptr,
                                                 const char*      label,
                                                 size_t           elem_size,
@@ -227,10 +223,10 @@ public:
                                                 const Attribute* attrs,
                                                 const Variant*   vals
                                             ) {
-            instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims, n, attrs, vals);
+            instance->track_mem_cb(c, ptr, label, elem_size, ndims, dims);
         });
-        chn->events().untrack_mem_evt.connect([instance](Caliper* c, Channel* chn, const void* ptr) {
-            instance->untrack_mem_cb(c, chn, ptr);
+        chn->events().untrack_mem_evt.connect([instance](Caliper* c, ChannelBody* chB, const void* ptr) {
+            instance->untrack_mem_cb(c, ptr);
         });
         chn->events().flush_evt.connect([instance](Caliper* c, SnapshotView ctx, SnapshotFlushFn flush_fn){
             instance->flush_cb(c, ctx, flush_fn);

@@ -135,7 +135,7 @@ std::ostream& recursive_unpack(std::ostream& os, adiak_value_t* val, adiak_datat
 }
 
 void set_val(
-    Channel&          channel,
+    ChannelBody*      chB,
     const char*       name,
     const Variant&    val,
     adiak_datatype_t* type,
@@ -157,12 +157,12 @@ void set_val(
     Attribute attr =
         c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS, 3, meta_attr, v_metavals);
 
-    c.set(&channel, attr, val);
+    c.set(chB, attr, val);
 }
 
 struct nameval_usr_args_t {
-    Channel channel;
-    int     count;
+    ChannelBody* chB;
+    int          count;
 };
 
 void nameval_cb(
@@ -176,9 +176,7 @@ void nameval_cb(
 {
     nameval_usr_args_t* args = static_cast<nameval_usr_args_t*>(usr_args);
 
-    Channel channel = args->channel;
-
-    if (!channel)
+    if (!args->chB)
         return;
     if (category == adiak_control)
         return;
@@ -198,20 +196,20 @@ void nameval_cb(
             return;
         }
     case adiak_long:
-        set_val(channel, name, Variant(static_cast<int>(val->v_long)), t, category, subcategory);
+        set_val(args->chB, name, Variant(static_cast<int>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_int:
-        set_val(channel, name, Variant(val->v_int), t, category, subcategory);
+        set_val(args->chB, name, Variant(val->v_int), t, category, subcategory);
         ++args->count;
         break;
     case adiak_ulong:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
+        set_val(args->chB, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
 #ifdef ADIAK_HAVE_LONGLONG
     case adiak_longlong:
-        set_val(channel, name, Variant(cali_make_variant_from_int64(val->v_longlong)), t, category, subcategory);
+        set_val(args->chB, name, Variant(cali_make_variant_from_int64(val->v_longlong)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_ulonglong:
@@ -227,21 +225,21 @@ void nameval_cb(
         break;
 #endif
     case adiak_uint:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)), t, category, subcategory);
+        set_val(args->chB, name, Variant(static_cast<uint64_t>(val->v_int)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_double:
-        set_val(channel, name, Variant(val->v_double), t, category, subcategory);
+        set_val(args->chB, name, Variant(val->v_double), t, category, subcategory);
         ++args->count;
         break;
     case adiak_date:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
+        set_val(args->chB, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_timeval:
         {
             struct timeval* tval = static_cast<struct timeval*>(val->v_ptr);
-            set_val(channel, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0), t, category, subcategory);
+            set_val(args->chB, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0), t, category, subcategory);
             ++args->count;
             break;
         }
@@ -268,7 +266,7 @@ void nameval_cb(
             recursive_unpack(os, val, t);
             std::string str = os.str();
 
-            set_val(channel, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length() + 1), t, category, subcategory);
+            set_val(args->chB, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length() + 1), t, category, subcategory);
             ++args->count;
             break;
         }
@@ -305,8 +303,8 @@ void register_adiak_import(Caliper* c, Channel* channel)
     meta_attr[2] =
         c->create_attribute("adiak.subcategory", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
-    channel->events().pre_flush_evt.connect([categories](Caliper*, Channel* channel, SnapshotView) {
-        nameval_usr_args_t args { *channel, 0 };
+    channel->events().pre_flush_evt.connect([categories](Caliper*, ChannelBody* chB, SnapshotView) {
+        nameval_usr_args_t args { chB, 0 };
 
         for (int category : categories)
             adiak_list_namevals(1, static_cast<adiak_category_t>(category), nameval_cb, &args);

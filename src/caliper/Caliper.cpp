@@ -75,7 +75,6 @@ public:
     siglock() : m_lock(0) {}
 
     inline void lock() { ++m_lock; }
-
     inline void unlock() { --m_lock; }
 
     inline bool is_locked() const { return (m_lock > 0); }
@@ -155,29 +154,28 @@ void make_default_channel()
 // Caliper channel data
 //
 
-struct Channel::ChannelImpl {
+struct cali::ChannelBody {
     static const ConfigSet::Entry s_configdata[];
 
     cali_id_t   id;
     std::string name;
     bool        is_active;
 
-    RuntimeConfig config;
-    Events        events; ///< callbacks
+    RuntimeConfig   config;
+    Channel::Events events; ///< callbacks
 
     bool flush_on_exit;
 
     Blackboard channel_blackboard;
 
-    ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
+    ChannelBody(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
         : id(_id), name(_name), is_active(false), config(cfg)
     {
         ConfigSet cali_cfg = config.init("channel", s_configdata);
-
         flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
     }
 
-    ~ChannelImpl()
+    ~ChannelBody()
     {
         if (Log::verbosity() >= 2) {
             channel_blackboard.print_statistics(Log(2).stream() << name << " channel blackboard: ") << std::endl;
@@ -185,7 +183,7 @@ struct Channel::ChannelImpl {
     }
 };
 
-const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
+const ConfigSet::Entry cali::ChannelBody::s_configdata[] = {
     // key, type, value, short description, long description
     { "config_check",
       CALI_TYPE_BOOL,
@@ -200,7 +198,7 @@ const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg) : mP(new ChannelImpl(id, name, cfg))
+Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg) : mP(new ChannelBody(id, name, cfg))
 {}
 
 Channel::~Channel()
@@ -346,7 +344,6 @@ struct Caliper::GlobalData {
             std::lock_guard<std::mutex> g(thread_data_lock);
 
             std::for_each(thread_data.begin(), thread_data.end(), [](ThreadData* d) { delete d; });
-
             thread_data.clear();
         }
 
@@ -812,14 +809,14 @@ void Caliper::memory_region_begin(
 )
 {
     for (auto& channel : sG->active_channels)
-        memory_region_begin(&channel, ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
+        memory_region_begin(channel.body(), ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
 }
 
 /// Dispatch memory region annotation end across all active channels
 void Caliper::memory_region_end(const void* ptr)
 {
     for (auto& channel : sG->active_channels)
-        memory_region_end(&channel, ptr);
+        memory_region_end(channel.body(), ptr);
 }
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the process
@@ -833,12 +830,12 @@ std::vector<Entry> Caliper::get_globals()
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// and the process blackboard.
-std::vector<Entry> Caliper::get_globals(const Channel& channel)
+std::vector<Entry> Caliper::get_globals(const ChannelBody* chB)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
     std::vector<Entry> ret = get_globals_from_blackboard(this, sG->process_blackboard);
-    std::vector<Entry> tmp = get_globals_from_blackboard(this, channel.mP->channel_blackboard);
+    std::vector<Entry> tmp = get_globals_from_blackboard(this, chB->channel_blackboard);
 
     ret.insert(ret.end(), tmp.begin(), tmp.end());
 
@@ -859,37 +856,36 @@ void Caliper::pull_context(SnapshotBuilder& rec)
     rec.append(sT->process_snapshot.view());
 }
 
-void Caliper::pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec)
+void Caliper::pull_snapshot(ChannelBody* chB, SnapshotView trigger_info, SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
     rec.append(trigger_info);
-    channel->mP->events.snapshot(this, trigger_info, rec);
+    chB->events.snapshot(this, trigger_info, rec);
 
-    // copy pull_context() functionality to avoid superfluous siglock update
     sT->thread_blackboard.snapshot(rec);
     sT->update_process_snapshot(sG->process_blackboard);
     rec.append(sT->process_snapshot.view());
 }
 
-void Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
+void Caliper::push_snapshot(ChannelBody* chB, SnapshotView trigger_info)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
     sT->snapshot.reset();
+    SnapshotBuilder& rec = sT->snapshot.builder();
 
-    // copy pull_snapshot() functionality to avoid superfluous siglock update
-    sT->snapshot.builder().append(trigger_info);
-    channel->mP->events.snapshot(this, trigger_info, sT->snapshot.builder());
-
-    sT->thread_blackboard.snapshot(sT->snapshot.builder());
+    sT->thread_blackboard.snapshot(rec);
     sT->update_process_snapshot(sG->process_blackboard);
-    sT->snapshot.builder().append(sT->process_snapshot.view());
+    rec.append(sT->process_snapshot.view());
 
-    channel->mP->events.process_snapshot(this, trigger_info, sT->snapshot.view());
+    rec.append(trigger_info);
+
+    chB->events.snapshot(this, trigger_info, rec);
+    chB->events.process_snapshot(this, trigger_info, rec.view());
 }
 
-void Caliper::push_snapshot_replace(Channel* channel, SnapshotView trigger_info, const Entry& target)
+void Caliper::push_snapshot_replace(ChannelBody* chB, SnapshotView trigger_info, const Entry& target)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
@@ -903,48 +899,48 @@ void Caliper::push_snapshot_replace(Channel* channel, SnapshotView trigger_info,
     // remove/replace target entry from blackboard snapshot
     rec.remove(target);
     rec.append(trigger_info);
-    channel->mP->events.snapshot(this, trigger_info, rec);
 
-    channel->mP->events.process_snapshot(this, trigger_info, rec.view());
+    chB->events.snapshot(this, trigger_info, rec);
+    chB->events.process_snapshot(this, trigger_info, rec.view());
 }
 
-void Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
+void Caliper::flush(ChannelBody* chB, SnapshotView flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
-    chn->mP->events.pre_flush_evt(this, chn, flush_info);
+    chB->events.pre_flush_evt(this, chB, flush_info);
 
-    if (chn->mP->events.postprocess_snapshot.empty()) {
-        chn->mP->events.flush_evt(this, flush_info, proc_fn);
+    if (chB->events.postprocess_snapshot.empty()) {
+        chB->events.flush_evt(this, flush_info, proc_fn);
     } else {
-        chn->mP->events.flush_evt(
+        chB->events.flush_evt(
             this,
             flush_info,
-            [this, chn, proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
+            [this, chB, proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
                 std::vector<Entry> mrec(rec);
-                chn->mP->events.postprocess_snapshot(this, mrec);
+                chB->events.postprocess_snapshot(this, mrec);
                 proc_fn(*this, mrec);
             }
         );
     }
 
-    chn->mP->events.post_flush_evt(this, chn, flush_info);
+    chB->events.post_flush_evt(this, chB, flush_info);
 }
 
-void Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info)
+void Caliper::flush_and_write(ChannelBody* chB, SnapshotView input_flush_info)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
     SnapshotRecord flush_info;
     flush_info.builder().append(input_flush_info);
 
-    channel->mP->channel_blackboard.snapshot(flush_info.builder());
+    chB->channel_blackboard.snapshot(flush_info.builder());
     sG->process_blackboard.snapshot(flush_info.builder());
     sT->thread_blackboard.snapshot(flush_info.builder());
 
-    Log(1).stream() << channel->name() << ": Flushing Caliper data" << std::endl;
+    Log(1).stream() << chB->name << ": Flushing Caliper data" << std::endl;
 
-    channel->mP->events.write_output_evt(this, channel, flush_info.view());
+    chB->events.write_output_evt(this, chB, flush_info.view());
 }
 
 void Caliper::clear(Channel* chn)
@@ -971,7 +967,7 @@ void Caliper::begin(const Attribute& attr, const Variant& data)
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_begin_evt(this, &channel, attr, data);
+            channel.mP->events.pre_begin_evt(this, channel.body(), attr, data);
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_begin(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -981,7 +977,7 @@ void Caliper::begin(const Attribute& attr, const Variant& data)
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->active_channels)
-            channel.mP->events.post_begin_evt(this, &channel, attr, data);
+            channel.mP->events.post_begin_evt(this, channel.body(), attr, data);
 }
 
 void Caliper::end(const Attribute& attr)
@@ -1016,7 +1012,7 @@ void Caliper::end(const Attribute& attr)
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_end_evt(this, &channel, attr, current.entry.value());
+            channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
 
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
@@ -1054,7 +1050,7 @@ void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_end_evt(this, &channel, attr, current.entry.value());
+            channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
 
     handle_end(attr, prop, current, key, *blackboard, sT->tree);
 }
@@ -1074,7 +1070,7 @@ void Caliper::set(const Attribute& attr, const Variant& data)
     // invoke callbacks
     if (run_events)
         for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_set_evt(this, &channel, attr, data);
+            channel.mP->events.pre_set_evt(this, channel.body(), attr, data);
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -1087,10 +1083,10 @@ void Caliper::async_event(SnapshotView info)
     std::lock_guard<::siglock> g(sT->lock);
 
     for (auto& channel : sG->active_channels)
-        channel.mP->events.async_event(this, &channel, info);
+        channel.mP->events.async_event(this, channel.body(), info);
 }
 
-void Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
+void Caliper::begin(ChannelBody* chB, const Attribute& attr, const Variant& data)
 {
     int  prop       = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
@@ -1098,17 +1094,17 @@ void Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data
     std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.pre_begin_evt(this, channel, attr, data);
+    if (run_events && chB->is_active)
+        chB->events.pre_begin_evt(this, chB, attr, data);
 
-    handle_begin(attr, data, prop, channel->mP->channel_blackboard, sT->tree);
+    handle_begin(attr, data, prop, chB->channel_blackboard, sT->tree);
 
     // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.post_begin_evt(this, channel, attr, data);
+    if (run_events && chB->is_active)
+        chB->events.post_begin_evt(this, chB, attr, data);
 }
 
-void Caliper::end(Channel* channel, const Attribute& attr)
+void Caliper::end(ChannelBody* chB, const Attribute& attr)
 {
     int  prop       = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
@@ -1117,7 +1113,7 @@ void Caliper::end(Channel* channel, const Attribute& attr)
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    BlackboardEntry current = load_current_entry(attr, key, channel->mP->channel_blackboard);
+    BlackboardEntry current = load_current_entry(attr, key, chB->channel_blackboard);
 
     if (current.entry.empty()) {
         sT->stack_error = true;
@@ -1125,13 +1121,13 @@ void Caliper::end(Channel* channel, const Attribute& attr)
     }
 
     // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.pre_end_evt(this, channel, attr, current.entry.value());
+    if (run_events && chB->is_active)
+        chB->events.pre_end_evt(this, chB, attr, current.entry.value());
 
-    handle_end(attr, prop, current, key, channel->mP->channel_blackboard, sT->tree);
+    handle_end(attr, prop, current, key, chB->channel_blackboard, sT->tree);
 }
 
-void Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
+void Caliper::set(ChannelBody* chB, const Attribute& attr, const Variant& data)
 {
     int  prop       = attr.properties();
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
@@ -1139,10 +1135,10 @@ void Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
-    if (run_events && channel->is_active())
-        channel->mP->events.pre_set_evt(this, channel, attr, data);
+    if (run_events && chB->is_active)
+        chB->events.pre_set_evt(this, chB, attr, data);
 
-    handle_set(attr, data, prop, channel->mP->channel_blackboard, sT->tree);
+    handle_set(attr, data, prop, chB->channel_blackboard, sT->tree);
 }
 
 // --- Query
@@ -1190,13 +1186,13 @@ Entry Caliper::get_blackboard_entry(const Attribute& attr)
     return blackboard->get(key);
 }
 
-Entry Caliper::get(Channel* channel, const Attribute& attr)
+Entry Caliper::get(ChannelBody* chB, const Attribute& attr)
 {
     cali_id_t key = get_blackboard_key(attr.id(), attr.properties());
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    return channel->mP->channel_blackboard.get(key).get(attr);
+    return chB->channel_blackboard.get(key).get(attr);
 }
 
 Entry Caliper::get_path_node()
@@ -1222,7 +1218,7 @@ Entry Caliper::get_path_node()
 // --- Memory region tracking
 
 void Caliper::memory_region_begin(
-    Channel*         channel,
+    ChannelBody*     chB,
     const void*      ptr,
     const char*      label,
     size_t           elem_size,
@@ -1234,15 +1230,13 @@ void Caliper::memory_region_begin(
 )
 {
     std::lock_guard<::siglock> g(sT->lock);
-
-    channel->mP->events.track_mem_evt(this, channel, ptr, label, elem_size, ndims, dims, n, extra_attrs, extra_vals);
+    chB->events.track_mem_evt(this, chB, ptr, label, elem_size, ndims, dims, n, extra_attrs, extra_vals);
 }
 
-void Caliper::memory_region_end(Channel* channel, const void* ptr)
+void Caliper::memory_region_end(ChannelBody* chB, const void* ptr)
 {
     std::lock_guard<::siglock> g(sT->lock);
-
-    channel->mP->events.untrack_mem_evt(this, channel, ptr);
+    chB->events.untrack_mem_evt(this, chB, ptr);
 }
 
 // --- Generic entry API
@@ -1328,7 +1322,7 @@ Channel Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 
     // Create and set key & version attributes
     begin(
-        &channel,
+        channel.body(),
         create_attribute("cali.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
         Variant(name)
     );
@@ -1415,7 +1409,7 @@ void Caliper::finalize()
     while (!sG->all_channels.empty()) {
         auto channel = sG->all_channels.front();
         if (channel.mP->flush_on_exit)
-            flush_and_write(&channel, SnapshotView());
+            flush_and_write(channel.body(), SnapshotView());
         delete_channel(channel);
     }
 }
