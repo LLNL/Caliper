@@ -866,7 +866,7 @@ class CuptiTraceService
             return;
 
         do_flush(c, SnapshotView(), [c, this](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
-            c->push_snapshot(&channel, SnapshotView(rec.size(), rec.data()));
+            c->push_snapshot(channel.body(), SnapshotView(rec.size(), rec.data()));
         });
 
         clear_cb(c, &channel);
@@ -929,7 +929,7 @@ class CuptiTraceService
                             << " Triggering on " << attr_name << std::endl;
         } else {
             chn->events().flush_evt.connect([](Caliper* c, SnapshotView info, SnapshotFlushFn flush_fn) {
-                s_instance->flush_cb(c, chn, info, flush_fn);
+                s_instance->flush_cb(c, info, flush_fn);
             });
             chn->events().clear_evt.connect([](Caliper* c, Channel* chn) { s_instance->clear_cb(c, chn); });
         }

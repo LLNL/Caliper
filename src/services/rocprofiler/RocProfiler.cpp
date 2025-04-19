@@ -334,7 +334,7 @@ class RocProfilerService
             ROCPROFILER_CALL(rocprofiler_start_context(rocprofiler_ctx));
             ROCPROFILER_CALL(rocprofiler_start_context(activity_ctx));
 
-            channel->events().pre_flush_evt.connect([this](Caliper*, Channel*, SnapshotView) { this->pre_flush_cb(); });
+            channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
         }
 
         if (m_enable_snapshot_timestamps) {

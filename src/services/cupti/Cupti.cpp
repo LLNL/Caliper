@@ -312,7 +312,7 @@ class CuptiService
     void finish_cb(Caliper* c, Channel* chn)
     {
         if (Log::verbosity() >= 2) {
-            Log(2).stream() << chn->name() << ": Cupti: processed " << num_api_cb << " API callbacks, "
+        Log(2).stream() << chn->name() << ": Cupti: processed " << num_api_cb << " API callbacks, "
                             << num_resource_cb << " resource callbacks, " << num_sync_cb << " sync callbacks, "
                             << num_nvtx_cb << " nvtx callbacks (" << num_cb << " total)." << std::endl;
 
@@ -323,9 +323,9 @@ class CuptiService
 
     void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, cupti_info.runtime_attr);
-        channel->events().subscribe_attribute(c, cupti_info.driver_attr);
-        channel->events().subscribe_attribute(c, cupti_info.nvtx_range_attr);
+        channel.events().subscribe_attribute(c, cupti_info.runtime_attr);
+        channel.events().subscribe_attribute(c, cupti_info.driver_attr);
+        channel.events().subscribe_attribute(c, cupti_info.nvtx_range_attr);
     }
 
     void create_attributes(Caliper* c)

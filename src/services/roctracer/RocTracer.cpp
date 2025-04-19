@@ -125,7 +125,7 @@ class RocTracerService
 
     void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, m_api_attr);
+        m_channel.events().subscribe_attribute(c, m_api_attr);
     }
 
     void push_correlation(uint64_t id, cali::Node* node)
@@ -415,7 +415,7 @@ class RocTracerService
             return;
         }
 
-        channel->events().pre_flush_evt.connect([this](Caliper*, Channel*, SnapshotView) { this->pre_flush_cb(); });
+        channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
 
         Log(1).stream() << channel->name() << ": roctracer: Tracing initialized" << std::endl;
     }
