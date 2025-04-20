@@ -102,10 +102,13 @@ std::ostream& print_available_services(std::ostream& os)
     return os;
 }
 
-std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
+std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard, std::mutex& blackboard_lock)
 {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
-    blackboard.snapshot(rec.builder());
+    {
+        std::lock_guard g(blackboard_lock);
+        blackboard.snapshot(rec.builder());
+    }
 
     std::vector<Entry>       ret;
     std::vector<const Node*> nodes;
@@ -167,6 +170,7 @@ struct cali::ChannelBody {
     bool flush_on_exit;
 
     Blackboard channel_blackboard;
+    std::mutex channel_blackboard_lock;
 
     ChannelBody(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
         : id(_id), name(_name), is_active(false), config(cfg)
@@ -266,7 +270,7 @@ struct Caliper::ThreadData {
         thread_blackboard.print_statistics(os << "  Thread blackboard: ") << std::endl;
     }
 
-    void update_process_snapshot(Blackboard& process_blackboard)
+    inline void update_process_snapshot(Blackboard& process_blackboard, std::mutex& process_blackboard_lock)
     {
         //   Check if the process or channel blackboards have been updated
         // since the last snapshot on this thread.
@@ -278,6 +282,7 @@ struct Caliper::ThreadData {
             //   Process blackboard has been updated:
             // update thread-local snapshot data
             process_snapshot.reset();
+            std::lock_guard<std::mutex> g(process_blackboard_lock);
             process_blackboard.snapshot(process_snapshot.builder());
             process_bb_count = process_bb_count_now;
         }
@@ -305,6 +310,7 @@ struct Caliper::GlobalData {
     int              attribute_default_scope;
 
     Blackboard process_blackboard;
+    std::mutex process_blackboard_lock;
 
     vector<Channel> all_channels;
     vector<Channel> active_channels;
@@ -825,17 +831,17 @@ std::vector<Entry> Caliper::get_globals()
 {
     std::lock_guard<::siglock> g(sT->lock);
 
-    return get_globals_from_blackboard(this, sG->process_blackboard);
+    return get_globals_from_blackboard(this, sG->process_blackboard, sG->process_blackboard_lock);
 }
 
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// and the process blackboard.
-std::vector<Entry> Caliper::get_globals(const ChannelBody* chB)
+std::vector<Entry> Caliper::get_globals(ChannelBody* chB)
 {
     std::lock_guard<::siglock> g(sT->lock);
 
-    std::vector<Entry> ret = get_globals_from_blackboard(this, sG->process_blackboard);
-    std::vector<Entry> tmp = get_globals_from_blackboard(this, chB->channel_blackboard);
+    std::vector<Entry> ret = get_globals_from_blackboard(this, sG->process_blackboard, sG->process_blackboard_lock);
+    std::vector<Entry> tmp = get_globals_from_blackboard(this, chB->channel_blackboard, chB->channel_blackboard_lock);
 
     ret.insert(ret.end(), tmp.begin(), tmp.end());
 
@@ -852,7 +858,7 @@ void Caliper::pull_context(SnapshotBuilder& rec)
     sT->thread_blackboard.snapshot(rec);
 
     // Get process blackboard data
-    sT->update_process_snapshot(sG->process_blackboard);
+    sT->update_process_snapshot(sG->process_blackboard, sG->process_blackboard_lock);
     rec.append(sT->process_snapshot.view());
 }
 
@@ -864,7 +870,7 @@ void Caliper::pull_snapshot(ChannelBody* chB, SnapshotView trigger_info, Snapsho
     chB->events.snapshot(this, trigger_info, rec);
 
     sT->thread_blackboard.snapshot(rec);
-    sT->update_process_snapshot(sG->process_blackboard);
+    sT->update_process_snapshot(sG->process_blackboard, sG->process_blackboard_lock);
     rec.append(sT->process_snapshot.view());
 }
 
@@ -876,7 +882,7 @@ void Caliper::push_snapshot(ChannelBody* chB, SnapshotView trigger_info)
     SnapshotBuilder& rec = sT->snapshot.builder();
 
     sT->thread_blackboard.snapshot(rec);
-    sT->update_process_snapshot(sG->process_blackboard);
+    sT->update_process_snapshot(sG->process_blackboard, sG->process_blackboard_lock);
     rec.append(sT->process_snapshot.view());
 
     rec.append(trigger_info);
@@ -893,7 +899,7 @@ void Caliper::push_snapshot_replace(ChannelBody* chB, SnapshotView trigger_info,
     SnapshotBuilder& rec = sT->snapshot.builder();
 
     sT->thread_blackboard.snapshot(rec);
-    sT->update_process_snapshot(sG->process_blackboard);
+    sT->update_process_snapshot(sG->process_blackboard, sG->process_blackboard_lock);
     rec.append(sT->process_snapshot.view());
 
     // remove/replace target entry from blackboard snapshot
@@ -971,8 +977,10 @@ void Caliper::begin(const Attribute& attr, const Variant& data)
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_begin(attr, data, prop, sT->thread_blackboard, sT->tree);
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
+    else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
         handle_begin(attr, data, prop, sG->process_blackboard, sT->tree);
+    }
 
     // invoke callbacks
     if (run_events)
@@ -990,19 +998,18 @@ void Caliper::end(const Attribute& attr)
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    cali_id_t   key        = get_blackboard_key(attr.id(), prop);
-    Blackboard* blackboard = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD)
-        blackboard = &sT->thread_blackboard;
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
-        blackboard = &sG->process_blackboard;
-    else
-        return;
+    cali_id_t   key         = get_blackboard_key(attr.id(), prop);
+    BlackboardEntry current = { Entry(), Entry( ) };
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    auto current = load_current_entry(attr, key, *blackboard);
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        current = load_current_entry(attr, key, sT->thread_blackboard);
+    else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        current = load_current_entry(attr, key, sG->process_blackboard);
+    } else
+        return;
 
     if (current.entry.empty()) {
         sT->stack_error = true;
@@ -1014,7 +1021,12 @@ void Caliper::end(const Attribute& attr)
         for (auto& channel : sG->active_channels)
             channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
 
-    handle_end(attr, prop, current, key, *blackboard, sT->tree);
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        handle_end(attr, prop, current, key, sT->thread_blackboard, sT->tree);
+    else {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        handle_end(attr, prop, current, key, sG->process_blackboard, sT->tree);
+    }
 }
 
 void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
@@ -1027,19 +1039,18 @@ void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
 
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
-    cali_id_t   key        = get_blackboard_key(attr.id(), prop);
-    Blackboard* blackboard = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD)
-        blackboard = &sT->thread_blackboard;
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
-        blackboard = &sG->process_blackboard;
-    else
-        return;
+    cali_id_t key = get_blackboard_key(attr.id(), prop);
+    BlackboardEntry current = { Entry(), Entry( ) };
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    auto current = load_current_entry(attr, key, *blackboard);
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        current = load_current_entry(attr, key, sT->thread_blackboard);
+    else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        current = load_current_entry(attr, key, sG->process_blackboard);
+    } else
+        return;
 
     if (current.entry.empty() || data != current.entry.value()) {
         log_stack_value_error(current.entry, attr, data);
@@ -1052,7 +1063,12 @@ void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
         for (auto& channel : sG->active_channels)
             channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
 
-    handle_end(attr, prop, current, key, *blackboard, sT->tree);
+    if (scope == CALI_ATTR_SCOPE_THREAD)
+        handle_end(attr, prop, current, key, sT->thread_blackboard, sT->tree);
+    else {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        handle_end(attr, prop, current, key, sG->process_blackboard, sT->tree);
+    }
 }
 
 void Caliper::set(const Attribute& attr, const Variant& data)
@@ -1074,8 +1090,10 @@ void Caliper::set(const Attribute& attr, const Variant& data)
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
-    else if (scope == CALI_ATTR_SCOPE_PROCESS)
+    else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
         handle_set(attr, data, prop, sG->process_blackboard, sT->tree);
+    }
 }
 
 void Caliper::async_event(SnapshotView info)
@@ -1097,7 +1115,10 @@ void Caliper::begin(ChannelBody* chB, const Attribute& attr, const Variant& data
     if (run_events && chB->is_active)
         chB->events.pre_begin_evt(this, chB, attr, data);
 
-    handle_begin(attr, data, prop, chB->channel_blackboard, sT->tree);
+    {
+        std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
+        handle_begin(attr, data, prop, chB->channel_blackboard, sT->tree);
+    }
 
     // invoke callbacks
     if (run_events && chB->is_active)
@@ -1110,10 +1131,14 @@ void Caliper::end(ChannelBody* chB, const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
+    BlackboardEntry current = { Entry(), Entry( )};
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    BlackboardEntry current = load_current_entry(attr, key, chB->channel_blackboard);
+    {
+        std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
+        current = load_current_entry(attr, key, chB->channel_blackboard);
+    }
 
     if (current.entry.empty()) {
         sT->stack_error = true;
@@ -1124,7 +1149,10 @@ void Caliper::end(ChannelBody* chB, const Attribute& attr)
     if (run_events && chB->is_active)
         chB->events.pre_end_evt(this, chB, attr, current.entry.value());
 
-    handle_end(attr, prop, current, key, chB->channel_blackboard, sT->tree);
+    {
+        std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
+        handle_end(attr, prop, current, key, chB->channel_blackboard, sT->tree);
+    }
 }
 
 void Caliper::set(ChannelBody* chB, const Attribute& attr, const Variant& data)
@@ -1138,6 +1166,7 @@ void Caliper::set(ChannelBody* chB, const Attribute& attr, const Variant& data)
     if (run_events && chB->is_active)
         chB->events.pre_set_evt(this, chB, attr, data);
 
+    std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
     handle_set(attr, data, prop, chB->channel_blackboard, sT->tree);
 }
 
@@ -1148,21 +1177,18 @@ Entry Caliper::get(const Attribute& attr)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* blackboard = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD) {
-        blackboard = &sT->thread_blackboard;
-    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        blackboard = &sG->process_blackboard;
-    } else {
-        return Entry();
-    }
-
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    return blackboard->get(key).get(attr);
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        return sT->thread_blackboard.get(key).get(attr);
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        return sG->process_blackboard.get(key).get(attr);
+    }
+
+    return Entry();
 }
 
 Entry Caliper::get_blackboard_entry(const Attribute& attr)
@@ -1170,20 +1196,18 @@ Entry Caliper::get_blackboard_entry(const Attribute& attr)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* blackboard = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD) {
-        blackboard = &sT->thread_blackboard;
-    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        blackboard = &sG->process_blackboard;
-    } else {
-        return Entry();
-    }
-
     cali_id_t key = get_blackboard_key(attr.id(), prop);
 
     std::lock_guard<::siglock> g(sT->lock);
-    return blackboard->get(key);
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        return sT->thread_blackboard.get(key);
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        return sG->process_blackboard.get(key);
+    }
+
+    return Entry();
 }
 
 Entry Caliper::get(ChannelBody* chB, const Attribute& attr)
@@ -1191,6 +1215,7 @@ Entry Caliper::get(ChannelBody* chB, const Attribute& attr)
     cali_id_t key = get_blackboard_key(attr.id(), attr.properties());
 
     std::lock_guard<::siglock> g(sT->lock);
+    std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
 
     return chB->channel_blackboard.get(key).get(attr);
 }
@@ -1204,8 +1229,10 @@ Entry Caliper::get_path_node()
 
         e = sT->thread_blackboard.get(REGION_KEY);
 
-        if (e.empty())
+        if (e.empty()) {
+            std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
             e = sG->process_blackboard.get(REGION_KEY);
+        }
     }
 
     for (Node* node = e.node(); node; node = node->parent())
@@ -1289,21 +1316,21 @@ Variant Caliper::exchange(const Attribute& attr, const Variant& data)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* blackboard = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD) {
-        blackboard = &sT->thread_blackboard;
-    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        blackboard = &sG->process_blackboard;
-    } else {
-        return Variant();
-    }
+    bool is_hidden = !(prop & CALI_ATTR_HIDDEN);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
+    Entry entry(attr, data);
 
     std::lock_guard<::siglock> g(sT->lock);
 
-    return blackboard->exchange(key, Entry(attr, data), !(prop & CALI_ATTR_HIDDEN)).value();
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        return sT->thread_blackboard.exchange(key, entry, is_hidden).value();
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        return sG->process_blackboard.exchange(key, entry, is_hidden).value();
+    }
+
+    return Variant();
 }
 
 //

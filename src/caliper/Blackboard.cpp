@@ -61,8 +61,6 @@ void Blackboard::add(cali_id_t key, const Entry& value, bool include_in_snapshot
 
 void Blackboard::set(cali_id_t key, const Entry& value, bool include_in_snapshots)
 {
-    std::lock_guard<util::spinlock> g(lock);
-
     size_t I = find_existing_entry(key);
 
     if (hashtable[I].key == key)
@@ -75,8 +73,6 @@ void Blackboard::set(cali_id_t key, const Entry& value, bool include_in_snapshot
 
 void Blackboard::del(cali_id_t key)
 {
-    std::lock_guard<util::spinlock> g(lock);
-
     size_t I = find_existing_entry(key);
 
     if (hashtable[I].key != key)
@@ -109,8 +105,6 @@ void Blackboard::del(cali_id_t key)
 
 Entry Blackboard::exchange(cali_id_t key, const Entry& value, bool include_in_snapshots)
 {
-    std::lock_guard<util::spinlock> g(lock);
-
     size_t I = find_existing_entry(key);
     Entry  ret;
 
@@ -127,8 +121,6 @@ Entry Blackboard::exchange(cali_id_t key, const Entry& value, bool include_in_sn
 
 void Blackboard::snapshot(SnapshotBuilder& rec) const
 {
-    std::lock_guard<util::spinlock> g(lock);
-
     int tmptoc = toctoc;
 
     while (tmptoc) {
