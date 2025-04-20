@@ -20,7 +20,7 @@ namespace
 Attribute cpu_attr;
 Attribute node_attr;
 
-void snapshot_cb(Caliper*, Channel*, SnapshotView, SnapshotBuilder& rec)
+void snapshot_cb(Caliper*, SnapshotView, SnapshotBuilder& rec)
 {
 #ifdef SYS_getcpu
     unsigned cpu = 0, node = 0;

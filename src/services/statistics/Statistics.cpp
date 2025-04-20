@@ -94,21 +94,20 @@ public:
     {
         Statistics* instance = new Statistics;
 
-        chn->events().pre_begin_evt.connect([instance](Caliper* c, Channel* chn, const Attribute&, const Variant&) {
+        chn->events().pre_begin_evt.connect([instance](Caliper*, ChannelBody*, const Attribute&, const Variant&) {
             ++instance->num_begin;
         });
-        chn->events().pre_end_evt.connect([instance](Caliper* c, Channel* chn, const Attribute&, const Variant&) {
+        chn->events().pre_end_evt.connect([instance](Caliper*, ChannelBody*, const Attribute&, const Variant&) {
             ++instance->num_end;
         });
-        chn->events().pre_set_evt.connect([instance](Caliper* c, Channel* chn, const Attribute&, const Variant&) {
+        chn->events().pre_set_evt.connect([instance](Caliper*, ChannelBody*, const Attribute&, const Variant&) {
             ++instance->num_set;
         });
-        chn->events().snapshot.connect([instance](Caliper*, Channel*, SnapshotView, SnapshotBuilder& rec) {
+        chn->events().snapshot.connect([instance](Caliper*, SnapshotView, SnapshotBuilder& rec) {
             ++instance->num_snapshots;
         });
-        chn->events().process_snapshot.connect([instance](Caliper*, Channel*, SnapshotView, SnapshotView rec) {
+        chn->events().process_snapshot.connect([instance](Caliper*, SnapshotView, SnapshotView rec) {
             std::lock_guard<std::mutex> g(instance->lock);
-
             instance->max_snapshot_len = std::max<unsigned int>(rec.size(), instance->max_snapshot_len);
         });
 

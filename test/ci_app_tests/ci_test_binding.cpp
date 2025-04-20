@@ -34,7 +34,7 @@ public:
         c->make_tree_entry(m_prop_attr, Variant(4242), c->node(attr.id()));
     }
 
-    void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper* c, const Attribute& attr, const Variant& value)
     {
         if (attr == m_my_attr)
             return;
@@ -50,7 +50,7 @@ public:
             std::cout << "begin " << s << std::endl;
     }
 
-    void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void on_end(Caliper* c, const Attribute& attr, const Variant& value)
     {
         if (attr == m_my_attr)
             return;

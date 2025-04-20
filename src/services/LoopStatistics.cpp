@@ -41,7 +41,7 @@ class LoopStatisticsService
     Attribute m_iter_duration_attr;
     Attribute m_iter_count_attr;
 
-    void begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& data)
+    void begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& data)
     {
         if (attr == loop_attr) {
             m_loop_info.emplace_back(LoopInfo { clock::now(), 0 });
@@ -51,20 +51,20 @@ class LoopStatisticsService
         }
     }
 
-    void end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& data)
+    void end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& data)
     {
         if (m_loop_info.empty())
             return;
         if (attr == loop_attr) {
             Entry e { m_iter_count_attr, Variant(m_loop_info.back().num_iterations) };
-            c->push_snapshot(channel, SnapshotView(e));
+            c->push_snapshot(chB, SnapshotView(e));
             m_loop_info.pop_back();
         } else if (attr.get(class_iteration_attr).to_bool()) {
             uint64_t t =
                 std::chrono::duration_cast<std::chrono::nanoseconds>(clock::now() - m_loop_info.back().iter_start_time)
                     .count();
             Entry e { m_iter_duration_attr, Variant(t) };
-            c->push_snapshot(channel, SnapshotView(e));
+            c->push_snapshot(chB, SnapshotView(e));
         }
     }
 
@@ -93,13 +93,13 @@ public:
         LoopStatisticsService* instance = new LoopStatisticsService(c, channel);
 
         channel->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data) {
-                instance->begin_cb(c, channel, attr, data);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& data) {
+                instance->begin_cb(c, chB, attr, data);
             }
         );
         channel->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& data) {
-                instance->end_cb(c, channel, attr, data);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& data) {
+                instance->end_cb(c, chB, attr, data);
             }
         );
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) { delete instance; });

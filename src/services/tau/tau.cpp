@@ -58,7 +58,7 @@ public:
     const char* service_tag() const { return "tau"; };
 
     // handle a begin event by starting a TAU timer
-    void on_begin(Caliper* c, Channel*, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper* c, const Attribute& attr, const Variant& value)
     {
         if (attr.type() == CALI_TYPE_STRING) {
             Tau_start((const char*) value.data());
@@ -68,7 +68,7 @@ public:
     }
 
     // handle an end event by stopping a TAU timer
-    void on_end(Caliper* c, Channel*, const Attribute& attr, const Variant& value)
+    void on_end(Caliper* c, const Attribute& attr, const Variant& value)
     {
         if (attr.type() == CALI_TYPE_STRING) {
             Tau_stop((const char*) value.data());

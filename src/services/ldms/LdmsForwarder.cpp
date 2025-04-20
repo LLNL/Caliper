@@ -231,7 +231,7 @@ class LdmsForwarder
 {
     RegionProfile profile;
 
-    void snapshot(Caliper* c, Channel*)
+    void snapshot(Caliper* c)
     {
         Entry e    = c->get(c->get_attribute("mpi.rank"));
         int   rank = e.empty() ? -1 : e.value().to_int();
@@ -258,8 +258,8 @@ public:
         channel->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) {
             instance->post_init(c, channel);
         });
-        channel->events().snapshot.connect([instance](Caliper* c, Channel* channel, SnapshotView, SnapshotBuilder&) {
-            instance->snapshot(c, channel);
+        channel->events().snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotBuilder&) {
+            instance->snapshot(c);
         });
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* chn) { delete instance; });
 

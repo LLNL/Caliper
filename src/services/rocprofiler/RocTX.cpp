@@ -29,7 +29,7 @@ class RocTXBinding : public AnnotationBinding
 
 public:
 
-    void on_begin(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper*, const Attribute& attr, const Variant& value)
     {
         const char* msg = nullptr;
         std::string str; // string obj must not be deleted until end of function
@@ -53,7 +53,7 @@ public:
         }
     }
 
-    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant&)
+    void on_end(Caliper*, const Attribute& attr, const Variant&)
     {
         if (attr.is_nested()) {
             if (roctxRangePop() < 0)

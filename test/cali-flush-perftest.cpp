@@ -165,10 +165,10 @@ int main(int argc, char* argv[])
 
     for (auto& chn : channels)
         if (cfg.write)
-            c.flush_and_write(&chn, cali::SnapshotView());
+            c.flush_and_write(chn.body(), cali::SnapshotView());
         else
             c.flush(
-                &chn,
+                chn.body(),
                 cali::SnapshotView(),
                 [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) {}
             );

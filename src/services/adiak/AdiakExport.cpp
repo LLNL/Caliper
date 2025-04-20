@@ -19,14 +19,12 @@ using namespace cali;
 namespace
 {
 
-std::map<cali_id_t, std::vector<Variant>> get_caliper_globals(Caliper* c, Channel* chn)
+std::map<cali_id_t, std::vector<Variant>> get_caliper_globals(Caliper* c, ChannelBody* chB)
 {
     std::map<cali_id_t, std::vector<Variant>> ret;
-    auto                                      globals = c->get_globals(*chn);
 
     // expand globals
-
-    for (const Entry& e : globals) {
+    for (const Entry& e : c->get_globals(chB)) {
         if (e.is_reference()) {
             for (const Node* node = e.node(); node; node = node->parent())
                 ret[node->attribute()].push_back(node->data());
@@ -38,9 +36,9 @@ std::map<cali_id_t, std::vector<Variant>> get_caliper_globals(Caliper* c, Channe
     return ret;
 }
 
-void export_globals_to_adiak(Caliper* c, Channel* chn)
+void export_globals_to_adiak(Caliper* c, ChannelBody* chB)
 {
-    auto globals_map = get_caliper_globals(c, chn);
+    auto globals_map = get_caliper_globals(c, chB);
 
     for (auto p : globals_map) {
         if (p.second.empty())
@@ -91,7 +89,7 @@ void export_globals_to_adiak(Caliper* c, Channel* chn)
 
 void register_adiak_export(Caliper* c, Channel* chn)
 {
-    chn->events().pre_flush_evt.connect([](Caliper* c, Channel* chn, SnapshotView) { export_globals_to_adiak(c, chn); }
+    chn->events().pre_flush_evt.connect([](Caliper* c, ChannelBody* chB, SnapshotView) { export_globals_to_adiak(c, chB); }
     );
 
     Log(1).stream() << chn->name() << ": Registered adiak_export service" << std::endl;

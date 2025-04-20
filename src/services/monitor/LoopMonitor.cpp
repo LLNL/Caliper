@@ -57,12 +57,12 @@ class LoopMonitor
         return false;
     }
 
-    void snapshot(Caliper* c, Channel* channel)
+    void snapshot(Caliper* c, ChannelBody* chB)
     {
         Entry  data[] = { { num_iterations_attr, Variant(num_iterations) },
                           { start_iteration_attr, Variant(start_iteration) } };
         size_t n      = start_iteration >= 0 ? 2 : 1;
-        c->push_snapshot(channel, SnapshotView(n, data));
+        c->push_snapshot(chB, SnapshotView(n, data));
 
         start_iteration = -1;
         num_iterations  = 0;
@@ -71,12 +71,12 @@ class LoopMonitor
         last_snapshot_time = std::chrono::high_resolution_clock::now();
     }
 
-    void begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value)
+    void begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         if (attr == loop_attr) {
             if (target_level < 0 && is_target_loop(value)) {
                 target_level = loop_level + 1;
-                snapshot(c, channel);
+                snapshot(c, chB);
             }
             ++loop_level;
         } else if (loop_level == target_level && attr.get(cali::class_iteration_attr).to_bool()) {
@@ -86,11 +86,11 @@ class LoopMonitor
         }
     }
 
-    void end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value)
+    void end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         if (attr == loop_attr) {
             if (loop_level == target_level) {
-                snapshot(c, channel);
+                snapshot(c, chB);
                 target_level = -1;
             }
             --loop_level;
@@ -106,7 +106,7 @@ class LoopMonitor
             }
 
             if (do_snapshot)
-                snapshot(c, channel);
+                snapshot(c, chB);
         }
     }
 
@@ -151,13 +151,13 @@ public:
         LoopMonitor* instance = new LoopMonitor(c, channel);
 
         channel->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
-                instance->begin_cb(c, channel, attr, val);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& val) {
+                instance->begin_cb(c, chB, attr, val);
             }
         );
         channel->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
-                instance->end_cb(c, channel, attr, val);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& val) {
+                instance->end_cb(c, chB, attr, val);
             }
         );
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {

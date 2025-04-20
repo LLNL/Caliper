@@ -19,9 +19,9 @@ namespace
 
 void async_event_trigger_register(Caliper*, Channel* channel)
 {
-    channel->events().async_event.connect([](Caliper* c, Channel* chn, SnapshotView info){
+    channel->events().async_event.connect([](Caliper* c, ChannelBody* chB, SnapshotView info){
             if (!info.empty())
-                c->push_snapshot(chn, info);
+                c->push_snapshot(chB, info);
         });
 
     Log(1).stream() << channel->name() << ": registered async_event service\n";

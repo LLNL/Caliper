@@ -628,7 +628,7 @@ class LibpfmService
 
     struct DataSrcAttrs data_src_attrs;
 
-    void postprocess_snapshot_cb(Caliper* c, Channel* chn, std::vector<Entry>& rec)
+    void postprocess_snapshot_cb(Caliper* c, std::vector<Entry>& rec)
     {
         // Decode data_src encoding
         if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
@@ -738,11 +738,11 @@ public:
         });
 
         if (sI->enable_sampling)
-            chn->events().postprocess_snapshot.connect([](Caliper* c, Channel* chn, std::vector<Entry>& rec) {
-                sI->postprocess_snapshot_cb(c, chn, rec);
+            chn->events().postprocess_snapshot.connect([](Caliper* c, std::vector<Entry>& rec) {
+                sI->postprocess_snapshot_cb(c, rec);
             });
         if (sI->record_counters)
-            chn->events().snapshot.connect([](Caliper*, Channel*, SnapshotView, SnapshotBuilder& rec) {
+            chn->events().snapshot.connect([](Caliper*, SnapshotView, SnapshotBuilder& rec) {
                 sI->snapshot_cb(rec);
             });
 

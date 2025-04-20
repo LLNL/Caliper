@@ -150,7 +150,7 @@ class AllocService
 
     void track_mem_snapshot(
         Caliper*       c,
-        Channel*       chn,
+        ChannelBody*   chB,
         cali::Node*    label_node,
         const Variant& v_size,
         const Variant& v_uid,
@@ -162,12 +162,12 @@ class AllocService
                          { alloc_addr_attr, v_addr },
                          { label_node } };
 
-        c->push_snapshot(chn, SnapshotView(4, data));
+        c->push_snapshot(chB, SnapshotView(4, data));
     }
 
     void track_mem_cb(
         Caliper*         c,
-        Channel*         chn,
+        ChannelBody*     chB,
         const void*      ptr,
         const char*      label,
         size_t           elem_size,
@@ -208,7 +208,7 @@ class AllocService
         if (g_track_allocations)
             track_mem_snapshot(
                 c,
-                chn,
+                chB,
                 info.alloc_label_node,
                 Variant(static_cast<int>(total_size)),
                 info.v_uid,
@@ -233,7 +233,7 @@ class AllocService
         }
     }
 
-    void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr)
+    void untrack_mem_cb(Caliper* c, ChannelBody* chB, const void* ptr)
     {
         AllocInfo info;
 
@@ -256,7 +256,7 @@ class AllocService
         if (g_track_allocations)
             track_mem_snapshot(
                 c,
-                chn,
+                chB,
                 info.free_label_node,
                 Variant(-static_cast<int>(info.total_size)),
                 info.v_uid,
@@ -307,7 +307,7 @@ class AllocService
         }
     }
 
-    void record_highwatermark(Caliper* c, Channel* chn, SnapshotBuilder& rec)
+    void record_highwatermark(Caliper* c, SnapshotBuilder& rec)
     {
         uint64_t hwm = 0;
 
@@ -321,7 +321,7 @@ class AllocService
         rec.append(region_hwm_attr, Variant(hwm));
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& snapshot)
     {
         // Record currently active amount of allocated memory
         if (g_record_active_mem)
@@ -331,7 +331,7 @@ class AllocService
             resolve_addresses(c, info, snapshot);
 
         if (g_record_highwatermark)
-            record_highwatermark(c, chn, snapshot);
+            record_highwatermark(c, snapshot);
     }
 
     void make_address_attributes(Caliper* c, const Attribute& attr)
@@ -377,7 +377,7 @@ class AllocService
         for (auto attr : address_attrs)
             make_address_attributes(c, attr);
 
-        chn->events().create_attr_evt.connect([this](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([this](Caliper* c, const Attribute& attr) {
             this->create_attr_cb(c, attr);
         });
     }
@@ -470,7 +470,7 @@ public:
 
         chn->events().track_mem_evt.connect([instance](
                                                 Caliper*         c,
-                                                Channel*         chn,
+                                                ChannelBody*     chB,
                                                 const void*      ptr,
                                                 const char*      label,
                                                 size_t           elem_size,
@@ -480,16 +480,16 @@ public:
                                                 const Attribute* attrs,
                                                 const Variant*   vals
                                             ) {
-            instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims, n, attrs, vals);
+            instance->track_mem_cb(c, chB, ptr, label, elem_size, ndims, dims, n, attrs, vals);
         });
-        chn->events().untrack_mem_evt.connect([instance](Caliper* c, Channel* chn, const void* ptr) {
-            instance->untrack_mem_cb(c, chn, ptr);
+        chn->events().untrack_mem_evt.connect([instance](Caliper* c, ChannelBody* chB, const void* ptr) {
+            instance->untrack_mem_cb(c, chB, ptr);
         });
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
-                    instance->snapshot_cb(c, chn, info, snapshot);
+                [instance](Caliper* c, SnapshotView info, SnapshotBuilder& snapshot) {
+                    instance->snapshot_cb(c, info, snapshot);
                 }
             );
 

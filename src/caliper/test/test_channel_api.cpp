@@ -22,18 +22,18 @@ TEST(ChannelAPITest, MultiChannel)
 
     c.begin(attr_global, Variant(42));
 
-    c.begin(&chn_a, attr_local, Variant(1144));
-    c.begin(&chn_b, attr_local, Variant(4411));
+    c.begin(chn_a.body(), attr_local, Variant(1144));
+    c.begin(chn_b.body(), attr_local, Variant(4411));
 
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
-    EXPECT_EQ(c.get(&chn_a, attr_local).value().to_int(), 1144);
-    EXPECT_EQ(c.get(&chn_b, attr_local).value().to_int(), 4411);
+    EXPECT_EQ(c.get(chn_a.body(), attr_local).value().to_int(), 1144);
+    EXPECT_EQ(c.get(chn_b.body(), attr_local).value().to_int(), 4411);
 
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
 
-    c.end(&chn_b, attr_local);
-    c.end(&chn_a, attr_local);
+    c.end(chn_b.body(), attr_local);
+    c.end(chn_a.body(), attr_local);
 
     c.delete_channel(chn_a);
 

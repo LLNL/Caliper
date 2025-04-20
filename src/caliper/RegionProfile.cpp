@@ -42,7 +42,7 @@ RegionProfile::region_profile_t RegionProfile::exclusive_region_times(const std:
     FlatExclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
     if (chn)
-        c.flush(&chn, SnapshotView(), rp);
+        c.flush(chn.body(), SnapshotView(), rp);
     else
         Log(1).stream() << "RegionProfile::exclusive_region_times(): channel is not enabled" << std::endl;
 
@@ -64,7 +64,7 @@ RegionProfile::region_profile_t RegionProfile::inclusive_region_times(const std:
     FlatInclusiveRegionProfile rp(c, "sum#time.duration.ns", region_type.c_str());
 
     if (chn)
-        c.flush(&chn, SnapshotView(), rp);
+        c.flush(chn.body(), SnapshotView(), rp);
     else
         Log(1).stream() << "RegionProfile::inclusive_region_times(): channel is not enabled" << std::endl;
 

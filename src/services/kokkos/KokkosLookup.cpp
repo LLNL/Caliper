@@ -260,14 +260,14 @@ class KokkosLookup
         Caliper c;
         Variant v_space(handle.name);
 
-        c.memory_region_begin(&m_channel, ptr, name, 1, 1, &size, 1, &m_space_attr, &v_space);
+        c.memory_region_begin(m_channel.body(), ptr, name, 1, 1, &size, 1, &m_space_attr, &v_space);
         ++m_num_spaces;
     }
 
     void kokkos_deallocate(const void* const ptr)
     {
         Caliper c;
-        c.memory_region_end(&m_channel, ptr);
+        c.memory_region_end(m_channel.body(), ptr);
     }
 
     void kokkos_deepcopy(const void* dst, const void* src, uint64_t size)
@@ -278,7 +278,7 @@ class KokkosLookup
                          { m_src_attr, Variant(CALI_TYPE_ADDR, &src, sizeof(void*)) },
                          { m_size_attr, Variant(cali_make_variant_from_uint(size)) } };
 
-        c.push_snapshot(&m_channel, SnapshotView(3, data));
+        c.push_snapshot(m_channel.body(), SnapshotView(3, data));
 
         ++m_num_copies;
     }

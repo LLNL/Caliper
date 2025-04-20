@@ -64,11 +64,13 @@ class EventTrigger
 
     std::vector<Variant> branch_filter_stack;
 
+    std::string channel_name;
+
     //
     // --- Helpers / misc
     //
 
-    void parse_region_level(Channel* channel, const std::string& str)
+    void parse_region_level(const std::string& str)
     {
         if (str == "phase") {
             region_level = phase_attr.level();
@@ -77,44 +79,44 @@ class EventTrigger
             int  level = StringConverter(str).to_int(&ok);
 
             if (!ok || level < 0 || level > 7) {
-                Log(0).stream() << channel->name() << ": event: Invalid region level \"" << str << "\"\n";
+                Log(0).stream() << channel_name << ": event: Invalid region level \"" << str << "\"\n";
                 region_level = 0;
             } else {
                 region_level = level;
             }
         }
 
-        Log(2).stream() << channel->name() << ": event: Using region level " << region_level << "\n";
+        Log(2).stream() << channel_name << ": event: Using region level " << region_level << "\n";
     }
 
-    void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+    void mark_attribute(Caliper* c, const Attribute& attr)
     {
-        cali_id_t evt_attr_ids[3] = { CALI_INV_ID };
-
-        struct evt_attr_setup_t {
-            std::string prefix;
-            int         index;
-        } evt_attr_setup[] = { { "event.begin#", 0 }, { "event.set#", 1 }, { "event.end#", 2 } };
-
         cali_attr_type type = attr.type();
         int            prop = attr.properties();
 
-        for (evt_attr_setup_t setup : evt_attr_setup) {
-            std::string s = setup.prefix;
-            s.append(attr.name());
+        int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
+        int flags = (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS;
 
-            int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
+        Variant v_id(cali_make_variant_from_uint(attr.id()));
 
-            evt_attr_ids[setup.index] =
-                c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
-        }
+        Attribute begin_attr =
+            c->create_attribute(std::string("event.begin#")+attr.name(), type, flags,
+                1, &trigger_begin_attr, &v_id);
+        Attribute set_attr =
+            c->create_attribute(std::string("event.set#")+attr.name(), type, flags,
+                1, &trigger_set_attr, &v_id);
+        Attribute end_attr =
+            c->create_attribute(std::string("event.end#")+attr.name(), type, flags,
+                1, &trigger_end_attr, &v_id);
+
+        cali_id_t evt_attr_ids[3] = { begin_attr.id(), set_attr.id(), end_attr.id() };
 
         c->make_tree_entry(marker_attr, Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)), attr.node());
 
-        Log(2).stream() << chn->name() << ": event: Marked attribute " << attr.name() << std::endl;
+        Log(2).stream() << channel_name << ": event: Marked attribute " << attr.name() << std::endl;
     }
 
-    void check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+    void check_attribute(Caliper* c, const Attribute& attr)
     {
         if (attr.id() < 12 /* skip fixed metadata attributes */ || attr.skip_events())
             return;
@@ -126,7 +128,7 @@ class EventTrigger
         if (attr.level() < region_level)
             return;
 
-        mark_attribute(c, chn, attr);
+        mark_attribute(c, attr);
     }
 
     const Node* find_marker(const Attribute& attr)
@@ -149,7 +151,7 @@ class EventTrigger
     // --- Callbacks
     //
 
-    void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_begin_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -166,27 +168,34 @@ class EventTrigger
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
-
             const cali_id_t* evt_info_attr_ids = static_cast<const cali_id_t*>(marker_node->data().data());
-
             assert(evt_info_attr_ids != nullptr);
 
             Attribute begin_attr = c->get_attribute(evt_info_attr_ids[0]);
 
             // Construct the trigger info entry
-            Attribute attrs[2] = { trigger_begin_attr, begin_attr };
-            Variant   vals[2]  = { Variant(attr.id()), value };
-
-            FixedSizeSnapshotRecord<2> trigger_info;
-
-            c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
-            c->push_snapshot(chn, trigger_info.view());
+            if (attr.store_as_value()) {
+                Entry info(begin_attr, value);
+                c->push_snapshot(chB, SnapshotView(info));
+            } else {
+                //   As an optimization we attach the trigger info entries directly to their
+                // current context node. This drastically reduces the search space in the
+                // metadata tree as otherwise all trigger info nodes anywhere would be in a
+                // very wide branch under a single root node which has to be sequentially
+                // searched. We also now occupy one less slot in the snapshot record.
+                //   To do this we use the special-purpose push_snapshot_replace() function
+                // to replace the original blackboard entry in the snapshot record with the
+                // augmented entry in trigger_info.
+                Entry bb_entry = c->get_blackboard_entry(attr);
+                Entry info(c->make_tree_entry(begin_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
+                c->push_snapshot_replace(chB, SnapshotView(info), bb_entry);
+            }
         } else {
-            c->push_snapshot(chn, SnapshotView());
+            c->push_snapshot(chB, SnapshotView());
         }
     }
 
-    void pre_set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_set_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -203,27 +212,26 @@ class EventTrigger
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
-
             const cali_id_t* evt_info_attr_ids = static_cast<const cali_id_t*>(marker_node->data().data());
-
             assert(evt_info_attr_ids != nullptr);
 
             Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
 
             // Construct the trigger info entry
-            Attribute attrs[2] = { trigger_set_attr, set_attr };
-            Variant   vals[2]  = { Variant(attr.id()), value };
-
-            FixedSizeSnapshotRecord<2> trigger_info;
-
-            c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
-            c->push_snapshot(chn, trigger_info.view());
+            if (attr.store_as_value()) {
+                Entry info(set_attr, value);
+                c->push_snapshot(chB, SnapshotView(info));
+            } else {
+                Entry bb_entry = c->get_blackboard_entry(attr);
+                Entry info(c->make_tree_entry(set_attr, value, bb_entry.empty() ? &event_root_node : bb_entry.node()));
+                c->push_snapshot_replace(chB, SnapshotView(info), bb_entry);
+            }
         } else {
-            c->push_snapshot(chn, SnapshotView());
+            c->push_snapshot(chB, SnapshotView());
         }
     }
 
-    void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
+    void pre_end_cb(Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value)
     {
         const Node* marker_node = find_marker(attr);
 
@@ -240,24 +248,23 @@ class EventTrigger
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
-
             const cali_id_t* evt_info_attr_ids = static_cast<const cali_id_t*>(marker_node->data().data());
-
             assert(evt_info_attr_ids != nullptr);
 
             Attribute end_attr = c->get_attribute(evt_info_attr_ids[2]);
 
-            // Construct the trigger info entry with previous level
-
-            Attribute attrs[3] = { trigger_end_attr, end_attr, region_count_attr };
-            Variant   vals[3]  = { Variant(attr.id()), value, cali_make_variant_from_uint(1) };
-
-            FixedSizeSnapshotRecord<3> trigger_info;
-
-            c->make_record(3, attrs, vals, trigger_info.builder(), &event_root_node);
-            c->push_snapshot(chn, trigger_info.view());
+            // Construct the trigger info entry
+            if (attr.store_as_value()) {
+                Entry info[2] = { Entry(end_attr, value), region_count_entry };
+                c->push_snapshot(chB, SnapshotView(2, info));
+            } else {
+                Entry bb_entry = c->get_blackboard_entry(attr);
+                Node* node = c->make_tree_entry(end_attr, value, bb_entry.node());
+                Entry info[2] = { Entry(node), region_count_entry };
+                c->push_snapshot_replace(chB, SnapshotView(2, info), bb_entry);
+            }
         } else {
-            c->push_snapshot(chn, SnapshotView(region_count_entry));
+            c->push_snapshot(chB, SnapshotView(region_count_entry));
         }
     }
 
@@ -265,16 +272,17 @@ class EventTrigger
     // --- Constructor
     //
 
-    void check_existing_attributes(Caliper* c, Channel* chn)
+    void check_existing_attributes(Caliper* c)
     {
         auto attributes = c->get_all_attributes();
 
         for (const Attribute& attr : attributes)
             if (!is_subscription_attribute(attr))
-                check_attribute(c, chn, attr);
+                check_attribute(c, attr);
     }
 
-    EventTrigger(Caliper* c, Channel* channel) : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
+    EventTrigger(Caliper* c, Channel* channel) 
+        : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant()), channel_name { channel->name() }
     {
         region_count_attr = c->create_attribute(
             "region.count",
@@ -287,7 +295,7 @@ class EventTrigger
 
         trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
         enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
-        parse_region_level(channel, cfg.get("region_level").to_string());
+        parse_region_level(cfg.get("region_level").to_string());
 
         {
             std::string i_filter = cfg.get("include_regions").to_string();
@@ -328,7 +336,7 @@ class EventTrigger
             CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN
         );
 
-        check_existing_attributes(c, channel);
+        check_existing_attributes(c);
     }
 
 public:
@@ -339,26 +347,26 @@ public:
     {
         EventTrigger* instance = new EventTrigger(c, chn);
 
-        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([instance](Caliper* c, const Attribute& attr) {
             if (!is_subscription_attribute(attr))
-                instance->check_attribute(c, chn, attr);
+                instance->check_attribute(c, attr);
         });
-        chn->events().subscribe_attribute.connect([instance](Caliper* c, Channel* chn, const Attribute& attr) {
-            instance->check_attribute(c, chn, attr);
+        chn->events().subscribe_attribute.connect([instance](Caliper* c, const Attribute& attr) {
+            instance->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_begin_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_begin_cb(c, chB, attr, value);
             }
         );
         chn->events().pre_set_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_set_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_set_cb(c, chB, attr, value);
             }
         );
         chn->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                instance->pre_end_cb(c, chn, attr, value);
+            [instance](Caliper* c, ChannelBody* chB, const Attribute& attr, const Variant& value) {
+                instance->pre_end_cb(c, chB, attr, value);
             }
         );
         chn->events().finish_evt.connect([instance](Caliper*, Channel*) { delete instance; });

@@ -102,7 +102,7 @@ public:
 
         MemstatService* instance = new MemstatService(c, fd);
 
-        channel->events().snapshot.connect([instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec) {
+        channel->events().snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotBuilder& rec) {
             instance->snapshot_cb(c, rec);
         });
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {

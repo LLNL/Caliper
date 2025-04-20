@@ -31,6 +31,8 @@ inline double get_timestamp()
 
 class TimeseriesService
 {
+    Channel   m_channel;
+
     Attribute m_timestamp_attr;
     Attribute m_snapshot_attr;
     Attribute m_duration_attr;
@@ -41,7 +43,7 @@ class TimeseriesService
 
     static const char* s_profile_spec;
 
-    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& srec)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& srec)
     {
         double  ts_now = get_timestamp();
         Variant v_prev = c->exchange(m_timestamp_attr, Variant(ts_now));
@@ -52,16 +54,16 @@ class TimeseriesService
         Channel prof_chn = m_timeprofile->channel();
 
         c->flush(
-            &prof_chn,
+            prof_chn.body(),
             info,
-            [c, channel, info, ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec) {
+            [this, c, info, ts_entries](CaliperMetadataAccessInterface&, const std::vector<Entry>& frec) {
                 std::vector<Entry> rec;
                 rec.reserve(frec.size() + info.size() + ts_entries.size());
                 rec.insert(rec.end(), frec.begin(), frec.end());
                 rec.insert(rec.end(), info.begin(), info.end());
                 rec.insert(rec.end(), ts_entries.begin(), ts_entries.end());
 
-                channel->events().process_snapshot(c, channel, SnapshotView(), SnapshotView(rec.size(), rec.data()));
+                m_channel.events().process_snapshot(c, SnapshotView(), SnapshotView(rec.size(), rec.data()));
             }
         );
 
@@ -85,7 +87,7 @@ class TimeseriesService
     }
 
     TimeseriesService(Caliper* c, Channel* channel, ConfigManager::ChannelPtr prof)
-        : m_timeprofile { prof }, m_snapshots { 0 }
+        : m_channel { *channel }, m_timeprofile { prof }, m_snapshots { 0 }
     {
         m_timestamp_attr =
             c->create_attribute("timeseries.starttime", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
@@ -129,8 +131,8 @@ public:
         TimeseriesService* instance = new TimeseriesService(c, channel, profile);
 
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& rec) {
-                instance->snapshot_cb(c, channel, info, rec);
+            [instance](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+                instance->snapshot_cb(c, info, rec);
             }
         );
         channel->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) {

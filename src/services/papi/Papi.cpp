@@ -473,7 +473,7 @@ public:
         channel->events().release_thread_evt.connect([instance](Caliper* c, Channel*) {
             instance->finish_thread_eventsets(c);
         });
-        channel->events().snapshot.connect([instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec) {
+        channel->events().snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotBuilder& rec) {
             instance->snapshot(c, rec);
         });
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {

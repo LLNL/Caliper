@@ -118,7 +118,7 @@ class CuptiService
         Caliper                    c;
 
         c.make_record(4, attr, vals, trigger_info.builder());
-        c.push_snapshot(&channel, trigger_info.view());
+        c.push_snapshot(channel.body(), trigger_info.view());
     }
 
     void handle_context_event(CUcontext context, const Attribute& name_attr, const Variant& v_name)
@@ -140,7 +140,7 @@ class CuptiService
         Caliper                    c;
 
         c.make_record(3, attr, vals, trigger_info.builder());
-        c.push_snapshot(&channel, trigger_info.view());
+        c.push_snapshot(channel.body(), trigger_info.view());
     }
 
     void handle_resource(CUpti_CallbackIdResource cbid, CUpti_ResourceData* cbInfo)
@@ -312,7 +312,7 @@ class CuptiService
     void finish_cb(Caliper* c, Channel* chn)
     {
         if (Log::verbosity() >= 2) {
-            Log(2).stream() << chn->name() << ": Cupti: processed " << num_api_cb << " API callbacks, "
+        Log(2).stream() << chn->name() << ": Cupti: processed " << num_api_cb << " API callbacks, "
                             << num_resource_cb << " resource callbacks, " << num_sync_cb << " sync callbacks, "
                             << num_nvtx_cb << " nvtx callbacks (" << num_cb << " total)." << std::endl;
 
@@ -321,11 +321,11 @@ class CuptiService
         }
     }
 
-    void subscribe_attributes(Caliper* c, Channel* channel)
+    void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, channel, cupti_info.runtime_attr);
-        channel->events().subscribe_attribute(c, channel, cupti_info.driver_attr);
-        channel->events().subscribe_attribute(c, channel, cupti_info.nvtx_range_attr);
+        channel.events().subscribe_attribute(c, cupti_info.runtime_attr);
+        channel.events().subscribe_attribute(c, cupti_info.driver_attr);
+        channel.events().subscribe_attribute(c, cupti_info.nvtx_range_attr);
     }
 
     void create_attributes(Caliper* c)
@@ -425,12 +425,12 @@ public:
             return;
 
         if (instance->event_sampling.is_enabled())
-            chn->events().snapshot.connect([instance](Caliper* c, Channel*, SnapshotView, SnapshotBuilder& rec) {
+            chn->events().snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotBuilder& rec) {
                 instance->snapshot_cb(c, rec);
             });
 
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* channel) {
-            instance->subscribe_attributes(c, channel);
+            instance->subscribe_attributes(c);
         });
         chn->events().pre_finish_evt.connect([instance](Caliper*, Channel*) { instance->pre_finish_cb(); });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {

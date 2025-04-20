@@ -20,10 +20,10 @@ namespace cali
 
 class Aggregator;
 class Caliper;
-class Channel;
 class CaliperMetadataDB;
 class OutputStream;
 
+struct ChannelBody;
 struct QuerySpec;
 
 /**
@@ -54,7 +54,7 @@ void aggregate_over_mpi(CaliperMetadataDB& db, Aggregator& a, MPI_Comm comm);
 void collective_flush(
     OutputStream&    stream,
     Caliper&         c,
-    Channel&         channel,
+    ChannelBody*     chB,
     SnapshotView     flush_info,
     const QuerySpec& local_query,
     const QuerySpec& cross_query,

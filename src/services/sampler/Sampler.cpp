@@ -97,7 +97,7 @@ void on_prof(int sig, siginfo_t* info, void* context)
     }
 #endif
 
-    c.push_snapshot(&channel, SnapshotView(count, data));
+    c.push_snapshot(channel.body(), SnapshotView(count, data));
     ++n_processed_samples;
 }
 
@@ -248,7 +248,7 @@ void sampler_register(Caliper* c, Channel* chn)
     frequency     = std::min(std::max(frequency, 1), 10000);
     nsec_interval = 1000000000 / frequency;
 
-    c->set(chn, c->create_attribute("sample.frequency", CALI_TYPE_INT, CALI_ATTR_GLOBAL), Variant(frequency));
+    c->set(chn->body(), c->create_attribute("sample.frequency", CALI_TYPE_INT, CALI_ATTR_GLOBAL), Variant(frequency));
 
     chn->events().create_thread_evt.connect(create_thread_cb);
     chn->events().release_thread_evt.connect(release_thread_cb);

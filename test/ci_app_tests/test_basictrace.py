@@ -181,7 +181,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
     def test_esc(self):
         target_cmd = [ './ci_test_basic', 'newline' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j', '-s', 'cali.event.set' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -191,10 +191,16 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
-        self.assertEqual(len(obj), 2)
+        targets = {}
+        for rec in obj:
+            for key in rec.keys():
+                if key.startswith('event.set#'):
+                    targets[key] = rec[key]
 
-        self.assertEqual(obj[0]['event.set# =\\weird ""attribute"=  '], '  \\\\ weird," name",' )
-        self.assertEqual(obj[1]['event.set#newline'], 'A newline:\n!')
+        self.assertGreaterEqual(len(targets), 2)
+
+        self.assertEqual(targets['event.set# =\\weird ""attribute"=  '], '  \\\\ weird," name",' )
+        self.assertEqual(targets['event.set#newline'], 'A newline:\n!')
 
     def test_macros(self):
         # Use ConfigManager API here

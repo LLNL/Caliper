@@ -60,7 +60,7 @@ void* cali_malloc_wrapper(size_t size)
         Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
         if (c && p->channel.is_active())
-            c.memory_region_begin(&p->channel, ret, "malloc", 1, 1, &size);
+            c.memory_region_begin(p->channel.body(), ret, "malloc", 1, 1, &size);
     }
 
     errno = saved_errno;
@@ -81,7 +81,7 @@ void* cali_calloc_wrapper(size_t num, size_t size)
         Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
         if (c && p->channel.is_active())
-            c.memory_region_begin(&p->channel, ret, "calloc", size, 1, &num);
+            c.memory_region_begin(p->channel.body(), ret, "calloc", size, 1, &num);
     }
 
     errno = saved_errno;
@@ -98,7 +98,7 @@ void* cali_realloc_wrapper(void* ptr, size_t size)
         Caliper c = Caliper::sigsafe_instance();
 
         if (c && p->channel.is_active())
-            c.memory_region_end(&p->channel, ptr);
+            c.memory_region_end(p->channel.body(), ptr);
     }
 
     void* ret = (*orig_realloc)(ptr, size);
@@ -109,7 +109,7 @@ void* cali_realloc_wrapper(void* ptr, size_t size)
         Caliper c = Caliper::sigsafe_instance();
 
         if (c && p->channel.is_active())
-            c.memory_region_begin(&p->channel, ret, "realloc", 1, 1, &size);
+            c.memory_region_begin(p->channel.body(), ret, "realloc", 1, 1, &size);
     }
 
     errno = saved_errno;
@@ -125,7 +125,7 @@ void cali_free_wrapper(void* ptr)
         Caliper c = Caliper::sigsafe_instance();
 
         if (c && p->channel.is_active())
-            c.memory_region_end(&p->channel, ptr);
+            c.memory_region_end(p->channel.body(), ptr);
     }
 
     (*orig_free)(ptr);

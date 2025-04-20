@@ -65,7 +65,7 @@ int cali_pthread_create_wrapper(pthread_t* thread, const pthread_attr_t* attr, v
 
 void post_init_cb(Caliper* c, Channel* channel)
 {
-    channel->events().subscribe_attribute(c, channel, id_attr);
+    channel->events().subscribe_attribute(c, id_attr);
 
     static bool is_wrapped = false;
 

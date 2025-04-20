@@ -68,9 +68,8 @@ class LoopReportController : public cali::internal::CustomOutputController
         Preprocessor   prp(spec);
         Aggregator     agg(spec);
 
-        Channel chn(channel());
         c.flush(
-            &chn,
+            channel_body(),
             SnapshotView(),
             [&db, &filter, &prp, &agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec) {
                 EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
