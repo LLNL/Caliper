@@ -44,7 +44,7 @@ QuerySpec parse_spec(const char* query)
 }
 
 /// \brief Perform process-local aggregation of channel data into \a output_agg
-void local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMetadataDB& db, Aggregator& output_agg)
+void local_aggregate(const char* query, Caliper& c, ChannelBody* chB, CaliperMetadataDB& db, Aggregator& output_agg)
 {
     QuerySpec spec(parse_spec(query));
 
@@ -53,7 +53,7 @@ void local_aggregate(const char* query, Caliper& c, Channel& channel, CaliperMet
     Aggregator     agg(spec);
 
     c.flush(
-        &channel,
+        chB,
         SnapshotView(),
         [&db, &filter, &prp, &agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec) {
             EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
@@ -175,7 +175,7 @@ public:
 
         Channel chn = channel();
         if (chn)
-            local_aggregate(query.c_str(), c, chn, db, output_agg);
+            local_aggregate(query.c_str(), c, chn.body(), db, output_agg);
     }
 
     QuerySpec timeseries_spec()
@@ -350,8 +350,7 @@ class SpotController : public cali::internal::CustomOutputController
 
         Aggregator summary_cross_agg(CalQLParser(summary_cross_query).spec());
 
-        Channel tsc_channel = tsc->channel();
-        local_aggregate(summary_local_query, c, tsc_channel, m_db, summary_cross_agg);
+        local_aggregate(summary_local_query, c, tsc->channel_body(), m_db, summary_cross_agg);
         comm.cross_aggregate(m_db, summary_cross_agg);
 
         std::vector<LoopInfo> infovec;
@@ -397,9 +396,7 @@ class SpotController : public cali::internal::CustomOutputController
                 " group by path ";
 
             std::string query = m_opts.build_query("local", q_local);
-
-            Channel chn = channel();
-            local_aggregate(query.c_str(), c, chn, m_db, output_agg);
+            local_aggregate(query.c_str(), c, channel_body(), m_db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -485,6 +482,11 @@ public:
 
     void collective_flush(OutputStream& stream, Comm& comm) override
     {
+        if (!is_instantiated()) {
+            Log(0).stream() << name() << ": SpotController: channel not instantiated\n";
+            return;
+        }
+
         Log(1).stream() << name() << ": Flushing Caliper data" << std::endl;
 
         if (stream.type() == OutputStream::None)
@@ -499,7 +501,7 @@ public:
             flush_timeseries(c, writer, comm);
 
         if (comm.rank() == 0) {
-            m_db.import_globals(c, c.get_globals(channel()));
+            m_db.import_globals(c, c.get_globals(channel_body()));
             save_spot_metadata();
             writer.write_globals(m_db, m_db.get_globals());
 

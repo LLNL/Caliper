@@ -70,6 +70,8 @@ class Aggregate
 
     ConfigSet config;
 
+    std::string channel_name;
+
     ThreadDB*      tdb_list = nullptr;
     util::spinlock tdb_lock;
 
@@ -81,7 +83,7 @@ class Aggregate
 
     size_t num_dropped_snapshots;
 
-    ThreadDB* acquire_tdb(Caliper* c, Channel* chn, bool can_alloc)
+    inline ThreadDB* acquire_tdb(Caliper* c, bool can_alloc)
     {
         //   we store a pointer to the thread-local aggregation DB for this channel
         // on the thread's blackboard
@@ -155,13 +157,12 @@ class Aggregate
         info.slot_attr  = c->create_attribute("aggregate.slot", CALI_TYPE_UINT, prop);
     }
 
-    void flush_cb(Caliper* c, Channel* chn, SnapshotFlushFn proc_fn)
+    void flush_cb(Caliper* c, SnapshotFlushFn proc_fn)
     {
         ThreadDB* tdb = nullptr;
 
         {
             std::lock_guard<util::spinlock> g(tdb_lock);
-
             tdb = tdb_list;
         }
 
@@ -173,7 +174,7 @@ class Aggregate
             tdb->stopped.store(false);
         }
 
-        Log(1).stream() << chn->name() << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << channel_name << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
     void clear_cb(Caliper* c, Channel* chn)
@@ -238,9 +239,9 @@ class Aggregate
                             << " entries dropped because aggregation buffers are full!" << std::endl;
     }
 
-    void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView rec)
+    void process_snapshot_cb(Caliper* c, SnapshotView rec)
     {
-        ThreadDB* tdb = acquire_tdb(c, chn, !c->is_signal());
+        ThreadDB* tdb = acquire_tdb(c, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
             tdb->db.process_snapshot(c, rec, info);
@@ -282,7 +283,7 @@ class Aggregate
         init_aggregation_attributes(c);
 
         // Initialize master-thread aggregation DB
-        acquire_tdb(c, chn, true);
+        acquire_tdb(c, true);
     }
 
     void create_attribute_cb(Caliper* c, const Attribute& attr)
@@ -291,11 +292,11 @@ class Aggregate
         check_aggregation_attribute(c, attr);
     }
 
-    void create_thread_cb(Caliper* c, Channel* chn) { acquire_tdb(c, chn, true); }
+    void create_thread_cb(Caliper* c) { acquire_tdb(c, true); }
 
-    void release_thread_cb(Caliper* c, Channel* chn)
+    void release_thread_cb(Caliper* c)
     {
-        ThreadDB* tdb = acquire_tdb(c, chn, false);
+        ThreadDB* tdb = acquire_tdb(c, false);
 
         if (tdb)
             tdb->retired.store(true);
@@ -305,10 +306,10 @@ class Aggregate
     {
         // report attribute keys we haven't found
         for (const std::string& s : key_attribute_names)
-            Log(1).stream() << chn->name() << ": Aggregate: warning: key attribute \"" << s << "\" unused" << std::endl;
+            Log(1).stream() << channel_name << ": Aggregate: warning: key attribute \"" << s << "\" unused" << std::endl;
 
         if (num_dropped_snapshots > 0)
-            Log(1).stream() << chn->name() << ": Aggregate: dropped " << num_dropped_snapshots << " snapshots."
+            Log(1).stream() << channel_name << ": Aggregate: dropped " << num_dropped_snapshots << " snapshots."
                             << std::endl;
     }
 
@@ -348,7 +349,7 @@ class Aggregate
         }
     }
 
-    Aggregate(Caliper* c, Channel* chn) : num_dropped_snapshots(0)
+    Aggregate(Caliper* c, Channel* chn) : channel_name { chn->name() }, num_dropped_snapshots(0)
     {
         config = services::init_config_from_spec(chn->config(), s_spec);
 
@@ -392,21 +393,21 @@ public:
     {
         Aggregate* instance = new Aggregate(c, chn);
 
-        chn->events().create_attr_evt.connect([instance](Caliper* c, Channel*, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([instance](Caliper* c, const Attribute& attr) {
             instance->create_attribute_cb(c, attr);
         });
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_cb(c, chn); });
         chn->events().create_thread_evt.connect([instance](Caliper* c, Channel* chn) {
-            instance->create_thread_cb(c, chn);
+            instance->create_thread_cb(c);
         });
         chn->events().release_thread_evt.connect([instance](Caliper* c, Channel* chn) {
-            instance->release_thread_cb(c, chn);
+            instance->release_thread_cb(c);
         });
-        chn->events().process_snapshot.connect([instance](Caliper* c, Channel* chn, SnapshotView, SnapshotView rec) {
-            instance->process_snapshot_cb(c, chn, rec);
+        chn->events().process_snapshot.connect([instance](Caliper* c, SnapshotView, SnapshotView rec) {
+            instance->process_snapshot_cb(c, rec);
         });
-        chn->events().flush_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView, SnapshotFlushFn proc_fn) {
-            instance->flush_cb(c, chn, proc_fn);
+        chn->events().flush_evt.connect([instance](Caliper* c, SnapshotView, SnapshotFlushFn proc_fn) {
+            instance->flush_cb(c, proc_fn);
         });
         chn->events().clear_evt.connect([instance](Caliper* c, Channel* chn) { instance->clear_cb(c, chn); });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {

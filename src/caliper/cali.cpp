@@ -144,7 +144,7 @@ void cali_push_snapshot(
 
     for (auto& channel : c.get_all_channels())
         if (channel.is_active())
-            c.push_snapshot(&channel, trigger_info.view());
+            c.push_snapshot(channel.body(), trigger_info.view());
 }
 
 void cali_channel_push_snapshot(
@@ -173,7 +173,7 @@ void cali_channel_push_snapshot(
     Channel channel = c.get_channel(chn_id);
 
     if (channel && channel.is_active())
-        c.push_snapshot(&channel, trigger_info.view());
+        c.push_snapshot(channel.body(), trigger_info.view());
 }
 
 size_t cali_channel_pull_snapshot(cali_id_t chn_id, int /* scopes */, size_t len, unsigned char* buf)
@@ -187,7 +187,7 @@ size_t cali_channel_pull_snapshot(cali_id_t chn_id, int /* scopes */, size_t len
     Channel                           channel = c.get_channel(chn_id);
 
     if (channel)
-        c.pull_snapshot(&channel, SnapshotView(), snapshot.builder());
+        c.pull_snapshot(channel.body(), SnapshotView(), snapshot.builder());
     else
         Log(0).stream() << "cali_channel_pull_snapshot(): invalid channel id " << chn_id << std::endl;
 
@@ -346,7 +346,7 @@ cali_variant_t cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
     if (!c || !channel)
         return cali_make_empty_variant();
 
-    return c.get(&channel, c.get_attribute(attr_id)).value().c_variant();
+    return c.get(channel.body(), c.get_attribute(attr_id)).value().c_variant();
 }
 
 const char* cali_get_current_region_or(const char* alt)
@@ -713,7 +713,7 @@ void cali_flush(int flush_opts)
     Channel channel = c.get_channel(0); // channel 0 should be the default channel
 
     if (channel) {
-        c.flush_and_write(&channel, SnapshotView());
+        c.flush_and_write(channel.body(), SnapshotView());
 
         if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
             c.clear(&channel);
@@ -725,7 +725,7 @@ void cali_channel_flush(cali_id_t chn_id, int flush_opts)
     Caliper c;
     Channel channel = c.get_channel(chn_id);
 
-    c.flush_and_write(&channel, SnapshotView());
+    c.flush_and_write(channel.body(), SnapshotView());
 
     if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
         c.clear(&channel);
@@ -820,7 +820,7 @@ void write_report_for_query(cali_id_t chn_id, const char* query, int flush_opts,
 
     QueryProcessor queryP(spec, stream);
 
-    c.flush(&channel, SnapshotView(), [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
+    c.flush(channel.body(), SnapshotView(), [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec) {
         queryP.process_record(db, rec);
     });
 

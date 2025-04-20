@@ -18,6 +18,8 @@ namespace cali
 class Caliper;
 class Channel;
 
+struct ChannelBody;
+
 typedef std::map<std::string, std::string> config_map_t;
 typedef std::map<std::string, std::string> info_map_t;
 
@@ -65,6 +67,8 @@ public:
 
     /// \brief Return the underlying %Caliper channel object.
     Channel channel();
+    /// \brief Return the underlying channel body pointer
+    ChannelBody* channel_body();
 
     /// \brief Create and activate the %Caliper channel,
     ///   or reactivate a stopped %Caliper channel.
@@ -75,6 +79,8 @@ public:
 
     /// \brief Returns true if channel exists and is active, false otherwise.
     bool is_active() const;
+    /// \brief Returns true if the channel is instantiated
+    bool is_instantiated() const;
 
     /// \brief Returns the name of the underlying channel
     std::string name() const;

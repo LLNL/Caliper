@@ -74,8 +74,10 @@ class AnnotationBinding
     std::unique_ptr<RegionFilter> m_filter;
     std::vector<std::string> m_trigger_attr_names;
 
-    void mark_attribute(Caliper*, Channel*, const Attribute&);
-    void check_attribute(Caliper*, Channel*, const Attribute&);
+    std::string m_channel_name;
+
+    void mark_attribute(Caliper*, const Attribute&);
+    void check_attribute(Caliper*, const Attribute&);
 
     void base_pre_initialize(Caliper*, Channel*);
     void base_post_initialize(Caliper*, Channel*);
@@ -87,8 +89,8 @@ class AnnotationBinding
     /// User code should instead use on_mark_attribute(),
     /// on_begin(), and on_end().
 
-    void begin_cb(Caliper*, Channel*, const Attribute&, const Variant&);
-    void end_cb(Caliper*, Channel*, const Attribute&, const Variant&);
+    void begin_cb(Caliper*, const Attribute&, const Variant&);
+    void end_cb(Caliper*, const Attribute&, const Variant&);
 
     static bool is_subscription_attribute(const Attribute& attr);
 
@@ -100,21 +102,20 @@ protected:
     /// annotation binding is found.
     ///
     /// \param c    The %Caliper instance
-    /// \param chn  The channel instance
     /// \param attr The attribute being marked
-    virtual void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {}
+    virtual void on_mark_attribute(Caliper* c, const Attribute& attr) {}
 
     /// \brief Callback for an annotation begin event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper begin event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
+    virtual void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {}
 
     /// \brief Callback for an annotation end event
     /// \param c     Caliper instance
     /// \param attr  Attribute on which the %Caliper end event was invoked.
     /// \param value The annotation name/value.
-    virtual void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {}
+    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value) {}
 
     /// \brief Initialization callback. Invoked after the %Caliper
     ///   initialization completed.
@@ -150,21 +151,21 @@ public:
         binding->initialize(c, chn);
         binding->base_post_initialize(c, chn);
 
-        chn->events().create_attr_evt.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
+        chn->events().create_attr_evt.connect([binding](Caliper* c, const Attribute& attr) {
             if (!is_subscription_attribute(attr))
-                binding->check_attribute(c, chn, attr);
+                binding->check_attribute(c, attr);
         });
-        chn->events().subscribe_attribute.connect([binding](Caliper* c, Channel* chn, const Attribute& attr) {
-            binding->check_attribute(c, chn, attr);
+        chn->events().subscribe_attribute.connect([binding](Caliper* c, const Attribute& attr) {
+            binding->check_attribute(c, attr);
         });
         chn->events().pre_begin_evt.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                binding->begin_cb(c, chn, attr, value);
+            [binding](Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value) {
+                binding->begin_cb(c, attr, value);
             }
         );
         chn->events().pre_end_evt.connect(
-            [binding](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
-                binding->end_cb(c, chn, attr, value);
+            [binding](Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value) {
+                binding->end_cb(c, attr, value);
             }
         );
         chn->events().finish_evt.connect([binding](Caliper* c, Channel* chn) {

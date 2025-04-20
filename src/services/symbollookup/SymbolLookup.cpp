@@ -281,11 +281,11 @@ public:
     {
         SymbolLookup* instance = new SymbolLookup(c, chn);
 
-        chn->events().pre_flush_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView) {
+        chn->events().pre_flush_evt.connect([instance](Caliper* c, ChannelBody*, SnapshotView) {
             instance->check_attributes(c);
             instance->init_lookup();
         });
-        chn->events().postprocess_snapshot.connect([instance](Caliper* c, Channel* chn, std::vector<Entry>& rec) {
+        chn->events().postprocess_snapshot.connect([instance](Caliper* c, std::vector<Entry>& rec) {
             instance->process_snapshot(c, rec);
         });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {

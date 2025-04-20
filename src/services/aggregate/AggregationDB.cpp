@@ -214,13 +214,11 @@ struct AggregationDB::AggregationDBImpl {
                 }
         } else {
             if (info.group_nested) {
-                // exploit that nested attributes have their own entry
-                for (const Entry& e : rec)
-                    if (e.is_reference() && c->get_attribute(e.node()->attribute()).is_nested()) {
-                        key.builder().append(e);
-                        hash += e.node()->id();
-                        break;
-                    }
+                Entry e = c->get_path_node();
+                if (!e.empty()) {
+                    key.builder().append(e);
+                    hash += e.node()->id();
+                }
             }
 
             Node* node = make_key_node(c, rec, info.ref_key_attrs);

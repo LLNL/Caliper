@@ -58,7 +58,7 @@ class MeasurementTemplateService
     unsigned  m_num_errors; // Number of measurement errors encountered at runtime
     TimePoint m_starttime;  // Initial value for our measurement function
 
-    void snapshot_cb(Caliper* c, Channel* /*channel*/, SnapshotView /*trigger_info*/, SnapshotBuilder& rec)
+    void snapshot_cb(Caliper* c, SnapshotView /*trigger_info*/, SnapshotBuilder& rec)
     {
         //   The snapshot callback triggers performance measurements.
         // Measurement services should make measurements and add them to the
@@ -222,8 +222,8 @@ public:
             instance->post_init_cb(c, channel);
         });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec) {
-                instance->snapshot_cb(c, channel, trigger_info, rec);
+            [instance](Caliper* c, SnapshotView trigger_info, SnapshotBuilder& rec) {
+                instance->snapshot_cb(c, trigger_info, rec);
             }
         );
         channel->events().finish_evt.connect([instance](Caliper* c, Channel* channel) {

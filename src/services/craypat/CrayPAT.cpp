@@ -60,13 +60,13 @@ class CrayPATBinding : public AnnotationBinding
 
 public:
 
-    void on_begin(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper*, const Attribute& attr, const Variant& value)
     {
         if (attr.is_nested() && attr.type() == CALI_TYPE_STRING)
             PAT_region_push(static_cast<const char*>(value.data()));
     }
 
-    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    void on_end(Caliper*, const Attribute& attr, const Variant& value)
     {
         if (attr.is_nested() && attr.type() == CALI_TYPE_STRING)
             PAT_region_pop(static_cast<const char*>(value.data()));

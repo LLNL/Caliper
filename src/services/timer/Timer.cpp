@@ -82,7 +82,7 @@ class TimerService
         return ti;
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& rec)
     {
         auto     now  = clock::now();
         uint64_t nsec = chrono::duration_cast<chrono::nanoseconds>(now - tstart).count();
@@ -98,29 +98,26 @@ class TimerService
         ti->prev_snapshot_timestamp = nsec;
 
         if (record_inclusive_duration && !info.empty() && !c->is_signal()) {
-            Entry event = info.get(begin_evt_attr);
+            Attribute info_attr = c->get_attribute(info[0].attribute());
+            Variant v_id = info_attr.get(begin_evt_attr);
 
-            if (event.empty())
-                event = info.get(end_evt_attr);
-            if (event.empty())
-                return;
-
-            cali_id_t evt_attr_id = event.value().to_id();
-
-            if (event.attribute() == begin_evt_attr.id()) {
+            if (v_id) {
                 // begin event: push current timestamp onto the inclusive timer stack
-                ti->inclusive_timer_stack[evt_attr_id].push_back(nsec);
-            } else if (event.attribute() == end_evt_attr.id()) {
-                // end event: fetch begin timestamp from inclusive timer stack
-                auto stack_it = ti->inclusive_timer_stack.find(evt_attr_id);
+                ti->inclusive_timer_stack[v_id.to_id()].push_back(nsec);
+            } else {
+                v_id = info_attr.get(end_evt_attr);
+                if (v_id) {
+                    // end event: fetch begin timestamp from inclusive timer stack
+                    auto stack_it = ti->inclusive_timer_stack.find(v_id.to_id());
 
-                if (stack_it == ti->inclusive_timer_stack.end() || stack_it->second.empty()) {
-                    ++n_stack_errors;
-                    return;
+                    if (stack_it == ti->inclusive_timer_stack.end() || stack_it->second.empty()) {
+                        ++n_stack_errors;
+                        return;
+                    }
+
+                    rec.append(inclusive_duration_attr, cali_make_variant_from_uint(nsec - stack_it->second.back()));
+                    stack_it->second.pop_back();
                 }
-
-                rec.append(inclusive_duration_attr, cali_make_variant_from_uint(nsec - stack_it->second.back()));
-                stack_it->second.pop_back();
             }
         }
     }
@@ -134,10 +131,7 @@ class TimerService
 
         if (!begin_evt_attr || !end_evt_attr) {
             if (record_inclusive_duration)
-                Log(1).stream() << chn->name()
-                                << ": Timestamp: Note: event trigger attributes not registered,\n"
-                                   "    disabling phase timers."
-                                << std::endl;
+                Log(1).stream() << chn->name() << ": timer: Event attributes not found, disabling inclusive timers.\n";
 
             record_inclusive_duration = false;
         }
@@ -210,8 +204,8 @@ public:
 
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_cb(c, chn); });
         chn->events().create_thread_evt.connect([instance](Caliper* c, Channel*) { instance->acquire_timerinfo(c); });
-        chn->events().snapshot.connect([instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
-            instance->snapshot_cb(c, chn, info, rec);
+        chn->events().snapshot.connect([instance](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+            instance->snapshot_cb(c, info, rec);
         });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
             instance->finish_cb(c, chn);

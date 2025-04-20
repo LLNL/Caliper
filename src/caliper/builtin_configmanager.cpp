@@ -77,13 +77,13 @@ void init_builtin_configmanager(Caliper* c)
 
     mgr.start();
 
-    channel.events().write_output_evt.connect([mgr, flag_attr](Caliper* c, Channel* channel, SnapshotView) mutable {
-        if (c->get(channel, flag_attr).value().to_bool() == true)
+    channel.events().write_output_evt.connect([mgr, flag_attr](Caliper* c, ChannelBody* chB, SnapshotView) mutable {
+        if (c->get(chB, flag_attr).value().to_bool() == true)
             return;
 
         mgr.flush();
 
-        c->set(channel, flag_attr, Variant(true));
+        c->set(chB, flag_attr, Variant(true));
     });
 
     Log(1).stream() << "Registered builtin ConfigManager" << std::endl;

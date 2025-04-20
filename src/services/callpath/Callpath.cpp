@@ -53,7 +53,7 @@ class Callpath
     uintptr_t caliper_start_addr { 0 };
     uintptr_t caliper_end_addr { 0 };
 
-    void snapshot_cb(Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& snapshot)
     {
         Variant v_addr[MAX_PATH];
         Variant v_name[MAX_PATH];
@@ -220,8 +220,8 @@ public:
 
         chn->events().post_init_evt.connect([instance](Caliper* c, Channel* chn) { instance->post_init_evt(c, chn); });
         chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& snapshot) {
-                instance->snapshot_cb(c, chn, info, snapshot);
+            [instance](Caliper* c, SnapshotView info, SnapshotBuilder& snapshot) {
+                instance->snapshot_cb(c, info, snapshot);
             }
         );
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) { delete instance; });

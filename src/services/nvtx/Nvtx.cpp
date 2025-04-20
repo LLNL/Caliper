@@ -92,7 +92,7 @@ public:
 
     const char* service_tag() const { return "nvtx"; }
 
-    void on_mark_attribute(Caliper* c, Channel*, const Attribute& attr)
+    void on_mark_attribute(Caliper* c, const Attribute& attr)
     {
         if (m_cycle_colors)
             return;
@@ -106,7 +106,7 @@ public:
         c->make_tree_entry(m_color_attr, v_color, attr.node());
     }
 
-    void on_begin(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper*, const Attribute& attr, const Variant& value)
     {
         nvtxEventAttributes_t eventAttrib = { 0 };
 
@@ -143,7 +143,7 @@ public:
         }
     }
 
-    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value)
+    void on_end(Caliper*, const Attribute& attr, const Variant& value)
     {
         if (attr.is_nested()) {
             nvtxRangePop();

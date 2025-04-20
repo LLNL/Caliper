@@ -32,12 +32,20 @@ class RuntimeConfig;
 ///   snapshot buffers.
 typedef std::function<void(CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&)> SnapshotFlushFn;
 
+/// \brief %Channel implementation details.
+///
+///   Maintains data (callback tables etc.) associated with a %Caliper
+/// measurement configuration. While ChannelBody pointers can be safely
+/// passed through the %Caliper API and callback functions, any code that
+/// needs to store a channel reference should make a copy of the
+/// original Channel object to properly manage lifetime.
+struct ChannelBody;
+
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data.
 class Channel
 {
-    struct ChannelImpl;
-    std::shared_ptr<ChannelImpl> mP;
+    std::shared_ptr<ChannelBody> mP;
 
     Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg);
 
@@ -57,21 +65,22 @@ public:
 
     /// \brief Holds the %Caliper callbacks for a channel.
     struct Events {
-        typedef util::callback<void(Caliper*, Channel*, const Attribute&)>                 attribute_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, const Attribute&, const Variant&)> update_cbvec;
-        typedef util::callback<void(Caliper*, Channel*)>                                   caliper_cbvec;
+        typedef util::callback<void(Caliper*, const Attribute&)> attribute_cbvec;
 
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView)>                   event_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, std::vector<Entry>&)>            edit_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, Channel*)> caliper_cbvec;
 
-        typedef util::callback<void(Caliper*, Channel*, SnapshotView, SnapshotFlushFn)> flush_cbvec;
+        typedef util::callback<void(Caliper*, ChannelBody*, const Attribute&, const Variant&)> update_cbvec;
+        typedef util::callback<void(Caliper*, ChannelBody*, SnapshotView)>                     event_cbvec;
+
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotBuilder&)> snapshot_cbvec;
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotView)>     process_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, std::vector<Entry>&)>            edit_snapshot_cbvec;
+        typedef util::callback<void(Caliper*, SnapshotView, SnapshotFlushFn)>  flush_cbvec;
 
         typedef util::callback<
-            void(Caliper*, Channel*, const void*, const char*, size_t, size_t, const size_t*, size_t, const Attribute*, const Variant*)>
+            void(Caliper*, ChannelBody*, const void*, const char*, size_t, size_t, const size_t*, size_t, const Attribute*, const Variant*)>
                                                                       track_mem_cbvec;
-        typedef util::callback<void(Caliper*, Channel*, const void*)> untrack_mem_cbvec;
+        typedef util::callback<void(Caliper*, ChannelBody*, const void*)> untrack_mem_cbvec;
 
         /// \brief Invoked when a new attribute has been created.
         attribute_cbvec create_attr_evt;
@@ -152,6 +161,8 @@ public:
         /// in the given channel.
         attribute_cbvec subscribe_attribute;
     };
+
+    ChannelBody* body() { return mP.get(); }
 
     /// \brief Access the callback vectors to register callbacks for this channel.
     Events& events();
@@ -337,7 +348,15 @@ public:
     /// \param trigger_info A caller-provided list of attributes that is passed
     ///   to the snapshot and process_snapshot callbacks, and added to the
     ///   returned snapshot record.
-    void push_snapshot(Channel* channel, SnapshotView trigger_info);
+    void push_snapshot(ChannelBody* chB, SnapshotView trigger_info);
+
+    /// \brief Specialized snapshot trigger function which replaces a given blackboard entry.
+    ///
+    /// Internal-use snapshot trigger function which removes a given blackboard
+    /// snapshot entry before processing the record. This allows for an optimization
+    /// when creating event trigger info entries where we replace the context entry
+    /// with an augmented entry from \a trigger_info.
+    void push_snapshot_replace(ChannelBody* chB, SnapshotView trigger_info, const Entry& target);
 
     /// \brief Return context data from blackboards.
     ///
@@ -370,7 +389,7 @@ public:
     /// \param trigger_info A caller-provided record that is passed to the
     ///   snapshot callback, and added to the returned snapshot record.
     /// \param rec The snapshot record buffer to update.
-    void pull_snapshot(Channel* channel, SnapshotView trigger_info, SnapshotBuilder& rec);
+    void pull_snapshot(ChannelBody* chB, SnapshotView trigger_info, SnapshotBuilder& rec);
 
     // --- Flush and I/O API
 
@@ -380,7 +399,7 @@ public:
 
     /// \brief Flush aggregation/trace buffer contents into the \a proc_fn
     ///   processing function.
-    void flush(Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn);
+    void flush(ChannelBody* chB, SnapshotView flush_info, SnapshotFlushFn proc_fn);
 
     /// \brief Flush snapshot buffer contents on \a channel into the registered
     ///   output services.
@@ -391,7 +410,7 @@ public:
     ///
     /// \param channel The channel to flush
     /// \param input_flush_info User-provided flush context information
-    void flush_and_write(Channel* channel, SnapshotView flush_info);
+    void flush_and_write(ChannelBody* chB, SnapshotView flush_info);
 
     /// \brief Clear snapshot buffers on \a channel
     ///
@@ -418,12 +437,12 @@ public:
     ///
     /// This function is signal safe.
     ///
-    /// \param channel Designated channel
+    /// \param chB  Designated channel
     /// \param attr Attribute key
     /// \param data Value to set
     ///
     /// \sa begin(const Attribute&, const Variant&)
-    void begin(Channel* channel, const Attribute& attr, const Variant& data);
+    void begin(ChannelBody* chB, const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with given attribute from
     ///   the channel blackboard.
@@ -436,7 +455,7 @@ public:
     /// \param attr Attribute key.
     ///
     /// \sa end(const Attribute&)
-    void end(Channel* channel, const Attribute& attr);
+    void end(ChannelBody* chB, const Attribute& attr);
 
     /// \brief Set attribute:value pair on the channel blackboard.
     ///
@@ -451,14 +470,14 @@ public:
     /// \param attr Attribute key
     /// \param data Value to set
     /// \sa set(const Attribute&, const Variant&)
-    void set(Channel* channel, const Attribute& attr, const Variant& data);
+    void set(ChannelBody* chB, const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (single channel)
     /// \{
 
     void memory_region_begin(
-        Channel*         chn,
+        ChannelBody*     chB,
         const void*      ptr,
         const char*      label,
         size_t           elem_size,
@@ -468,7 +487,7 @@ public:
         const Attribute* extra_attr = nullptr,
         const Variant*   extra_val  = nullptr
     );
-    void memory_region_end(Channel* chn, const void* ptr);
+    void memory_region_end(ChannelBody* chB, const void* ptr);
 
     /// \}
     /// \name Blackboard access
@@ -505,7 +524,15 @@ public:
     ///
     /// \return The top-most entry on the blackboard for the given attribute key.
     ///   An empty Entry object if this attribute is not set.
-    Entry get(Channel* channel, const Attribute& attr);
+    Entry get(ChannelBody* chB, const Attribute& attr);
+
+    /// \brief Retrieve the current top-most entry in \a attr's blackboard slot
+    ///
+    /// A special-purpose function which retrieves the current top-most entry in
+    /// \a attr's blackboard slot. This is not necessarily \a attr itself because
+    /// reference attributes typically share a single slot. Usually
+    /// \ref Caliper::get(const Attribute) should be used instead.
+    Entry get_blackboard_entry(const Attribute& attr);
 
     /// \brief Retrieve the current path entry from the blackboard.
     Entry get_path_node();
@@ -514,10 +541,8 @@ public:
     /// \sa get_globals(Channel*)
     std::vector<Entry> get_globals();
 
-    /// \brief Return all global attributes for \a channel
-    ///
-    ///
-    std::vector<Entry> get_globals(const Channel& channel);
+    /// \brief Return all global attributes for \a chB
+    std::vector<Entry> get_globals(const ChannelBody* chB);
 
     /// \}
     /// \name Explicit snapshot record manipulation

@@ -37,7 +37,7 @@ class ThreadMonitor
     {
         Caliper c;
         Entry   data(monitor_attr, cali_make_variant_from_int(num_events++));
-        c.push_snapshot(&channel, SnapshotView(1, &data));
+        c.push_snapshot(channel.body(), SnapshotView(1, &data));
     }
 
     // the main monitor loop

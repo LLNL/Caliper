@@ -57,17 +57,15 @@ class AllocStatsService
     unsigned g_total_tracked { 0 };
     unsigned g_failed_untrack { 0 };
 
+    std::string channel_name;
+
     void track_mem_cb(
         Caliper*         c,
-        Channel*         chn,
         const void*      ptr,
         const char*      label,
         size_t           elem_size,
         size_t           ndims,
-        const size_t*    dims,
-        size_t           nextra,
-        const Attribute* extra_attrs,
-        const Variant*   extra_vals
+        const size_t*    dims
     )
     {
         uint64_t    size = std::accumulate(dims, dims + ndims, elem_size, std::multiplies<size_t>());
@@ -109,7 +107,7 @@ class AllocStatsService
         }
     }
 
-    void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr)
+    void untrack_mem_cb(Caliper* c, const void* ptr)
     {
         uint64_t addr = reinterpret_cast<uint64_t>(ptr);
         AllocInfo alloc_info { 0, nullptr };
@@ -137,7 +135,7 @@ class AllocStatsService
         }
     }
 
-    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView, SnapshotBuilder& rec) {
+    void snapshot_cb(Caliper* c, SnapshotView, SnapshotBuilder& rec) {
         uint64_t hwm = 0;
 
         {
@@ -149,7 +147,7 @@ class AllocStatsService
         rec.append(hwm_attr, cali_make_variant_from_uint(hwm));
     }
 
-    void flush_cb(Caliper* c, Channel* channel, SnapshotView, SnapshotFlushFn flush_fn) {
+    void flush_cb(Caliper* c, SnapshotView, SnapshotFlushFn flush_fn) {
         Attribute alloc_tally_attr =
             c->create_attribute("alloc.tally", CALI_TYPE_UINT,
                 CALI_ATTR_AGGREGATABLE | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
@@ -176,7 +174,7 @@ class AllocStatsService
             flush_fn(*c, rec);
         }
 
-        Log(1).stream() << channel->name() << ": AllocStats: flushed " << g_region_map.size() << " records\n";
+        Log(1).stream() << channel_name << ": AllocStats: flushed " << g_region_map.size() << " records\n";
     }
 
     void clear_cb(Caliper*, Channel*) {
@@ -192,14 +190,15 @@ class AllocStatsService
     }
 
     AllocStatsService(Caliper* c, Channel* channel)
+        : channel_name { channel->name() }
     {
         bool record_hwm = services::init_config_from_spec(channel->config(), s_spec).get("record_highwatermark").to_bool();
 
         if (record_hwm) {
             hwm_attr = c->create_attribute("alloc.region.highwatermark", CALI_TYPE_UINT,
                 CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
-            channel->events().snapshot.connect([this](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec){
-                    this->snapshot_cb(c, chn, info, rec);
+            channel->events().snapshot.connect([this](Caliper* c, SnapshotView info, SnapshotBuilder& rec){
+                    this->snapshot_cb(c, info, rec);
                 });
         }
     }
@@ -214,7 +213,7 @@ public:
 
         chn->events().track_mem_evt.connect([instance](
                                                 Caliper*         c,
-                                                Channel*         chn,
+                                                ChannelBody*     chn,
                                                 const void*      ptr,
                                                 const char*      label,
                                                 size_t           elem_size,
@@ -224,13 +223,13 @@ public:
                                                 const Attribute* attrs,
                                                 const Variant*   vals
                                             ) {
-            instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims, n, attrs, vals);
+            instance->track_mem_cb(c, ptr, label, elem_size, ndims, dims);
         });
-        chn->events().untrack_mem_evt.connect([instance](Caliper* c, Channel* chn, const void* ptr) {
-            instance->untrack_mem_cb(c, chn, ptr);
+        chn->events().untrack_mem_evt.connect([instance](Caliper* c, ChannelBody* chB, const void* ptr) {
+            instance->untrack_mem_cb(c, ptr);
         });
-        chn->events().flush_evt.connect([instance](Caliper* c, Channel* chn, SnapshotView ctx, SnapshotFlushFn flush_fn){
-            instance->flush_cb(c, chn, ctx, flush_fn);
+        chn->events().flush_evt.connect([instance](Caliper* c, SnapshotView ctx, SnapshotFlushFn flush_fn){
+            instance->flush_cb(c, ctx, flush_fn);
         });
         chn->events().finish_evt.connect([instance](Caliper* c, Channel* chn) {
             instance->finish_cb(c, chn);

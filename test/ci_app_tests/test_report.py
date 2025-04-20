@@ -122,7 +122,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select *,count() as Count group by path where cali.event.end format tree',
+            'CALI_REPORT_CONFIG'     : 'select *,sum(region.count) as Count group by path where region.count format tree',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -139,13 +139,9 @@ class CaliperReportTest(unittest.TestCase):
         ]
 
         report_output,_ = cat.run_test(target_cmd, caliper_config)
-        lines = report_output.decode().splitlines()
-
+        lines = [ l.rstrip() for l in report_output.decode().splitlines() ]
         for target in report_targets:
-            for line in lines:
-                if target in line:
-                    break
-            else:
+            if not target in lines:
                 self.fail('%s not found in report' % target)
 
     def test_report_table_formatter(self):

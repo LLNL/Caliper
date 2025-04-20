@@ -99,7 +99,10 @@ struct MpiPattern::MpiPatternImpl {
             *(a->ptr) = c->create_attribute(a->name, a->type, a->prop);
     }
 
-    void init_mpi(Caliper* c, Channel* chn) { req_map.reserve(100); }
+    void init_mpi(Caliper* c, Channel* chn)
+    {
+        req_map.reserve(100);
+    }
 
     // --- point-to-point
     //
@@ -114,7 +117,7 @@ struct MpiPattern::MpiPatternImpl {
     std::set<int> unique_src_ranks;
     std::set<int> unique_dest_ranks;
 
-    void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag)
+    void push_send_event(Caliper* c, ChannelBody*, int size, int dest, int tag)
     {
         total_send_count++;
         total_send_size += size;
@@ -124,7 +127,7 @@ struct MpiPattern::MpiPatternImpl {
 
     void handle_send_init(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          dest,
@@ -150,7 +153,7 @@ struct MpiPattern::MpiPatternImpl {
         req_map[*req] = info;
     }
 
-    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag)
+    void push_recv_event(Caliper* c, ChannelBody*, int src, int size, int tag)
     {
         total_recv_count++;
         total_recv_size += size;
@@ -158,19 +161,19 @@ struct MpiPattern::MpiPatternImpl {
         unique_src_ranks.insert(src);
     }
 
-    void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status)
+    void handle_recv(Caliper* c, ChannelBody* chB, MPI_Datatype type, MPI_Comm comm, MPI_Status* status)
     {
         int size = 0;
         PMPI_Type_size(type, &size);
         int count = 0;
         PMPI_Get_count(status, type, &count);
 
-        push_recv_event(c, chn, status->MPI_SOURCE, size * count, status->MPI_TAG);
+        push_recv_event(c, chB, status->MPI_SOURCE, size * count, status->MPI_TAG);
     }
 
     void handle_irecv(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          src,
@@ -196,7 +199,7 @@ struct MpiPattern::MpiPatternImpl {
 
     void handle_recv_init(
         Caliper*     c,
-        Channel*     chn,
+        ChannelBody* chB,
         int          count,
         MPI_Datatype type,
         int          src,
@@ -220,7 +223,7 @@ struct MpiPattern::MpiPatternImpl {
         req_map[*req] = info;
     }
 
-    void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+    void handle_start(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs)
     {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex> g(req_map_lock);
@@ -233,11 +236,11 @@ struct MpiPattern::MpiPatternImpl {
             RequestInfo info = it->second;
 
             if (info.op == RequestInfo::Send)
-                push_send_event(c, chn, info.size, info.target, info.tag);
+                push_send_event(c, chB, info.size, info.target, info.tag);
         }
     }
 
-    void handle_pre_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+    void handle_pre_completion(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs)
     {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex> g(req_map_lock);
@@ -251,7 +254,7 @@ struct MpiPattern::MpiPatternImpl {
         }
     }
 
-    void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses)
+    void handle_completion(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs, MPI_Status* statuses)
     {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex> g(req_map_lock);
@@ -269,7 +272,7 @@ struct MpiPattern::MpiPatternImpl {
                 int count = 0;
                 PMPI_Get_count(statuses + i, info.type, &count);
 
-                push_recv_event(c, chn, statuses[i].MPI_SOURCE, size * count, statuses[i].MPI_TAG);
+                push_recv_event(c, chB, statuses[i].MPI_SOURCE, size * count, statuses[i].MPI_TAG);
             }
 
             if (!info.is_persistent)
@@ -287,13 +290,13 @@ struct MpiPattern::MpiPatternImpl {
     // --- collectives
     //
 
-    void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root)
+    void push_coll_event(Caliper* c, ChannelBody* chB, CollectiveType coll_type, int size, int root)
     {
         ++total_coll_count;
         total_coll_size += size;
     }
 
-    void handle_comm_begin(Caliper* c, Channel* chn)
+    void handle_comm_begin(Caliper* c, ChannelBody* chn)
     {
         total_send_count = 0;
         total_recv_count = 0;
@@ -306,7 +309,7 @@ struct MpiPattern::MpiPatternImpl {
         unique_src_ranks.clear();
     }
 
-    void handle_comm_end(Caliper* c, Channel* chn)
+    void handle_comm_end(Caliper* c, ChannelBody* chn)
     {
         const Entry data[] = { { total_send_count_attr, Variant(total_send_count) },
                                { total_recv_count_attr, Variant(total_recv_count) },
@@ -346,18 +349,18 @@ void MpiPattern::init_mpi(Caliper* c, Channel* chn)
     mP->init_mpi(c, chn);
 }
 
-void MpiPattern::handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+void MpiPattern::handle_send(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     size *= count;
 
-    mP->push_send_event(c, chn, size, dest, tag);
+    mP->push_send_event(c, chB, size, dest, tag);
 }
 
 void MpiPattern::handle_send_init(
     Caliper*     c,
-    Channel*     chn,
+    ChannelBody*     chB,
     int          count,
     MPI_Datatype type,
     int          dest,
@@ -366,12 +369,12 @@ void MpiPattern::handle_send_init(
     MPI_Request* req
 )
 {
-    mP->handle_send_init(c, chn, count, type, dest, tag, comm, req);
+    mP->handle_send_init(c, chB, count, type, dest, tag, comm, req);
 }
 
 void MpiPattern::handle_recv(
     Caliper* c,
-    Channel* chn,
+    ChannelBody* chB,
     int,
     MPI_Datatype type,
     int,
@@ -380,12 +383,12 @@ void MpiPattern::handle_recv(
     MPI_Status* status
 )
 {
-    mP->handle_recv(c, chn, type, comm, status);
+    mP->handle_recv(c, chB, type, comm, status);
 }
 
 void MpiPattern::handle_irecv(
     Caliper*     c,
-    Channel*     chn,
+    ChannelBody*     chB,
     int          count,
     MPI_Datatype type,
     int          src,
@@ -394,12 +397,12 @@ void MpiPattern::handle_irecv(
     MPI_Request* req
 )
 {
-    mP->handle_irecv(c, chn, count, type, src, tag, comm, req);
+    mP->handle_irecv(c, chB, count, type, src, tag, comm, req);
 }
 
 void MpiPattern::handle_recv_init(
     Caliper*     c,
-    Channel*     chn,
+    ChannelBody*     chB,
     int          count,
     MPI_Datatype type,
     int          src,
@@ -408,78 +411,78 @@ void MpiPattern::handle_recv_init(
     MPI_Request* req
 )
 {
-    mP->handle_recv_init(c, chn, count, type, src, tag, comm, req);
+    mP->handle_recv_init(c, chB, count, type, src, tag, comm, req);
 }
 
-void MpiPattern::handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+void MpiPattern::handle_start(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs)
 {
-    mP->handle_start(c, chn, nreq, reqs);
+    mP->handle_start(c, chB, nreq, reqs);
 }
 
-void MpiPattern::handle_pre_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
+void MpiPattern::handle_pre_completion(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs)
 {
-    mP->handle_pre_completion(c, chn, nreq, reqs);
+    mP->handle_pre_completion(c, chB, nreq, reqs);
 }
 
-void MpiPattern::handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses)
+void MpiPattern::handle_completion(Caliper* c, ChannelBody* chB, int nreq, MPI_Request* reqs, MPI_Status* statuses)
 {
-    mP->handle_completion(c, chn, nreq, reqs, statuses);
+    mP->handle_completion(c, chB, nreq, reqs, statuses);
 }
 
-void MpiPattern::request_free(Caliper*, Channel*, MPI_Request* req)
+void MpiPattern::request_free(Caliper*, ChannelBody*, MPI_Request* req)
 {
     mP->request_free(req);
 }
 
-void MpiPattern::handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm)
+void MpiPattern::handle_12n(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int root, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, chn, Coll_12N, (rank == root ? count : 0) * size, root);
+    mP->push_coll_event(c, chB, Coll_12N, (rank == root ? count : 0) * size, root);
 }
 
-void MpiPattern::handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm)
+void MpiPattern::handle_n21(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, int root, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, chn, Coll_N21, (rank != root ? count : 0) * size, root);
+    mP->push_coll_event(c, chB, Coll_N21, (rank != root ? count : 0) * size, root);
 }
 
-void MpiPattern::handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm)
+void MpiPattern::handle_n2n(Caliper* c, ChannelBody* chB, int count, MPI_Datatype type, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
 
-    mP->push_coll_event(c, chn, Coll_NxN, count * size, 0);
+    mP->push_coll_event(c, chB, Coll_NxN, count * size, 0);
 }
 
-void MpiPattern::handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm)
+void MpiPattern::handle_barrier(Caliper* c, ChannelBody* chB, MPI_Comm comm)
 {
-    mP->push_coll_event(c, chn, Coll_Barrier, 0, 0);
+    mP->push_coll_event(c, chB, Coll_Barrier, 0, 0);
 }
 
-void MpiPattern::handle_init(Caliper* c, Channel* chn)
+void MpiPattern::handle_init(Caliper* c, ChannelBody* chB)
 {
-    mP->push_coll_event(c, chn, Coll_Init, 0, 0);
+    mP->push_coll_event(c, chB, Coll_Init, 0, 0);
 }
 
-void MpiPattern::handle_finalize(Caliper* c, Channel* chn)
+void MpiPattern::handle_finalize(Caliper* c, ChannelBody* chB)
 {
-    mP->push_coll_event(c, chn, Coll_Finalize, 0, 0);
+    mP->push_coll_event(c, chB, Coll_Finalize, 0, 0);
 }
 
-void MpiPattern::handle_comm_begin(Caliper* c, Channel* chn)
+void MpiPattern::handle_comm_begin(Caliper* c, ChannelBody* chB)
 {
-    mP->handle_comm_begin(c, chn);
+    mP->handle_comm_begin(c, chB);
 }
 
-void MpiPattern::handle_comm_end(Caliper* c, Channel* chn)
+void MpiPattern::handle_comm_end(Caliper* c, ChannelBody* chB)
 {
-    mP->handle_comm_end(c, chn);
+    mP->handle_comm_end(c, chB);
 }

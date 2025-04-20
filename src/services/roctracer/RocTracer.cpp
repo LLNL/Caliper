@@ -123,9 +123,9 @@ class RocTracerService
         }
     }
 
-    void subscribe_attributes(Caliper* c, Channel* channel)
+    void subscribe_attributes(Caliper* c)
     {
-        channel->events().subscribe_attribute(c, channel, m_api_attr);
+        m_channel.events().subscribe_attribute(c, m_api_attr);
     }
 
     void push_correlation(uint64_t id, cali::Node* node)
@@ -293,7 +293,7 @@ class RocTracerService
 
             FixedSizeSnapshotRecord<8> snapshot;
             c->make_record(num, attr, data, snapshot.builder(), parent);
-            m_channel.events().process_snapshot(c, &m_channel, SnapshotView(), snapshot.view());
+            m_channel.events().process_snapshot(c, SnapshotView(), snapshot.view());
 
             ++num_records;
         }
@@ -333,7 +333,7 @@ class RocTracerService
 
     void pre_flush_cb() { roctracer_flush_activity_expl(m_roctracer_pool); }
 
-    void snapshot_cb(Caliper* c, Channel* channel, const SnapshotView, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, const SnapshotView, SnapshotBuilder& snapshot)
     {
         uint64_t timestamp = 0;
         roctracer_get_timestamp(&timestamp);
@@ -415,7 +415,7 @@ class RocTracerService
             return;
         }
 
-        channel->events().pre_flush_evt.connect([this](Caliper*, Channel*, SnapshotView) { this->pre_flush_cb(); });
+        channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
 
         Log(1).stream() << channel->name() << ": roctracer: Tracing initialized" << std::endl;
     }
@@ -452,7 +452,7 @@ class RocTracerService
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
-        subscribe_attributes(c, channel);
+        subscribe_attributes(c);
 
         uint64_t starttime = 0;
         roctracer_get_timestamp(&starttime);
@@ -462,8 +462,8 @@ class RocTracerService
         if (m_record_host_timestamp || m_record_host_duration) {
             c->set(m_host_timestamp_attr, cali_make_variant_from_uint(starttime));
 
-            channel->events().snapshot.connect([](Caliper* c, Channel* chn, SnapshotView info, SnapshotBuilder& rec) {
-                s_instance->snapshot_cb(c, chn, info, rec);
+            channel->events().snapshot.connect([](Caliper* c, SnapshotView info, SnapshotBuilder& rec) {
+                s_instance->snapshot_cb(c, info, rec);
             });
         }
 

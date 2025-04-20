@@ -76,9 +76,7 @@ public:
 
     void collective_flush(OutputStream& stream, MPI_Comm comm) override
     {
-        Channel chn = m_channel->channel();
-
-        if (!chn)
+        if (!m_channel->is_instantiated())
             return;
 
         QuerySpec cross_spec;
@@ -107,7 +105,7 @@ public:
         }
 
         Caliper c;
-        cali::collective_flush(stream, c, chn, SnapshotView(), local_spec, cross_spec, comm);
+        cali::collective_flush(stream, c, m_channel->channel_body(), SnapshotView(), local_spec, cross_spec, comm);
     }
 
     void collective_flush(MPI_Comm comm) override

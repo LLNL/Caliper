@@ -229,8 +229,7 @@ class RocProfilerService
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
-                s_instance->m_channel.events()
-                    .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_TRACING && header->kind == ROCPROFILER_BUFFER_TRACING_MEMORY_COPY) {
@@ -269,8 +268,7 @@ class RocProfilerService
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
-                s_instance->m_channel.events()
-                    .process_snapshot(&c, &s_instance->m_channel, SnapshotView(), snapshot.view());
+                s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
             }
@@ -313,7 +311,7 @@ class RocProfilerService
         }
     }
 
-    void snapshot_cb(Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot)
+    void snapshot_cb(Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot)
     {
         auto ts = rocprofiler_timestamp_t {};
         rocprofiler_get_timestamp(&ts);
@@ -328,7 +326,7 @@ class RocProfilerService
     void post_init_cb(Caliper* c, Channel* channel)
     {
         if (m_enable_api_callbacks) {
-            channel->events().subscribe_attribute(c, channel, m_api_attr);
+            channel->events().subscribe_attribute(c, m_api_attr);
             ROCPROFILER_CALL(rocprofiler_start_context(hip_api_ctx));
         }
 
@@ -336,7 +334,7 @@ class RocProfilerService
             ROCPROFILER_CALL(rocprofiler_start_context(rocprofiler_ctx));
             ROCPROFILER_CALL(rocprofiler_start_context(activity_ctx));
 
-            channel->events().pre_flush_evt.connect([this](Caliper*, Channel*, SnapshotView) { this->pre_flush_cb(); });
+            channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
         }
 
         if (m_enable_snapshot_timestamps) {
@@ -345,8 +343,8 @@ class RocProfilerService
             c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
 
             channel->events().snapshot.connect(
-                [this](Caliper* c, Channel* channel, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
-                    this->snapshot_cb(c, channel, trigger_info, snapshot);
+                [this](Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
+                    this->snapshot_cb(c, trigger_info, snapshot);
                 }
             );
         }
