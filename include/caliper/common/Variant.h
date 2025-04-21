@@ -48,7 +48,7 @@ public:
 
     Variant(cali_attr_type type, const void* data, std::size_t size) { m_v = cali_make_variant(type, data, size); }
 
-    bool empty() const { return (m_v.type_and_size & CALI_VARIANT_TYPE_MASK) == CALI_TYPE_INV; };
+    bool empty() const { return cali_variant_is_empty(m_v); };
 
     operator bool () const { return !empty(); }
 

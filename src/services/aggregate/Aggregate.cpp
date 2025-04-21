@@ -68,40 +68,37 @@ class Aggregate
         ThreadDB(Caliper* c) : stopped(false), retired(false), db(c) {}
     };
 
-    ConfigSet config;
+    std::string m_channel_name;
 
-    std::string channel_name;
+    ThreadDB*      m_tdb_list = nullptr;
+    util::spinlock m_tdb_lock;
 
-    ThreadDB*      tdb_list = nullptr;
-    util::spinlock tdb_lock;
+    AttributeInfo            m_attr_info;
+    std::vector<std::string> m_key_attribute_names;
 
-    AttributeInfo            info;
-    std::vector<std::string> key_attribute_names;
-    std::vector<std::string> aggr_attribute_names;
+    Attribute m_tdb_attr;
 
-    Attribute tdb_attr;
-
-    size_t num_dropped_snapshots;
+    size_t m_num_dropped_snapshots;
 
     inline ThreadDB* acquire_tdb(Caliper* c, bool can_alloc)
     {
         //   we store a pointer to the thread-local aggregation DB for this channel
         // on the thread's blackboard
 
-        ThreadDB* tdb = static_cast<ThreadDB*>(c->get(tdb_attr).value().get_ptr());
+        ThreadDB* tdb = static_cast<ThreadDB*>(c->get(m_tdb_attr).value().get_ptr());
 
         if (!tdb && can_alloc) {
             tdb = new ThreadDB(c);
 
-            c->set(tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
+            c->set(m_tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
 
-            std::lock_guard<util::spinlock> g(tdb_lock);
+            std::lock_guard<util::spinlock> g(m_tdb_lock);
 
-            if (tdb_list)
-                tdb_list->prev = tdb;
+            if (m_tdb_list)
+                m_tdb_list->prev = tdb;
 
-            tdb->next = tdb_list;
-            tdb_list  = tdb;
+            tdb->next  = m_tdb_list;
+            m_tdb_list = tdb;
         }
 
         return tdb;
@@ -137,11 +134,11 @@ class Aggregate
         if (!(attr.properties() & CALI_ATTR_AGGREGATABLE))
             return;
 
-        if (std::find(info.aggr_attrs.begin(), info.aggr_attrs.end(), attr) != info.aggr_attrs.end())
+        if (std::find(m_attr_info.aggr_attrs.begin(), m_attr_info.aggr_attrs.end(), attr) != m_attr_info.aggr_attrs.end())
             return;
 
-        info.aggr_attrs.push_back(attr);
-        info.result_attrs.push_back(make_result_attributes(c, attr));
+        m_attr_info.aggr_attrs.push_back(attr);
+        m_attr_info.result_attrs.push_back(make_result_attributes(c, attr));
     }
 
     void init_aggregation_attributes(Caliper* c)
@@ -153,8 +150,8 @@ class Aggregate
 
         const int prop = CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS;
 
-        info.count_attr = c->create_attribute("count", CALI_TYPE_UINT, prop);
-        info.slot_attr  = c->create_attribute("aggregate.slot", CALI_TYPE_UINT, prop);
+        m_attr_info.count_attr = c->create_attribute("count", CALI_TYPE_UINT, prop);
+        m_attr_info.slot_attr  = c->create_attribute("aggregate.slot", CALI_TYPE_UINT, prop);
     }
 
     void flush_cb(Caliper* c, SnapshotFlushFn proc_fn)
@@ -162,19 +159,19 @@ class Aggregate
         ThreadDB* tdb = nullptr;
 
         {
-            std::lock_guard<util::spinlock> g(tdb_lock);
-            tdb = tdb_list;
+            std::lock_guard<util::spinlock> g(m_tdb_lock);
+            tdb = m_tdb_list;
         }
 
         size_t num_written = 0;
 
         for (; tdb; tdb = tdb->next) {
             tdb->stopped.store(true);
-            num_written += tdb->db.flush(info, c, proc_fn);
+            num_written += tdb->db.flush(m_attr_info, c, proc_fn);
             tdb->stopped.store(false);
         }
 
-        Log(1).stream() << channel_name << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << m_channel_name << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
     void clear_cb(Caliper* c, Channel* chn)
@@ -182,9 +179,8 @@ class Aggregate
         ThreadDB* tdb = nullptr;
 
         {
-            std::lock_guard<util::spinlock> g(tdb_lock);
-
-            tdb = tdb_list;
+            std::lock_guard<util::spinlock> g(m_tdb_lock);
+            tdb = m_tdb_list;
         }
 
         size_t num_entries    = 0;
@@ -201,7 +197,6 @@ class Aggregate
             bytes_reserved += tdb->db.bytes_reserved();
             num_dropped += tdb->db.num_dropped();
             max_hash_len = std::max(max_hash_len, tdb->db.max_hash_len());
-
             tdb->db.clear();
 
             tdb->stopped.store(false);
@@ -210,12 +205,11 @@ class Aggregate
                 ThreadDB* tmp = tdb->next;
 
                 {
-                    std::lock_guard<util::spinlock> g(tdb_lock);
+                    std::lock_guard<util::spinlock> g(m_tdb_lock);
 
                     tdb->unlink();
-
-                    if (tdb == tdb_list)
-                        tdb_list = tmp;
+                    if (tdb == m_tdb_list)
+                        m_tdb_list = tmp;
                 }
 
                 delete tdb;
@@ -244,33 +238,25 @@ class Aggregate
         ThreadDB* tdb = acquire_tdb(c, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
-            tdb->db.process_snapshot(c, rec, info);
+            tdb->db.process_snapshot(c, rec, m_attr_info);
         else
-            ++num_dropped_snapshots;
+            ++m_num_dropped_snapshots;
     }
 
     void check_key_attribute(const Attribute& attr)
     {
-        auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), attr.name());
+        auto it = std::find(m_key_attribute_names.begin(), m_key_attribute_names.end(), attr.name());
 
-        if (it != key_attribute_names.end()) {
+        if (it != m_key_attribute_names.end()) {
             if (attr.store_as_value()) {
-                cali_attr_type type = attr.type();
-
-                if (type != CALI_TYPE_INT && type != CALI_TYPE_UINT && type != CALI_TYPE_ADDR && type != CALI_TYPE_BOOL
-                    && type != CALI_TYPE_TYPE) {
-                    Log(1).stream() << "Aggregate: warning: type " << cali_type2string(type)
-                                    << " in as-value attribute \"" << attr.name()
-                                    << "\" is not supported in aggregation key and will be dropped." << std::endl;
-                    return;
-                }
-
-                info.imm_key_attrs.push_back(attr);
+                m_attr_info.imm_key_attrs.push_back(attr);
             } else {
-                info.ref_key_attrs.push_back(attr);
+                Log(1).stream() << m_channel_name
+                    << ": aggregate: Reference attributes are no longer supported in CALI_AGGREGATE_KEY, ignoring "
+                    << attr.name() << std::endl;
             }
 
-            key_attribute_names.erase(it);
+            m_key_attribute_names.erase(it);
         }
     }
 
@@ -292,7 +278,10 @@ class Aggregate
         check_aggregation_attribute(c, attr);
     }
 
-    void create_thread_cb(Caliper* c) { acquire_tdb(c, true); }
+    void create_thread_cb(Caliper* c) 
+    {
+        acquire_tdb(c, true); 
+    }
 
     void release_thread_cb(Caliper* c)
     {
@@ -304,68 +293,23 @@ class Aggregate
 
     void finish_cb(Caliper* c, Channel* chn)
     {
-        // report attribute keys we haven't found
-        for (const std::string& s : key_attribute_names)
-            Log(1).stream() << channel_name << ": Aggregate: warning: key attribute \"" << s << "\" unused" << std::endl;
-
-        if (num_dropped_snapshots > 0)
-            Log(1).stream() << channel_name << ": Aggregate: dropped " << num_dropped_snapshots << " snapshots."
+        if (m_num_dropped_snapshots > 0)
+            Log(1).stream() << m_channel_name << ": Aggregate: dropped " << m_num_dropped_snapshots << " snapshots."
                             << std::endl;
     }
 
-    void apply_key_config()
+    Aggregate(Caliper* c, Channel* chn) : m_channel_name { chn->name() }, m_num_dropped_snapshots(0)
     {
-        if (key_attribute_names.empty()) {
-            info.implicit_grouping = true;
-            return;
-        }
-
-        info.implicit_grouping = false;
-
-        // Check for "*" and "path" special arguments to determine
-        // nested or implicit grouping
-
-        {
-            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "*");
-
-            if (it != key_attribute_names.end()) {
-                info.implicit_grouping = true;
-                key_attribute_names.erase(it);
-            }
-        }
-
-        {
-            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "path");
-            if (it != key_attribute_names.end()) {
-                info.group_nested = true;
-                key_attribute_names.erase(it);
-            }
-
-            it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "prop:nested");
-            if (it != key_attribute_names.end()) {
-                info.group_nested = true;
-                key_attribute_names.erase(it);
-            }
-        }
-    }
-
-    Aggregate(Caliper* c, Channel* chn) : channel_name { chn->name() }, num_dropped_snapshots(0)
-    {
-        config = services::init_config_from_spec(chn->config(), s_spec);
-
-        tdb_lock.unlock();
-
-        info.implicit_grouping = true;
-        info.group_nested      = false;
-
-        key_attribute_names = config.get("key").to_stringlist(",");
-        apply_key_config();
-
-        tdb_attr = c->create_attribute(
+        auto cfg = services::init_config_from_spec(chn->config(), s_spec);        
+        m_key_attribute_names = cfg.get("key").to_stringlist(",");
+        
+        m_tdb_attr = c->create_attribute(
             std::string("aggregate.tdb.") + std::to_string(chn->id()),
             CALI_TYPE_PTR,
             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN
         );
+
+        m_tdb_lock.unlock();
     }
 
 public:
@@ -374,15 +318,14 @@ public:
 
     ~Aggregate()
     {
-        ThreadDB* tdb = tdb_list;
+        ThreadDB* tdb = m_tdb_list;
 
         while (tdb) {
             ThreadDB* tmp = tdb->next;
 
             tdb->unlink();
-
-            if (tdb == tdb_list)
-                tdb_list = tmp;
+            if (tdb == m_tdb_list)
+                m_tdb_list = tmp;
 
             delete tdb;
             tdb = tmp;
@@ -429,7 +372,7 @@ const char* Aggregate::s_spec = R"json(
  [
   {
    "name"        : "key",
-   "description" : "Attributes in the aggregation key (i.e., group by)",
+   "description" : "Immediate attributes to include in the aggregation key (group by)",
    "type"        : "string"
   }
  ]

@@ -4,7 +4,6 @@ include_directories("../../src/interface/c_fortran")
 # build the C/C++ CI test apps
 
 set(CALIPER_CI_CXX_TEST_APPS
-  ci_test_aggregate
   ci_test_basic
   ci_test_binding
   ci_test_io
@@ -46,7 +45,6 @@ endforeach()
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
   test_allocservice.py
-  test_aggregate.py
   test_basictrace.py
   test_c_api.py
   test_caliquery.py

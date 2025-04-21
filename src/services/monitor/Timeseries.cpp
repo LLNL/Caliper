@@ -157,7 +157,7 @@ const char* TimeseriesService::s_profile_spec = R"json(
  {
    "CALI_CHANNEL_FLUSH_ON_EXIT"      : "false",
    "CALI_EVENT_ENABLE_SNAPSHOT_INFO" : "false",
-   "CALI_AGGREGATE_KEY"              : "*,mpi.rank"
+   "CALI_AGGREGATE_KEY"              : "mpi.rank"
  }
 }
 )json";

@@ -130,7 +130,6 @@ const char* mpireport_spec = R"json(
  "categories"  : [ "event", "output" ],
  "config"      :
  { "CALI_CHANNEL_FLUSH_ON_EXIT": "false",
-   "CALI_AGGREGATE_KEY": "mpi.function",
    "CALI_EVENT_TRIGGER": "mpi.function",
    "CALI_EVENT_ENABLE_SNAPSHOT_INFO": "false",
    "CALI_TIMER_INCLUSIVE_DURATION": "false",
