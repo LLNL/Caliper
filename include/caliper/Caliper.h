@@ -542,7 +542,7 @@ public:
     std::vector<Entry> get_globals();
 
     /// \brief Return all global attributes for \a chB
-    std::vector<Entry> get_globals(const ChannelBody* chB);
+    std::vector<Entry> get_globals(ChannelBody* chB);
 
     /// \}
     /// \name Explicit snapshot record manipulation

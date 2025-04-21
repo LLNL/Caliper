@@ -8,8 +8,6 @@
 
 #include "caliper/common/Entry.h"
 
-#include "../common/util/spinlock.hpp"
-
 #include <atomic>
 #include <cstdint>
 #include <iostream>
@@ -45,8 +43,6 @@ class Blackboard
     size_t num_skipped;
 
     std::atomic<int> ucount; // update count
-
-    mutable util::spinlock lock;
 
     inline size_t find_existing_entry(cali_id_t key) const
     {
@@ -84,8 +80,6 @@ public:
 
     inline Entry get(cali_id_t key) const
     {
-        std::lock_guard<util::spinlock> g(lock);
-
         size_t I = find_existing_entry(key);
 
         if (hashtable[I].key != key)
