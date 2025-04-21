@@ -70,9 +70,6 @@ AggregateEntry* AggregationDB::find_or_create_entry(SnapshotView key, std::size_
 
 void AggregationDB::process_snapshot(Caliper* c, SnapshotView rec, const AttributeInfo& info)
 {
-    if (rec.empty())
-        return;
-
     // --- extract key entries
 
     FixedSizeSnapshotRecord<MAX_KEYLEN> key;

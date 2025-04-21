@@ -63,7 +63,10 @@ inline bool cali_variant_is_empty(cali_variant_t v)
 
 /** \brief Return type of a variant
  */
-cali_attr_type cali_variant_get_type(cali_variant_t v);
+inline cali_attr_type cali_variant_get_type(cali_variant_t v)
+{
+    return (cali_attr_type) (v.type_and_size & CALI_VARIANT_TYPE_MASK);
+}
 
 /** \brief Return size of the variant's value
  */
