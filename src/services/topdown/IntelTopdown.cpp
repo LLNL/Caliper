@@ -179,12 +179,13 @@ public:
         calculator->setup_config(*c, *channel);
 
         IntelTopdown* instance = new IntelTopdown(calculator);
+        std::string channel_name = channel->name();
 
-        channel->events().pre_flush_evt.connect([instance](Caliper* c, Channel* channel, SnapshotView) {
+        channel->events().pre_flush_evt.connect([instance,channel_name](Caliper* c, ChannelBody*, SnapshotView) {
             if (instance->find_counter_attrs(*c))
                 instance->make_result_attrs(*c);
             else
-                Log(0).stream() << channel->name() << ": topdown: Could not find counter attributes!" << std::endl;
+                Log(0).stream() << channel_name << ": topdown: Could not find counter attributes!\n";
         });
         channel->events().postprocess_snapshot.connect([instance](Caliper*, std::vector<Entry>& rec) {
             instance->postprocess_snapshot_cb(rec);
