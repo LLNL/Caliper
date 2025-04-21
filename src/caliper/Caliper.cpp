@@ -106,7 +106,7 @@ std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& bla
 {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
     {
-        std::lock_guard g(blackboard_lock);
+        std::lock_guard<std::mutex> g(blackboard_lock);
         blackboard.snapshot(rec.builder());
     }
 
