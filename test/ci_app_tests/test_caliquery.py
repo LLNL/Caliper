@@ -9,8 +9,8 @@ class CaliperCaliQueryTest(unittest.TestCase):
     """ cali-query test cases """
 
     def test_caliquery_args(self):
-        target_cmd = [ './ci_test_aggregate' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--aggregate', 'count(),sum(time.inclusive.duration.ns)', '--aggregate-key=loop.id', '-s', 'loop.id=A', '--json' ]
+        target_cmd = [ './ci_test_macros' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--aggregate', 'count(),sum(time.duration.ns)', '--aggregate-key=loop', '-s', 'iteration#main loop=2,loop=fooloop', '--json' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -20,9 +20,9 @@ class CaliperCaliQueryTest(unittest.TestCase):
 
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
-        self.assertEqual(obj[0]["path"], "A")
-        self.assertEqual(obj[0]["count"], 19)
-        self.assertTrue("sum#time.inclusive.duration.ns" in obj[0])
+        self.assertEqual(obj[0]["path"], "main loop/fooloop")
+        self.assertEqual(obj[0]["count"], 9)
+        self.assertTrue("sum#time.duration.ns" in obj[0])
 
     def test_caliquery_list_services(self):
         target_cmd = [ '../../src/tools/cali-query/cali-query', '--help=services' ]
