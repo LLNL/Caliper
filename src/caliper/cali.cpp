@@ -22,7 +22,6 @@
 #include "caliper/reader/QueryProcessor.h"
 
 #include <cstring>
-#include <unordered_map>
 #include <mutex>
 
 #define SNAP_MAX 120

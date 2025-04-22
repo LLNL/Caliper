@@ -42,7 +42,7 @@ typedef std::function<void(CaliperMetadataAccessInterface&, const std::vector<ca
 struct ChannelBody;
 
 /// \brief Maintain a single data collection configuration with
-///    callbacks and associated measurement data.
+///   callbacks and associated measurement data.
 class Channel
 {
     std::shared_ptr<ChannelBody> mP;
@@ -201,15 +201,15 @@ inline bool operator!= (const Channel& a, const Channel& b)
 }
 
 /// \class Caliper
-/// \brief The main interface for the caliper runtime system
+/// \brief Main interface for the caliper runtime system
 ///
-/// The Caliper class provides access to the %Caliper runtime API.
+///   The Caliper class provides access to the %Caliper runtime API.
 /// When created, a Caliper object fetches thread-local and global information
 /// for the %Caliper session. As a result, Caliper objects cannot be used
 /// across thread boundaries. Always create a new Caliper object when leaving
 /// thread scopes -- do not store or copy the object!
 ///
-/// The Caliper class also facilitates signal safety via the \a is_signal
+///   The Caliper class also facilitates signal safety via the \a is_signal
 /// flag. Signal handlers and other non-reentrant functions should create
 /// a Caliper object with the sigsafe_instance() method. Before executing any
 /// potentially non-signal safe actions, callback functions for callbacks
@@ -246,8 +246,8 @@ public:
     /// value to any previous values of the same attribute, creating a
     /// hierarchy.
     ///
-    /// This function invokes pre_begin/post_begin callbacks, unless the
-    /// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+    /// Invokes the pre_begin/post_begin callbacks, unless \a attr has the
+    /// CALI_ATTR_SKIP_EVENTS attribute property is set.
     ///
     /// This function is signal safe.
     ///
@@ -258,8 +258,8 @@ public:
     /// \brief Pop/remove top-most entry with \a attr from
     ///   the process or thread blackboard.
     ///
-    /// This function invokes the pre_end/post_end callbacks, unless the
-    /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
+    /// This function invokes the pre_end callback, unless \a attr has the
+    /// CALI_ATTR_SKIP_EVENTS attribute property set.
     ///
     /// This function is signal safe.
     ///
@@ -268,13 +268,7 @@ public:
 
     /// \brief Pop/remove top-most \a attr entry from blackboard
     ///   and check if current value is equal to \a data
-    ///
-    /// This function invokes the pre_end/post_end callbacks, unless the
-    /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-    ///
-    /// This function is signal safe.
-    ///
-    /// \param attr Attribute key.
+    /// \copydetails Caliper::end(const Attribute&)
     void end_with_value_check(const Attribute& attr, const Variant& data);
 
     /// \brief Set attribute:value pair on the process or thread blackboard
@@ -294,6 +288,8 @@ public:
     /// \brief Mark an asynchronous event with the given info.
     ///
     /// This function invokes the async_event callback on all active channels.
+    ///
+    /// \param info Custom data to be passed into the async_event callback.
     void async_event(SnapshotView info);
 
     /// \}
@@ -338,13 +334,12 @@ public:
 
     /// \brief Trigger and process a snapshot.
     ///
-    /// This function triggers a snapshot on \a channel, similar to
-    /// pull_snapshot(), and passes the snapshot record to snapshot
-    /// processing services registered with the channel.
+    ///   Triggers a snapshot on channel \a chB and then passes the snapshot
+    /// record to the process_snapshot callback.
     ///
     /// This function is signal safe.
     ///
-    /// \param channel The %Caliper channel to fetch and process the snapshot.
+    /// \param chB The %Caliper channel to fetch and process the snapshot.
     /// \param trigger_info A caller-provided list of attributes that is passed
     ///   to the snapshot and process_snapshot callbacks, and added to the
     ///   returned snapshot record.
@@ -352,7 +347,7 @@ public:
 
     /// \brief Specialized snapshot trigger function which replaces a given blackboard entry.
     ///
-    /// Internal-use snapshot trigger function which removes a given blackboard
+    ///   Internal-use snapshot trigger function which removes a given blackboard
     /// snapshot entry before processing the record. This allows for an optimization
     /// when creating event trigger info entries where we replace the context entry
     /// with an augmented entry from \a trigger_info.
@@ -385,7 +380,7 @@ public:
     ///
     /// This function is signal safe.
     ///
-    /// \param channel The %Caliper channel to fetch the snapshot from.
+    /// \param chB The %Caliper channel to fetch the snapshot from.
     /// \param trigger_info A caller-provided record that is passed to the
     ///   snapshot callback, and added to the returned snapshot record.
     /// \param rec The snapshot record buffer to update.
@@ -428,12 +423,12 @@ public:
 
     /// \brief Push attribute:value pair on the channel blackboard.
     ///
-    /// Adds the given attribute/value pair on the given channel's
+    /// Adds the given attribute/value pair on \a chB's
     /// blackboard. Appends the value to any previous values of the
     /// same attribute, creating a hierarchy.
     ///
     /// This function invokes pre_begin/post_begin callbacks, unless the
-    /// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+    /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
     ///
     /// This function is signal safe.
     ///
@@ -447,7 +442,7 @@ public:
     /// \brief Pop/remove top-most entry with given attribute from
     ///   the channel blackboard.
     ///
-    /// This function invokes the pre_end/post_end callbacks, unless the
+    /// This function invokes the pre_end callbacks, unless the
     /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
     ///
     /// This function is signal safe.
@@ -530,7 +525,7 @@ public:
     ///
     /// A special-purpose function which retrieves the current top-most entry in
     /// \a attr's blackboard slot. This is not necessarily \a attr itself because
-    /// reference attributes typically share a single slot. Usually
+    /// reference attributes can share a single blackboard slot. Usually
     /// \ref Caliper::get(const Attribute) should be used instead.
     Entry get_blackboard_entry(const Attribute& attr);
 
@@ -789,7 +784,7 @@ public:
     /// activate the services automatically, they must still be listed in the
     /// CALI_SERVICES_ENABLE configuration variable at runtime.
     /// Services must be provided in a list of CaliperService entries,
-    /// terminated by a `{ nullptr, nullptr}` entry. Example:
+    /// terminated by a `{ nullptr, nullptr }` entry. Example:
     ///
     /// \code
     ///   extern void myservice_register(Caliper* c);
