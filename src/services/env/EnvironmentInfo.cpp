@@ -4,12 +4,11 @@
 // EnvironmentInfo.cpp
 // A Caliper service that collects various environment information
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
 #ifdef _WIN32
@@ -27,7 +26,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -45,8 +43,7 @@ void read_cmdline(Caliper* c, Channel* chn, ConfigSet& config)
 
     // Attempt to open /proc/self/cmdline and read it
 
-    ifstream fs("/proc/self/cmdline");
-
+    std::ifstream fs("/proc/self/cmdline");
     std::vector<Variant> args;
 
     for (std::string arg; std::getline(fs, arg, static_cast<char>(0));)
@@ -118,9 +115,9 @@ void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
 
 void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
 {
-    vector<string> extra_list = config.get("extra").to_stringlist(",:");
+    std::vector<std::string> extra_list = config.get("extra").to_stringlist(",:");
 
-    for (string& env : extra_list) {
+    for (const std::string& env : extra_list) {
         if (env.empty())
             continue;
 

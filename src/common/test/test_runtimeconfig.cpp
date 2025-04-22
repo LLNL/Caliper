@@ -1,4 +1,4 @@
-#include "caliper/common/RuntimeConfig.h"
+#include "../RuntimeConfig.h"
 
 #include "gtest/gtest.h"
 

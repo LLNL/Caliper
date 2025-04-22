@@ -4,8 +4,6 @@
 // CuptiTrace.cpp
 // Implementation of the CUpti trace service
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -13,7 +11,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/unitfmt.h"
 #include "../../common/util/demangle.h"

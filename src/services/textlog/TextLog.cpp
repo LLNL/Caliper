@@ -4,8 +4,6 @@
 // TextLog.cpp
 // Caliper text log service
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -13,7 +11,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/SnapshotTextFormatter.h"
 
@@ -25,7 +22,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {

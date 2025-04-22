@@ -4,15 +4,12 @@
 // Sampler.cpp
 // Caliper sampler service
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -34,7 +31,6 @@
 #include "context.h"
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -160,7 +156,7 @@ void setup_settimer(Caliper* c)
     Variant v_timer(cali_make_variant_from_ptr(twrap));
     c->set(timer_attr, v_timer);
 
-    Log(2).stream() << "Sampler: Registered timer " << v_timer << endl;
+    Log(2).stream() << "Sampler: Registered timer " << v_timer << std::endl;
 }
 
 void clear_timer(Caliper* c, Channel* chn)
@@ -168,7 +164,7 @@ void clear_timer(Caliper* c, Channel* chn)
     Entry e = c->get(timer_attr);
 
     if (e.empty()) {
-        Log(0).stream() << chn->name() << ": Sampler: Timer attribute not found " << endl;
+        Log(0).stream() << chn->name() << ": Sampler: Timer attribute not found\n";
         return;
     }
 
@@ -177,7 +173,7 @@ void clear_timer(Caliper* c, Channel* chn)
     if (!twrap)
         return;
 
-    Log(2).stream() << chn->name() << ": Sampler: Deleting timer " << e.value() << endl;
+    Log(2).stream() << chn->name() << ": Sampler: Deleting timer " << e.value() << std::endl;
 
     timer_delete(twrap->timer);
     delete twrap;
@@ -202,7 +198,7 @@ void pre_finish_cb(Caliper* c, Channel* chn)
 void finish_cb(Caliper* c, Channel* chn)
 {
     Log(1).stream() << chn->name() << ": Sampler: processed " << n_processed_samples << " samples (" << n_samples
-                    << " total, " << n_samples - n_processed_samples << " dropped)." << endl;
+                    << " total, " << n_samples - n_processed_samples << " dropped)." << std::endl;
 
     n_samples           = 0;
     n_processed_samples = 0;
@@ -260,8 +256,7 @@ void sampler_register(Caliper* c, Channel* chn)
     setup_signal();
     setup_settimer(c);
 
-    Log(1).stream() << chn->name() << ": Registered sampler service. Using " << frequency << "Hz sampling frequency."
-                    << endl;
+    Log(1).stream() << chn->name() << ": Registered sampler service. Using " << frequency << "Hz sampling frequency.\n";
 }
 
 } // namespace

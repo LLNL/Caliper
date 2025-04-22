@@ -6,8 +6,8 @@
 /// @brief Caliper TAU service
 
 // Caliper annotation bindings for TAU service
-
-#include "caliper/AnnotationBinding.h"
+#include "../Services.h"
+#include "../../caliper/AnnotationBinding.h"
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Variant.h"
 #include <map>

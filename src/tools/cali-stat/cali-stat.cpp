@@ -13,7 +13,6 @@
 #include "caliper/reader/RecordProcessor.h"
 
 #include "caliper/common/Node.h"
-#include "caliper/common/StringConverter.h"
 
 #include <fstream>
 #include <iostream>
@@ -23,7 +22,6 @@
 #include <sstream>
 
 using namespace cali;
-using namespace std;
 using namespace util;
 
 namespace
@@ -44,8 +42,8 @@ class ReuseStat
 {
     struct S {
         struct ReuseInfo {
-            int              nodes; // number of nodes with this attribute
-            map<string, int> data;  // different data elements
+            int                        nodes; // number of nodes with this attribute
+            std::map<std::string, int> data;  // different data elements
         };
 
         std::map<cali_id_t, ReuseInfo> reuse;
@@ -57,7 +55,7 @@ public:
 
     ReuseStat() : mS(new S) {}
 
-    void print_results(CaliperMetadataAccessInterface& db, ostream& os)
+    void print_results(CaliperMetadataAccessInterface& db, std::ostream& os)
     {
         os << "\nReuse statistics:\n"
            << "Attribute                       #nodes      #elem       #uses       #uses/elem  #uses/node\n";
@@ -74,7 +72,7 @@ public:
                 total_uses += dp.second;
 
             os << std::setw(12) << total_uses << std::setw(12) << (nelem > 0 ? total_uses / nelem : 0.0)
-               << std::setw(12) << (total_uses / p.second.nodes) << endl;
+               << std::setw(12) << (total_uses / p.second.nodes) << std::endl;
         }
     }
 
@@ -88,7 +86,7 @@ public:
             info.nodes                          = 1;
             info.data[node->data().to_string()] = 1;
 
-            mS->reuse.insert(make_pair(node->attribute(), info));
+            mS->reuse.insert(std::make_pair(node->attribute(), info));
         } else {
             ++(it->second.nodes);
             ++(it->second.data[node->data().to_string()]);
@@ -129,9 +127,9 @@ class CaliStreamStat
 
     std::shared_ptr<S> mS;
 
-    string format_size(double size)
+    std::string format_size(double size)
     {
-        ostringstream os;
+        std::ostringstream os;
 
         const char* postfix[] = { "", "KiB", "MiB", "GiB" };
         int         p         = 0;
@@ -148,22 +146,22 @@ public:
 
     CaliStreamStat() : mS(new S { 0, 0, 0, std::numeric_limits<int>::max(), 0, 0, 0, 0, 0, 0 }) {}
 
-    void print_results(ostream& os)
+    void print_results(std::ostream& os)
     {
         os << "Number of records\n"
            << "Total          Nodes          Snapshots\n"
            << std::left << std::setw(15) << mS->n_snapshots + mS->n_nodes << std::setw(15) << mS->n_nodes
-           << std::setw(15) << mS->n_snapshots << endl;
+           << std::setw(15) << mS->n_snapshots << std::endl;
 
         os << "\nNumber of elements\n"
            << "Total          Nodes          Tree refs      Direct val\n"
            << std::setw(15) << mS->n_tot + 4 * mS->n_nodes << std::setw(15) << 4 * mS->n_nodes << std::setw(15)
-           << mS->n_ref << std::setw(15) << 2 * mS->n_val << endl;
+           << mS->n_ref << std::setw(15) << 2 * mS->n_val << std::endl;
 
         os << "\nData size (est.)\n"
            << "Total          Nodes          Snapshots\n"
            << std::setw(15) << format_size(mS->size_nodes + mS->size_snapshots) << std::setw(15)
-           << format_size(mS->size_nodes) << std::setw(15) << format_size(mS->size_snapshots) << endl;
+           << format_size(mS->size_nodes) << std::setw(15) << format_size(mS->size_snapshots) << std::endl;
 
         if (mS->n_snapshots < 1)
             return;
@@ -171,13 +169,13 @@ public:
         os << "\nElements/snapshot\n"
            << "Min            Max            Average\n"
            << std::setw(15) << mS->n_min_snapshot << std::setw(15) << mS->n_max_snapshot << std::setw(15)
-           << static_cast<double>(mS->n_tot) / mS->n_snapshots << endl;
+           << static_cast<double>(mS->n_tot) / mS->n_snapshots << std::endl;
 
         os << "\nAttributes referenced in snapshot records\n"
            << "Total          Average        Refs/Elem\n"
            << std::setw(15) << mS->n_attr_refs << std::setw(15)
            << static_cast<double>(mS->n_attr_refs) / mS->n_snapshots << std::setw(15)
-           << static_cast<double>(mS->n_attr_refs) / (mS->n_tot + 4 * mS->n_nodes) << endl;
+           << static_cast<double>(mS->n_attr_refs) / (mS->n_tot + 4 * mS->n_nodes) << std::endl;
     }
 
     void process_node(CaliperMetadataAccessInterface& db, const Node* node)
@@ -268,17 +266,15 @@ int main(int argc, const char* argv[])
         int i = args.parse(argc, argv);
 
         if (i < argc) {
-            cerr << "cali-stat: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
-
-            args.print_available_options(cerr);
+            std::cerr << "cali-stat: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
+            args.print_available_options(std::cerr);
 
             return -1;
         }
 
         if (args.is_set("help")) {
-            cerr << usage << "\n\n";
-
-            args.print_available_options(cerr);
+            std::cerr << usage << "\n\n";
+            args.print_available_options(std::cerr);
 
             return 0;
         }
@@ -288,16 +284,14 @@ int main(int argc, const char* argv[])
     // --- Create output stream (if requested)
     //
 
-    ofstream fs;
+    std::ofstream fs;
 
     if (args.is_set("output")) {
-        string filename = args.get("output");
-
+        std::string filename = args.get("output");
         fs.open(filename.c_str());
 
         if (!fs) {
-            cerr << "cali-stat: error: could not open output file " << filename << endl;
-
+            std::cerr << "cali-stat: error: could not open output file " << filename << std::endl;
             return -2;
         }
     }
@@ -318,7 +312,7 @@ int main(int argc, const char* argv[])
 
     CaliperMetadataDB metadb;
 
-    for (const string& file : args.arguments()) {
+    for (const std::string& file : args.arguments()) {
         Annotation::Guard g_s(Annotation("cali-stat.stream").set(file.c_str()));
 
         CaliReader reader;
@@ -328,8 +322,8 @@ int main(int argc, const char* argv[])
             std::cerr << "Error reading " << file << ": " << reader.error_msg() << "\n";
     }
 
-    processor.stream_stat.print_results(fs.is_open() ? fs : cout);
+    processor.stream_stat.print_results(fs.is_open() ? fs : std::cout);
 
     if (args.is_set("reuse"))
-        processor.reuse_stat.print_results(metadb, fs.is_open() ? fs : cout);
+        processor.reuse_stat.print_results(metadb, fs.is_open() ? fs : std::cout);
 }

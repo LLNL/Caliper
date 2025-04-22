@@ -8,8 +8,9 @@
 #include <caliper/Caliper.h>
 #include <caliper/SnapshotRecord.h>
 
-#include <caliper/common/RuntimeConfig.h>
 #include <caliper/common/Variant.h>
+
+#include "../src/common/RuntimeConfig.h"
 
 #include <cstdlib>
 #include <cstring>

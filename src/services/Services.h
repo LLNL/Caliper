@@ -2,12 +2,12 @@
 // See top-level LICENSE file for details.
 
 /// \file Services.h
-/// Services class declaration
+/// %Caliper services management
 
 #ifndef CALI_SERVICES_H
 #define CALI_SERVICES_H
 
-#include "caliper/common/RuntimeConfig.h"
+#include "../common/RuntimeConfig.h"
 
 #include <iostream>
 #include <string>
@@ -17,8 +17,17 @@ namespace cali
 {
 
 class Caliper;
-struct CaliperService;
 class Channel;
+
+typedef void (*ServiceRegisterFn)(Caliper* c, Channel* chn);
+
+/// \brief Provides spec and entry point for a %Caliper service.
+struct CaliperService {
+    /// \brief Name (old style) or JSON spec (new) of the service
+    const char* name_or_spec;
+    /// \brief Registration function
+    ServiceRegisterFn register_fn;
+};
 
 namespace services
 {

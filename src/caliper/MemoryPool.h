@@ -24,7 +24,6 @@ class Node;
 class MemoryPool
 {
     struct MemoryPoolImpl;
-
     std::shared_ptr<MemoryPoolImpl> mP;
 
 public:

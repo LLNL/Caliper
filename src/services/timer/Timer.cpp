@@ -4,14 +4,11 @@
 // Timestamp.cpp
 // Timestamp provider for caliper records
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
 
 #include <cassert>
@@ -24,7 +21,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -45,7 +41,7 @@ class TimerService
 
     using clock = std::chrono::steady_clock;
 
-    chrono::time_point<clock> tstart;
+    std::chrono::time_point<clock> tstart;
 
     Attribute timeoffs_attr;
     Attribute timerinfo_attr;
@@ -85,7 +81,7 @@ class TimerService
     void snapshot_cb(Caliper* c, SnapshotView info, SnapshotBuilder& rec)
     {
         auto     now  = clock::now();
-        uint64_t nsec = chrono::duration_cast<chrono::nanoseconds>(now - tstart).count();
+        uint64_t nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(now - tstart).count();
 
         rec.append(offset_attr, Variant(nsec));
 
@@ -212,7 +208,7 @@ public:
             delete instance;
         });
 
-        Log(1).stream() << chn->name() << ": Registered timer service" << endl;
+        Log(1).stream() << chn->name() << ": Registered timer service" << std::endl;
     }
 
 }; // class TimerService

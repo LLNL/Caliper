@@ -3,7 +3,7 @@
 #include "caliper/cali.h"
 #include "caliper/Caliper.h"
 
-#include "caliper/common/RuntimeConfig.h"
+#include "../../src/common/RuntimeConfig.h"
 
 #include <pthread.h>
 

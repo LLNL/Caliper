@@ -11,18 +11,17 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "../common/CompressedSnapshotRecord.h"
+#include "../common/RuntimeConfig.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/QueryProcessor.h"
 
 #include <cstring>
-#include <unordered_map>
 #include <mutex>
 
 #define SNAP_MAX 120

@@ -4,7 +4,7 @@
 /// \file StringConverter.cpp
 /// StringConverter implementation
 
-#include "caliper/common/StringConverter.h"
+#include "StringConverter.h"
 
 #include "util/parse_util.h"
 

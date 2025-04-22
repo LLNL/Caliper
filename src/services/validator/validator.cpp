@@ -4,7 +4,9 @@
 // validator.cpp
 // Caliper annotation nesting validator
 
-#include "caliper/AnnotationBinding.h"
+#include "../Services.h"
+
+#include "../../caliper/AnnotationBinding.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

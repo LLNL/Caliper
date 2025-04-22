@@ -10,7 +10,8 @@
 
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
+
+#include "../common/RuntimeConfig.h"
 
 
 using namespace cali;

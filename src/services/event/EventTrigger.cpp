@@ -4,8 +4,6 @@
 // EventTrigger.cpp
 // Caliper event trigger
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "../../caliper/RegionFilter.h"
@@ -15,7 +13,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <algorithm>
 #include <cassert>
@@ -26,7 +23,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace cali
 {

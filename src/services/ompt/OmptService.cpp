@@ -1,12 +1,13 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 
-#include "caliper/CaliperService.h"
-
 #include "caliper/common/Log.h"
-#include "caliper/common/StringConverter.h"
+
+#include "../../common/StringConverter.h"
 
 #include <omp-tools.h>
 

@@ -6,7 +6,6 @@
 #include "Services.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
 
@@ -17,7 +16,7 @@
 
 using namespace cali;
 
-// List of services, defined in services.inc.cpp
+// Get auto-generated add_default_service_specs() function from services.inc.cpp
 #include "services.inc.cpp"
 
 namespace

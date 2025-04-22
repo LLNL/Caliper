@@ -12,8 +12,6 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 
-#include "../common/util/vlenc.h"
-
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -22,7 +20,6 @@
 #include <mutex>
 
 using namespace cali;
-using namespace std;
 
 #define MAX_KEYLEN 32
 
@@ -1290,14 +1287,14 @@ const struct KernelInfo {
 struct Aggregator::AggregatorImpl {
     // --- data
 
-    vector<string>    m_key_strings;
-    vector<Attribute> m_key_attrs;
-    std::mutex        m_key_lock;
+    std::vector<std::string> m_key_strings;
+    std::vector<Attribute>   m_key_attrs;
+    std::mutex               m_key_lock;
 
     bool m_select_all;
     bool m_select_nested;
 
-    vector<AggregateKernelConfig*> m_kernel_configs;
+    std::vector<AggregateKernelConfig*> m_kernel_configs;
 
     struct AggregateEntry {
         std::vector<Entry>                            key;
@@ -1346,7 +1343,7 @@ struct Aggregator::AggregatorImpl {
         switch (spec.aggregate.selection) {
         case QuerySpec::AggregationSelection::Default:
         case QuerySpec::AggregationSelection::All:
-            m_kernel_configs.push_back(CountKernel::Config::create(vector<string>()));
+            m_kernel_configs.push_back(CountKernel::Config::create(std::vector<std::string>()));
             // TODO: pick class.aggregatable attributes
             break;
         case QuerySpec::AggregationSelection::List:

@@ -23,21 +23,20 @@
 #include <sstream>
 
 using namespace cali;
-using namespace std;
 
 struct UserFormatter::FormatImpl {
     struct Field {
-        string prefix;
+        std::string prefix;
 
-        string    attr_name;
-        Attribute attr;
+        std::string attr_name;
+        Attribute   attr;
 
         size_t width;
         char   align; // 'l', 'r', 'c'
     };                // for the frmtparse function
 
-    vector<Field> m_fields; // for the format strings
-    string        m_title;
+    std::vector<Field> m_fields; // for the format strings
+    std::string        m_title;
 
     std::mutex m_fields_lock;
 
@@ -47,13 +46,13 @@ struct UserFormatter::FormatImpl {
     FormatImpl(OutputStream& os) : m_os(os) {}
 
     // based on SnapshotTextFormatter::parse
-    void parse(const string& formatstring)
+    void parse(const std::string& formatstring)
     {
 
         // parse format: "(prefix string)%[<width+alignment(l|r|c)>]attr_name%..."
-        vector<string> split_string;
+        std::vector<std::string> split_string;
 
-        util::split(formatstring, '%', back_inserter(split_string));
+        util::split(formatstring, '%', std::back_inserter(split_string));
 
         while (!split_string.empty()) {
             Field field = { "", "", Attribute(), 0, 'l' };
@@ -63,8 +62,8 @@ struct UserFormatter::FormatImpl {
 
             // parse field entry
             if (!split_string.empty()) {
-                vector<string> field_strings;
-                util::tokenize(split_string.front(), "[]", back_inserter(field_strings));
+                std::vector<std::string> field_strings;
+                util::tokenize(split_string.front(), "[]", std::back_inserter(field_strings));
 
                 // look for width/alignment specification (in [] brackets)
 
@@ -124,7 +123,7 @@ struct UserFormatter::FormatImpl {
                 attr = f.attr;
             }
 
-            string str;
+            std::string str;
 
             if (attr)
                 for (const Entry& e : list) {

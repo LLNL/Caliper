@@ -4,7 +4,6 @@
 // Callpath.cpp
 // Callpath provider for caliper records using libunwind
 
-#include "caliper/CaliperService.h"
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -12,7 +11,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <cstring>
 #include <string>
@@ -31,7 +29,6 @@
 #define NAMELEN 100
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -73,7 +70,7 @@ class Callpath
             unw_getcontext(&uctx);
 
             if (unw_init_local(&ucursor, &uctx) < 0) {
-                Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
+                Log(0).stream() << "callpath: unable to init libunwind cursor\n";
                 return;
             }
         }
@@ -149,7 +146,7 @@ class Callpath
         unw_getcontext(&uctx);
 
         if (unw_init_local(&ucursor, &uctx) < 0) {
-            Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind" << endl;
+            Log(0).stream() << "callpath: unable to init libunwind\n";
             return;
         }
 

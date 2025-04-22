@@ -2,17 +2,13 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "caliper/CaliperService.h"
-
-#include "../../services/Services.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 using namespace cali;
-using namespace std;
 
 namespace cali
 {

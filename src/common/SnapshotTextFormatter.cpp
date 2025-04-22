@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <iterator>
 #include <mutex>
-#include <vector>
 
 using namespace cali;
 

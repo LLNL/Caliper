@@ -12,7 +12,8 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/StringConverter.h"
+
+#include "../common/StringConverter.h"
 
 #include "../common/util/format_util.h"
 #include "../common/util/split.hpp"

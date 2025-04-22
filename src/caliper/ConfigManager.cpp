@@ -6,10 +6,11 @@
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/StringConverter.h"
 
-#include "../src/common/util/format_util.h"
-#include "../src/common/util/parse_util.h"
+#include "../common/StringConverter.h"
+
+#include "../common/util/format_util.h"
+#include "../common/util/parse_util.h"
 
 #include "../services/Services.h"
 

@@ -4,8 +4,6 @@
 // AsyncEventTrigger.cpp
 // Caliper async event trigger
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

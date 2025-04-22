@@ -4,14 +4,13 @@
 // Pcp.cpp
 // Access Performance co-pilot monitoring
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "../../caliper/machine.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
 
 #include <pcp/pmapi.h>

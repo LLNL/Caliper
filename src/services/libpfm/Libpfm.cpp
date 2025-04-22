@@ -4,14 +4,12 @@
 // Libpfm.cpp
 // libpfm sampling provider for caliper records
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
-#include "../../caliper/MemoryPool.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <mutex>
 
@@ -54,7 +52,6 @@ struct f_owner_ex {
 #endif
 
 using namespace cali;
-using namespace std;
 
 #define MAX_ATTRIBUTES 12
 #define MAX_EVENTS 32
@@ -746,7 +743,7 @@ public:
                 sI->snapshot_cb(rec);
             });
 
-        Log(1).stream() << chn->name() << ": Registered libpfm service" << endl;
+        Log(1).stream() << chn->name() << ": Registered libpfm service" << std::endl;
     }
 }; // class LibpfmService
 

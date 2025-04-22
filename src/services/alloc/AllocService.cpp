@@ -5,7 +5,6 @@
 
 #include "SplayTree.hpp"
 
-#include "caliper/CaliperService.h"
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -13,7 +12,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <algorithm>
 #include <atomic>

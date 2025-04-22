@@ -4,15 +4,12 @@
 // Papi.cpp
 // PAPI provider for caliper records
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/spinlock.hpp"
 

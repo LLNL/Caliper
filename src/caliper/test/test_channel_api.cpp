@@ -1,7 +1,7 @@
 #include "caliper/cali.h"
 #include "caliper/Caliper.h"
 
-#include "caliper/common/RuntimeConfig.h"
+#include "../../common/RuntimeConfig.h"
 
 #include <gtest/gtest.h>
 

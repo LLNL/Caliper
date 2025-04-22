@@ -15,7 +15,8 @@
 
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
+
+#include "../common/RuntimeConfig.h"
 
 #include "../services/Services.h"
 
@@ -35,8 +36,6 @@
 
 using namespace cali;
 using namespace cali::internal;
-
-using namespace std;
 
 using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
 
@@ -105,6 +104,7 @@ std::ostream& print_available_services(std::ostream& os)
 std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard, std::mutex& blackboard_lock)
 {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
+    
     {
         std::lock_guard<std::mutex> g(blackboard_lock);
         blackboard.snapshot(rec.builder());
@@ -303,22 +303,22 @@ struct Caliper::GlobalData {
 
     // --- data
 
-    mutable std::mutex     attribute_lock;
-    map<string, Attribute> attribute_map;
+    mutable std::mutex               attribute_lock;
+    std::map<std::string, Attribute> attribute_map;
 
-    map<string, int> attribute_prop_presets;
-    int              attribute_default_scope;
+    std::map<std::string, int> attribute_prop_presets;
+    int                        attribute_default_scope;
 
     Blackboard process_blackboard;
     std::mutex process_blackboard_lock;
 
-    vector<Channel> all_channels;
-    vector<Channel> active_channels;
+    std::vector<Channel> all_channels;
+    std::vector<Channel> active_channels;
 
     size_t max_active_channels;
 
-    vector<ThreadData*> thread_data;
-    std::mutex          thread_data_lock;
+    std::vector<ThreadData*> thread_data;
+    std::mutex               thread_data_lock;
 
     // --- constructor
 
@@ -365,10 +365,10 @@ struct Caliper::GlobalData {
     {
         auto preset_cfg = config.get("attribute_properties").to_stringlist();
 
-        for (const string& s : preset_cfg) {
+        for (const std::string& s : preset_cfg) {
             auto p = s.find_first_of('=');
 
-            if (p == string::npos)
+            if (p == std::string::npos)
                 continue;
 
             int prop = cali_string2prop(s.substr(p + 1).c_str());
@@ -481,7 +481,7 @@ struct Caliper::GlobalData {
 // --- static member initialization
 
 volatile sig_atomic_t Caliper::GlobalData::s_init_lock = 1;
-mutex                 Caliper::GlobalData::s_init_mutex;
+std::mutex            Caliper::GlobalData::s_init_mutex;
 
 Caliper::GlobalData::S_GObject                Caliper::GlobalData::gObj;
 thread_local Caliper::GlobalData::S_TLSObject Caliper::GlobalData::tObj;
@@ -547,24 +547,13 @@ void log_stack_error(const Node* stack, const Attribute& attr)
     std::string helpstr;
 
     if (stack) {
-        stackstr = "\n  but current region is\n    \"";
-        /*
-        const Node* attr_node = tree.node(stack->attribute());
-
-        if (attr_node)
-            stackstr.append(attr_node->data().to_string());
-        stackstr.append("=");
-*/
+        stackstr = " but current region is \"";
         stackstr.append(stack->data().to_string());
         stackstr.append("\".");
-
-        helpstr =
-            "\n  Run program with CALI_SERVICES_ENABLE=validator to examine nesting errors, or"
-            "\n  run with CALI_CALIPER_ALLOW_REGION_OVERLAP=true to continue region tracking.";
     } else
-        stackstr = "\n  but region stack is empty!";
+        stackstr = " but region stack is empty!";
 
-    Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name() << "\"" << stackstr
+    Log(0).stream() << "Region stack mismatch: Trying to end \"" << attr.name() << "\"" << stackstr
                     << "\n  Ceasing region tracking!" << helpstr << std::endl;
 }
 
@@ -759,14 +748,6 @@ Attribute Caliper::create_attribute(
     return attr;
 }
 
-bool Caliper::attribute_exists(const std::string& name) const
-{
-    std::lock_guard<::siglock>  gs(sT->lock);
-    std::lock_guard<std::mutex> ga(sG->attribute_lock);
-
-    return (sG->attribute_map.find(name) != sG->attribute_map.end());
-}
-
 Attribute Caliper::get_attribute(const std::string& name) const
 {
     std::lock_guard<::siglock>  gs(sT->lock);
@@ -780,7 +761,6 @@ Attribute Caliper::get_attribute(const std::string& name) const
 Attribute Caliper::get_attribute(cali_id_t id) const
 {
     // no signal lock necessary
-
     return Attribute::make_attribute(sT->tree.node(id));
 }
 
@@ -940,8 +920,14 @@ void Caliper::flush_and_write(ChannelBody* chB, SnapshotView input_flush_info)
     SnapshotRecord flush_info;
     flush_info.builder().append(input_flush_info);
 
-    chB->channel_blackboard.snapshot(flush_info.builder());
-    sG->process_blackboard.snapshot(flush_info.builder());
+    {
+        std::lock_guard<std::mutex> gbb(chB->channel_blackboard_lock);
+        chB->channel_blackboard.snapshot(flush_info.builder());
+    }
+    {
+        std::lock_guard<std::mutex> gbb(sG->process_blackboard_lock);
+        sG->process_blackboard.snapshot(flush_info.builder());
+    }
     sT->thread_blackboard.snapshot(flush_info.builder());
 
     Log(1).stream() << chB->name << ": Flushing Caliper data" << std::endl;
@@ -1521,9 +1507,4 @@ void Caliper::release()
 bool Caliper::is_initialized()
 {
     return GlobalData::s_init_lock == 0;
-}
-
-void Caliper::add_services(const CaliperService* s)
-{
-    services::add_service_specs(s);
 }

@@ -5,8 +5,6 @@
 
 #include "AggregationDB.h"
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 #include "../../common/util/unitfmt.h"
 #include "../../common/util/spinlock.hpp"
@@ -15,7 +13,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
 #include <algorithm>
@@ -25,7 +22,6 @@
 
 using namespace aggregate;
 using namespace cali;
-using namespace std;
 
 namespace
 {

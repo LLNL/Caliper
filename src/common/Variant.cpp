@@ -6,7 +6,7 @@
 
 #include "caliper/common/Variant.h"
 
-#include "caliper/common/StringConverter.h"
+#include "StringConverter.h"
 
 #include "util/format_util.h"
 #include "util/parse_util.h"

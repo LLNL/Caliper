@@ -2,17 +2,17 @@
 // See top-level LICENSE file for details.
 //This is the ex-wrapper.w file
 #include "MpiTracing.h"
+#include "MpiPattern.h"
 
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/MpiEvents.h"
-#include "MpiPattern.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/StringConverter.h"
 #include "caliper/common/Variant.h"
+
+#include "common/RuntimeConfig.h"
 
 #include <mpi.h>
 

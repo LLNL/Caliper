@@ -3,7 +3,7 @@
 
 // RuntimeConfig class implementation
 
-#include "caliper/common/RuntimeConfig.h"
+#include "RuntimeConfig.h"
 
 #include "util/parse_util.h"
 
@@ -19,7 +19,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -61,18 +60,18 @@ const char* builtin_profiles =
     "CALI_MPI_MSG_TRACING=true\n"
     "CALI_RECORDER_FILENAME=%mpi.rank%.cali\n";
 
-string config_var_name(const string& name, const string& key)
+std::string config_var_name(const std::string& name, const std::string& key)
 {
     // make uppercase PREFIX_NAMESPACE_KEY string
 
-    string str = string("CALI_") + name + string("_") + key;
-
-    transform(str.begin(), str.end(), str.begin(), ::toupper);
+    std::string str = std::string("CALI_") + name + std::string("_") + key;
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 
     return str;
 }
 
-typedef map<string, string> config_profile_t;
+typedef std::map<std::string, std::string> config_profile_t;
+
 } // namespace
 
 namespace cali
@@ -85,7 +84,7 @@ namespace cali
 struct ConfigSetImpl {
     // --- data
 
-    std::unordered_map<string, StringConverter> m_dict;
+    std::unordered_map<std::string, StringConverter> m_dict;
 
     // --- interface
 
@@ -149,14 +148,14 @@ struct RuntimeConfig::RuntimeConfigImpl {
     ::config_profile_t m_top_profile;
 
     // the DB of initialized config sets
-    map<string, shared_ptr<ConfigSetImpl>> m_database;
+    std::map<std::string, std::shared_ptr<ConfigSetImpl>> m_database;
 
     // the config profile DB
-    map<string, ::config_profile_t> m_config_profiles;
+    std::map<std::string, ::config_profile_t> m_config_profiles;
 
     // --- helpers
 
-    void read_config_profiles(istream& in)
+    void read_config_profiles(std::istream& in)
     {
         //
         // Parse config file line-by-line
@@ -166,18 +165,18 @@ struct RuntimeConfig::RuntimeConfigImpl {
         //
 
         ::config_profile_t current_profile;
-        string             current_profile_name { "default" };
+        std::string        current_profile_name { "default" };
 
-        for (string line; std::getline(in, line);) {
+        for (std::string line; std::getline(in, line);) {
             if (line.length() < 1)
                 continue;
 
             if (line[0] == '#') {
                 // is it a new profile?
-                string::size_type b = line.find_first_of('[');
-                string::size_type e = line.find_first_of(']');
+                std::string::size_type b = line.find_first_of('[');
+                std::string::size_type e = line.find_first_of(']');
 
-                if (b != string::npos && e != string::npos && b + 1 < e) {
+                if (b != std::string::npos && e != std::string::npos && b + 1 < e) {
                     if (current_profile.size() > 0)
                         m_config_profiles[current_profile_name].insert(current_profile.begin(), current_profile.end());
 
@@ -188,7 +187,7 @@ struct RuntimeConfig::RuntimeConfigImpl {
                 }
             }
 
-            string::size_type s = line.find_first_of('=');
+            std::string::size_type s = line.find_first_of('=');
 
             if (s > 0 && s < line.size()) {
                 std::istringstream is(line.substr(s + 1));
@@ -204,11 +203,11 @@ struct RuntimeConfig::RuntimeConfigImpl {
     {
         // read builtin profiles
 
-        istringstream is(::builtin_profiles);
+        std::istringstream is(::builtin_profiles);
         read_config_profiles(is);
 
         for (const auto& s : filenames) {
-            ifstream fs(s.c_str());
+            std::ifstream fs(s.c_str());
 
             if (fs)
                 read_config_profiles(fs);
@@ -233,13 +232,13 @@ struct RuntimeConfig::RuntimeConfigImpl {
         }
 
         // read "config" config again: profile may have been set in the file
-        shared_ptr<ConfigSetImpl> config_cfg { new ConfigSetImpl };
+        std::shared_ptr<ConfigSetImpl> config_cfg { new ConfigSetImpl };
         config_cfg->init("config", configdata, m_allow_read_env, m_combined_profile, m_top_profile);
 
-        m_database.insert(make_pair("config", config_cfg));
+        m_database.insert(std::make_pair("config", config_cfg));
 
         // get the selected config profile names
-        vector<string> profile_names = config_cfg->get("profile").to_stringlist();
+        std::vector<std::string> profile_names = config_cfg->get("profile").to_stringlist();
 
         // merge all selected profiles
         for (const std::string& profile_name : profile_names) {
@@ -276,7 +275,7 @@ struct RuntimeConfig::RuntimeConfigImpl {
             m_top_profile[p.first] = p.second;
     }
 
-    shared_ptr<ConfigSetImpl> init_configset(const char* name, const config_entry_list_t& list)
+    std::shared_ptr<ConfigSetImpl> init_configset(const char* name, const config_entry_list_t& list)
     {
         if (m_database.empty())
             init_config_database();
@@ -286,10 +285,10 @@ struct RuntimeConfig::RuntimeConfigImpl {
         if (it != m_database.end())
             return it->second;
 
-        shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
+        std::shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
 
         ret->init(name, list, m_allow_read_env, m_combined_profile, m_top_profile);
-        m_database.insert(it, make_pair(string(name), ret));
+        m_database.insert(it, make_pair(std::string(name), ret));
 
         return ret;
     }
@@ -308,7 +307,7 @@ struct RuntimeConfig::RuntimeConfigImpl {
 // --- ConfigSet public interface
 //
 
-ConfigSet::ConfigSet(const shared_ptr<ConfigSetImpl>& p) : mP { p }
+ConfigSet::ConfigSet(const std::shared_ptr<ConfigSetImpl>& p) : mP { p }
 {}
 
 StringConverter ConfigSet::get(const char* key) const
@@ -361,7 +360,7 @@ void RuntimeConfig::import(const std::map<std::string, std::string>& values)
     mP->import(values);
 }
 
-void RuntimeConfig::print(ostream& os)
+void RuntimeConfig::print(std::ostream& os)
 {
     mP->print(os);
 }

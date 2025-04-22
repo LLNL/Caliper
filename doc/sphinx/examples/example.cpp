@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-using namespace std;
 
 int factorial(int n);
 
@@ -49,7 +48,7 @@ int main(int argc, char* argv[]) {
     main_attr.set("conclusion");
 
     // Conclude the program
-    cout << "b = " << b << endl;
+    std::cout << "b = " << b << std::endl;
 
     // End the main attribute
     main_attr.end();

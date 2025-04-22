@@ -8,7 +8,6 @@
 #include "caliper/common/Node.h"
 
 using namespace cali;
-using namespace std;
 
 Attribute Attribute::make_attribute(Node* node)
 {

@@ -3,11 +3,12 @@
 
 // Caliper NVidia profiler annotation binding
 
-#include "caliper/AnnotationBinding.h"
+#include "../Services.h"
+
+#include "../../caliper/AnnotationBinding.h"
 
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <nvToolsExt.h>
 

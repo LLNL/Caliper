@@ -25,9 +25,9 @@
 #include <caliper/ChannelController.h>
 #include <caliper/ConfigManager.h>
 
-#include <caliper/common/RuntimeConfig.h>
-
 #include <caliper/cali.h>
+
+#include "../src/common/RuntimeConfig.h"
 
 #include "../src/tools/util/Args.h"
 

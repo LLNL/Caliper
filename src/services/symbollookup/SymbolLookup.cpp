@@ -7,14 +7,12 @@
 #include "Lookup.h"
 
 #include "../Services.h"
-#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <algorithm>
 #include <iterator>

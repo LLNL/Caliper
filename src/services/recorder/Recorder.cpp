@@ -4,8 +4,6 @@
 // Recorder.cpp
 // Caliper event recorder
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -14,7 +12,6 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "caliper/reader/CaliWriter.h"
 
@@ -24,7 +21,6 @@
 #include <string>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {

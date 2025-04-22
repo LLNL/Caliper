@@ -1,8 +1,6 @@
 // Copyright (c) 2015-2024, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
@@ -10,7 +8,6 @@
 
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/unitfmt.h"
 #include "../../common/util/demangle.h"

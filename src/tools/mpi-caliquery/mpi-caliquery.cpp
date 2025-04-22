@@ -20,7 +20,8 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/StringConverter.h"
+
+#include "../../common/StringConverter.h"
 
 #include <iostream>
 

@@ -3,9 +3,11 @@
 
 #include "caliper/CollectiveOutputChannel.h"
 
+#include "CustomOutputController.h"
+#include "OutputCommMpi.h"
+
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/StringConverter.h"
 
 #include "caliper/reader/CalQLParser.h"
 
@@ -14,9 +16,7 @@
 
 #include "caliper/cali-mpi.h"
 
-#include "../caliper/CustomOutputController.h"
-
-#include "OutputCommMpi.h"
+#include "../common/StringConverter.h"
 
 #include <algorithm>
 #include <iostream>
