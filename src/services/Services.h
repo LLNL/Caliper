@@ -2,7 +2,7 @@
 // See top-level LICENSE file for details.
 
 /// \file Services.h
-/// Services class declaration
+/// %Caliper services management
 
 #ifndef CALI_SERVICES_H
 #define CALI_SERVICES_H
@@ -21,10 +21,7 @@ class Channel;
 
 typedef void (*ServiceRegisterFn)(Caliper* c, Channel* chn);
 
-/// \brief Name and entry point for services.
-///
-/// To register services, provide a list of CaliperService entries
-/// to Caliper::add_services() _before_ %Caliper is initialized.
+/// \brief Provides spec and entry point for a %Caliper service.
 struct CaliperService {
     /// \brief Name (old style) or JSON spec (new) of the service
     const char* name_or_spec;
