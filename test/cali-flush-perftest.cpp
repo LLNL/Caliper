@@ -59,7 +59,7 @@ void run(const Config& cfg)
     }
 }
 
-const util::Args::Table option_table[] = {
+const cali::util::Args::Table option_table[] = {
     { "iterations", "iterations", 'i', true, "Number of loop iterations", "ITERATIONS" },
     { "xtra", "xtra", 'x', true, "Number of extra attributes", "XTRA" },
 
@@ -69,7 +69,7 @@ const util::Args::Table option_table[] = {
 
     { "help", "help", 'h', false, "Print help", nullptr },
 
-    util::Args::Terminator
+    cali::util::Args::Terminator
 };
 
 int main(int argc, char* argv[])
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
     // --- Initialization
 
-    util::Args args(option_table);
+    cali::util::Args args(option_table);
 
     int lastarg = args.parse(argc, argv);
 

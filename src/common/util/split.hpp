@@ -7,6 +7,8 @@
 #ifndef UTIL_SPLIT_HPP
 #define UTIL_SPLIT_HPP
 
+namespace cali
+{
 namespace util
 {
 
@@ -59,5 +61,5 @@ void tokenize(String input, const Char* tokens, OutputIterator out)
 }
 
 } // namespace util
-
+} // namespace cali
 #endif

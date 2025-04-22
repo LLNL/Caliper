@@ -442,7 +442,7 @@ class CuptiTraceService
 
                 // append the kernel info
 
-                std::string name = util::demangle(kernel->name);
+                std::string name = cali::util::demangle(kernel->name);
 
                 Attribute attr[5] = { activity_kind_attr,
                                       kernel_name_attr,

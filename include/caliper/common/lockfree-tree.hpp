@@ -9,6 +9,8 @@
 #include <atomic>
 #include <iterator>
 
+namespace cali
+{
 namespace util
 {
 
@@ -94,3 +96,4 @@ public:
 };
 
 } // namespace util
+} // namespace cali

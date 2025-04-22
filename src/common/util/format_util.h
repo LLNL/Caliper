@@ -10,6 +10,8 @@
 #include <iostream>
 #include <string>
 
+namespace cali
+{
 namespace util
 {
 
@@ -89,3 +91,4 @@ std::ostream& pad_left(std::ostream& os, const std::string& str, std::size_t wid
 std::string clamp_string(const std::string& str, std::size_t max_width);
 
 } // namespace util
+} // namespace cali

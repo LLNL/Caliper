@@ -12,7 +12,7 @@ const char whitespace[80 + 1] =
 
 }
 
-std::ostream& util::pad_right(std::ostream& os, const std::string& str, std::size_t width)
+std::ostream& cali::util::pad_right(std::ostream& os, const std::string& str, std::size_t width)
 {
     os << str;
 
@@ -30,7 +30,7 @@ std::ostream& util::pad_right(std::ostream& os, const std::string& str, std::siz
     return os;
 }
 
-std::ostream& util::pad_left(std::ostream& os, const std::string& str, std::size_t width)
+std::ostream& cali::util::pad_left(std::ostream& os, const std::string& str, std::size_t width)
 {
     if (str.size() < width) {
         std::size_t s = width - str.size();
@@ -46,7 +46,7 @@ std::ostream& util::pad_left(std::ostream& os, const std::string& str, std::size
     return os;
 }
 
-std::string util::clamp_string(const std::string& str, std::size_t max_width)
+std::string cali::util::clamp_string(const std::string& str, std::size_t max_width)
 {
     if (str.length() <= max_width)
         return str;

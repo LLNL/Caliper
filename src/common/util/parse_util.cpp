@@ -5,7 +5,7 @@
 
 #include <cctype>
 
-std::string util::read_word(std::istream& is, const char* separators)
+std::string cali::util::read_word(std::istream& is, const char* separators)
 {
     std::string ret;
     char        c;
@@ -46,7 +46,7 @@ std::string util::read_word(std::istream& is, const char* separators)
     return ret;
 }
 
-std::string util::read_nested_text(std::istream& is, char start_char, char end_char)
+std::string cali::util::read_nested_text(std::istream& is, char start_char, char end_char)
 {
     std::string ret;
     bool        esc   = false;
@@ -84,7 +84,7 @@ std::string util::read_nested_text(std::istream& is, char start_char, char end_c
     return ret;
 }
 
-char util::read_char(std::istream& is)
+char cali::util::read_char(std::istream& is)
 {
     char c = '\0';
 

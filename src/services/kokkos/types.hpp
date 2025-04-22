@@ -2,7 +2,7 @@
 #define CALIPER_SERVICES_KOKKOS_COMMON_HPP
 
 #include <cstdint>
-#include <caliper/common/callback.hpp>
+#include <caliper/callback.hpp>
 
 namespace cali
 {

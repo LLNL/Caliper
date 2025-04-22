@@ -26,7 +26,7 @@
 #include <iostream>
 
 using namespace cali;
-using namespace util;
+using namespace cali::util;
 
 namespace
 {
