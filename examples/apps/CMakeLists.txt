@@ -8,7 +8,6 @@ set(CALIPER_CXX_EXAMPLE_APPS
   cali-memtracking
   cali-memtracking-macros
   cali-perfproblem-branch-mispred
-  cali-functional
   cali-regionprofile)
 set(CALIPER_MPI_EXAMPLE_APPS
   collective-output-channel)
