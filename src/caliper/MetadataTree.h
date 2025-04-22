@@ -9,7 +9,6 @@
 #include "MemoryPool.h"
 
 #include <atomic>
-#include <memory>
 
 namespace cali
 {

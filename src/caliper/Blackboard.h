@@ -11,7 +11,6 @@
 #include <atomic>
 #include <cstdint>
 #include <iostream>
-#include <mutex>
 
 namespace cali
 {
