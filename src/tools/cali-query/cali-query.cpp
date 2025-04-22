@@ -148,21 +148,6 @@ struct NodeFilterStep {
 
 } // namespace
 
-const char* progress_config_spec =
-    "{"
-    " \"name\"        : \"caliquery-progress\","
-    " \"description\" : \"Print cali-query progress (when processing multiple files)\","
-    " \"services\"    : [ \"event\", \"textlog\", \"timer\" ],"
-    " \"config\"      : {"
-    "   \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\","
-    "   \"CALI_EVENT_TRIGGER\"         : \"cali-query.stream\","
-    "   \"CALI_TEXTLOG_TRIGGER\"       : \"cali-query.stream\","
-    "   \"CALI_TEXTLOG_FILENAME\"      : \"stderr\","
-    "   \"CALI_TEXTLOG_FORMATSTRING\"  : "
-    "     \"cali-query: Processed %[52]cali-query.stream% %[6]time.duration.ns% ns\""
-    "  }"
-    "}";
-
 void setup_caliper_config(const Args& args)
 {
     //   Configure the default config, which can be provided by the user through
@@ -188,10 +173,7 @@ int main(int argc, const char* argv[])
 
     // The Caliper config setup must run before Caliper runtime initialization
     setup_caliper_config(args);
-
     ConfigManager mgr;
-
-    mgr.add_config_spec(progress_config_spec);
 
     //
     // --- Parse command line arguments
