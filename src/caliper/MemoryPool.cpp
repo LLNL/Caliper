@@ -14,7 +14,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 struct MemoryPool::MemoryPoolImpl {
     // --- data
@@ -33,8 +32,9 @@ struct MemoryPool::MemoryPoolImpl {
 
     util::spinlock m_lock;
 
-    vector<Chunk> m_chunks;
-    bool          m_can_expand;
+    std::vector<Chunk> m_chunks;
+
+    bool m_can_expand;
 
     size_t m_total_reserved;
     size_t m_total_used;
@@ -43,12 +43,10 @@ struct MemoryPool::MemoryPoolImpl {
 
     void expand(size_t bytes)
     {
-        size_t len = max(bytes, chunksize);
-
+        size_t len = std::max(bytes, chunksize);
         unsigned char* ptr = new unsigned char[len];
 
         std::fill_n(ptr, len, 0);
-
         m_chunks.push_back({ ptr, 0, len });
 
         m_total_reserved += len;

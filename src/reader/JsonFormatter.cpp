@@ -24,11 +24,10 @@
 #include <iostream>
 
 using namespace cali;
-using namespace std;
 
 struct JsonFormatter::JsonFormatterImpl {
-    set<string> m_selected;
-    set<string> m_deselected;
+    std::set<std::string> m_selected;
+    std::set<std::string> m_deselected;
 
     OutputStream m_os;
 
@@ -49,18 +48,18 @@ struct JsonFormatter::JsonFormatterImpl {
 
     JsonFormatterImpl(OutputStream& os) : m_os(os) {}
 
-    void parse(const string& field_string)
+    void parse(const std::string& field_string)
     {
-        vector<string> fields;
+        std::vector<std::string> fields;
 
-        util::split(field_string, ':', back_inserter(fields));
+        util::split(field_string, ':', std::back_inserter(fields));
 
-        for (const string& s : fields) {
+        for (const std::string& s : fields) {
             if (s.size() == 0)
                 continue;
 
             if (s[0] == '-')
-                m_deselected.insert(s.substr(1, string::npos));
+                m_deselected.insert(s.substr(1, std::string::npos));
             else
                 m_selected.insert(s);
         }

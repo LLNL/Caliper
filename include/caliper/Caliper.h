@@ -572,9 +572,6 @@ public:
     /// \name Context tree manipulation and metadata access
     /// \{
 
-    /// \brief Return \a true if the attribute with name \a name exists
-    bool attribute_exists(const std::string& name) const;
-
     /// \brief Return the attribute object for a given attribute ID
     Attribute get_attribute(cali_id_t id) const;
     /// \brief Return the attribute object for the given attribute name

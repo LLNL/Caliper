@@ -22,13 +22,12 @@
 #include <sstream>
 
 using namespace cali;
-using namespace std;
 
 struct Expand::ExpandImpl {
-    set<string> m_selected;
-    set<string> m_deselected;
+    std::set<std::string> m_selected;
+    std::set<std::string> m_deselected;
 
-    std::map<string, string> m_aliases;
+    std::map<std::string, std::string> m_aliases;
 
     OutputStream m_os;
 
@@ -36,18 +35,18 @@ struct Expand::ExpandImpl {
 
     ExpandImpl(OutputStream& os) : m_os(os) {}
 
-    void parse(const string& field_string)
+    void parse(const std::string& field_string)
     {
-        vector<string> fields;
+        std::vector<std::string> fields;
 
-        util::split(field_string, ':', back_inserter(fields));
+        util::split(field_string, ':', std::back_inserter(fields));
 
-        for (const string& s : fields) {
+        for (const std::string& s : fields) {
             if (s.size() == 0)
                 continue;
 
             if (s[0] == '-')
-                m_deselected.insert(s.substr(1, string::npos));
+                m_deselected.insert(s.substr(1, std::string::npos));
             else
                 m_selected.insert(s);
         }
@@ -79,10 +78,10 @@ struct Expand::ExpandImpl {
 
         for (const Entry& e : list) {
             if (e.is_reference()) {
-                vector<const Node*> nodes;
+                std::vector<const Node*> nodes;
 
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
-                    string name = db.get_attribute(node->attribute()).name();
+                    std::string name = db.get_attribute(node->attribute()).name();
 
                     if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                         continue;
@@ -117,7 +116,7 @@ struct Expand::ExpandImpl {
                     os << (*it)->data().to_string();
                 }
             } else if (e.is_immediate()) {
-                string name = db.get_attribute(e.attribute()).name();
+                std::string name = db.get_attribute(e.attribute()).name();
 
                 if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
@@ -134,15 +133,13 @@ struct Expand::ExpandImpl {
 
         if (nentry > 0) {
             std::lock_guard<std::mutex> g(m_os_lock);
-
             std::ostream* real_os = m_os.stream();
-
-            *real_os << os.str() << endl;
+            *real_os << os.str() << std::endl;
         }
     }
 };
 
-Expand::Expand(OutputStream& os, const string& field_string) : mP { new ExpandImpl(os) }
+Expand::Expand(OutputStream& os, const std::string& field_string) : mP { new ExpandImpl(os) }
 {
     mP->parse(field_string);
 }

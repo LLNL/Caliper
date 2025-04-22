@@ -15,7 +15,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -30,9 +29,7 @@ public:
     fast_istringstream(std::string::iterator b, std::string::iterator e) : it_ { b }, end_ { e } {}
 
     inline bool good() const { return it_ != end_; }
-
     inline char get() { return *it_++; }
-
     inline void unget() { --it_; }
 
     inline bool matches(char c)
@@ -202,7 +199,7 @@ struct CaliReader::CaliReaderImpl {
 
         for (cali_id_t id : refs)
             rec.push_back(db.merge_entry(id, idmap));
-        for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
+        for (size_t i = 0; i < std::min(attr.size(), data.size()); ++i)
             rec.push_back(db.merge_entry(attr[i], data[i], idmap));
 
         snap_proc(db, rec);
@@ -230,7 +227,7 @@ struct CaliReader::CaliReaderImpl {
 
         for (cali_id_t id : refs)
             db.merge_global(id, idmap);
-        for (size_t i = 0; i < min(attr.size(), data.size()); ++i)
+        for (size_t i = 0; i < std::min(attr.size(), data.size()); ++i)
             db.merge_global(attr[i], data[i], idmap);
     }
 

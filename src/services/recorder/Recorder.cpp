@@ -24,7 +24,6 @@
 #include <string>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {

@@ -25,7 +25,6 @@
 
 using namespace aggregate;
 using namespace cali;
-using namespace std;
 
 namespace
 {

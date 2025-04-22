@@ -12,7 +12,6 @@
 #include <map>
 
 using namespace cali;
-using namespace std;
 
 struct LogImpl {
     // --- data
@@ -36,7 +35,7 @@ struct LogImpl {
 
     void init_stream(const std::string& name)
     {
-        const map<string, Stream> strmap { { "none", Stream::None },
+        const std::map<std::string, Stream> strmap { { "none", Stream::None },
                                            { "stdout", Stream::StdOut },
                                            { "stderr", Stream::StdErr } };
 
@@ -48,7 +47,7 @@ struct LogImpl {
             m_ofstream.open(name);
 
             if (!m_ofstream && m_verbosity > 0)
-                cerr << s_prefix << "Could not open log file " << name << endl;
+                std::cerr << s_prefix << "Could not open log file " << name << std::endl;
         } else
             m_stream = it->second;
     }
@@ -63,7 +62,7 @@ struct LogImpl {
         init_stream(config.get("logfile").to_string());
     }
 
-    ostream& get_stream()
+    std::ostream& get_stream()
     {
         switch (m_stream) {
         case Stream::StdOut:
@@ -105,12 +104,12 @@ LogImpl* LogImpl::s_instance = nullptr;
 // --- Log public interface
 //
 
-ostream& Log::get_stream()
+std::ostream& Log::get_stream()
 {
     return LogImpl::s_instance->get_stream() << LogImpl::s_instance->m_prefix;
 }
 
-ostream& Log::perror(int errnum, const char* msg)
+std::ostream& Log::perror(int errnum, const char* msg)
 {
     if (verbosity() < m_level)
         return m_nullstream;

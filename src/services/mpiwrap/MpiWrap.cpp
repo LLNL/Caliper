@@ -12,7 +12,6 @@
 #include "caliper/common/RuntimeConfig.h"
 
 using namespace cali;
-using namespace std;
 
 namespace cali
 {

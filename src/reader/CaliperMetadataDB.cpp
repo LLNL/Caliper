@@ -17,7 +17,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
@@ -31,20 +30,20 @@ inline cali_id_t map_id(cali_id_t id, const IdMap& idmap)
 } // namespace
 
 struct CaliperMetadataDB::CaliperMetadataDBImpl {
-    Node          m_root;  ///< (Artificial) root node
-    vector<Node*> m_nodes; ///< Node list
-    mutable mutex m_node_lock;
+    Node               m_root;  ///< (Artificial) root node
+    std::vector<Node*> m_nodes; ///< Node list
+    mutable std::mutex m_node_lock;
 
     Node* m_type_nodes[CALI_MAXTYPE + 1] = { 0 };
 
-    map<string, Node*> m_attributes;
-    mutable mutex      m_attribute_lock;
+    std::map<std::string, Node*> m_attributes;
+    mutable std::mutex           m_attribute_lock;
 
-    vector<const char*> m_string_db;
-    mutable mutex       m_string_db_lock;
+    std::vector<const char*> m_string_db;
+    mutable std::mutex       m_string_db_lock;
 
-    vector<Entry> m_globals;
-    mutex         m_globals_lock;
+    std::vector<Entry> m_globals;
+    std::mutex         m_globals_lock;
 
     std::map<std::string, std::string> m_attr_aliases;
     std::map<std::string, std::string> m_attr_units;
@@ -219,7 +218,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
         if (new_node && node->attribute() == Attribute::NAME_ATTR_ID) {
             std::lock_guard<std::mutex> g(m_attribute_lock);
 
-            m_attributes.insert(make_pair(string(node->data().to_string()), node));
+            m_attributes.insert(std::make_pair(std::string(node->data().to_string()), node));
         }
 
         return node;
@@ -235,7 +234,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
         Node* node = merge_node(node_id, attr_id, prnt_id, v_data);
 
         if (node_id != node->id())
-            idmap.insert(make_pair(node_id, node->id()));
+            idmap.insert(std::make_pair(node_id, node->id()));
 
         return node;
     }
@@ -424,7 +423,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
 
         Node* node = make_tree_entry(2, n_attr, n_data, parent);
 
-        m_attributes.insert(make_pair(string(name), node));
+        m_attributes.insert(std::make_pair(std::string(name), node));
 
         return Attribute::make_attribute(node);
     }

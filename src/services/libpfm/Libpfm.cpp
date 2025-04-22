@@ -54,7 +54,6 @@ struct f_owner_ex {
 #endif
 
 using namespace cali;
-using namespace std;
 
 #define MAX_ATTRIBUTES 12
 #define MAX_EVENTS 32
@@ -746,7 +745,7 @@ public:
                 sI->snapshot_cb(rec);
             });
 
-        Log(1).stream() << chn->name() << ": Registered libpfm service" << endl;
+        Log(1).stream() << chn->name() << ": Registered libpfm service" << std::endl;
     }
 }; // class LibpfmService
 

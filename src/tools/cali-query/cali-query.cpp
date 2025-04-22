@@ -31,7 +31,6 @@
 #include <sstream>
 
 using namespace cali;
-using namespace std;
 using namespace util;
 
 namespace
@@ -203,8 +202,8 @@ int main(int argc, const char* argv[])
         int i = args.parse(argc, argv);
 
         if (i < argc) {
-            cerr << "cali-query: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
-            args.print_available_options(cerr);
+            std::cerr << "cali-query: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
+            args.print_available_options(std::cerr);
             return -1;
         }
 
@@ -214,7 +213,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("version")) {
-            cerr << cali_caliper_version() << std::endl;
+            std::cerr << cali_caliper_version() << std::endl;
             return 0;
         }
     }
@@ -256,7 +255,7 @@ int main(int argc, const char* argv[])
     QueryArgsParser query_parser;
 
     if (!query_parser.parse_args(args)) {
-        cerr << "cali-query: Invalid query: " << query_parser.error_msg() << std::endl;
+        std::cerr << "cali-query: Invalid query: " << query_parser.error_msg() << std::endl;
         return -2;
     }
 

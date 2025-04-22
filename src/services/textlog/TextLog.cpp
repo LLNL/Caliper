@@ -25,7 +25,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {

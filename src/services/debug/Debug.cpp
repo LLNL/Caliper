@@ -15,53 +15,52 @@
 #include <mutex>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
 
-mutex dbg_mutex;
+std::mutex dbg_mutex;
 
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << "Event: create_attribute (attr=" << attr << ")\n";
 }
 
 void begin_cb(Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")\n";
 }
 
 void end_cb(Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_end (" << attr.name() << "=" << value << ")" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << "Event: pre_end (" << attr.name() << "=" << value << ")\n";
 }
 
 void set_cb(Caliper* c, ChannelBody*, const Attribute& attr, const Variant& value)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_set (" << attr.name() << "=" << value << ")" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << "Event: pre_set (" << attr.name() << "=" << value << ")\n";
 }
 
 void create_thread_cb(Caliper* c, Channel* chn)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: create_thread" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << chn->name() << ": Event: create_thread\n";
 }
 
 void release_thread_cb(Caliper* c, Channel* chn)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: release_thread" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << chn->name() << ": Event: release_thread\n";
 }
 
 void snapshot_cb(Caliper* c, SnapshotView, SnapshotBuilder&)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: snapshot" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << "Event: snapshot\n";
 }
 
 std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView rec)
@@ -82,14 +81,14 @@ std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView r
 
 void process_snapshot_cb(Caliper* c, SnapshotView, SnapshotView rec)
 {
-    lock_guard<mutex> lock(dbg_mutex);
+    std::lock_guard<std::mutex> lock(dbg_mutex);
     print_snapshot_record(c, Log(1).stream() << "Event: process_snapshot: ", rec) << std::endl;
 }
 
 void finish_cb(Caliper* c, Channel* chn)
 {
-    lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << chn->name() << ": Event: finish" << endl;
+    std::lock_guard<std::mutex> lock(dbg_mutex);
+    Log(1).stream() << chn->name() << ": Event: finish\n";
 }
 
 void debug_service_register(Caliper* c, Channel* chn)
@@ -104,7 +103,7 @@ void debug_service_register(Caliper* c, Channel* chn)
     chn->events().snapshot.connect(&snapshot_cb);
     chn->events().process_snapshot.connect(&process_snapshot_cb);
 
-    Log(1).stream() << chn->name() << ": Registered debug service" << endl;
+    Log(1).stream() << chn->name() << ": Registered debug service" << std::endl;
 }
 
 } // namespace
