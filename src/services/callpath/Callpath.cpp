@@ -11,7 +11,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <cstring>
 #include <string>

@@ -3,7 +3,7 @@
 
 // RuntimeConfig class implementation
 
-#include "caliper/common/RuntimeConfig.h"
+#include "RuntimeConfig.h"
 
 #include "util/parse_util.h"
 

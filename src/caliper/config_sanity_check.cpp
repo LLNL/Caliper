@@ -4,7 +4,8 @@
 // Perform Caliper configuration sanity check
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
+
+#include "../common/RuntimeConfig.h"
 
 #include <algorithm>
 #include <iterator>

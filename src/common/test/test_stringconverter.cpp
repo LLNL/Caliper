@@ -1,6 +1,6 @@
 // Test the StringConverter class
 
-#include "caliper/common/StringConverter.h"
+#include "../StringConverter.h"
 
 #include "gtest/gtest.h"
 

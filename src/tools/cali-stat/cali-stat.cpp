@@ -13,7 +13,6 @@
 #include "caliper/reader/RecordProcessor.h"
 
 #include "caliper/common/Node.h"
-#include "caliper/common/StringConverter.h"
 
 #include <fstream>
 #include <iostream>

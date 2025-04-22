@@ -9,7 +9,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "../../common/util/format_util.h"
 

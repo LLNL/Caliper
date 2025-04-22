@@ -7,7 +7,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <pthread.h>
 #include <time.h>

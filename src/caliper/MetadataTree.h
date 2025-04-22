@@ -4,9 +4,10 @@
 #pragma once
 
 #include "caliper/common/Node.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "MemoryPool.h"
+
+#include "../common/RuntimeConfig.h"
 
 #include <atomic>
 

@@ -3,7 +3,7 @@
 
 #include "MemoryPool.h"
 
-#include "caliper/common/RuntimeConfig.h"
+#include "../common/RuntimeConfig.h"
 
 #include "../common/util/spinlock.hpp"
 #include "../common/util/unitfmt.h"

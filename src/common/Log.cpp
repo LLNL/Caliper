@@ -5,7 +5,8 @@
 /// Log class implementation
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
+
+#include "RuntimeConfig.h"
 
 #include <cstring>
 #include <memory>

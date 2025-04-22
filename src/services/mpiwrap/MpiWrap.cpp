@@ -7,7 +7,6 @@
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 using namespace cali;
 

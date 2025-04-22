@@ -23,7 +23,6 @@
 
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/StringConverter.h"
 
 #include <fstream>
 #include <iostream>

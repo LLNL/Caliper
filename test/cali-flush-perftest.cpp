@@ -12,11 +12,11 @@
 // between threads using OpenMP.
 
 #include <caliper/common/Attribute.h>
-#include <caliper/common/RuntimeConfig.h>
 
 #include <caliper/Caliper.h>
-
 #include <caliper/cali.h>
+
+#include "../src/common/RuntimeConfig.h"
 
 #include "../src/tools/util/Args.h"
 

@@ -39,7 +39,6 @@
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include <iterator>
 #include <cstdint>

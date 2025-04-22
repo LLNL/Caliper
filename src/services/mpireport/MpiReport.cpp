@@ -11,7 +11,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"

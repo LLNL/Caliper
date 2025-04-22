@@ -12,8 +12,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
-#include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/StringConverter.h"
 
 #include "../Services.h"
 

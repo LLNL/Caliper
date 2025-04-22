@@ -11,11 +11,11 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "../common/CompressedSnapshotRecord.h"
+#include "../common/RuntimeConfig.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
 #include "caliper/reader/CalQLParser.h"
