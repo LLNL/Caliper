@@ -9,7 +9,7 @@
 #include <cstring>
 #include <map>
 
-using namespace util;
+using namespace cali::util;
 
 struct Args::ArgsImpl {
     std::vector<Args::Table> m_options; ///< Option list

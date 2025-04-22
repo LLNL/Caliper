@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace util
+namespace cali
 {
 
 template <class T, class Cmp>
@@ -203,4 +203,4 @@ public:
     operator bool () const { return m_root != nullptr; }
 };
 
-} // namespace util
+} // namespace cali

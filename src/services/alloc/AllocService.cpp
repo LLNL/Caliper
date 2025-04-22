@@ -22,7 +22,7 @@
 #define NUM_TRACKED_ALLOC_ATTRS 2
 
 using namespace cali;
-using namespace util;
+using namespace cali::util;
 
 namespace cali
 {
@@ -133,8 +133,8 @@ class AllocService
 
     cali::Node g_alloc_root_node { CALI_INV_ID, CALI_INV_ID, Variant() };
 
-    util::SplayTree<AllocInfo, AllocInfoCmp> g_tree;
-    std::mutex                               g_tree_lock;
+    SplayTree<AllocInfo, AllocInfoCmp> g_tree;
+    std::mutex                         g_tree_lock;
 
     uint64_t   g_active_mem { 0 };
     uint64_t   g_hwm { 0 };

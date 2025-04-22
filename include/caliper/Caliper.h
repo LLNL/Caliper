@@ -7,11 +7,10 @@
 #pragma once
 
 #include "cali_definitions.h"
-
+#include "callback.hpp"
 #include "SnapshotRecord.h"
 
 #include "common/CaliperMetadataAccessInterface.h"
-#include "common/callback.hpp"
 
 #include <memory>
 #include <utility>
@@ -22,7 +21,6 @@ namespace cali
 // --- Forward declarations
 
 class Caliper;
-struct CaliperService;
 class Node;
 class RuntimeConfig;
 

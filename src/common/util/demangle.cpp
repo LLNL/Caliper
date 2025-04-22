@@ -9,6 +9,8 @@
 
 #include <cstring>
 
+namespace cali
+{
 namespace util
 {
 
@@ -41,3 +43,5 @@ std::string demangle(const char* name)
 }
 
 } // namespace util
+
+} // namespace cali

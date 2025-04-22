@@ -5,6 +5,8 @@
 
 #include <caliper/Caliper.h>
 
+namespace cali
+{
 namespace util
 {
 
@@ -61,3 +63,5 @@ struct ChannelList {
 };
 
 } // namespace util
+
+} // namespace cali

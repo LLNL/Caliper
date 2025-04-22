@@ -130,7 +130,7 @@ void record_globals(const Config& cfg, int threads)
 #endif
 }
 
-const util::Args::Table option_table[] = {
+const cali::util::Args::Table option_table[] = {
     { "width", "tree-width", 'w', true, "Context tree width", "WIDTH" },
     { "depth", "tree-width", 'd', true, "Context tree depth", "DEPTH" },
     { "iterations", "iterations", 'i', true, "Iterations", "ITERATIONS" },
@@ -151,7 +151,7 @@ const util::Args::Table option_table[] = {
     { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
     { "help", "help", 'h', false, "Print help", nullptr },
 
-    util::Args::Terminator
+    cali::util::Args::Terminator
 };
 
 int main(int argc, char* argv[])
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 
     // --- initialization
 
-    util::Args args(option_table);
+    cali::util::Args args(option_table);
 
     int lastarg = args.parse(argc, argv);
 

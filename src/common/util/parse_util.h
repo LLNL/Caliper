@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <iostream>
 
+namespace cali
+{
 namespace util
 {
 
@@ -44,3 +46,4 @@ inline std::pair<bool, uint64_t> str_to_uint64(const char* str)
 }
 
 } // namespace util
+} // namespace cali

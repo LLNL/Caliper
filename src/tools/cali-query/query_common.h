@@ -9,16 +9,14 @@
 #include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordProcessor.h"
 
-namespace util
-{
-
-class Args;
-
-}
-
 namespace cali
 {
 
+namespace util
+{
+class Args;
+}
+    
 class CaliperMetadataAccessInterface;
 class ConfigManager;
 

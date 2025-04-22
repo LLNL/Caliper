@@ -4,8 +4,8 @@
 #include "../Services.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/MpiEvents.h"
 #include "caliper/SnapshotRecord.h"
+#include "caliper/MpiEvents.h"
 
 #include "caliper/cali-mpi.h"
 

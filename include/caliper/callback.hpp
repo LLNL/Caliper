@@ -10,6 +10,8 @@
 #include <functional>
 #include <vector>
 
+namespace cali
+{
 namespace util
 {
 
@@ -42,5 +44,5 @@ public:
 };
 
 } // namespace util
-
+} // namespace cali
 #endif

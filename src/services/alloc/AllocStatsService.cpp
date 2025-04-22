@@ -18,7 +18,6 @@
 #include <unordered_map>
 
 using namespace cali;
-using namespace util;
 
 namespace
 {
