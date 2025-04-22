@@ -4,8 +4,6 @@
 // EventTrigger.cpp
 // Caliper event trigger
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "../../caliper/RegionFilter.h"

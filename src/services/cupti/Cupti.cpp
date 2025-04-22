@@ -6,8 +6,6 @@
 
 #include "CuptiEventSampling.h"
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

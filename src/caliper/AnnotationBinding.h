@@ -7,7 +7,6 @@
 #pragma once
 
 #include "caliper/Caliper.h"
-#include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
 

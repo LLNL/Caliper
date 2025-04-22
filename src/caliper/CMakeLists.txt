@@ -24,7 +24,6 @@ if (CALIPER_HAVE_MPI)
     CollectiveOutputChannel.cpp
     OutputCommMpi.cpp
     MpiChannelManager.cpp
-    mpi_flush.cpp
     machine_mpi.cpp
     setup_mpi.cpp)
 else()

@@ -4,10 +4,9 @@
 // Libpfm.cpp
 // libpfm sampling provider for caliper records
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
-#include "../../caliper/MemoryPool.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"

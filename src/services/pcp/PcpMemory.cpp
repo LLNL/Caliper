@@ -4,7 +4,7 @@
 // PcpMemoryBandwidth.cpp
 // Compute memory bandwidth metrics from CAS counters
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

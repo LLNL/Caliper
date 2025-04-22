@@ -4,7 +4,7 @@
 // EnvironmentInfo.cpp
 // A Caliper service that collects various environment information
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 

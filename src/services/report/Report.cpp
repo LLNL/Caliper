@@ -4,8 +4,6 @@
 // Report.cpp
 // Generates text reports from Caliper snapshots on flush() events
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

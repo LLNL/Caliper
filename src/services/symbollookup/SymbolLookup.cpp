@@ -7,7 +7,6 @@
 #include "Lookup.h"
 
 #include "../Services.h"
-#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

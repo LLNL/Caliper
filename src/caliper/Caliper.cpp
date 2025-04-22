@@ -1507,8 +1507,3 @@ bool Caliper::is_initialized()
 {
     return GlobalData::s_init_lock == 0;
 }
-
-void Caliper::add_services(const CaliperService* s)
-{
-    services::add_service_specs(s);
-}

@@ -6,8 +6,6 @@
 //   This is a template for a measurement service (adding measurements
 // to a Caliper snapshot) as developer demo and documentation.
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

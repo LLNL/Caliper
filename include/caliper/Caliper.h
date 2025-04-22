@@ -778,26 +778,6 @@ public:
     ///   after it has been released.
     static void release();
 
-    /// \brief Add a list of %Caliper service specs.
-    ///
-    /// Adds services that will be made available by %Caliper. This does *not*
-    /// activate the services automatically, they must still be listed in the
-    /// CALI_SERVICES_ENABLE configuration variable at runtime.
-    /// Services must be provided in a list of CaliperService entries,
-    /// terminated by a `{ nullptr, nullptr }` entry. Example:
-    ///
-    /// \code
-    ///   extern void myservice_register(Caliper* c);
-    ///
-    ///   CaliperService my_services[] = {
-    ///     { "myservice", myservice_register },
-    ///     { nullptr, nullptr }
-    ///   };
-    ///
-    ///   Caliper::add_services(my_services);
-    /// \endcode
-    static void add_services(const CaliperService*);
-
     friend struct GlobalData;
 };
 

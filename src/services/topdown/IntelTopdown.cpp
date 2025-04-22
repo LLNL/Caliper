@@ -4,8 +4,6 @@
 // IntelTopdown.cpp
 // Intel top-down analysis
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "HaswellTopdown.h"

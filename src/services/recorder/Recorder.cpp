@@ -4,8 +4,6 @@
 // Recorder.cpp
 // Caliper event recorder
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

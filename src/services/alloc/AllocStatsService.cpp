@@ -3,7 +3,6 @@
 
 // Service for hooking memory allocation calls
 
-#include "caliper/CaliperService.h"
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

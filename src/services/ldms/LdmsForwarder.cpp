@@ -1,8 +1,6 @@
 // Copyright (c) 2021, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

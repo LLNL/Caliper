@@ -33,14 +33,13 @@
 // KokkosLookup.cpp
 // Caliper kokkos variable lookup service
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
+#include "caliper/Annotation.h"
 #include "caliper/Caliper.h"
-#include "../../caliper/MemoryPool.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/Annotation.h"
 
 #include <iterator>
 #include <cstdint>

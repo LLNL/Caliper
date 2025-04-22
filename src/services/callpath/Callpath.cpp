@@ -4,7 +4,6 @@
 // Callpath.cpp
 // Callpath provider for caliper records using libunwind
 
-#include "caliper/CaliperService.h"
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

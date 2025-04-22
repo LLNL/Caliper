@@ -4,8 +4,6 @@
 // TextLog.cpp
 // Caliper text log service
 
-#include "caliper/CaliperService.h"
-
 #include "../Services.h"
 
 #include "caliper/Caliper.h"

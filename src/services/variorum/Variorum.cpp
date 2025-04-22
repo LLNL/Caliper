@@ -6,7 +6,7 @@
 // This is a variorum caliper service based on
 // the caliper measurement service template file.
 
-#include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

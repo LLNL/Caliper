@@ -3,9 +3,11 @@
 
 #include "caliper/caliper-config.h"
 
+#include "MpiEvents.h"
 #include "OutputCommMpi.h"
 
-#include "caliper/CaliperService.h"
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 #include "caliper/CustomOutputController.h"
 
 #include "caliper/common/Log.h"
@@ -63,6 +65,16 @@ void custom_output_controller_flush_mpi(COC* controller)
     controller->collective_flush(stream, comm);
 }
 
+// The mpiflush service for flushing builtin channels at MPI_Finalize
+void mpiflush_init(Caliper* c, Channel* channel)
+{
+    mpiwrap_get_events(channel)->mpi_finalize_evt.connect([](Caliper* c, Channel* channel) {
+        c->flush_and_write(channel->body(), SnapshotView());
+    });
+
+    Log(1).stream() << channel->name() << ": Registered mpiflush service" << std::endl;
+}
+
 } // namespace
 
 namespace cali
@@ -72,6 +84,7 @@ extern CaliperService mpiflush_service;
 
 void add_submodule_controllers_and_services()
 {
+    static const CaliperService mpiflush_service = { "mpiflush", ::mpiflush_init };
     static const CaliperService mpi_services[] = { mpiflush_service, { nullptr, nullptr } };
 
     services::add_service_specs(mpi_services);
