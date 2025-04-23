@@ -11,6 +11,12 @@ execute_process(
   OUTPUT_VARIABLE
     CALI_BUILD_TIME
   OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+  COMMAND
+    git branch --show-current
+  OUTPUT_VARIABLE
+    CALI_GIT_BRANCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 configure_file(build_metadata.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/build_metadata.cpp)
 

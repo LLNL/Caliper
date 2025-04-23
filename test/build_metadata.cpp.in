@@ -3,5 +3,6 @@ const char* cali_perftest_build_metadata[][2] = {
     { "compiler_version", "@CMAKE_CXX_COMPILER_VERSION@" },
     { "cmake_build_type", "@CMAKE_BUILD_TYPE@"      },
     { "build_time",       "@CALI_BUILD_TIME@"       },
+    { "git_branch",       "@CALI_GIT_BRANCH@"       },
     { nullptr, nullptr }
 };
