@@ -865,7 +865,7 @@ public:
         Attribute m_percentage_attr;
 
         std::mutex m_total_lock;
-        double     m_total;
+        Variant    m_total;
 
         bool m_is_inclusive;
 
@@ -897,10 +897,9 @@ public:
                 CALI_TYPE_DOUBLE,
                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
             );
-
             m_sum_attr = db.create_attribute(
                 std::string(m_is_inclusive ? "ipct.sum#" : "pct.sum#") + m_target_attr_name,
-                CALI_TYPE_DOUBLE,
+                m_target_attr.type(),
                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
             );
 
@@ -912,19 +911,18 @@ public:
 
         AggregateKernel* make_kernel() { return new PercentTotalKernel(this); }
 
-        void add(double val)
+        void add(Variant val)
         {
             std::lock_guard<std::mutex> g(m_total_lock);
-
             m_total += val;
         }
 
-        double get_total() { return m_total; }
+        double get_total() { return m_total.to_double(); }
 
         bool is_inclusive() const { return m_is_inclusive; }
 
         Config(const std::vector<std::string>& names, bool inclusive)
-            : m_target_attr_name(names.front()), m_total(0), m_is_inclusive(inclusive)
+            : m_target_attr_name(names.front()), m_is_inclusive(inclusive)
         {}
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg, false); }
@@ -935,7 +933,7 @@ public:
         }
     };
 
-    PercentTotalKernel(Config* config) : m_sum(0), m_isum(0), m_config(config) {}
+    PercentTotalKernel(Config* config) : m_config(config) {}
 
     const AggregateKernelConfig* config() { return m_config; }
 
@@ -954,10 +952,9 @@ public:
             cali_id_t id = e.attribute();
 
             if (id == target_id || id == sum_id) {
-                double val = e.value().to_double();
-                m_sum += val;
-                m_isum += val;
-                m_config->add(val);
+                m_sum += e.value();
+                m_isum += e.value();
+                m_config->add(e.value());
             }
         }
     }
@@ -977,7 +974,7 @@ public:
             cali_id_t id = e.attribute();
 
             if (id == target_id || id == sum_id)
-                m_isum += e.value().to_double();
+                m_isum += e.value();
         }
     }
 
@@ -985,21 +982,21 @@ public:
     {
         double total = m_config->get_total();
 
-        if (total > 0) {
+        if (m_isum && total > 0.0) {
             Attribute percentage_attr, sum_attr;
 
             if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
                 return;
 
             list.push_back(Entry(sum_attr, Variant(m_sum)));
-            list.push_back(Entry(percentage_attr, Variant(100.0 * m_isum / total)));
+            list.push_back(Entry(percentage_attr, Variant(100.0 * m_isum.to_double() / total)));
         }
     }
 
 private:
 
-    double m_sum;
-    double m_isum; // inclusive sum
+    Variant m_sum;
+    Variant m_isum; // inclusive sum
 
     std::mutex m_lock;
     Config*    m_config;
