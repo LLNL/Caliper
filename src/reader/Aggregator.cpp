@@ -82,7 +82,7 @@ public:
         Attribute attribute(CaliperMetadataAccessInterface& db)
         {
             if (!m_attr)
-                m_attr = db.create_attribute("count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+                m_attr = db.create_attribute("count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
 
             return m_attr;
         }
@@ -116,7 +116,7 @@ public:
         uint64_t count = m_count.load();
 
         if (count > 0)
-            list.push_back(Entry(m_config->attribute(db), Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t))));
+            list.push_back(Entry(m_config->attribute(db), Variant(cali_make_variant_from_uint(count))));
     }
 
 private:
@@ -261,11 +261,11 @@ public:
         }
     };
 
-    SumKernel(Config* config) : m_count(0), m_config(config) {}
+    SumKernel(Config* config) : m_config(config) {}
 
     const AggregateKernelConfig* config() { return m_config; }
 
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
 
@@ -282,21 +282,19 @@ public:
         for (const Entry& e : rec) {
             if (e.attribute() == tgt_id || e.attribute() == sum_id) {
                 m_sum += e.value();
-                ++m_count;
                 break;
             }
         }
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& rec)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
-        if (m_count > 0)
+        if (m_sum)
             rec.push_back(Entry(m_config->get_sum_attr(db), m_sum));
     }
 
 private:
 
-    unsigned   m_count;
     Variant    m_sum;
     std::mutex m_lock;
     Config*    m_config;
