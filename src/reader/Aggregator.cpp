@@ -26,29 +26,6 @@ using namespace cali;
 namespace
 {
 
-std::vector<Entry> make_key(
-    std::vector<const Node*>::const_iterator nodes_begin,
-    std::vector<const Node*>::const_iterator nodes_end,
-    const std::vector<Entry>&                immediates,
-    CaliperMetadataAccessInterface&          db
-)
-{
-    std::vector<Entry> key;
-    key.reserve(immediates.size() + 1);
-
-    std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
-    std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
-
-    Node* node = db.make_tree_entry(rv_nodes.size(), rv_nodes.data());
-
-    if (node)
-        key.push_back(Entry(node));
-
-    std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
-
-    return key;
-}
-
 std::size_t hash_key(const std::vector<Entry>& key)
 {
     std::size_t hash = 0;
@@ -1409,8 +1386,22 @@ struct Aggregator::AggregatorImpl {
         CaliperMetadataAccessInterface&          db
     )
     {
-        std::vector<Entry> key  = make_key(nodes_begin, nodes_end, immediates, db);
-        std::size_t        hash = hash_key(key) % m_hashmap.size();
+        // --- make key
+
+        std::vector<Entry> key;
+        key.reserve(immediates.size() + 1);
+
+        if (nodes_begin != nodes_end) {
+            std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
+            std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
+            key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
+        }
+
+        std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
+
+        // --- lookup key
+
+        std::size_t hash = hash_key(key) % m_hashmap.size();
 
         {
             std::lock_guard<std::mutex> g(m_entries_lock);
@@ -1421,6 +1412,8 @@ struct Aggregator::AggregatorImpl {
                     return e;
             }
         }
+
+        // --- key not found: create entry
 
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
