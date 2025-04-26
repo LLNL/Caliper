@@ -676,7 +676,7 @@ public:
         apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_isum += e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         double total = m_config->get_total();
         if (m_isum && total > 0.0) {
@@ -1145,9 +1145,6 @@ struct Aggregator::AggregatorImpl {
 
         auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
-        if (!entry)
-            return;
-
         // --- Aggregate
 
         for (size_t k = 0; k < entry->kernels.size(); ++k) {
@@ -1159,10 +1156,6 @@ struct Aggregator::AggregatorImpl {
 
                 for (++it; it != nonnested_begin; ++it) {
                     auto p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
-
-                    if (!p_entry)
-                        break;
-
                     p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
