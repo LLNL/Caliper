@@ -43,20 +43,21 @@ class CustomAttributeManager
     std::string    m_prefix;
     cali_attr_type m_type;
     Attribute      m_attr;
+    int            m_prop;
 
     static const int s_prop { CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS };
 
 public:
 
-    CustomAttributeManager(const std::string& name, cali_attr_type type)
-        : m_name { name }, m_type { type } { }
-    CustomAttributeManager(const std::string& name, const std::string& prefix, cali_attr_type type)
-        : m_name { name }, m_prefix { prefix }, m_type { type } { }
+    CustomAttributeManager(const std::string& name, cali_attr_type type, int prop = 0)
+        : m_name { name }, m_type { type }, m_prop { prop } { }
+    CustomAttributeManager(const std::string& name, const std::string& prefix, cali_attr_type type, int prop = 0)
+        : m_name { name }, m_prefix { prefix }, m_type { type }, m_prop { prop } { }
 
     Attribute get(CaliperMetadataAccessInterface& db)
     {
         if (!m_attr)
-            m_attr = db.create_attribute(m_prefix+m_name, m_type, s_prop);
+            m_attr = db.create_attribute(m_prefix+m_name, m_type, s_prop | m_prop);
         return m_attr;
     }
 };
@@ -67,13 +68,14 @@ class AggregationAttributeManager
     std::string m_prefix;
     Attribute   m_target_attr;
     Attribute   m_derived_attr;
+    int         m_prop;
 
     static const int s_prop { CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS };
 
 public:
 
-    AggregationAttributeManager(const std::string& name, const std::string& prefix)
-        : m_name { name }, m_prefix { prefix } { }
+    AggregationAttributeManager(const std::string& name, const std::string& prefix, int prop = 0)
+        : m_name { name }, m_prefix { prefix }, m_prop { prop } { }
 
     Attribute target_attr(CaliperMetadataAccessInterface& db)
     {
@@ -85,7 +87,7 @@ public:
     Attribute derived_attr(CaliperMetadataAccessInterface& db)
     {
         if (!m_derived_attr && target_attr(db))
-            m_derived_attr = db.create_attribute(m_prefix+m_name, m_target_attr.type(), s_prop);
+            m_derived_attr = db.create_attribute(m_prefix+m_name, m_target_attr.type(), s_prop | m_prop);
         return m_derived_attr;
     }
 };
@@ -315,7 +317,7 @@ public:
         AggregateKernel* make_kernel() override { return new ScaledSumKernel(this); }
 
         Config(const std::vector<std::string>& cfg, bool inclusive)
-            : m_sum_attr { cfg[0], inclusive ? "iscsum#" : "scsum#" }
+            : m_sum_attr { cfg[0], inclusive ? "iscsum#" : "scsum#", CALI_ATTR_HIDDEN }
             , m_res_attr { cfg[0], inclusive ? "iscale#" : "scale#", CALI_TYPE_DOUBLE }
             , m_scale { 1.0 }
             , m_inclusive { inclusive }
@@ -476,9 +478,9 @@ public:
         AggregateKernel* make_kernel() override { return new AvgKernel(this); }
 
         Config(const std::string& name)
-            : m_sum_attr { name, "avg.sum#" }
+            : m_sum_attr { name, "avg.sum#", CALI_ATTR_HIDDEN }
             , m_avg_attr { name, "avg#" }
-            , m_count_attr { name, "avg.count#", CALI_TYPE_UINT }
+            , m_count_attr { name, "avg.count#", CALI_TYPE_UINT, CALI_ATTR_HIDDEN }
         { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg.front()); }
@@ -553,8 +555,8 @@ public:
         AggregateKernel* make_kernel() override { return new ScaledRatioKernel(this); }
 
         Config(const std::vector<std::string>& cfg, bool is_inclusive)
-            : m_tgt1 { cfg[0], is_inclusive ? "isr.sum#" : "sr.sum#" }
-            , m_tgt2 { cfg[1], is_inclusive ? "isr.sum#" : "sr.sum#" }
+            : m_tgt1 { cfg[0], is_inclusive ? "isr.sum#" : "sr.sum#", CALI_ATTR_HIDDEN }
+            , m_tgt2 { cfg[1], is_inclusive ? "isr.sum#" : "sr.sum#", CALI_ATTR_HIDDEN }
             , m_ratio_attr { std::string(is_inclusive ? "iratio#" : "ratio#")+cfg[0]+"/"+cfg[1], CALI_TYPE_DOUBLE }
             , m_scale { 1.0 }
             , m_inclusive { is_inclusive }
@@ -642,7 +644,7 @@ public:
         bool is_inclusive() const override { return m_is_inclusive; }
 
         Config(const std::string target_attr, bool inclusive)
-            : m_sum_attr { target_attr, inclusive ? "ipct.sum#" : "pct.sum#" }
+            : m_sum_attr { target_attr, inclusive ? "ipct.sum#" : "pct.sum#", CALI_ATTR_HIDDEN }
             , m_result_attr { target_attr, inclusive ? "ipercent_total#" : "percent_total#", CALI_TYPE_DOUBLE }
             , m_is_inclusive { inclusive }
         {}
