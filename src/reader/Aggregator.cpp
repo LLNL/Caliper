@@ -26,29 +26,6 @@ using namespace cali;
 namespace
 {
 
-std::vector<Entry> make_key(
-    std::vector<const Node*>::const_iterator nodes_begin,
-    std::vector<const Node*>::const_iterator nodes_end,
-    const std::vector<Entry>&                immediates,
-    CaliperMetadataAccessInterface&          db
-)
-{
-    std::vector<Entry> key;
-    key.reserve(immediates.size() + 1);
-
-    std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
-    std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
-
-    Node* node = db.make_tree_entry(rv_nodes.size(), rv_nodes.data());
-
-    if (node)
-        key.push_back(Entry(node));
-
-    std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
-
-    return key;
-}
-
 std::size_t hash_key(const std::vector<Entry>& key)
 {
     std::size_t hash = 0;
@@ -60,6 +37,72 @@ std::size_t hash_key(const std::vector<Entry>& key)
     return hash;
 }
 
+class CustomAttributeManager
+{
+    std::string    m_name;
+    std::string    m_prefix;
+    cali_attr_type m_type;
+    Attribute      m_attr;
+    int            m_prop;
+
+    static const int s_prop { CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS };
+
+public:
+
+    CustomAttributeManager(const std::string& name, cali_attr_type type, int prop = 0)
+        : m_name { name }, m_type { type }, m_prop { prop } { }
+    CustomAttributeManager(const std::string& name, const std::string& prefix, cali_attr_type type, int prop = 0)
+        : m_name { name }, m_prefix { prefix }, m_type { type }, m_prop { prop } { }
+
+    Attribute get(CaliperMetadataAccessInterface& db)
+    {
+        if (!m_attr)
+            m_attr = db.create_attribute(m_prefix+m_name, m_type, s_prop | m_prop);
+        return m_attr;
+    }
+};
+
+class AggregationAttributeManager
+{
+    std::string m_name;
+    std::string m_prefix;
+    Attribute   m_target_attr;
+    Attribute   m_derived_attr;
+    int         m_prop;
+
+    static const int s_prop { CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS };
+
+public:
+
+    AggregationAttributeManager(const std::string& name, const std::string& prefix, int prop = 0)
+        : m_name { name }, m_prefix { prefix }, m_prop { prop } { }
+
+    Attribute target_attr(CaliperMetadataAccessInterface& db)
+    {
+        if (!m_target_attr)
+            m_target_attr = db.get_attribute(m_name);
+        return m_target_attr;
+    }
+
+    Attribute derived_attr(CaliperMetadataAccessInterface& db)
+    {
+        if (!m_derived_attr && target_attr(db))
+            m_derived_attr = db.create_attribute(m_prefix+m_name, m_target_attr.type(), s_prop | m_prop);
+        return m_derived_attr;
+    }
+};
+
+inline void apply_to_matching_entries(CaliperMetadataAccessInterface& db, AggregationAttributeManager& attr, const std::vector<Entry>& rec, std::function<void(const Entry&)> F)
+{
+    if (!attr.derived_attr(db))
+        return;
+    cali_id_t tgt_attr_id = attr.target_attr(db).id();
+    cali_id_t drv_attr_id = attr.derived_attr(db).id();
+    for (const Entry& e : rec)
+        if (e.node()->id() == tgt_attr_id || e.node()->id() == drv_attr_id)
+            F(e);
+}
+
 class AggregateKernelConfig;
 
 class AggregateKernel
@@ -68,11 +111,8 @@ public:
 
     virtual ~AggregateKernel() {}
 
-    virtual const AggregateKernelConfig* config() = 0;
-
     // For inclusive metrics, parent_aggregate is invoked for parent nodes
     virtual void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) { aggregate(db, list); }
-
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)   = 0;
 };
@@ -84,7 +124,6 @@ public:
     virtual ~AggregateKernelConfig() {}
 
     virtual bool is_inclusive() const { return false; }
-
     virtual AggregateKernel* make_kernel() = 0;
 };
 
@@ -98,33 +137,25 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        Attribute m_attr;
+        CustomAttributeManager m_count_attr;
 
     public:
 
-        Attribute attribute(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_attr)
-                m_attr = db.create_attribute("count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+        Attribute attr(CaliperMetadataAccessInterface& db) { return m_count_attr.get(db); }
 
-            return m_attr;
-        }
+        AggregateKernel* make_kernel() override { return new CountKernel(this); }
 
-        AggregateKernel* make_kernel() { return new CountKernel(this); }
-
-        Config() {}
+        Config() : m_count_attr { "count", CALI_TYPE_UINT } {}
 
         static AggregateKernelConfig* create(const std::vector<std::string>&) { return new Config; }
     };
 
     CountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
-        cali_id_t count_attr_id = m_config->attribute(db).id();
-
+        Attribute count_attr = m_config->attr(db);
+        cali_id_t count_attr_id = count_attr.id();
         for (const Entry& e : list)
             if (e.attribute() == count_attr_id) {
                 m_count += e.value().to_uint();
@@ -134,12 +165,11 @@ public:
         ++m_count;
     }
 
-    void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         uint64_t count = m_count.load();
-
         if (count > 0)
-            list.push_back(Entry(m_config->attribute(db), Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t))));
+            list.push_back(Entry(m_config->attr(db), Variant(cali_make_variant_from_uint(count))));
     }
 
 private:
@@ -154,57 +184,34 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        Attribute m_count_attr;
-        Attribute m_res_attr;
+        CustomAttributeManager m_count_attr;
+        CustomAttributeManager m_result_attr { "scount", CALI_TYPE_DOUBLE };
 
-        double      m_scale;
-        std::string m_scale_str;
+        double m_scale;
 
     public:
-
-        Attribute get_count_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_count_attr) {
-                m_count_attr = db.create_attribute(
-                    std::string("scount#") + m_scale_str,
-                    CALI_TYPE_UINT,
-                    CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
-                );
-            }
-
-            return m_count_attr;
-        }
-
-        Attribute get_result_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_res_attr)
-                m_res_attr = db.create_attribute(std::string("scount"), CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
-
-            return m_res_attr;
-        }
 
         double get_scale() const { return m_scale; }
 
         AggregateKernel* make_kernel() { return new ScaledCountKernel(this); }
 
-        explicit Config(const std::vector<std::string>& cfg) : m_scale(0.0), m_scale_str(cfg[0])
-        {
-            m_scale = std::stod(m_scale_str);
-        }
+        explicit Config(const std::string& scale_str)
+            : m_count_attr { scale_str, "scount#", CALI_TYPE_UINT }
+            , m_scale { std::stod(scale_str) }
+        { }
 
-        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg); }
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg.front()); }
+
+        friend class ScaledCountKernel;
     };
 
     ScaledCountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         std::lock_guard<std::mutex> g(m_lock);
 
-        Attribute count_attr = m_config->get_count_attr(db);
-
+        Attribute count_attr = m_config->m_count_attr.get(db);
         for (const Entry& e : list)
             if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
@@ -214,11 +221,11 @@ public:
         ++m_count;
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         if (m_count > 0) {
-            list.push_back(Entry(m_config->get_count_attr(db), Variant(m_count)));
-            list.push_back(Entry(m_config->get_result_attr(db), Variant(m_config->get_scale() * m_count)));
+            list.push_back(Entry(m_config->m_count_attr.get(db), Variant(m_count)));
+            list.push_back(Entry(m_config->m_result_attr.get(db), Variant(m_config->get_scale() * m_count)));
         }
     }
 
@@ -240,38 +247,20 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-
-        Attribute m_target_attr;
-        Attribute m_sum_attr;
-
+        AggregationAttributeManager m_attr_mgr;
         bool m_is_inclusive;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregationAttributeManager& attr() { return m_attr_mgr; }
 
-        Attribute get_sum_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_sum_attr)
-                m_sum_attr = db.create_attribute(
-                    std::string(m_is_inclusive ? "inclusive#" : "sum#") + m_target_attr_name,
-                    m_target_attr.type(),
-                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
-                );
-            return m_sum_attr;
-        }
+        bool is_inclusive() const override { return m_is_inclusive; }
+        AggregateKernel* make_kernel() override { return new SumKernel(this); }
 
-        bool is_inclusive() const { return m_is_inclusive; }
-
-        AggregateKernel* make_kernel() { return new SumKernel(this); }
-
-        Config(const std::string& name, bool inclusive) : m_target_attr_name(name), m_is_inclusive(inclusive) {}
+        Config(const std::string& target_name, bool is_inclusive) :
+            m_attr_mgr { target_name, is_inclusive ? "inclusive#" : "sum#" },
+            m_is_inclusive { is_inclusive }
+        { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
         {
@@ -284,42 +273,22 @@ public:
         }
     };
 
-    SumKernel(Config* config) : m_count(0), m_config(config) {}
+    SumKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        Attribute target_attr = m_config->get_target_attr(db);
-
-        if (!target_attr)
-            return;
-
-        Attribute sum_attr = m_config->get_sum_attr(db);
-
-        cali_id_t tgt_id = target_attr.id();
-        cali_id_t sum_id = sum_attr.id();
-
-        for (const Entry& e : rec) {
-            if (e.attribute() == tgt_id || e.attribute() == sum_id) {
-                m_sum += e.value();
-                ++m_count;
-                break;
-            }
-        }
+        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& rec)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
-        if (m_count > 0)
-            rec.push_back(Entry(m_config->get_sum_attr(db), m_sum));
+        if (m_sum)
+            rec.push_back(Entry(m_config->attr().derived_attr(db), m_sum));
     }
 
 private:
 
-    unsigned   m_count;
     Variant    m_sum;
     std::mutex m_lock;
     Config*    m_config;
@@ -331,54 +300,27 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-        Attribute   m_sum_attr;
-
-        Attribute m_res_attr;
+        AggregationAttributeManager m_sum_attr;
+        CustomAttributeManager m_res_attr;
 
         double m_scale;
         bool   m_inclusive;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
-
-        Attribute get_sum_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_sum_attr)
-                m_sum_attr = db.create_attribute(
-                    std::string(m_inclusive ? "iscsum#" : "scsum#") + m_target_attr_name,
-                    CALI_TYPE_DOUBLE,
-                    CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
-                );
-            return m_sum_attr;
-        }
-
-        Attribute get_result_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_res_attr)
-                m_res_attr = db.create_attribute(
-                    std::string(m_inclusive ? "iscale#" : "scale#") + m_target_attr_name,
-                    CALI_TYPE_DOUBLE,
-                    CALI_ATTR_ASVALUE
-                );
-            return m_res_attr;
-        }
+        AggregationAttributeManager& sum_attr() { return m_sum_attr; }
+        Attribute result_attr(CaliperMetadataAccessInterface& db) { return m_res_attr.get(db); }
 
         double get_scale() const { return m_scale; }
 
-        bool is_inclusive() const { return m_inclusive; }
-
-        AggregateKernel* make_kernel() { return new ScaledSumKernel(this); }
+        bool is_inclusive() const override { return m_inclusive; }
+        AggregateKernel* make_kernel() override { return new ScaledSumKernel(this); }
 
         Config(const std::vector<std::string>& cfg, bool inclusive)
-            : m_target_attr_name(cfg[0]), m_scale(0.0), m_inclusive(inclusive)
+            : m_sum_attr { cfg[0], inclusive ? "iscsum#" : "scsum#", CALI_ATTR_HIDDEN }
+            , m_res_attr { cfg[0], inclusive ? "iscale#" : "scale#", CALI_TYPE_DOUBLE }
+            , m_scale { 1.0 }
+            , m_inclusive { inclusive }
         {
             if (cfg.size() > 1)
                 m_scale = std::stod(cfg[1]);
@@ -392,41 +334,27 @@ public:
         }
     };
 
-    ScaledSumKernel(Config* config) : m_count(0), m_sum(0.0), m_config(config) {}
+    ScaledSumKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        Attribute target_attr = m_config->get_target_attr(db);
-        Attribute sum_attr    = m_config->get_sum_attr(db);
-
-        for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == sum_attr.id()) {
-                m_sum += e.value().to_double();
-                ++m_count;
-            }
-        }
+        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
-        if (m_count > 0) {
-            list.push_back(Entry(m_config->get_sum_attr(db), Variant(m_sum)));
-            list.push_back(Entry(m_config->get_result_attr(db), Variant(m_config->get_scale() * m_sum)));
+        if (m_sum) {
+            rec.push_back(Entry(m_config->sum_attr().derived_attr(db), Variant(m_sum)));
+            rec.push_back(Entry(m_config->result_attr(db), Variant(m_config->get_scale() * m_sum.to_double())));
         }
     }
 
 private:
 
-    unsigned m_count;
-    double   m_sum;
-
+    Variant    m_sum;
     std::mutex m_lock;
-
-    Config* m_config;
+    Config*    m_config;
 };
 
 class MinKernel : public AggregateKernel
@@ -435,44 +363,20 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-        Attribute   m_min_attr;
-
-        bool m_inclusive;
+        AggregationAttributeManager m_attr_mgr;
+        bool m_is_inclusive;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregationAttributeManager& attr() { return m_attr_mgr; }
 
-        Attribute get_min_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_min_attr) {
-                if (m_target_attr) {
-                    cali_attr_type type = m_target_attr.type();
-                    int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+        bool is_inclusive() const override { return m_is_inclusive; }
+        AggregateKernel* make_kernel() override { return new MinKernel(this); }
 
-                    m_min_attr = db.create_attribute(
-                        std::string(m_inclusive ? "imin#" : "min#") + m_target_attr_name,
-                        type,
-                        prop
-                    );
-                }
-            }
-
-            return m_min_attr;
-        }
-
-        bool is_inclusive() const { return m_inclusive; }
-
-        AggregateKernel* make_kernel() { return new MinKernel(this); }
-
-        Config(const std::string& name, bool inclusive) : m_target_attr_name(name), m_inclusive(inclusive) {}
+        Config(const std::string& name, bool inclusive)
+            : m_attr_mgr(name, inclusive ? "imin#" : "min#")
+            , m_is_inclusive(inclusive)
+        { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
         {
@@ -487,28 +391,16 @@ public:
 
     MinKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        Attribute target_attr = m_config->get_target_attr(db);
-        Attribute min_attr    = m_config->get_min_attr(db);
-
-        if (!min_attr)
-            return;
-
-        for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == min_attr.id())
-                m_min.min(e.value());
-        }
+        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
         if (!m_min.empty())
-            list.push_back(Entry(m_config->get_min_attr(db), m_min));
+            rec.push_back(Entry(m_config->attr().derived_attr(db), m_min));
     }
 
 private:
@@ -524,43 +416,20 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-        Attribute   m_max_attr;
-        bool        m_inclusive;
+        AggregationAttributeManager m_attr_mgr;
+        bool m_is_inclusive;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregationAttributeManager& attr() { return m_attr_mgr; }
 
-        Attribute get_max_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_max_attr) {
-                if (m_target_attr) {
-                    cali_attr_type type = m_target_attr.type();
-                    int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+        bool is_inclusive() const override { return m_is_inclusive; }
+        AggregateKernel* make_kernel() override { return new MaxKernel(this); }
 
-                    m_max_attr = db.create_attribute(
-                        std::string(m_inclusive ? "imax#" : "max#") + m_target_attr_name,
-                        type,
-                        prop
-                    );
-                }
-            }
-
-            return m_max_attr;
-        }
-
-        bool is_inclusive() const { return m_inclusive; }
-
-        AggregateKernel* make_kernel() { return new MaxKernel(this); }
-
-        Config(const std::string& name, bool inclusive) : m_target_attr_name(name), m_inclusive(inclusive) {}
+        Config(const std::string& name, bool inclusive)
+            : m_attr_mgr(name, inclusive ? "imax#" : "max#")
+            , m_is_inclusive(inclusive)
+        { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
         {
@@ -575,28 +444,16 @@ public:
 
     MaxKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        Attribute target_attr = m_config->get_target_attr(db);
-        Attribute max_attr    = m_config->get_max_attr(db);
-
-        if (!max_attr)
-            return;
-
-        for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id() || e.attribute() == max_attr.id())
-                m_max.max(e.value());
-        }
+        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
         if (!m_max.empty())
-            list.push_back(Entry(m_config->get_max_attr(db), m_max));
+            rec.push_back(Entry(m_config->attr().derived_attr(db), m_max));
     }
 
 private:
@@ -610,104 +467,66 @@ class AvgKernel : public AggregateKernel
 {
 public:
 
-    struct StatisticsAttributes {
-        Attribute avg;
-        Attribute sum;
-        Attribute count;
-    };
-
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-
-        StatisticsAttributes m_stat_attrs;
+        AggregationAttributeManager m_sum_attr;
+        AggregationAttributeManager m_avg_attr;
+        CustomAttributeManager m_count_attr;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregateKernel* make_kernel() override { return new AvgKernel(this); }
 
-        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a)
-        {
-            if (!m_target_attr)
-                return false;
-            if (a.sum) {
-                a = m_stat_attrs;
-                return true;
-            }
-
-            int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
-
-            m_stat_attrs.avg = db.create_attribute("avg#" + m_target_attr_name, m_target_attr.type(), prop);
-            m_stat_attrs.count =
-                db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT, prop | CALI_ATTR_HIDDEN);
-            m_stat_attrs.sum =
-                db.create_attribute("avg.sum#" + m_target_attr_name, m_target_attr.type(), prop | CALI_ATTR_HIDDEN);
-
-            a = m_stat_attrs;
-            return true;
-        }
-
-        AggregateKernel* make_kernel() { return new AvgKernel(this); }
-
-        Config(const std::string& name) : m_target_attr_name(name) {}
+        Config(const std::string& name)
+            : m_sum_attr { name, "avg.sum#", CALI_ATTR_HIDDEN }
+            , m_avg_attr { name, "avg#" }
+            , m_count_attr { name, "avg.count#", CALI_TYPE_UINT, CALI_ATTR_HIDDEN }
+        { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg.front()); }
+
+        friend class AvgKernel;
     };
 
     AvgKernel(Config* config) : m_count(0), m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         std::lock_guard<std::mutex> g(m_lock);
 
-        Attribute            target_attr = m_config->get_target_attr(db);
-        StatisticsAttributes stat_attr;
-
-        if (!m_config->get_statistics_attributes(db, stat_attr))
+        Attribute tgt_attr = m_config->m_sum_attr.target_attr(db);
+        if (!tgt_attr)
             return;
+        Attribute sum_attr = m_config->m_sum_attr.derived_attr(db);
+        Attribute count_attr = m_config->m_count_attr.get(db);
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attr.id()) {
+            if (e.attribute() == tgt_attr.id()) {
                 m_sum += e.value();
                 ++m_count;
-            } else if (e.attribute() == stat_attr.sum.id()) {
+            } else if (e.attribute() == sum_attr.id()) {
                 m_sum += e.value();
-            } else if (e.attribute() == stat_attr.count.id()) {
+            } else if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
             }
         }
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         if (m_count > 0) {
-            StatisticsAttributes stat_attr;
-
-            if (!m_config->get_statistics_attributes(db, stat_attr))
-                return;
-
-            list.push_back(Entry(stat_attr.avg, m_sum.div(m_count)));
-            list.push_back(Entry(stat_attr.sum, m_sum));
-            list.push_back(Entry(stat_attr.count, Variant(cali_make_variant_from_uint(m_count))));
+            list.push_back(Entry(m_config->m_avg_attr.derived_attr(db), m_sum.div(m_count)));
+            list.push_back(Entry(m_config->m_sum_attr.derived_attr(db), m_sum));
+            list.push_back(Entry(m_config->m_count_attr.get(db), Variant(cali_make_variant_from_uint(m_count))));
         }
     }
 
 private:
 
-    unsigned m_count;
-    Variant  m_sum;
-
+    uint64_t   m_count;
+    Variant    m_sum;
     std::mutex m_lock;
-
-    Config* m_config;
+    Config*    m_config;
 };
 
 //
@@ -720,15 +539,10 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_tgt1_attr_name;
-        std::string m_tgt2_attr_name;
+        AggregationAttributeManager m_tgt1;
+        AggregationAttributeManager m_tgt2;
 
-        Attribute m_tgt1_attr;
-        Attribute m_tgt2_attr;
-        Attribute m_sum1_attr;
-        Attribute m_sum2_attr;
-
-        Attribute m_ratio_attr;
+        CustomAttributeManager m_ratio_attr;
 
         double m_scale;
         bool   m_inclusive;
@@ -737,115 +551,61 @@ public:
 
         double get_scale() const { return m_scale; }
 
-        bool is_inclusive() const { return m_inclusive; }
-
-        std::pair<Attribute, Attribute> get_target_attributes(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_tgt1_attr)
-                m_tgt1_attr = db.get_attribute(m_tgt1_attr_name);
-            if (!m_tgt2_attr)
-                m_tgt2_attr = db.get_attribute(m_tgt2_attr_name);
-
-            return std::pair<Attribute, Attribute>(m_tgt1_attr, m_tgt2_attr);
-        }
-
-        std::pair<Attribute, Attribute> get_sum_attributes(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_sum1_attr)
-                m_sum1_attr = db.create_attribute(
-                    std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt1_attr_name,
-                    CALI_TYPE_DOUBLE,
-                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
-                );
-            if (!m_sum2_attr)
-                m_sum2_attr = db.create_attribute(
-                    std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt2_attr_name,
-                    CALI_TYPE_DOUBLE,
-                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
-                );
-
-            return std::make_pair(m_sum1_attr, m_sum2_attr);
-        }
-
-        Attribute get_ratio_attribute(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_ratio_attr)
-                m_ratio_attr = db.create_attribute(
-                    std::string(m_inclusive ? "iratio#" : "ratio#") + m_tgt1_attr_name + "/" + m_tgt2_attr_name,
-                    CALI_TYPE_DOUBLE,
-                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
-                );
-            return m_ratio_attr;
-        }
-
-        AggregateKernel* make_kernel() { return new ScaledRatioKernel(this); }
+        bool is_inclusive() const override { return m_inclusive; }
+        AggregateKernel* make_kernel() override { return new ScaledRatioKernel(this); }
 
         Config(const std::vector<std::string>& cfg, bool is_inclusive)
-            : m_tgt1_attr_name(cfg[0]), // We have already checked that there are two strings given
-              m_tgt2_attr_name(cfg[1]),
-              m_scale(1.0),
-              m_inclusive(is_inclusive)
+            : m_tgt1 { cfg[0], is_inclusive ? "isr.sum#" : "sr.sum#", CALI_ATTR_HIDDEN }
+            , m_tgt2 { cfg[1], is_inclusive ? "isr.sum#" : "sr.sum#", CALI_ATTR_HIDDEN }
+            , m_ratio_attr { std::string(is_inclusive ? "iratio#" : "ratio#")+cfg[0]+"/"+cfg[1], CALI_TYPE_DOUBLE }
+            , m_scale { 1.0 }
+            , m_inclusive { is_inclusive }
         {
             if (cfg.size() > 2)
                 m_scale = std::stod(cfg[2]);
         }
 
-        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg, false); }
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
+        {
+            return new Config(cfg, false);
+        }
 
         static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg)
         {
             return new Config(cfg, true);
         }
+
+        friend class ScaledRatioKernel;
     };
 
-    ScaledRatioKernel(Config* config) : m_sum1(0), m_sum2(0), m_count(0), m_config(config) {}
+    ScaledRatioKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        auto tattrs = m_config->get_target_attributes(db);
-        auto sattrs = m_config->get_sum_attributes(db);
-
-        for (const Entry& e : list) {
-            cali_id_t attr = e.attribute();
-
-            if (attr == tattrs.first.id() || attr == sattrs.first.id()) {
-                m_sum1 += e.value().to_double();
-                ++m_count;
-            } else if (attr == tattrs.second.id() || attr == sattrs.second.id()) {
-                m_sum2 += e.value().to_double();
-            }
-        }
+        apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
+        apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
-        auto sum_attrs = m_config->get_sum_attributes(db);
-
-        if (m_count > 0 && m_sum1 > 0)
-            list.push_back(Entry(sum_attrs.first, Variant(m_sum1)));
-        if (m_sum2 > 0) {
-            list.push_back(Entry(sum_attrs.second, Variant(m_sum2)));
-
-            if (m_count > 0)
-                list.push_back(
-                    Entry(m_config->get_ratio_attribute(db), Variant(m_config->get_scale() * m_sum1 / m_sum2))
+        if (m_sum1)
+            rec.push_back(Entry(m_config->m_tgt1.derived_attr(db), m_sum1));
+        if (m_sum2) {
+            rec.push_back(Entry(m_config->m_tgt2.derived_attr(db), m_sum2));
+            if (m_sum1)
+                rec.push_back(
+                    Entry(m_config->m_ratio_attr.get(db), Variant(m_config->get_scale() * m_sum1.to_double() / m_sum2.to_double()))
                 );
         }
     }
 
 private:
 
-    double m_sum1;
-    double m_sum2;
-    int    m_count;
-
+    Variant    m_sum1;
+    Variant    m_sum2;
     std::mutex m_lock;
-
-    Config* m_config;
+    Config*    m_config;
 };
 
 //
@@ -858,148 +618,79 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-        Attribute   m_sum_attr;
-
-        Attribute m_percentage_attr;
+        AggregationAttributeManager m_sum_attr;
+        CustomAttributeManager m_result_attr;
 
         std::mutex m_total_lock;
-        double     m_total;
+        Variant    m_total;
 
         bool m_is_inclusive;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregationAttributeManager& sum_attr() { return m_sum_attr; }
+        Attribute result_attr(CaliperMetadataAccessInterface& db) { return m_result_attr.get(db); }
 
-        bool get_percentage_attribute(
-            CaliperMetadataAccessInterface& db,
-            Attribute&                      percentage_attr,
-            Attribute&                      sum_attr
-        )
-        {
-            if (!m_target_attr)
-                return false;
-            if (m_percentage_attr) {
-                percentage_attr = m_percentage_attr;
-                sum_attr        = m_sum_attr;
-                return true;
-            }
+        AggregateKernel* make_kernel() override { return new PercentTotalKernel(this); }
 
-            m_percentage_attr = db.create_attribute(
-                std::string(m_is_inclusive ? "ipercent_total#" : "percent_total#") + m_target_attr_name,
-                CALI_TYPE_DOUBLE,
-                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
-            );
-
-            m_sum_attr = db.create_attribute(
-                std::string(m_is_inclusive ? "ipct.sum#" : "pct.sum#") + m_target_attr_name,
-                CALI_TYPE_DOUBLE,
-                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN
-            );
-
-            percentage_attr = m_percentage_attr;
-            sum_attr        = m_sum_attr;
-
-            return true;
-        }
-
-        AggregateKernel* make_kernel() { return new PercentTotalKernel(this); }
-
-        void add(double val)
+        void add(Variant val)
         {
             std::lock_guard<std::mutex> g(m_total_lock);
-
             m_total += val;
         }
 
-        double get_total() { return m_total; }
+        double get_total() { return m_total.to_double(); }
 
-        bool is_inclusive() const { return m_is_inclusive; }
+        bool is_inclusive() const override { return m_is_inclusive; }
 
-        Config(const std::vector<std::string>& names, bool inclusive)
-            : m_target_attr_name(names.front()), m_total(0), m_is_inclusive(inclusive)
+        Config(const std::string target_attr, bool inclusive)
+            : m_sum_attr { target_attr, inclusive ? "ipct.sum#" : "pct.sum#", CALI_ATTR_HIDDEN }
+            , m_result_attr { target_attr, inclusive ? "ipercent_total#" : "percent_total#", CALI_TYPE_DOUBLE }
+            , m_is_inclusive { inclusive }
         {}
 
-        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) { return new Config(cfg, false); }
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
+        {
+            return new Config(cfg.front(), false);
+        }
 
         static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg)
         {
-            return new Config(cfg, true);
+            return new Config(cfg.front(), true);
         }
     };
 
-    PercentTotalKernel(Config* config) : m_sum(0), m_isum(0), m_config(config) {}
+    PercentTotalKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        Attribute target_attr = m_config->get_target_attr(db);
-        Attribute percentage_attr, sum_attr;
-
-        if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
-            return;
-
-        cali_id_t target_id = target_attr.id();
-        cali_id_t sum_id    = sum_attr.id();
-
-        for (const Entry& e : list) {
-            cali_id_t id = e.attribute();
-
-            if (id == target_id || id == sum_id) {
-                double val = e.value().to_double();
-                m_sum += val;
-                m_isum += val;
-                m_config->add(val);
-            }
-        }
+        std::lock_guard<std::mutex> g(m_lock);
+        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
+                m_sum += e.value();
+                m_isum += e.value();
+                m_config->add(e.value());
+            });
     }
 
-    void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        Attribute target_attr = m_config->get_target_attr(db);
-        Attribute percentage_attr, sum_attr;
-
-        if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
-            return;
-
-        cali_id_t target_id = target_attr.id();
-        cali_id_t sum_id    = sum_attr.id();
-
-        for (const Entry& e : list) {
-            cali_id_t id = e.attribute();
-
-            if (id == target_id || id == sum_id)
-                m_isum += e.value().to_double();
-        }
+        std::lock_guard<std::mutex> g(m_lock);
+        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_isum += e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         double total = m_config->get_total();
-
-        if (total > 0) {
-            Attribute percentage_attr, sum_attr;
-
-            if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
-                return;
-
-            list.push_back(Entry(sum_attr, Variant(m_sum)));
-            list.push_back(Entry(percentage_attr, Variant(100.0 * m_isum / total)));
+        if (m_isum && total > 0.0) {
+            list.push_back(Entry(m_config->sum_attr().derived_attr(db), Variant(m_sum)));
+            list.push_back(Entry(m_config->result_attr(db), Variant(100.0 * m_isum.to_double() / total)));
         }
     }
 
 private:
 
-    double m_sum;
-    double m_isum; // inclusive sum
+    Variant m_sum;
+    Variant m_isum; // inclusive sum
 
     std::mutex m_lock;
     Config*    m_config;
@@ -1015,37 +706,15 @@ public:
 
     class Config : public AggregateKernelConfig
     {
-        std::string m_target_attr_name;
-
-        Attribute m_target_attr;
-        Attribute m_any_attr;
+        AggregationAttributeManager m_attr;
 
     public:
 
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_target_attr)
-                m_target_attr = db.get_attribute(m_target_attr_name);
-            return m_target_attr;
-        }
+        AggregationAttributeManager& attr() { return m_attr; }
 
-        Attribute get_any_attr(CaliperMetadataAccessInterface& db)
-        {
-            if (!m_any_attr) {
-                if (m_target_attr)
-                    m_any_attr = db.create_attribute(
-                        std::string("any#") + m_target_attr_name,
-                        m_target_attr.type(),
-                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE
-                    );
-            }
+        AggregateKernel* make_kernel() override { return new AnyKernel(this); }
 
-            return m_any_attr;
-        }
-
-        AggregateKernel* make_kernel() { return new AnyKernel(this); }
-
-        Config(const std::string& name, bool inclusive) : m_target_attr_name(name) {}
+        Config(const std::string& name, bool inclusive) : m_attr { name, "any#" } { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg)
         {
@@ -1053,44 +722,23 @@ public:
         }
     };
 
-    AnyKernel(Config* config) : m_count(0), m_config(config) {}
+    AnyKernel(Config* config) : m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         std::lock_guard<std::mutex> g(m_lock);
-
-        if (m_val.empty()) {
-            Attribute target_attr = m_config->get_target_attr(db);
-
-            if (!target_attr)
-                return;
-
-            Attribute any_attr = m_config->get_any_attr(db);
-
-            cali_id_t tgt_id = target_attr.id();
-            cali_id_t any_id = any_attr.id();
-
-            for (const Entry& e : rec) {
-                if (e.attribute() == tgt_id || e.attribute() == any_id) {
-                    m_val = e.value();
-                    ++m_count;
-                    break;
-                }
-            }
-        }
+        if (m_val.empty())
+            apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& rec)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
     {
-        if (m_count > 0)
-            rec.push_back(Entry(m_config->get_any_attr(db), m_val));
+        if (!m_val.empty())
+            rec.push_back(Entry(m_config->attr().derived_attr(db), m_val));
     }
 
 private:
 
-    unsigned   m_count;
     Variant    m_val;
     std::mutex m_lock;
     Config*    m_config;
@@ -1155,9 +803,7 @@ public:
 
     VarianceKernel(Config* config) : m_count(0), m_sum(0.0), m_sqsum(0.0), m_config(config) {}
 
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list)
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         std::lock_guard<std::mutex> g(m_lock);
 
@@ -1183,7 +829,7 @@ public:
         }
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
     {
         if (m_count > 0) {
             StatisticsAttributes stat_attr;
@@ -1201,13 +847,11 @@ public:
 
 private:
 
-    unsigned m_count;
-    double   m_sum;
-    double   m_sqsum;
-
+    unsigned   m_count;
+    double     m_sum;
+    double     m_sqsum;
     std::mutex m_lock;
-
-    Config* m_config;
+    Config*    m_config;
 };
 
 enum KernelID {
@@ -1412,8 +1056,22 @@ struct Aggregator::AggregatorImpl {
         CaliperMetadataAccessInterface&          db
     )
     {
-        std::vector<Entry> key  = make_key(nodes_begin, nodes_end, immediates, db);
-        std::size_t        hash = hash_key(key) % m_hashmap.size();
+        // --- make key
+
+        std::vector<Entry> key;
+        key.reserve(immediates.size() + 1);
+
+        if (nodes_begin != nodes_end) {
+            std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
+            std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
+            key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
+        }
+
+        std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
+
+        // --- lookup key
+
+        std::size_t hash = hash_key(key) % m_hashmap.size();
 
         {
             std::lock_guard<std::mutex> g(m_entries_lock);
@@ -1424,6 +1082,8 @@ struct Aggregator::AggregatorImpl {
                     return e;
             }
         }
+
+        // --- key not found: create entry
 
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
@@ -1487,24 +1147,17 @@ struct Aggregator::AggregatorImpl {
 
         auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
-        if (!entry)
-            return;
-
         // --- Aggregate
 
         for (size_t k = 0; k < entry->kernels.size(); ++k) {
             entry->kernels[k]->aggregate(db, rec);
 
             // for inclusive kernels, aggregate for all parent nodes as well
-            if (entry->kernels[k]->config()->is_inclusive() && nodes.begin() != nonnested_begin) {
+            if (m_kernel_configs[k]->is_inclusive() && nodes.begin() != nonnested_begin) {
                 auto it = nodes.begin();
 
                 for (++it; it != nonnested_begin; ++it) {
                     auto p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
-
-                    if (!p_entry)
-                        break;
-
                     p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
