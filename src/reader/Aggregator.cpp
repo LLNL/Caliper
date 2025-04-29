@@ -954,8 +954,6 @@ struct Aggregator::AggregatorImpl {
         // --- kernel config
         //
 
-        m_kernel_configs.clear();
-
         switch (spec.aggregate.selection) {
         case QuerySpec::AggregationSelection::Default:
         case QuerySpec::AggregationSelection::All:
@@ -986,10 +984,8 @@ struct Aggregator::AggregatorImpl {
         std::lock_guard<std::mutex> g(m_key_lock);
 
         auto it = m_key_strings.begin();
-
         while (it != m_key_strings.end()) {
             Attribute attr = db.get_attribute(*it);
-
             if (attr) {
                 m_key_attrs.push_back(attr);
                 it = m_key_strings.erase(it);
@@ -1044,13 +1040,10 @@ struct Aggregator::AggregatorImpl {
         // --- lookup key
 
         std::size_t hash = hash_key(key) % m_hashmap.size();
-
-        {
-            for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
-                auto e = m_entries[i];
-                if (key == e->key)
-                    return e;
-            }
+        for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
+            auto e = m_entries[i];
+            if (key == e->key)
+                return e;
         }
 
         // --- key not found: create entry
@@ -1145,20 +1138,11 @@ struct Aggregator::AggregatorImpl {
         for (const auto &entry : m_entries) {
             if (!entry)
                 continue;
-
             std::vector<Entry> rec(entry->key);
             for (auto const& k : entry->kernels)
                 k->append_result(db, rec);
             push(db, rec);
         }
-    }
-
-    AggregatorImpl() : m_select_all(false)
-    {
-        m_entries.reserve(4096);
-        m_hashmap.assign(4096, static_cast<size_t>(0));
-        // zero marks the end of the hash chain, so we block out slot 0 for actual entries
-        m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
     }
 
     AggregatorImpl(const QuerySpec& spec) : m_select_all(false)
@@ -1167,6 +1151,7 @@ struct Aggregator::AggregatorImpl {
 
         m_entries.reserve(4096);
         m_hashmap.assign(4096, static_cast<size_t>(0));
+        // zero marks the end of the hash chain, so we must block out slot 0 for actual entries
         m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
     }
 
