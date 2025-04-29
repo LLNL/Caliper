@@ -209,8 +209,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
-
         Attribute count_attr = m_config->m_count_attr.get(db);
         for (const Entry& e : list)
             if (e.attribute() == count_attr.id()) {
@@ -231,10 +229,8 @@ public:
 
 private:
 
-    uint64_t   m_count;
-    std::mutex m_lock;
-
-    Config* m_config;
+    uint64_t m_count;
+    Config*  m_config;
 };
 
 //
@@ -277,7 +273,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
@@ -289,9 +284,8 @@ public:
 
 private:
 
-    Variant    m_sum;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_sum;
+    Config* m_config;
 };
 
 class ScaledSumKernel : public AggregateKernel
@@ -338,7 +332,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
@@ -352,9 +345,8 @@ public:
 
 private:
 
-    Variant    m_sum;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_sum;
+    Config* m_config;
 };
 
 class MinKernel : public AggregateKernel
@@ -393,7 +385,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
     }
 
@@ -405,9 +396,8 @@ public:
 
 private:
 
-    Variant    m_min;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_min;
+    Config* m_config;
 };
 
 class MaxKernel : public AggregateKernel
@@ -446,7 +436,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
     }
 
@@ -458,9 +447,8 @@ public:
 
 private:
 
-    Variant    m_max;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_max;
+    Config* m_config;
 };
 
 class AvgKernel : public AggregateKernel
@@ -492,8 +480,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
-
         Attribute tgt_attr = m_config->m_sum_attr.target_attr(db);
         if (!tgt_attr)
             return;
@@ -523,10 +509,9 @@ public:
 
 private:
 
-    uint64_t   m_count;
-    Variant    m_sum;
-    std::mutex m_lock;
-    Config*    m_config;
+    uint64_t m_count;
+    Variant  m_sum;
+    Config*  m_config;
 };
 
 //
@@ -582,7 +567,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
         apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
     }
@@ -602,10 +586,9 @@ public:
 
 private:
 
-    Variant    m_sum1;
-    Variant    m_sum2;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_sum1;
+    Variant m_sum2;
+    Config* m_config;
 };
 
 //
@@ -621,8 +604,7 @@ public:
         AggregationAttributeManager m_sum_attr;
         CustomAttributeManager m_result_attr;
 
-        std::mutex m_total_lock;
-        Variant    m_total;
+        Variant m_total;
 
         bool m_is_inclusive;
 
@@ -635,7 +617,6 @@ public:
 
         void add(Variant val)
         {
-            std::lock_guard<std::mutex> g(m_total_lock);
             m_total += val;
         }
 
@@ -664,7 +645,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
                 m_sum += e.value();
                 m_isum += e.value();
@@ -674,7 +654,6 @@ public:
 
     void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_isum += e.value(); });
     }
 
@@ -691,9 +670,7 @@ private:
 
     Variant m_sum;
     Variant m_isum; // inclusive sum
-
-    std::mutex m_lock;
-    Config*    m_config;
+    Config* m_config;
 };
 
 //
@@ -726,7 +703,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
         if (m_val.empty())
             apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
     }
@@ -739,9 +715,8 @@ public:
 
 private:
 
-    Variant    m_val;
-    std::mutex m_lock;
-    Config*    m_config;
+    Variant m_val;
+    Config* m_config;
 };
 
 class VarianceKernel : public AggregateKernel
@@ -805,8 +780,6 @@ public:
 
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
-        std::lock_guard<std::mutex> g(m_lock);
-
         Attribute            target_attr = m_config->get_target_attr(db);
         StatisticsAttributes stat_attr;
 
@@ -847,11 +820,10 @@ public:
 
 private:
 
-    unsigned   m_count;
-    double     m_sum;
-    double     m_sqsum;
-    std::mutex m_lock;
-    Config*    m_config;
+    unsigned m_count;
+    double   m_sum;
+    double   m_sqsum;
+    Config*  m_config;
 };
 
 enum KernelID {
@@ -1074,8 +1046,6 @@ struct Aggregator::AggregatorImpl {
         std::size_t hash = hash_key(key) % m_hashmap.size();
 
         {
-            std::lock_guard<std::mutex> g(m_entries_lock);
-
             for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
                 auto e = m_entries[i];
                 if (key == e->key)
@@ -1090,8 +1060,6 @@ struct Aggregator::AggregatorImpl {
 
         for (AggregateKernelConfig* k_cfg : m_kernel_configs)
             kernels.emplace_back(k_cfg->make_kernel());
-
-        std::lock_guard<std::mutex> g(m_entries_lock);
 
         auto e = std::make_shared<AggregateEntry>();
 
@@ -1145,6 +1113,8 @@ struct Aggregator::AggregatorImpl {
             return a.attribute() < b.attribute();
         });
 
+        std::lock_guard<std::mutex> g(m_entries_lock);
+
         auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
         // --- Aggregate
@@ -1170,17 +1140,15 @@ struct Aggregator::AggregatorImpl {
 
     void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push)
     {
-        // NOTE: No locking: we assume flush() runs serially!
+        std::lock_guard<std::mutex> g(m_entries_lock);
 
-        for (auto entry : m_entries) {
+        for (const auto &entry : m_entries) {
             if (!entry)
                 continue;
 
             std::vector<Entry> rec(entry->key);
-
             for (auto const& k : entry->kernels)
                 k->append_result(db, rec);
-
             push(db, rec);
         }
     }
@@ -1189,6 +1157,7 @@ struct Aggregator::AggregatorImpl {
     {
         m_entries.reserve(4096);
         m_hashmap.assign(4096, static_cast<size_t>(0));
+        // zero marks the end of the hash chain, so we block out slot 0 for actual entries
         m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
     }
 
