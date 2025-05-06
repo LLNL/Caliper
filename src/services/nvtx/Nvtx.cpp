@@ -10,7 +10,7 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Node.h"
 
-#include <nvToolsExt.h>
+#include <nvtx3/nvToolsExt.h>
 
 #include <atomic>
 #include <cassert>
