@@ -1,12 +1,12 @@
 ##############################################################################
-# Copyright (c) 2022-23, Lawrence Livermore National Security, LLC and RADIUSS
+# Copyright (c) 2022-25, Lawrence Livermore National Security, LLC and RADIUSS
 # project contributors. See the COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (MIT)
 ##############################################################################
 
 # Override reproducer section to define project specific variables.
-.poodle_reproducer_vars:
+.dane_reproducer_vars:
   script:
     - !reference [.reproducer_vars, script]
 
@@ -18,4 +18,4 @@ variables:
 master:
   variables:
     SPEC: " +tests ~papi"
-  extends: .job_on_poodle
+  extends: .job_on_dane
