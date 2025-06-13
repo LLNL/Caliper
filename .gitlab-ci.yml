@@ -1,5 +1,5 @@
 ###############################################################################
-# Copyright (c) 2022-23, Lawrence Livermore National Security, LLC and RADIUSS
+# Copyright (c) 2022-25, Lawrence Livermore National Security, LLC and RADIUSS
 # project contributors. See the COPYRIGHT file for details.
 #
 # SPDX-License-Identifier: (MIT)
@@ -41,8 +41,8 @@ variables:
   GIT_SUBMODULE_PATHS: scripts/radiuss-spack-configs scripts/uberenv
 
 ##### PROJECT VARIABLES
-# We build the projects in the CI clone directory (used in
-# script/gitlab/build-and-test.sh script).
+# We build the projects in the CI clone directory. Used in
+# script/gitlab/build-and-test.sh script.
 # TODO: add a clean-up mechanism.
   BUILD_ROOT: ${CI_PROJECT_DIR}
 
@@ -76,7 +76,7 @@ stages:
     include:
       - local: '.gitlab/custom-jobs-and-variables.yml'
       - project: 'radiuss/radiuss-shared-ci'
-        ref: 'v2024.12.0'
+        ref: 'v2025.06.0'
         file: 'pipelines/${CI_MACHINE}.yml'
       - artifact: '${CI_MACHINE}-jobs.yml'
         job: 'generate-job-lists'
@@ -85,11 +85,12 @@ stages:
       pipeline_variables: true
 
 include:
+  # Sets ID tokens for every job using `default:`
   - project: 'lc-templates/id_tokens'
     file: 'id_tokens.yml'
   # [Optional] checks preliminary to running the actual CI test
   - project: 'radiuss/radiuss-shared-ci'
-    ref: 'v2024.12.0'
+    ref: 'v2025.06.0'
     file: 'utilities/preliminary-ignore-draft-pr.yml'
   # pipelines subscribed by the project
   - local: '.gitlab/subscribed-pipelines.yml'
