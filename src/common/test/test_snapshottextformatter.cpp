@@ -49,4 +49,11 @@ TEST(SnapshotTextFormatterTest, FormatTest)
 
         EXPECT_EQ(os.str(), std::string("42whee"));
     }
+
+    delete str_node;
+    delete int_node;
+    delete str_attr;
+    delete int_attr;
+    delete strtype_attr_n;
+    delete inttype_attr_n;
 }
