@@ -80,11 +80,6 @@ int curious_register_file(const char* path, int fd, char* filesystem, char* moun
 {
     curious_file_record_t* cur_record = (curious_file_record_t*) get_from_curious_dynamic_array(&file_registry, fd);
 
-    // If the file is a pipe, then identify the pipe as the 'mount point'
-    if (NULL == mount_point && 0 == strncmp(path, "pipe:", 5)) {
-        mount_point = strdup(path);
-    }
-
     //printf("Registering %s on %s filesystem as fd %d\n", path, filesystem, fd);
 
     // If the fd hasn't been used before...
@@ -96,6 +91,10 @@ int curious_register_file(const char* path, int fd, char* filesystem, char* moun
         new_record.path        = strdup(path);
         new_record.filesystem  = filesystem;
         new_record.mount_point = mount_point;
+        // If the file is a pipe, then identify the pipe as the 'mount point'
+        if (NULL == mount_point && 0 == strncmp(path, "pipe:", 5)) {
+            new_record.mount_point = new_record.path;
+        }
 
         //Ditto for a blank record to fill any extra space created
         //by adding this file record
@@ -113,6 +112,10 @@ int curious_register_file(const char* path, int fd, char* filesystem, char* moun
         cur_record->path        = strdup(path);
         cur_record->filesystem  = filesystem;
         cur_record->mount_point = mount_point;
+        // If the file is a pipe, then identify the pipe as the 'mount point'
+        if (NULL == mount_point && 0 == strncmp(path, "pipe:", 5)) {
+            cur_record->mount_point = cur_record->path;
+        }
     }
 
     return 0;
