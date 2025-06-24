@@ -49,10 +49,10 @@ std::pair<std::string, std::string> get_keyval(const std::string& str)
     }
 }
 
-bool is_in_strlist(const std::string& s, const char** list)
+bool is_in_arglist(const std::string& s, const QuerySpec::FunctionSignature& sig)
 {
-    for (const char** p = list; *p; ++p)
-        if (s == *p)
+    for (int i = 0; i < sig.max_args; ++i)
+        if (s == sig.args[i])
             return true;
     return false;
 }
@@ -160,12 +160,12 @@ struct CalQLParser::CalQLParserImpl {
         for (int i = 0; i < n; ++i) {
             auto p = get_keyval(args[i]);
             if (p.first.empty()) {
-                if (is_in_strlist(p.second, sig.args))
+                if (is_in_arglist(p.second, sig))
                     ret[p.second] = std::string("true"); // support boolean flags like in JsonFormatter
                 else
                     ret[sig.args[i]] = p.second; // use name of positional argument
             } else {
-                if (is_in_strlist(p.first, sig.args)) {
+                if (is_in_arglist(p.first, sig)) {
                     ret[p.first] = p.second;
                 } else {
                     set_error("Unknown argument " + p.first + " for " + sig.name, is);

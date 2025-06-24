@@ -93,6 +93,10 @@ TEST(SnapshotBufferTest, Append)
         EXPECT_EQ(data_out[0], data_in[0]);
         EXPECT_EQ(data_out[1], data_in[1]);
     }
+
+    delete n1;
+    delete n2;
+    delete n3;
 }
 
 TEST(SnapshotBufferTest, Import)
@@ -187,4 +191,8 @@ TEST(SnapshotBufferTest, Import)
         EXPECT_EQ(data_out[0], data_in[0]);
         EXPECT_EQ(data_out[1], data_in[1]);
     }
+
+    delete n1;
+    delete n2;
+    delete n3;
 }

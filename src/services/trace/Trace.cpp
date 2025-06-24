@@ -272,9 +272,6 @@ class Trace
 
     Trace(Caliper* c, Channel* channel) : dropped_snapshots(0), m_channel { *channel }
     {
-        tbuf_lock.unlock();
-        flush_lock.unlock();
-
         ConfigSet cfg = services::init_config_from_spec(channel->config(), s_spec);
 
         init_overflow_policy(cfg.get("buffer_policy").to_string());
