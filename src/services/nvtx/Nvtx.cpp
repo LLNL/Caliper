@@ -39,6 +39,8 @@ class NvtxBinding : public AnnotationBinding
     std::unordered_map<std::string, uint32_t> m_color_map;
     std::mutex                                m_color_map_mutex;
 
+    Node m_nvtx_root_node { CALI_INV_ID, CALI_INV_ID, Variant() };
+
     uint32_t get_attribute_color(const Attribute& attr)
     {
         cali_id_t   color_attr_id = m_color_attr.id();
@@ -107,7 +109,7 @@ public:
         c->make_tree_entry(m_color_attr, v_color, attr.node());
     }
 
-    void on_begin(Caliper*, const Attribute& attr, const Variant& value)
+    void on_begin(Caliper* c, const Attribute& attr, const Variant& value)
     {
         nvtxEventAttributes_t eventAttrib = { 0 };
 
@@ -116,8 +118,16 @@ public:
         eventAttrib.colorType   = NVTX_COLOR_ARGB;
         eventAttrib.color       = get_color(attr, value);
         eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
-        eventAttrib.message.ascii =
-            (value.type() == CALI_TYPE_STRING ? static_cast<const char*>(value.data()) : value.to_string().c_str());
+
+        if (value.type() == CALI_TYPE_STRING) {
+            eventAttrib.message.ascii = static_cast<const char*>(value.data());
+        } else {
+            std::string attr_name = std::string("nvtx.str#") + std::to_string(attr.id());
+            Attribute str_attr = c->create_attribute(attr_name, CALI_TYPE_STRING, CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
+            std::string str = value.to_string();
+            Node* node = c->make_tree_entry(str_attr, Variant(CALI_TYPE_STRING, str.data(), str.size()), &m_nvtx_root_node);
+            eventAttrib.message.ascii = static_cast<const char*>(node->data().data());
+        }
 
         // For properly nested attributes, just use default push/pop.
         // For other attributes, create a domain.
@@ -131,9 +141,8 @@ public:
                 std::lock_guard<std::mutex> g(m_domain_mutex);
 
                 auto it = m_domain_map.find(attr.id());
-
                 if (it == m_domain_map.end()) {
-                    domain = nvtxDomainCreateA(attr.name().c_str());
+                    domain = nvtxDomainCreateA(attr.name_c_str());
                     m_domain_map.insert(std::make_pair(attr.id(), domain));
                 } else {
                     domain = it->second;
@@ -155,7 +164,6 @@ public:
                 std::lock_guard<std::mutex> g(m_domain_mutex);
 
                 auto it = m_domain_map.find(attr.id());
-
                 if (it == m_domain_map.end()) {
                     Log(0).stream() << "nvtx: on_end(): error: domain for attribute " << attr.name() << " not found!"
                                     << std::endl;
