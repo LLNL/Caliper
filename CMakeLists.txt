@@ -188,19 +188,16 @@ if (WITH_NVTX)
       set(CALIPER_HAVE_NVTX ON)
       set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${CUDAToolkit_TARGET_DIR}")
       set(CALI_NVTX_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
-      list(APPEND CALIPER_EXTERNAL_LIBS CUDA::nvToolsExt)
     endif()
   else()
     find_package(CUDA REQUIRED)
 
-    find_library(NVTX_LIBRARY
-      NAME libnvToolsExt.so
-      PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+    find_path(CALI_NVTX_INCLUDE_DIRS
+      NAME nvtx3/nvToolsExt.h
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}/include)
 
     set(CALIPER_HAVE_NVTX ON)
-    set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${NVTX_LIBRARY}")
-    set(CALI_NVTX_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
-    list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
+    set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${CALI_NVTX_INCLUDE_DIRS}")
   endif()
 endif()
 
