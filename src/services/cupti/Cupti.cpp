@@ -19,10 +19,8 @@
 
 #include <cuda_runtime_api.h>
 
-#include <nvToolsExt.h>
-#if CUDART_VERSION >= 9000
-#include <nvToolsExtSync.h>
-#endif
+#include <nvtx3/nvToolsExt.h>
+#include <nvtx3/nvToolsExtSync.h>
 #include <generated_nvtx_meta.h>
 
 #include <vector>
@@ -228,14 +226,12 @@ class CuptiService
         case CUPTI_CBID_NVTX_nvtxRangePushA:
             {
                 const char* msg = static_cast<const nvtxRangePushA_params*>(p)->message;
-
                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
             }
             break;
         case CUPTI_CBID_NVTX_nvtxRangePushEx:
             {
                 const char* msg = static_cast<const nvtxRangePushEx_params*>(p)->eventAttrib->message.ascii;
-
                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
             }
             break;
@@ -245,9 +241,7 @@ class CuptiService
         case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
             {
                 // TODO: Use domain-specific attribute
-
                 const char* msg = static_cast<const nvtxDomainRangePushEx_params*>(p)->core.eventAttrib->message.ascii;
-
                 c.begin(cupti_info.nvtx_range_attr, Variant(msg));
             }
             break;
