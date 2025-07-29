@@ -339,6 +339,13 @@ class RocProfilerService
             rocprofiler_get_timestamp(&ts);
             c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
 
+            channel->events().create_thread_evt.connect(
+                [this](Caliper* c, Channel*) {
+                    auto ts = rocprofiler_timestamp_t {};
+                    rocprofiler_get_timestamp(&ts);
+                    c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
+                }
+            );
             channel->events().snapshot.connect(
                 [this](Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
                     this->snapshot_cb(c, trigger_info, snapshot);
