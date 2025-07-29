@@ -67,6 +67,7 @@ class RocProfilerService
 
     Attribute m_host_timestamp_attr;
     Attribute m_host_duration_attr;
+    Attribute m_prev_timestamp_attr;
 
     Attribute m_activity_start_attr;
     Attribute m_activity_end_attr;
@@ -124,6 +125,11 @@ class RocProfilerService
             "rocm.host.timestamp",
             CALI_TYPE_UINT,
             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS
+        );
+        m_prev_timestamp_attr = c->create_attribute(
+            "rocm.prev.timestamp",
+            CALI_TYPE_UINT,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN
         );
         m_host_duration_attr = c->create_attribute(
             "rocm.host.duration",
@@ -315,9 +321,10 @@ class RocProfilerService
 
         uint64_t timestamp = static_cast<uint64_t>(ts);
         Variant  v_now(cali_make_variant_from_uint(timestamp));
-        Variant  v_prev = c->exchange(m_host_timestamp_attr, v_now);
+        Variant  v_prev = c->exchange(m_prev_timestamp_attr, v_now);
 
         snapshot.append(Entry(m_host_duration_attr, cali_make_variant_from_uint(timestamp - v_prev.to_uint())));
+        snapshot.append(Entry(m_host_timestamp_attr, v_now));
     }
 
     void post_init_cb(Caliper* c, Channel* channel)
@@ -337,13 +344,13 @@ class RocProfilerService
         if (m_enable_snapshot_timestamps) {
             auto ts = rocprofiler_timestamp_t {};
             rocprofiler_get_timestamp(&ts);
-            c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
+            c->set(m_prev_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
 
             channel->events().create_thread_evt.connect(
                 [this](Caliper* c, Channel*) {
                     auto ts = rocprofiler_timestamp_t {};
                     rocprofiler_get_timestamp(&ts);
-                    c->set(m_host_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
+                    c->set(m_prev_timestamp_attr, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(ts))));
                 }
             );
             channel->events().snapshot.connect(
