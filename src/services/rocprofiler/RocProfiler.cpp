@@ -85,6 +85,7 @@ class RocProfilerService
     bool m_enable_api_callbacks       = false;
     bool m_enable_activity_tracing    = false;
     bool m_enable_snapshot_timestamps = false;
+    bool m_enable_allocation_tracing  = false;
 
     unsigned m_num_activity_records = 0;
 
@@ -100,6 +101,7 @@ class RocProfilerService
     static rocprofiler_context_id_t hip_api_ctx;
     static rocprofiler_context_id_t activity_ctx;
     static rocprofiler_context_id_t rocprofiler_ctx;
+    static rocprofiler_context_id_t alloc_tracing_ctx;
 
     static rocprofiler_buffer_id_t activity_buf;
 
@@ -314,6 +316,28 @@ class RocProfilerService
         }
     }
 
+    static void mem_alloc_callback(
+        rocprofiler_callback_tracing_record_t record,
+        rocprofiler_user_data_t* /* user_data */,
+        void* /* callback data */
+    )
+    {
+        if (!s_instance)
+            return;
+        if (record.kind != ROCPROFILER_CALLBACK_TRACING_MEMORY_ALLOCATION)
+            return;
+
+        auto* data = static_cast<rocprofiler_callback_tracing_memory_allocation_data_t*>(record.payload);
+
+        if (record.operation == ROCPROFILER_MEMORY_ALLOCATION_ALLOCATE && data->address.ptr != nullptr) {
+            Caliper c;
+            c.memory_region_begin(data->address.ptr, "hip", 1, 1, &data->allocation_size);
+        } else if (record.operation == ROCPROFILER_MEMORY_ALLOCATION_FREE && data->address.ptr != nullptr) {
+            Caliper c;
+            c.memory_region_end(data->address.ptr);
+        }
+    }
+
     void snapshot_cb(Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot)
     {
         auto ts = rocprofiler_timestamp_t {};
@@ -339,6 +363,10 @@ class RocProfilerService
             ROCPROFILER_CALL(rocprofiler_start_context(activity_ctx));
 
             channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
+        }
+
+        if (m_enable_allocation_tracing) {
+            ROCPROFILER_CALL(rocprofiler_start_context(alloc_tracing_ctx));
         }
 
         if (m_enable_snapshot_timestamps) {
@@ -385,6 +413,7 @@ class RocProfilerService
         m_enable_api_callbacks       = config.get("enable_api_callbacks").to_bool();
         m_enable_activity_tracing    = config.get("enable_activity_tracing").to_bool();
         m_enable_snapshot_timestamps = config.get("enable_snapshot_timestamps").to_bool();
+        m_enable_allocation_tracing  = config.get("enable_allocation_tracing").to_bool();
 
         create_attributes(c);
 
@@ -419,6 +448,7 @@ public:
         ROCPROFILER_CALL(rocprofiler_create_context(&hip_api_ctx));
         ROCPROFILER_CALL(rocprofiler_create_context(&activity_ctx));
         ROCPROFILER_CALL(rocprofiler_create_context(&rocprofiler_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&alloc_tracing_ctx));
 
         ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
             hip_api_ctx,
@@ -434,6 +464,14 @@ public:
             nullptr,
             0,
             tool_api_cb,
+            nullptr
+        ));
+        ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
+            alloc_tracing_ctx,
+            ROCPROFILER_CALLBACK_TRACING_MEMORY_ALLOCATION,
+            nullptr,
+            0,
+            mem_alloc_callback,
             nullptr
         ));
 
@@ -543,9 +581,10 @@ public:
 
 RocProfilerService* RocProfilerService::s_instance = nullptr;
 
-rocprofiler_context_id_t RocProfilerService::hip_api_ctx     = {};
-rocprofiler_context_id_t RocProfilerService::activity_ctx    = {};
-rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx = {};
+rocprofiler_context_id_t RocProfilerService::hip_api_ctx       = {};
+rocprofiler_context_id_t RocProfilerService::activity_ctx      = {};
+rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx   = {};
+rocprofiler_context_id_t RocProfilerService::alloc_tracing_ctx = {};
 
 rocprofiler_buffer_id_t RocProfilerService::activity_buf = {};
 
@@ -568,6 +607,11 @@ const char* RocProfilerService::s_spec = R"json(
   { "name": "enable_snapshot_timestamps",
     "type": "bool",
     "description": "Record host-side timestamps and durations with rocprofiler",
+    "value": "false"
+  },
+  { "name": "enable_allocation_tracing",
+    "type": "bool",
+    "description": "Trace HIP memory allocations",
     "value": "false"
   }
  ]
