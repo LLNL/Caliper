@@ -19,10 +19,8 @@
 
 #include <cuda_runtime_api.h>
 
-#include <nvToolsExt.h>
-#if CUDART_VERSION >= 9000
-#include <nvToolsExtSync.h>
-#endif
+#include <nvtx3/nvToolsExt.h>
+#include <nvtx3/nvToolsExtSync.h>
 #include <generated_nvtx_meta.h>
 
 #include <iomanip>
