@@ -52,7 +52,7 @@ public:
             ",avg(davg) as \"avg time/inst\""
             ",max(dmax) as \"max time/inst\""
             ",sum(act_count) as count"
-            " group by path,rocm.kernel.name,rocm.activity.kind,mpi.rank "
+            " group by path,rocm.kernel.name,rocm.activity,mpi.rank "
             " format ";
 
         q_local.append(format_spec);
@@ -136,7 +136,7 @@ const char* controller_spec = R"json(
   "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true",
   "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "false"
  },
- "defaults"    : { "node.order": "true" },
+ "defaults"    : { "node.order": "true", "memcpy": "true" },
  "options":
  [
   {
@@ -147,6 +147,14 @@ const char* controller_spec = R"json(
    "name": "use.mpi",
    "type": "bool",
    "description": "Merge results into a single output stream in MPI programs"
+  },{
+   "name": "memcpy",
+   "type": "bool",
+   "description": "Report bytes copied",
+   "query":
+    {
+     "local": "select min(min#rocm.bytes) as \"bytes (min)\",max(max#rocm.bytes) as \"bytes (max)\",sum(sum#rocm.bytes) as \"bytes (total)\""
+    }
   }
  ]
 }

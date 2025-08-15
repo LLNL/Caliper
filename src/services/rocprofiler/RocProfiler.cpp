@@ -79,6 +79,7 @@ class RocProfilerService
     Attribute m_src_agent_attr;
     Attribute m_dst_agent_attr;
     Attribute m_agent_attr;
+    Attribute m_bytes_attr;
 
     Attribute m_flush_region_attr;
 
@@ -135,6 +136,11 @@ class RocProfilerService
         );
         m_host_duration_attr = c->create_attribute(
             "rocm.host.duration",
+            CALI_TYPE_UINT,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
+        m_bytes_attr = c->create_attribute(
+            "rocm.bytes",
             CALI_TYPE_UINT,
             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
         );
@@ -243,7 +249,9 @@ class RocProfilerService
 
                 const Attribute attr[] = { s_instance->m_activity_name_attr, s_instance->m_activity_start_attr,
                                            s_instance->m_activity_end_attr,  s_instance->m_activity_duration_attr,
-                                           s_instance->m_src_agent_attr,     s_instance->m_dst_agent_attr };
+                                           s_instance->m_src_agent_attr,     s_instance->m_dst_agent_attr,
+                                           s_instance->m_bytes_attr
+                                         };
 
                 const char* activity_name = nullptr;
                 uint64_t    len;
@@ -263,13 +271,14 @@ class RocProfilerService
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(src_agent)),
-                    Variant(cali_make_variant_from_uint(dst_agent))
+                    Variant(cali_make_variant_from_uint(dst_agent)),
+                    Variant(cali_make_variant_from_uint(record->bytes))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
                 FixedSizeSnapshotRecord<8> snapshot;
-                c.make_record(6, attr, data, snapshot.builder(), correlation);
+                c.make_record(7, attr, data, snapshot.builder(), correlation);
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
@@ -306,12 +315,13 @@ class RocProfilerService
                 ROCPROFILER_CALL(
                     rocprofiler_query_callback_tracing_kind_operation_name(record.kind, record.operation, &name, &len)
                 );
-                Caliper c;
-                if (name)
-                    c.begin(s_instance->m_api_attr, Variant(CALI_TYPE_STRING, name, len));
+                if (!name) {
+                    name = "UNKNOWN";
+                    len  = 7;
+                }
+                Caliper::instance().begin(s_instance->m_api_attr, Variant(CALI_TYPE_STRING, name, len));
             } else if (record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT) {
-                Caliper c;
-                c.end(s_instance->m_api_attr);
+                Caliper::instance().end(s_instance->m_api_attr);
             }
         }
     }
