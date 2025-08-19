@@ -661,9 +661,18 @@ const char* builtin_cuda_option_specs = R"json(
  "category": "metric",
  "services": [ "cuptitrace" ],
  "query":
- { 
-  "local": "select inclusive_scale(cupti.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
-  "cross": "select avg(iscale#cupti.activity.duration) as \"Avg GPU time/rank\" unit sec,min(iscale#cupti.activity.duration) as \"Min GPU time/rank\" unit sec,max(iscale#cupti.activity.duration) as \"Max GPU time/rank\" unit sec,sum(iscale#cupti.activity.duration) as \"Total GPU time\" unit sec"
+ {
+  "local": "let t.gpu.c=first(cupti.activity.duration) select inclusive_scale(t.gpu.c,1e-9) as \"GPU time (I)\" unit sec,scale(t.gpu.c,1e-9) as \"GPU time (E)\" unit sec",
+  "cross":
+  "select
+    min(iscale#t.gpu.c) as \"Min GPU time (I)\" unit sec,
+    avg(iscale#t.gpu.c) as \"Avg GPU time (I)\" unit sec,
+    max(iscale#t.gpu.c) as \"Max GPU time (I)\" unit sec,
+    sum(iscale#t.gpu.c) as \"Total GPU time (I)\" unit sec,
+    min(scale#t.gpu.c) as \"Min GPU time (E)\" unit sec,
+    avg(scale#t.gpu.c) as \"Avg GPU time (E)\" unit sec,
+    max(scale#t.gpu.c) as \"Max GPU time (E)\" unit sec,
+    sum(scale#t.gpu.c) as \"Total GPU time (E)\" unit sec"
  }
 }
 ]
@@ -687,9 +696,18 @@ const char* builtin_rocm_option_specs = R"json(
  "services": [ "roctracer" ],
  "config": { "CALI_ROCTRACER_TRACE_ACTIVITIES": "true", "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "false" },
  "query":
- { 
-  "local": "select inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU time (I)\" unit sec",
-  "cross": "select avg(iscale#sum#rocm.activity.duration) as \"Avg GPU time/rank\" unit sec,min(iscale#sum#rocm.activity.duration) as \"Min GPU time/rank\" unit sec,max(iscale#sum#rocm.activity.duration) as \"Max GPU time/rank\" unit sec,sum(iscale#sum#rocm.activity.duration) as \"Total GPU time\" unit sec"
+ {
+  "local": "let t.gpu.r=first(sum#rocm.activity.duration,rocm.activity.duration) select inclusive_scale(t.gpu.r,1e-9) as \"GPU time (I)\" unit sec,scale(t.gpu.r,1e-9) as \"GPU time (E)\" unit sec",
+  "cross":
+  "select
+    min(iscale#t.gpu.r) as \"Min GPU time (I)\" unit sec,
+    avg(iscale#t.gpu.r) as \"Avg GPU time (I)\" unit sec,
+    max(iscale#t.gpu.r) as \"Max GPU time (I)\" unit sec,
+    sum(iscale#t.gpu.r) as \"Total GPU time (I)\" unit sec,
+    min(scale#t.gpu.r) as \"Min GPU time (E)\" unit sec,
+    avg(scale#t.gpu.r) as \"Avg GPU time (E)\" unit sec,
+    max(scale#t.gpu.r) as \"Max GPU time (E)\" unit sec,
+    sum(scale#t.gpu.r) as \"Total GPU time (E)\" unit sec"
  }
 }
 ]
