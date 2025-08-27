@@ -161,7 +161,6 @@ class RocProfilerService
     void update_kernel_info(uint64_t kernel_id, const std::string& name)
     {
         std::lock_guard<std::mutex> g(m_kernel_info_mutex);
-
         m_kernel_info.emplace(kernel_id, name);
     }
 
@@ -207,30 +206,44 @@ class RocProfilerService
 
                 auto* record = static_cast<rocprofiler_buffer_tracing_kernel_dispatch_record_t*>(header->payload);
 
-                const Attribute attr[] = { s_instance->m_activity_name_attr, s_instance->m_activity_start_attr,
-                                           s_instance->m_activity_end_attr,  s_instance->m_activity_duration_attr,
-                                           s_instance->m_kernel_name_attr,   s_instance->m_agent_attr };
+                const Attribute attr[] = {
+                    s_instance->m_activity_name_attr,
+                    s_instance->m_agent_attr,
+                    s_instance->m_kernel_name_attr,
+                    s_instance->m_activity_start_attr,
+                    s_instance->m_activity_end_attr,
+                    s_instance->m_activity_duration_attr
+                };
 
                 const char* activity_name = nullptr;
-                uint64_t    len;
+                uint64_t    activity_name_len = 0;
                 ROCPROFILER_CALL(rocprofiler_query_buffer_tracing_kind_operation_name(
                     record->kind,
                     record->operation,
                     &activity_name,
-                    &len
+                    &activity_name_len
                 ));
 
-                const char* kernel_name = s_instance->get_kernel_name(record->dispatch_info.kernel_id);
+                Variant v_kernel_name;
+
+                {
+                    std::lock_guard<std::mutex> g(s_instance->m_kernel_info_mutex);
+                    auto it = s_instance->m_kernel_info.find(record->dispatch_info.kernel_id);
+                    if (it != s_instance->m_kernel_info.end())
+                        v_kernel_name = Variant(CALI_TYPE_STRING, it->second.data(), it->second.size());
+                    else
+                        v_kernel_name = Variant(CALI_TYPE_STRING, "UNKNOWN", 7);
+                }
 
                 uint64_t agent = s_instance->agent_info_map.at(record->dispatch_info.agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
-                    Variant(CALI_TYPE_STRING, activity_name, len),
+                    Variant(CALI_TYPE_STRING, activity_name, activity_name_len),
+                    Variant(cali_make_variant_from_uint(agent)),
+                    v_kernel_name,
                     Variant(cali_make_variant_from_uint(record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
-                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
-                    Variant(kernel_name),
-                    Variant(cali_make_variant_from_uint(agent))
+                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
@@ -363,6 +376,13 @@ class RocProfilerService
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
+        int status = 0;
+        ROCPROFILER_CALL(rocprofiler_context_is_valid(rocprofiler_ctx, &status));
+        if (!status) {
+            Log(0).stream() << channel->name() << ": rocprofiler: contexts not initialized! Skipping ROCm profiling.\n";
+            return;
+        }
+
         if (m_enable_api_callbacks) {
             channel->events().subscribe_attribute(c, m_api_attr);
             ROCPROFILER_CALL(rocprofiler_start_context(hip_api_ctx));
@@ -487,8 +507,8 @@ public:
 
         ROCPROFILER_CALL(rocprofiler_create_buffer(
             activity_ctx,
-            16 * 1024 * 1024,
-            15 * 1024 * 1024,
+            8 * 1024 * 1024,
+            8 * 1024 * 1024 - 65536,
             ROCPROFILER_BUFFER_POLICY_LOSSLESS,
             tool_tracing_callback,
             nullptr,
