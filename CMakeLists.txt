@@ -2,7 +2,7 @@
 # Caliper
 #
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 project (caliper C CXX)
 
 # ensure visibility gets honored for all targets
@@ -14,9 +14,7 @@ if(POLICY CMP0077)
   cmake_policy(SET CMP0077 NEW)
 endif()
 # Find Python by location
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.15)
-  cmake_policy(SET CMP0094 NEW)
-endif()
+cmake_policy(SET CMP0094 NEW)
 
 # set the default visibility settings
 set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
@@ -25,7 +23,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET "default")
 
 # Version information
 set(CALIPER_MAJOR_VERSION 2)
-set(CALIPER_MINOR_VERSION 13)
+set(CALIPER_MINOR_VERSION 14)
 set(CALIPER_PATCH_VERSION 0)
 set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}-dev")
 
@@ -181,60 +179,34 @@ if(WITH_VTUNE)
 endif()
 
 if (WITH_NVTX)
-  if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
-    find_package(CUDAToolkit REQUIRED)
-
-    if (CUDAToolkit_FOUND)
-      set(CALIPER_HAVE_NVTX ON)
-      set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${CUDAToolkit_TARGET_DIR}")
-      set(CALI_NVTX_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
-    endif()
-  else()
-    find_package(CUDA REQUIRED)
-
-    find_path(CALI_NVTX_INCLUDE_DIRS
-      NAME nvtx3/nvToolsExt.h
-      PATHS ${CUDA_TOOLKIT_ROOT_DIR}/include)
-
+  find_package(CUDAToolkit REQUIRED)
+  if (CUDAToolkit_FOUND)
     set(CALIPER_HAVE_NVTX ON)
-    set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${CALI_NVTX_INCLUDE_DIRS}")
+    set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${CUDAToolkit_TARGET_DIR}")
+    set(CALI_NVTX_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
   endif()
 endif()
 
 if(WITH_CUPTI)
-  if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
-    find_package(CUDAToolkit REQUIRED)
-
-    if (CUDAToolkit_FOUND)
-      set(CALIPER_HAVE_CUPTI ON)
-      set(CALIPER_CUpti_CMAKE_MSG "Yes, using ${CUDAToolkit_TARGET_DIR}")
-      set(CALI_CUPTI_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
-      # Hack for when cupti is in extras/
-      find_path(_real_cupti_include_dir
-        NAMES cupti.h
-        HINTS
-          ${CUDAToolkit_TARGET_DIR}/include
-          ${CUDAToolkit_TARGET_DIR}/extras/CUPTI/include)
-      list(APPEND CALI_CUPTI_INCLUDE_DIRS ${_real_cupti_include_dir})
-      list(REMOVE_DUPLICATES CALI_CUPTI_INCLUDE_DIRS)
-      # The static library is not always installed
-      if (BUILD_SHARED_LIBS OR NOT TARGET CUDA::cupti_static)
-        list(APPEND CALIPER_EXTERNAL_LIBS CUDA::cupti)
-      else()
-        find_library(RT_LIB rt REQUIRED)
-        list(APPEND CALIPER_EXTERNAL_LIBS CUDA::cupti_static ${CMAKE_DL_LIBS} ${RT_LIB})
-      endif()
-    endif()
-  else()
-    find_package(CUDA REQUIRED)
-    include(FindCUPTI)
-    if (CUPTI_FOUND)
-      set(CALIPER_HAVE_CUPTI TRUE)
-      set(CALIPER_CUpti_CMAKE_MSG "Yes, using ${CUPTI_LIBRARY}")
-      set(CALI_CUPTI_INCLUDE_DIRS
-        ${CUDA_INCLUDE_DIRS}
-        ${CUPTI_INCLUDE_DIR})
-      list(APPEND CALIPER_EXTERNAL_LIBS ${CUPTI_LIBRARY})
+  find_package(CUDAToolkit REQUIRED)
+  if (CUDAToolkit_FOUND)
+    set(CALIPER_HAVE_CUPTI ON)
+    set(CALIPER_CUpti_CMAKE_MSG "Yes, using ${CUDAToolkit_TARGET_DIR}")
+    set(CALI_CUPTI_INCLUDE_DIRS ${CUDAToolkit_INCLUDE_DIRS})
+    # Hack for when cupti is in extras/
+    find_path(_real_cupti_include_dir
+      NAMES cupti.h
+      HINTS
+        ${CUDAToolkit_TARGET_DIR}/include
+        ${CUDAToolkit_TARGET_DIR}/extras/CUPTI/include)
+    list(APPEND CALI_CUPTI_INCLUDE_DIRS ${_real_cupti_include_dir})
+    list(REMOVE_DUPLICATES CALI_CUPTI_INCLUDE_DIRS)
+    # The static library is not always installed
+    if (BUILD_SHARED_LIBS OR NOT TARGET CUDA::cupti_static)
+      list(APPEND CALIPER_EXTERNAL_LIBS CUDA::cupti)
+    else()
+      find_library(RT_LIB rt REQUIRED)
+      list(APPEND CALIPER_EXTERNAL_LIBS CUDA::cupti_static ${CMAKE_DL_LIBS} ${RT_LIB})
     endif()
   endif()
 endif()

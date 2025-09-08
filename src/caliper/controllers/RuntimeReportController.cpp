@@ -36,7 +36,7 @@ public:
         std::string q_let = " let report.time=scale(sum#time.duration.ns,1e-9) ";
 
         // Query for first aggregation step in MPI mode (process-local aggregation)
-        std::string q_local = " select sum(report.time)" + q_let;
+        std::string q_local = " select sum(report.time) group by path " + q_let;
         // Query for serial-mode aggregation
         std::string q_serial =
             " select sum(report.time) as \"Time (E)\""
@@ -57,7 +57,7 @@ public:
         // Config for second aggregation step in MPI mode (cross-process aggregation)
         std::string q_cross = std::string(" select min(") + tmetric + ") as \"Min time/rank\"" + std::string(",max(")
                                    + tmetric + ") as \"Max time/rank\"" + std::string(",avg(") + tmetric
-                                   + ") as \"Avg time/rank\"" + std::string(",") + pmetric + "  as \"Time %\" ";
+                                   + ") as \"Avg time/rank\"" + std::string(",") + pmetric + " as \"Time %\" ";
 
         std::string format = std::string(" format ") + util::build_tree_format_spec(config(), opts);
 
