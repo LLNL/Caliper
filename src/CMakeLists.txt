@@ -47,7 +47,7 @@ if (CALIPER_HAVE_MPI)
 endif()
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
-  target_link_libraries(caliper PRIVATE ${_extlib})
+  target_link_libraries(caliper PUBLIC ${_extlib})
 endforeach()
 
 if (WIN32)
