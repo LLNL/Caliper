@@ -79,12 +79,14 @@ class RocProfilerService
     Attribute m_src_agent_attr;
     Attribute m_dst_agent_attr;
     Attribute m_agent_attr;
+    Attribute m_bytes_attr;
 
     Attribute m_flush_region_attr;
 
     bool m_enable_api_callbacks       = false;
     bool m_enable_activity_tracing    = false;
     bool m_enable_snapshot_timestamps = false;
+    bool m_enable_allocation_tracing  = false;
 
     unsigned m_num_activity_records = 0;
 
@@ -100,6 +102,7 @@ class RocProfilerService
     static rocprofiler_context_id_t hip_api_ctx;
     static rocprofiler_context_id_t activity_ctx;
     static rocprofiler_context_id_t rocprofiler_ctx;
+    static rocprofiler_context_id_t alloc_tracing_ctx;
 
     static rocprofiler_buffer_id_t activity_buf;
 
@@ -136,6 +139,11 @@ class RocProfilerService
             CALI_TYPE_UINT,
             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
         );
+        m_bytes_attr = c->create_attribute(
+            "rocm.bytes",
+            CALI_TYPE_UINT,
+            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
 
         m_activity_name_attr      = c->create_attribute("rocm.activity", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         m_activity_queue_id_attr  = c->create_attribute("rocm.activity.queue", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
@@ -153,7 +161,6 @@ class RocProfilerService
     void update_kernel_info(uint64_t kernel_id, const std::string& name)
     {
         std::lock_guard<std::mutex> g(m_kernel_info_mutex);
-
         m_kernel_info.emplace(kernel_id, name);
     }
 
@@ -199,30 +206,44 @@ class RocProfilerService
 
                 auto* record = static_cast<rocprofiler_buffer_tracing_kernel_dispatch_record_t*>(header->payload);
 
-                const Attribute attr[] = { s_instance->m_activity_name_attr, s_instance->m_activity_start_attr,
-                                           s_instance->m_activity_end_attr,  s_instance->m_activity_duration_attr,
-                                           s_instance->m_kernel_name_attr,   s_instance->m_agent_attr };
+                const Attribute attr[] = {
+                    s_instance->m_activity_name_attr,
+                    s_instance->m_agent_attr,
+                    s_instance->m_kernel_name_attr,
+                    s_instance->m_activity_start_attr,
+                    s_instance->m_activity_end_attr,
+                    s_instance->m_activity_duration_attr
+                };
 
                 const char* activity_name = nullptr;
-                uint64_t    len;
+                uint64_t    activity_name_len = 0;
                 ROCPROFILER_CALL(rocprofiler_query_buffer_tracing_kind_operation_name(
                     record->kind,
                     record->operation,
                     &activity_name,
-                    &len
+                    &activity_name_len
                 ));
 
-                const char* kernel_name = s_instance->get_kernel_name(record->dispatch_info.kernel_id);
+                Variant v_kernel_name;
+
+                {
+                    std::lock_guard<std::mutex> g(s_instance->m_kernel_info_mutex);
+                    auto it = s_instance->m_kernel_info.find(record->dispatch_info.kernel_id);
+                    if (it != s_instance->m_kernel_info.end())
+                        v_kernel_name = Variant(CALI_TYPE_STRING, it->second.data(), it->second.size());
+                    else
+                        v_kernel_name = Variant(CALI_TYPE_STRING, "UNKNOWN", 7);
+                }
 
                 uint64_t agent = s_instance->agent_info_map.at(record->dispatch_info.agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
-                    Variant(CALI_TYPE_STRING, activity_name, len),
+                    Variant(CALI_TYPE_STRING, activity_name, activity_name_len),
+                    Variant(cali_make_variant_from_uint(agent)),
+                    v_kernel_name,
                     Variant(cali_make_variant_from_uint(record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
-                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
-                    Variant(kernel_name),
-                    Variant(cali_make_variant_from_uint(agent))
+                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
@@ -241,7 +262,9 @@ class RocProfilerService
 
                 const Attribute attr[] = { s_instance->m_activity_name_attr, s_instance->m_activity_start_attr,
                                            s_instance->m_activity_end_attr,  s_instance->m_activity_duration_attr,
-                                           s_instance->m_src_agent_attr,     s_instance->m_dst_agent_attr };
+                                           s_instance->m_src_agent_attr,     s_instance->m_dst_agent_attr,
+                                           s_instance->m_bytes_attr
+                                         };
 
                 const char* activity_name = nullptr;
                 uint64_t    len;
@@ -261,13 +284,14 @@ class RocProfilerService
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(src_agent)),
-                    Variant(cali_make_variant_from_uint(dst_agent))
+                    Variant(cali_make_variant_from_uint(dst_agent)),
+                    Variant(cali_make_variant_from_uint(record->bytes))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
                 FixedSizeSnapshotRecord<8> snapshot;
-                c.make_record(6, attr, data, snapshot.builder(), correlation);
+                c.make_record(7, attr, data, snapshot.builder(), correlation);
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
@@ -304,13 +328,36 @@ class RocProfilerService
                 ROCPROFILER_CALL(
                     rocprofiler_query_callback_tracing_kind_operation_name(record.kind, record.operation, &name, &len)
                 );
-                Caliper c;
-                if (name)
-                    c.begin(s_instance->m_api_attr, Variant(CALI_TYPE_STRING, name, len));
+                if (!name) {
+                    name = "UNKNOWN";
+                    len  = 7;
+                }
+                Caliper::instance().begin(s_instance->m_api_attr, Variant(CALI_TYPE_STRING, name, len));
             } else if (record.phase == ROCPROFILER_CALLBACK_PHASE_EXIT) {
-                Caliper c;
-                c.end(s_instance->m_api_attr);
+                Caliper::instance().end(s_instance->m_api_attr);
             }
+        }
+    }
+
+    static void mem_alloc_callback(
+        rocprofiler_callback_tracing_record_t record,
+        rocprofiler_user_data_t* /* user_data */,
+        void* /* callback data */
+    )
+    {
+        if (!s_instance)
+            return;
+        if (record.kind != ROCPROFILER_CALLBACK_TRACING_MEMORY_ALLOCATION)
+            return;
+
+        auto* data = static_cast<rocprofiler_callback_tracing_memory_allocation_data_t*>(record.payload);
+
+        if (record.operation == ROCPROFILER_MEMORY_ALLOCATION_ALLOCATE && data->address.ptr != nullptr) {
+            Caliper c;
+            c.memory_region_begin(data->address.ptr, "hip", 1, 1, &data->allocation_size);
+        } else if (record.operation == ROCPROFILER_MEMORY_ALLOCATION_FREE && data->address.ptr != nullptr) {
+            Caliper c;
+            c.memory_region_end(data->address.ptr);
         }
     }
 
@@ -329,6 +376,13 @@ class RocProfilerService
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
+        int status = 0;
+        ROCPROFILER_CALL(rocprofiler_context_is_valid(rocprofiler_ctx, &status));
+        if (!status) {
+            Log(0).stream() << channel->name() << ": rocprofiler: contexts not initialized! Skipping ROCm profiling.\n";
+            return;
+        }
+
         if (m_enable_api_callbacks) {
             channel->events().subscribe_attribute(c, m_api_attr);
             ROCPROFILER_CALL(rocprofiler_start_context(hip_api_ctx));
@@ -339,6 +393,10 @@ class RocProfilerService
             ROCPROFILER_CALL(rocprofiler_start_context(activity_ctx));
 
             channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
+        }
+
+        if (m_enable_allocation_tracing) {
+            ROCPROFILER_CALL(rocprofiler_start_context(alloc_tracing_ctx));
         }
 
         if (m_enable_snapshot_timestamps) {
@@ -385,6 +443,7 @@ class RocProfilerService
         m_enable_api_callbacks       = config.get("enable_api_callbacks").to_bool();
         m_enable_activity_tracing    = config.get("enable_activity_tracing").to_bool();
         m_enable_snapshot_timestamps = config.get("enable_snapshot_timestamps").to_bool();
+        m_enable_allocation_tracing  = config.get("enable_allocation_tracing").to_bool();
 
         create_attributes(c);
 
@@ -419,6 +478,7 @@ public:
         ROCPROFILER_CALL(rocprofiler_create_context(&hip_api_ctx));
         ROCPROFILER_CALL(rocprofiler_create_context(&activity_ctx));
         ROCPROFILER_CALL(rocprofiler_create_context(&rocprofiler_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&alloc_tracing_ctx));
 
         ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
             hip_api_ctx,
@@ -436,11 +496,19 @@ public:
             tool_api_cb,
             nullptr
         ));
+        ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
+            alloc_tracing_ctx,
+            ROCPROFILER_CALLBACK_TRACING_MEMORY_ALLOCATION,
+            nullptr,
+            0,
+            mem_alloc_callback,
+            nullptr
+        ));
 
         ROCPROFILER_CALL(rocprofiler_create_buffer(
             activity_ctx,
-            16 * 1024 * 1024,
-            15 * 1024 * 1024,
+            8 * 1024 * 1024,
+            8 * 1024 * 1024 - 65536,
             ROCPROFILER_BUFFER_POLICY_LOSSLESS,
             tool_tracing_callback,
             nullptr,
@@ -543,9 +611,10 @@ public:
 
 RocProfilerService* RocProfilerService::s_instance = nullptr;
 
-rocprofiler_context_id_t RocProfilerService::hip_api_ctx     = {};
-rocprofiler_context_id_t RocProfilerService::activity_ctx    = {};
-rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx = {};
+rocprofiler_context_id_t RocProfilerService::hip_api_ctx       = {};
+rocprofiler_context_id_t RocProfilerService::activity_ctx      = {};
+rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx   = {};
+rocprofiler_context_id_t RocProfilerService::alloc_tracing_ctx = {};
 
 rocprofiler_buffer_id_t RocProfilerService::activity_buf = {};
 
@@ -568,6 +637,11 @@ const char* RocProfilerService::s_spec = R"json(
   { "name": "enable_snapshot_timestamps",
     "type": "bool",
     "description": "Record host-side timestamps and durations with rocprofiler",
+    "value": "false"
+  },
+  { "name": "enable_allocation_tracing",
+    "type": "bool",
+    "description": "Trace HIP memory allocations",
     "value": "false"
   }
  ]
