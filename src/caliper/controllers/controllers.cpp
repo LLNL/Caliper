@@ -709,6 +709,30 @@ const char* builtin_rocm_option_specs = R"json(
     max(scale#t.gpu.r) as \"Max GPU time (E)\" unit sec,
     sum(scale#t.gpu.r) as \"Total GPU time (E)\" unit sec"
  }
+},{
+ "name": "rocm.alloc.stats",
+ "description": "Report per-region ROCm memory allocation info",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "allocstats", "rocprofiler" ],
+ "config": { "CALI_ALLOCSTATS_RECORD_HIGHWATERMARK": "true", "CALI_ROCPROFILER_ENABLE_ALLOCATION_TRACING": "true" },
+ "query":
+ {
+  "local":
+  "select
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(alloc.tally) as \"Alloc tMax\",
+    sum(alloc.count) as \"Alloc count\",
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\"",
+  "cross":
+  "select
+    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#alloc.tally) as \"Alloc tMax\",
+    sum(sum#alloc.count) as \"Alloc count\",
+    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#alloc.size) as \"Max Bytes/alloc\""
+ }
 }
 ]
 )json";
