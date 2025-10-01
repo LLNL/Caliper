@@ -1,0 +1,12 @@
+##############################################################################
+# Copyright (c) 2022-25, Lawrence Livermore National Security, LLC and RADIUSS
+# project contributors. See the COPYRIGHT file for details.
+#
+# SPDX-License-Identifier: (MIT)
+##############################################################################
+
+# Override reproducer section to define project specific variables.
+.matrix_reproducer_vars:
+  script:
+    - !reference [.reproducer_vars, script]
+
