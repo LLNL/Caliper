@@ -36,7 +36,7 @@ cce_18_0_1:
 # We do not recommend using ${PROJECT_<MACHINE>_VARIANTS} and
 # ${PROJECT_<MACHINE>_DEPS} in the extra jobs. There is no reason not to fully
 # describe the spec here.
-# The correct way is now to use rocmcc compiler directly as done in shared spec
+# The correct way is now to use llvm-amdgpu compiler directly as done in shared spec
 
 # As long as cce 18 fails, we keep this one.
 cce_19_0_0:
