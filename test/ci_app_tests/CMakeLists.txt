@@ -57,7 +57,6 @@ set(PYTHON_SCRIPTS
   test_runtimereport.py
   test_spot.py
   test_templateservices.py
-  test_textlog.py
   test_thread.py
   test_validator.py
   calipertest.py)
