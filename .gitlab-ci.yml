@@ -11,38 +11,36 @@
 # at Lawrence Livermore National Laboratory (LLNL).
 # This entire pipeline is LLNL-specific
 #
-# Important note: This file is a template provided by llnl/radiuss-shared-ci.
-# Remains to set variable values, change the reference to the radiuss-shared-ci
-# repo, opt-in and out optional features. The project can then extend it with
-# additional stages.
+# This file uses GitLab CI Components from radiuss-shared-ci (requires GitLab 17.0+).
+# Components provide better versioning, type-safe inputs, and cleaner syntax.
 #
-# In addition, each project should copy over and complete:
-# - .gitlab/custom-jobs-and-variables.yml
-# - .gitlab/subscribed-pipelines.yml
-#
-# The jobs should be specified in a file local to the project,
-# - .gitlab/jobs/${CI_MACHINE}.yml
-# or generated (see LLNL/Umpire for an example).
+# In addition, each project should have:
+# - .gitlab/custom-jobs.yml - Job templates for child pipelines
+# - .gitlab/custom-variables.yml - Machine-specific variables
+# - .gitlab/jobs/${CI_MACHINE}.yml - Machine-specific job definitions
 ###############################################################################
 
-# We define the following GitLab pipeline variables:
+###############################################################################
+# VARIABLES
+###############################################################################
+
 variables:
-##### LC GITLAB CONFIGURATION
+
+# LC GITLAB CONFIGURATION
 # Use an LLNL service user to run CI. This prevents from running pipelines as
 # an actual user.
   LLNL_SERVICE_USER: ""
 # Use the service user workspace. Solves permission issues, stores everything
 # at the same location whoever triggers a pipeline.
 #  CUSTOM_CI_BUILDS_DIR: ""
-# Submodules: We don't need to fetch dependencies handled by Spack.
+# Optimize submodules usage: only fetch the ones we need.
+# Note: We don't need to fetch dependencies handled by Spack.
   GIT_SUBMODULE_STRATEGY: normal
   GIT_SUBMODULE_DEPTH: 1
   GIT_SUBMODULE_UPDATE_FLAGS: --jobs 2
   GIT_SUBMODULE_PATHS: scripts/radiuss-spack-configs scripts/uberenv
 
-##### PROJECT VARIABLES
-
-##### SHARED_CI CONFIGURATION
+# SHARED_CI CONFIGURATION
 # Required information about GitHub repository
   GITHUB_PROJECT_NAME: "Caliper"
   GITHUB_PROJECT_ORG: "LLNL"
@@ -52,15 +50,10 @@ variables:
   JOB_CMD:
     value: "./scripts/gitlab/build-and-test.sh"
     expand: false
-# Override the pattern describing branches that will skip the "draft PR filter
-# test".  Add protected branches here. See default value in
-# utility-draft-pr-filter component.
-  ALWAYS_RUN_PATTERN: "^develop$|^master$|^v[0-9.]*$|^releases/$"
 
-# We organize the build-and-test stage with sub-pipelines. Each sub-pipeline
-# corresponds to a test batch on a given machine.
-
-# High level stages
+###############################################################################
+# MAIN PIPELINE STAGES
+###############################################################################
 # IMPORTANT: You must define stages yourself to allow customization.
 # The following stages are REQUIRED by RADIUSS Shared CI components:
 stages:
@@ -89,7 +82,7 @@ include:
       github_token: $GITHUB_TOKEN
       github_project_name: $GITHUB_PROJECT_NAME
       github_project_org: $GITHUB_PROJECT_ORG
-      always_run_pattern: $ALWAYS_RUN_PATTERN
+      always_run_pattern: "^develop$|^master$|^v[0-9.]*$|^releases/$"
 
   # Local custom variables (used for component inputs and forwarded to child pipelines)
   - local: '.gitlab/custom-variables.yml'
@@ -97,6 +90,9 @@ include:
 ###############################################################################
 # MACHINE PIPELINES
 ###############################################################################
+# We organize the build-and-test stage with sub-pipelines. Each sub-pipeline
+# corresponds to a test batch on a given machine.
+
 # Note: .machine-check template is provided by the base-pipeline component
 # and includes better error handling, validation, and GitHub status reporting.
 # Trigger a build-and-test pipeline for each machine.
@@ -115,7 +111,6 @@ generate-job-lists:
     - cat ${RADIUSS_JOBS_PATH}/corona.yml ${LOCAL_JOBS_PATH}/corona.yml > corona-jobs.yml
     - cat ${RADIUSS_JOBS_PATH}/tioga.yml ${LOCAL_JOBS_PATH}/tioga.yml > tioga-jobs.yml
     - cat ${RADIUSS_JOBS_PATH}/tuolumne.yml ${LOCAL_JOBS_PATH}/tuolumne.yml > tuolumne-jobs.yml
-    - cat ${RADIUSS_JOBS_PATH}/lassen.yml ${LOCAL_JOBS_PATH}/lassen.yml > lassen-jobs.yml
   artifacts:
     paths:
       - dane-jobs.yml
@@ -123,7 +118,6 @@ generate-job-lists:
       - corona-jobs.yml
       - tioga-jobs.yml
       - tuolumne-jobs.yml
-      - lassen-jobs.yml
 
 # DANE
 dane-up-check:
@@ -245,25 +239,3 @@ tuolumne-build-and-test:
     forward:
       pipeline_variables: true
 
-# LASSEN
-lassen-up-check:
-  extends: [.lassen, .machine-check]
-
-lassen-build-and-test:
-  stage: build-and-test
-  extends: [.lassen]
-  needs: [lassen-up-check, generate-job-lists]
-  trigger:
-    include:
-      - local: '.gitlab/custom-jobs.yml'
-      - component: $CI_SERVER_FQDN/radiuss/radiuss-shared-ci/lassen-pipeline@woptim/migrate-to-components
-        inputs:
-          job_cmd: $JOB_CMD
-          job_alloc: $LASSEN_JOB_ALLOC
-          github_project_name: $GITHUB_PROJECT_NAME
-          github_project_org: $GITHUB_PROJECT_ORG
-      - artifact: 'lassen-jobs.yml'
-        job: 'generate-job-lists'
-    strategy: depend
-    forward:
-      pipeline_variables: true
