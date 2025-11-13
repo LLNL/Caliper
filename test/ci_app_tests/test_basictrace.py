@@ -1,6 +1,7 @@
 # Basic smoke tests: create and read a simple trace, test various options
 
 import json
+import time
 import unittest
 
 import calipertest as cat
@@ -125,13 +126,21 @@ class CaliperBasicTraceTest(unittest.TestCase):
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
+        t_begin = time.time()
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        t_end = time.time()
+
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertEqual(len(snapshots), 1)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'cali.caliper.version' } ) )
+            snapshots, { 'cali.caliper.version', 'starttime.sec', 'starttime.nsec' } ) )
+
+        t_cali = int(snapshots[0]['starttime.sec'])
+
+        self.assertLessEqual(int(t_begin), t_cali)
+        self.assertLessEqual(t_cali, int(t_end))
 
     def test_globals_selection(self):
         target_cmd = [ './ci_test_basic' ]
