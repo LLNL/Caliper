@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
@@ -104,7 +105,7 @@ std::ostream& print_available_services(std::ostream& os)
 std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard, std::mutex& blackboard_lock)
 {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
-    
+
     {
         std::lock_guard<std::mutex> g(blackboard_lock);
         blackboard.snapshot(rec.builder());
@@ -1333,12 +1334,25 @@ Channel Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     Channel channel(next_id++, name, cfg);
     sG->all_channels.emplace_back(channel);
 
-    // Create and set key & version attributes
-    begin(
-        channel.body(),
-        create_attribute("cali.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-        Variant(name)
-    );
+    // Create and set name & timestamp attributes
+
+    Attribute channel_attr = create_attribute("cali.channel", CALI_TYPE_STRING,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+    Attribute sec_attr = create_attribute("starttime.sec", CALI_TYPE_UINT,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+    Attribute nsec_attr = create_attribute("starttime.nsec", CALI_TYPE_UINT,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    const auto t = std::chrono::system_clock::now();
+
+    auto d_sec = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch());
+    auto d_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>((t - d_sec).time_since_epoch());
+
+    set(channel.body(), channel_attr, Variant(name));
+    set(channel.body(), sec_attr, cali_make_variant_from_uint(d_sec.count()));
+    set(channel.body(), nsec_attr, cali_make_variant_from_uint(d_nsec.count()));
+
+    // Initialize services
 
     services::register_configured_services(this, &channel);
 
