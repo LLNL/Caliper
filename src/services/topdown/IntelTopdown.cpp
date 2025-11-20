@@ -8,6 +8,7 @@
 
 #include "HaswellTopdown.h"
 #include "SapphireRapidsTopdown.h"
+#include "SkylakeTopdown.h"
 
 #include "caliper/SnapshotRecord.h"
 
@@ -37,18 +38,12 @@ class IntelTopdown
     unsigned num_ret_computed;
     unsigned num_ret_skipped;
 
-    topdown::IntelTopdownLevel m_level;
+    topdown::IntelTopdownLevel                  m_level;
     std::shared_ptr<topdown::TopdownCalculator> m_calculator;
 
-    bool find_counter_attrs(CaliperMetadataAccessInterface& db)
-    {
-        return m_calculator->find_counter_attrs(db);
-    }
+    bool find_counter_attrs(CaliperMetadataAccessInterface& db) { return m_calculator->find_counter_attrs(db); }
 
-    void make_result_attrs(CaliperMetadataAccessInterface& db)
-    {
-        m_calculator->make_result_attrs(db);
-    }
+    void make_result_attrs(CaliperMetadataAccessInterface& db) { m_calculator->make_result_attrs(db); }
 
     void postprocess_snapshot_cb(std::vector<Entry>& rec)
     {
@@ -135,12 +130,9 @@ class IntelTopdown
           num_bsp_skipped(0),
           m_level(calculator->get_level()),
           m_calculator(calculator)
-    {
-    }
+    {}
 
-    ~IntelTopdown()
-    {
-    }
+    ~IntelTopdown() {}
 
 public:
 
@@ -163,11 +155,15 @@ public:
 
         std::shared_ptr<topdown::TopdownCalculator> calculator;
 #if defined(CALIPER_HAVE_ARCH)
-        if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
+        std::string cali_arch = CALIPER_HAVE_ARCH;
+        if (cali_arch == "sapphirerapids") {
             calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::SapphireRapidsTopdown(level));
+        } else if (cali_arch == "skylake" || cali_arch == "skylake_avx512" || cali_arch == "cascadelake") {
+            calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::SkylakeTopdown(level));
         } else {
 #endif
-            calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::HaswellTopdown(level)); // Default type of calculation
+            calculator = std::shared_ptr<topdown::TopdownCalculator>(new topdown::HaswellTopdown(level)
+            ); // Default type of calculation
 #if defined(CALIPER_HAVE_ARCH)
         }
 #endif
