@@ -456,7 +456,7 @@ class RocProfilerService
         }
     }
 
-    static void dispatch_callback(
+    static void dispatch_counter_config_callback(
         rocprofiler_dispatch_counting_service_data_t dispatch_data,
         rocprofiler_counter_config_id_t*             config,
         rocprofiler_user_data_t* /* user_data */,
@@ -625,6 +625,13 @@ class RocProfilerService
                 setup_counter_profile_for_agent(c, it.second->id, counter_names);
             }
         }
+
+        ROCPROFILER_CALL(rocprofiler_configure_buffer_dispatch_counting_service(
+            counter_ctx,
+            activity_buf,
+            dispatch_counter_config_callback,
+            nullptr
+        ));
     }
 
     RocProfilerService(Caliper* c, Channel* channel) : m_channel { *channel }
@@ -727,13 +734,6 @@ public:
             nullptr,
             0,
             activity_buf
-        ));
-
-        ROCPROFILER_CALL(rocprofiler_configure_buffer_dispatch_counting_service(
-            counter_ctx,
-            activity_buf,
-            dispatch_callback,
-            nullptr
         ));
 
         /*
