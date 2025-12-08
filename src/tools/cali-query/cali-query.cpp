@@ -201,6 +201,7 @@ int main(int argc, const char* argv[])
 
     bool verbose = args.is_set("verbose");
 
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
     mgr.add(args.get("caliper-config").c_str());
 
     if (mgr.error()) {

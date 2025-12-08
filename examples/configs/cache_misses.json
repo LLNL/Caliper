@@ -1,0 +1,117 @@
+{ "options":
+[
+{
+  "name" : "cache_misses",
+  "category": "metric",
+  "description": "L1/L2 cache miss rate",
+  "services": [ "papi" ],
+  "config":
+  {
+      "CALI_PAPI_COUNTERS": "PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L1_DCA,PAPI_L2_DCR",
+      "CALI_PAPI_ENABLE_MULTIPLEXING": "true"
+  },
+  "query":
+  [
+    { "level"  : "local",
+      "let"    :
+      [
+        "l1.miss=first(sum#papi.PAPI_L1_DCM,papi.PAPI_L1_DCM)",
+        "l1.accs=first(sum#papi.PAPI_L1_DCA,papi.PAPI_L1_DCA)",
+        "l2.miss=first(sum#papi.PAPI_L2_DCM,papi.PAPI_L2_DCM)",
+        "l2.read=first(sum#papi.PAPI_L2_DCR,papi.PAPI_L2_DCR)"
+      ],
+      "select" :
+      [
+        "sum(l1.miss) as \"L1 misses\"",
+        "sum(l1.accs) as \"L1 accesses\"",
+        "sum(l2.miss) as \"L2 misses\"",
+        "sum(l2.read) as \"L2 reads\"",
+        "ratio(l1.miss,l1.accs,100.0) as \"L1 miss rate\"",
+        "ratio(l2.miss,l2.read,100.0) as \"L2 miss rate\""
+      ]
+    },
+    { "level"  : "cross",
+      "select" :
+      [
+        "min(ratio#l1.miss/l1.accs) as \"L1 miss rate (min)\"",
+        "avg(ratio#l1.miss/l1.accs) as \"L1 miss rate (avg)\"",
+        "max(ratio#l1.miss/l1.accs) as \"L1 miss rate (max)\"",
+        "min(ratio#l2.miss/l2.read) as \"L2 miss rate (min)\"",
+        "avg(ratio#l2.miss/l2.read) as \"L2 miss rate (avg)\"",
+        "max(ratio#l2.miss/l2.read) as \"L2 miss rate (max)\""
+      ]
+    }
+  ]
+},
+{
+  "name" : "l2_data_cache_misses",
+  "category": "metric",
+  "description": "L2 cache miss rate",
+  "services": [ "papi" ],
+  "config":
+  {
+      "CALI_PAPI_COUNTERS": "PAPI_L2_DCM,PAPI_L2_DCA",
+      "CALI_PAPI_ENABLE_MULTIPLEXING": "true"
+  },
+  "query":
+  [
+    { "level"  : "local",
+      "let"    :
+      [
+        "l2.miss=first(sum#papi.PAPI_L2_DCM,papi.PAPI_L2_DCM)",
+        "l2.accs=first(sum#papi.PAPI_L2_DCA,papi.PAPI_L2_DCA)"
+      ],
+      "select" :
+      [
+        "sum(l2.miss) as \"L2 misses\"",
+        "sum(l2.accs) as \"L2 accesses\"",
+        "ratio(l2.miss,l2.accs,100.0) as \"L2 miss rate\""
+      ]
+    },
+    { "level"  : "cross",
+      "select" :
+      [
+        "min(ratio#l2.miss/l2.accs) as \"L2 miss rate (min)\"",
+        "avg(ratio#l2.miss/l2.accs) as \"L2 miss rate (avg)\"",
+        "max(ratio#l2.miss/l2.accs) as \"L2 miss rate (max)\""
+      ]
+    }
+]
+},
+{
+  "name" : "l3_cache_misses",
+  "category": "metric",
+  "description": "L3 cache miss rate",
+  "services": [ "papi" ],
+  "config":
+  {
+      "CALI_PAPI_COUNTERS": "PAPI_L3_TCM,PAPI_L3_TCA",
+      "CALI_PAPI_ENABLE_MULTIPLEXING": "true"
+  },
+  "query":
+  [
+    { "level"  : "local",
+      "let"    :
+      [
+        "l3.miss=first(sum#papi.PAPI_L3_TCM,papi.PAPI_L3_TCM)",
+        "l3.accs=first(sum#papi.PAPI_L3_TCA,papi.PAPI_L3_TCA)"
+      ],
+      "select" :
+      [
+        "sum(l3.miss) as \"L3 misses\"",
+        "sum(l3.accs) as \"L3 accesses\"",
+        "ratio(l3.miss,l3.accs,100.0) as \"L3 miss rate\""
+      ]
+    },
+    { "level"  : "cross",
+      "select" :
+      [
+        "min(ratio#l3.miss/l3.accs) as \"L3 miss rate (min)\"",
+        "avg(ratio#l3.miss/l3.accs) as \"L3 miss rate (avg)\"",
+        "max(ratio#l3.miss/l3.accs) as \"L3 miss rate (max)\""
+      ]
+    }
+  ]
+}
+]
+}
