@@ -85,6 +85,12 @@ const char* event_trace_spec = R"json(
    "services": [ "roctracer" ],
    "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
   },{
+   "name": "rocm.counters",
+   "description": "Record ROCm counters through rocprofiler-sdk",
+   "type": "string",
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_COUNTERS": "{}" }
+  },{
    "name": "umpire.allocators",
    "description": "Umpire per-allocator allocation statistics",
    "type": "bool",
