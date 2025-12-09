@@ -21,6 +21,10 @@
 #include <unordered_map>
 #include <sstream>
 
+#if ROCPROFILER_VERSION_MAJOR >= 1
+#define CALI_ROCPROFILER_HAVE_COUNTERS
+#endif
+
 using namespace cali;
 
 #define ROCPROFILER_CALL(result)                                                                             \
@@ -90,6 +94,7 @@ class RocProfilerService
     bool m_enable_activity_tracing    = false;
     bool m_enable_snapshot_timestamps = false;
     bool m_enable_allocation_tracing  = false;
+    bool m_enable_counters            = false;
 
     unsigned m_num_activity_records = 0;
     unsigned m_num_counter_records  = 0;
@@ -99,6 +104,8 @@ class RocProfilerService
     std::mutex m_kernel_info_mutex;
 
     std::unordered_map<uint64_t, const rocprofiler_agent_t*> m_agent_info_map;
+
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
     std::unordered_map<uint64_t, rocprofiler_counter_config_id_t> m_counter_profile_map;
     std::unordered_map<uint64_t, Attribute> m_counter_attr_map;
 
@@ -111,6 +118,7 @@ class RocProfilerService
     };
 
     std::unordered_map<uint64_t, std::vector<CounterDimensionData>> m_counter_dimension_info_map;
+#endif
 
     Channel m_channel;
 
@@ -217,7 +225,9 @@ class RocProfilerService
                 mpi_rank_entry = c.get(mpi_rank_attr);
         }
 
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
         Entry counter_dispatch_entry;
+#endif
 
         for (size_t i = 0; i < num_headers; ++i) {
             auto* header = headers[i];
@@ -321,6 +331,7 @@ class RocProfilerService
                 s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
             } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_COUNTERS &&
                 header->kind == ROCPROFILER_COUNTER_RECORD_PROFILE_COUNTING_DISPATCH_HEADER) {
 
@@ -393,6 +404,7 @@ class RocProfilerService
                 s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_counter_records;
+#endif // CALI_ROCPROFILER_HAVE_COUNTERS
             }
         }
 
@@ -456,6 +468,7 @@ class RocProfilerService
         }
     }
 
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
     static void dispatch_counter_config_callback(
         rocprofiler_dispatch_counting_service_data_t dispatch_data,
         rocprofiler_counter_config_id_t*             config,
@@ -476,6 +489,7 @@ class RocProfilerService
         std::lock_guard<std::mutex> g(s_instance->m_counter_dispatch_correlation_mutex);
         s_instance->m_counter_dispatch_correlation_map.emplace(dispatch_data.dispatch_info.dispatch_id, e);
     }
+#endif
 
     void snapshot_cb(Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot)
     {
@@ -513,11 +527,11 @@ class RocProfilerService
             ROCPROFILER_CALL(rocprofiler_start_context(alloc_tracing_ctx));
         }
 
-        if (!m_counter_profile_map.empty()) {
+        if (m_enable_counters) {
             ROCPROFILER_CALL(rocprofiler_start_context(counter_ctx));
         }
 
-        if (m_enable_activity_tracing || !m_counter_profile_map.empty()) {
+        if (m_enable_activity_tracing || m_enable_counters) {
             channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
         }
 
@@ -559,10 +573,12 @@ class RocProfilerService
 
         Log(1).stream() << channel->name() << ": rocprofiler: wrote " << m_num_activity_records
             << " activity records, " << m_num_counter_records << " counter records.\n";
-        Log(1).stream() << channel->name() << ": rocprofiler: " << m_failed_correlations
-            << " correlation lookups failed.\n";
+        if (m_failed_correlations > 0)
+            Log(1).stream() << channel->name() << ": rocprofiler: " << m_failed_correlations
+                << " correlation lookups failed.\n";
     }
 
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
     void setup_counter_profile_for_agent(Caliper* c, rocprofiler_agent_id_t agent, const std::vector<std::string>& counter_names)
     {
         std::vector<rocprofiler_counter_id_t> agent_counters;
@@ -632,7 +648,10 @@ class RocProfilerService
             dispatch_counter_config_callback,
             nullptr
         ));
+
+        m_enable_counters = !m_counter_profile_map.empty();
     }
+#endif
 
     RocProfilerService(Caliper* c, Channel* channel) : m_channel { *channel }
     {
@@ -666,8 +685,13 @@ class RocProfilerService
         ));
 
         auto counter_names = config.get("counters").to_stringlist();
-        if (!counter_names.empty())
+        if (!counter_names.empty()) {
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
             setup_counter_profiles(c, counter_names);
+#else
+            Log(0).stream() << channel->name() << ": rocprofiler: Counter collection is not supported!\n";
+#endif
+        }
     }
 
 public:
@@ -710,8 +734,8 @@ public:
 
         ROCPROFILER_CALL(rocprofiler_create_buffer(
             activity_ctx,
-            4 * 1024 * 1024,
-            4 * 1024 * 1024 - 65536,
+            1024 * 1024,
+            1024 * 1024 - 8192,
             ROCPROFILER_BUFFER_POLICY_LOSSLESS,
             tool_tracing_callback,
             nullptr,
