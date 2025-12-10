@@ -15,9 +15,15 @@
 #include <rocprofiler-sdk/rocprofiler.h>
 #include <rocprofiler-sdk/registration.h>
 
+#include <algorithm>
 #include <array>
 #include <mutex>
+#include <unordered_map>
 #include <sstream>
+
+#if ROCPROFILER_VERSION_MAJOR >= 1
+#define CALI_ROCPROFILER_HAVE_COUNTERS
+#endif
 
 using namespace cali;
 
@@ -80,6 +86,7 @@ class RocProfilerService
     Attribute m_dst_agent_attr;
     Attribute m_agent_attr;
     Attribute m_bytes_attr;
+    Attribute m_dispatch_id_attr;
 
     Attribute m_flush_region_attr;
 
@@ -87,24 +94,43 @@ class RocProfilerService
     bool m_enable_activity_tracing    = false;
     bool m_enable_snapshot_timestamps = false;
     bool m_enable_allocation_tracing  = false;
+    bool m_enable_counters            = false;
 
     unsigned m_num_activity_records = 0;
+    unsigned m_num_counter_records  = 0;
+    unsigned m_failed_correlations  = 0;
 
-    std::map<uint64_t, std::string> m_kernel_info;
-    std::mutex                      m_kernel_info_mutex;
+    std::unordered_map<uint64_t, std::string> m_kernel_info;
+    std::mutex m_kernel_info_mutex;
 
-    std::map<uint64_t, const rocprofiler_agent_t*> agent_info_map;
+    std::unordered_map<uint64_t, const rocprofiler_agent_t*> m_agent_info_map;
+
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+    std::unordered_map<uint64_t, rocprofiler_counter_config_id_t> m_counter_profile_map;
+    std::unordered_map<uint64_t, Attribute> m_counter_attr_map;
+
+    std::unordered_map<rocprofiler_dispatch_id_t, Entry> m_counter_dispatch_correlation_map;
+    std::mutex m_counter_dispatch_correlation_mutex;
+
+    struct CounterDimensionData {
+        rocprofiler_counter_record_dimension_info_t info;
+        Attribute attr;
+    };
+
+    std::unordered_map<uint64_t, std::vector<CounterDimensionData>> m_counter_dimension_info_map;
+#endif
 
     Channel m_channel;
 
     static RocProfilerService* s_instance;
 
-    static rocprofiler_context_id_t hip_api_ctx;
-    static rocprofiler_context_id_t activity_ctx;
-    static rocprofiler_context_id_t rocprofiler_ctx;
-    static rocprofiler_context_id_t alloc_tracing_ctx;
+    static rocprofiler_context_id_t s_hip_api_ctx;
+    static rocprofiler_context_id_t s_activity_ctx;
+    static rocprofiler_context_id_t s_rocprofiler_ctx;
+    static rocprofiler_context_id_t s_alloc_tracing_ctx;
+    static rocprofiler_context_id_t s_counter_ctx;
 
-    static rocprofiler_buffer_id_t activity_buf;
+    static rocprofiler_buffer_id_t  s_activity_buf;
 
     void create_attributes(Caliper* c)
     {
@@ -154,6 +180,12 @@ class RocProfilerService
         m_dst_agent_attr          = c->create_attribute("rocm.dst.agent", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         m_agent_attr              = c->create_attribute("rocm.agent", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
 
+        m_dispatch_id_attr = c->create_attribute(
+            "rocm.dispatch_id",
+            CALI_TYPE_UINT,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS
+        );
+
         m_flush_region_attr =
             c->create_attribute("rocprofiler.flush", CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_DEFAULT);
     }
@@ -164,18 +196,10 @@ class RocProfilerService
         m_kernel_info.emplace(kernel_id, name);
     }
 
-    const char* get_kernel_name(uint64_t kernel_id)
-    {
-        std::lock_guard<std::mutex> g(m_kernel_info_mutex);
-
-        auto it = m_kernel_info.find(kernel_id);
-        return it != m_kernel_info.end() ? it->second.c_str() : nullptr;
-    }
-
     void pre_flush_cb()
     {
-        if (activity_buf.handle > 0)
-            ROCPROFILER_CALL(rocprofiler_flush_buffer(activity_buf));
+        if (s_activity_buf.handle > 0)
+            ROCPROFILER_CALL(rocprofiler_flush_buffer(s_activity_buf));
     }
 
     static void tool_tracing_callback(
@@ -187,6 +211,9 @@ class RocProfilerService
         uint64_t                      drop_count
     )
     {
+        if (!s_instance)
+            return;
+
         Caliper c;
         c.begin(s_instance->m_flush_region_attr, Variant("ROCPROFILER FLUSH"));
 
@@ -197,6 +224,10 @@ class RocProfilerService
             if (mpi_rank_attr)
                 mpi_rank_entry = c.get(mpi_rank_attr);
         }
+
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+        Entry counter_dispatch_entry;
+#endif
 
         for (size_t i = 0; i < num_headers; ++i) {
             auto* header = headers[i];
@@ -212,7 +243,8 @@ class RocProfilerService
                     s_instance->m_kernel_name_attr,
                     s_instance->m_activity_start_attr,
                     s_instance->m_activity_end_attr,
-                    s_instance->m_activity_duration_attr
+                    s_instance->m_activity_duration_attr,
+                    s_instance->m_dispatch_id_attr
                 };
 
                 const char* activity_name = nullptr;
@@ -235,7 +267,7 @@ class RocProfilerService
                         v_kernel_name = Variant(CALI_TYPE_STRING, "UNKNOWN", 7);
                 }
 
-                uint64_t agent = s_instance->agent_info_map.at(record->dispatch_info.agent_id.handle)->logical_node_id;
+                uint64_t agent = s_instance->m_agent_info_map.at(record->dispatch_info.agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
                     Variant(CALI_TYPE_STRING, activity_name, activity_name_len),
@@ -243,13 +275,14 @@ class RocProfilerService
                     v_kernel_name,
                     Variant(cali_make_variant_from_uint(record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
-                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp))
+                    Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
+                    Variant(cali_make_variant_from_uint(record->dispatch_info.dispatch_id))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
                 FixedSizeSnapshotRecord<8> snapshot;
-                c.make_record(6, attr, data, snapshot.builder(), correlation);
+                c.make_record(7, attr, data, snapshot.builder(), correlation);
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
@@ -275,8 +308,8 @@ class RocProfilerService
                     &len
                 ));
 
-                uint64_t src_agent = s_instance->agent_info_map.at(record->src_agent_id.handle)->logical_node_id;
-                uint64_t dst_agent = s_instance->agent_info_map.at(record->dst_agent_id.handle)->logical_node_id;
+                uint64_t src_agent = s_instance->m_agent_info_map.at(record->src_agent_id.handle)->logical_node_id;
+                uint64_t dst_agent = s_instance->m_agent_info_map.at(record->dst_agent_id.handle)->logical_node_id;
 
                 const Variant data[] = {
                     Variant(CALI_TYPE_STRING, activity_name, len),
@@ -298,13 +331,89 @@ class RocProfilerService
                 s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
 
                 ++s_instance->m_num_activity_records;
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+            } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_COUNTERS &&
+                header->kind == ROCPROFILER_COUNTER_RECORD_PROFILE_COUNTING_DISPATCH_HEADER) {
+
+                auto* record = static_cast<rocprofiler_dispatch_counting_service_record_t*>(header->payload);
+
+                //   external correlation ptr lookup for counter dispatch record does not work as of ROCm 7.0
+                // cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
+
+                cali::Node* correlation = nullptr;
+
+                {
+                    std::lock_guard<std::mutex> g(s_instance->m_counter_dispatch_correlation_mutex);
+                    auto it = s_instance->m_counter_dispatch_correlation_map.find(record->dispatch_info.dispatch_id);
+                    if (it != s_instance->m_counter_dispatch_correlation_map.end()) {
+                        correlation = it->second.node();
+                        s_instance->m_counter_dispatch_correlation_map.erase(it);
+                    } else
+                        ++s_instance->m_failed_correlations;
+                }
+
+                Variant v_kernel_name;
+
+                {
+                    std::lock_guard<std::mutex> g(s_instance->m_kernel_info_mutex);
+                    auto it = s_instance->m_kernel_info.find(record->dispatch_info.kernel_id);
+                    if (it != s_instance->m_kernel_info.end())
+                        v_kernel_name = Variant(CALI_TYPE_STRING, it->second.data(), it->second.size());
+                    else
+                        v_kernel_name = Variant(CALI_TYPE_STRING, "UNKNOWN", 7);
+                }
+
+                FixedSizeSnapshotRecord<4> snapshot;
+                c.make_record(1, &s_instance->m_kernel_name_attr, &v_kernel_name, snapshot.builder(), correlation);
+
+                counter_dispatch_entry = snapshot.view()[0];
+            } else if (header->category == ROCPROFILER_BUFFER_CATEGORY_COUNTERS &&
+                header->kind == ROCPROFILER_COUNTER_RECORD_VALUE) {
+                auto* record = static_cast<rocprofiler_counter_record_t*>(header->payload);
+
+                rocprofiler_counter_id_t counter_id = { .handle = 0 };
+                rocprofiler_query_record_counter_id(record->id, &counter_id);
+
+                FixedSizeSnapshotRecord<4> snapshot;
+
+                if (!counter_dispatch_entry.empty()) {
+                    cali::Node* correlation_entry_node = counter_dispatch_entry.node();
+
+                    auto it = s_instance->m_counter_dimension_info_map.find(counter_id.handle);
+                    if (it != s_instance->m_counter_dimension_info_map.end()) {
+                        for (const auto& dim : it->second) {
+                            size_t pos = 0;
+                            rocprofiler_query_record_dimension_position(record->id, dim.info.id, &pos);
+                            correlation_entry_node = c.make_tree_entry(dim.attr,
+                                Variant(cali_make_variant_from_uint(pos)), correlation_entry_node);
+                        }
+                    }
+
+                    snapshot.builder().append(Entry(correlation_entry_node));
+                }
+
+                if (!mpi_rank_entry.empty())
+                    snapshot.builder().append(mpi_rank_entry);
+
+                snapshot.builder().append(s_instance->m_dispatch_id_attr, cali_make_variant_from_uint(record->dispatch_id));
+
+                {
+                    auto it = s_instance->m_counter_attr_map.find(counter_id.handle);
+                    if (it != s_instance->m_counter_attr_map.end())
+                        snapshot.builder().append(it->second, cali_make_variant_from_double(record->counter_value));
+                }
+
+                s_instance->m_channel.events().process_snapshot(&c, SnapshotView(), snapshot.view());
+
+                ++s_instance->m_num_counter_records;
+#endif // CALI_ROCPROFILER_HAVE_COUNTERS
             }
         }
 
         c.end(s_instance->m_flush_region_attr);
     }
 
-    static void tool_api_cb(
+    static void tool_api_callback(
         rocprofiler_callback_tracing_record_t record,
         rocprofiler_user_data_t*              user_data,
         void* /* callback_data */
@@ -361,6 +470,29 @@ class RocProfilerService
         }
     }
 
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+    static void dispatch_counter_config_callback(
+        rocprofiler_dispatch_counting_service_data_t dispatch_data,
+        rocprofiler_counter_config_id_t*             config,
+        rocprofiler_user_data_t* /* user_data */,
+        void* /* callback data */
+    )
+    {
+        if (!s_instance)
+            return;
+
+        auto it = s_instance->m_counter_profile_map.find(dispatch_data.dispatch_info.agent_id.handle);
+        if (it != s_instance->m_counter_profile_map.end())
+            *config = it->second;
+        else
+            return;
+
+        Entry e = Caliper::instance().get_path_node();
+        std::lock_guard<std::mutex> g(s_instance->m_counter_dispatch_correlation_mutex);
+        s_instance->m_counter_dispatch_correlation_map.emplace(dispatch_data.dispatch_info.dispatch_id, e);
+    }
+#endif
+
     void snapshot_cb(Caliper* c, SnapshotView trigger_info, SnapshotBuilder& snapshot)
     {
         auto ts = rocprofiler_timestamp_t {};
@@ -370,14 +502,14 @@ class RocProfilerService
         Variant  v_now(cali_make_variant_from_uint(timestamp));
         Variant  v_prev = c->exchange(m_prev_timestamp_attr, v_now);
 
-        snapshot.append(Entry(m_host_duration_attr, cali_make_variant_from_uint(timestamp - v_prev.to_uint())));
-        snapshot.append(Entry(m_host_timestamp_attr, v_now));
+        snapshot.append(m_host_duration_attr, cali_make_variant_from_uint(timestamp - v_prev.to_uint()));
+        snapshot.append(m_host_timestamp_attr, v_now);
     }
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
         int status = 0;
-        ROCPROFILER_CALL(rocprofiler_context_is_valid(rocprofiler_ctx, &status));
+        ROCPROFILER_CALL(rocprofiler_context_is_valid(s_rocprofiler_ctx, &status));
         if (!status) {
             Log(0).stream() << channel->name() << ": rocprofiler: contexts not initialized! Skipping ROCm profiling.\n";
             return;
@@ -385,18 +517,24 @@ class RocProfilerService
 
         if (m_enable_api_callbacks) {
             channel->events().subscribe_attribute(c, m_api_attr);
-            ROCPROFILER_CALL(rocprofiler_start_context(hip_api_ctx));
+            ROCPROFILER_CALL(rocprofiler_start_context(s_hip_api_ctx));
         }
 
         if (m_enable_activity_tracing) {
-            ROCPROFILER_CALL(rocprofiler_start_context(rocprofiler_ctx));
-            ROCPROFILER_CALL(rocprofiler_start_context(activity_ctx));
-
-            channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
+            ROCPROFILER_CALL(rocprofiler_start_context(s_rocprofiler_ctx));
+            ROCPROFILER_CALL(rocprofiler_start_context(s_activity_ctx));
         }
 
         if (m_enable_allocation_tracing) {
-            ROCPROFILER_CALL(rocprofiler_start_context(alloc_tracing_ctx));
+            ROCPROFILER_CALL(rocprofiler_start_context(s_alloc_tracing_ctx));
+        }
+
+        if (m_enable_counters) {
+            ROCPROFILER_CALL(rocprofiler_start_context(s_counter_ctx));
+        }
+
+        if (m_enable_activity_tracing || m_enable_counters) {
+            channel->events().pre_flush_evt.connect([this](Caliper*, ChannelBody*, SnapshotView) { this->pre_flush_cb(); });
         }
 
         if (m_enable_snapshot_timestamps) {
@@ -422,19 +560,103 @@ class RocProfilerService
     void pre_finish_cb(Caliper* c, Channel* channel)
     {
         int status = 0;
-        ROCPROFILER_CALL(rocprofiler_context_is_active(hip_api_ctx, &status));
+        ROCPROFILER_CALL(rocprofiler_context_is_active(s_hip_api_ctx, &status));
         if (status)
-            ROCPROFILER_CALL(rocprofiler_stop_context(hip_api_ctx));
-        ROCPROFILER_CALL(rocprofiler_context_is_active(rocprofiler_ctx, &status));
+            ROCPROFILER_CALL(rocprofiler_stop_context(s_hip_api_ctx));
+        ROCPROFILER_CALL(rocprofiler_context_is_active(s_rocprofiler_ctx, &status));
         if (status)
-            ROCPROFILER_CALL(rocprofiler_stop_context(rocprofiler_ctx));
-        ROCPROFILER_CALL(rocprofiler_context_is_active(activity_ctx, &status));
+            ROCPROFILER_CALL(rocprofiler_stop_context(s_rocprofiler_ctx));
+        ROCPROFILER_CALL(rocprofiler_context_is_active(s_activity_ctx, &status));
         if (status)
-            ROCPROFILER_CALL(rocprofiler_stop_context(activity_ctx));
+            ROCPROFILER_CALL(rocprofiler_stop_context(s_activity_ctx));
+        ROCPROFILER_CALL(rocprofiler_context_is_active(s_counter_ctx, &status));
+        if (status)
+            ROCPROFILER_CALL(rocprofiler_stop_context(s_counter_ctx));
 
         Log(1).stream() << channel->name() << ": rocprofiler: wrote " << m_num_activity_records
-                        << " activity records\n";
+            << " activity records, " << m_num_counter_records << " counter records.\n";
+        if (m_failed_correlations > 0)
+            Log(1).stream() << channel->name() << ": rocprofiler: " << m_failed_correlations
+                << " correlation lookups failed.\n";
     }
+
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+    void setup_counter_profile_for_agent(Caliper* c, rocprofiler_agent_id_t agent, const std::vector<std::string>& counter_names)
+    {
+        std::vector<rocprofiler_counter_id_t> agent_counters;
+        auto iter_counters_cb = [](rocprofiler_agent_id_t,
+                                   rocprofiler_counter_id_t* counters,
+                                   size_t num_counters,
+                                   void* user_data)
+            {
+                auto* vec = static_cast<std::vector<rocprofiler_counter_id_t>*>(user_data);
+                std::copy_n(counters, num_counters, std::back_inserter(*vec));
+                return ROCPROFILER_STATUS_SUCCESS;
+            };
+
+        ROCPROFILER_CALL(rocprofiler_iterate_agent_supported_counters(agent, iter_counters_cb, &agent_counters));
+
+        std::vector<rocprofiler_counter_id_t> collect_counters;
+        std::vector<std::string> names = counter_names;
+        for (auto counter : agent_counters) {
+            rocprofiler_counter_info_v1_t info;
+            ROCPROFILER_CALL(rocprofiler_query_counter_info(counter, ROCPROFILER_COUNTER_INFO_VERSION_1, &info));
+            auto it = std::find(names.begin(), names.end(), std::string(info.name));
+            if (it != names.end()) {
+                collect_counters.push_back(counter);
+                Attribute attr = c->create_attribute(std::string("rocm.").append(*it), CALI_TYPE_DOUBLE,
+                    CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+                m_counter_attr_map.emplace(counter.handle, attr);
+                names.erase(it);
+
+                std::vector<CounterDimensionData> dim_info;
+                dim_info.reserve(info.dimensions_count);
+                for (std::size_t n = 0; n < info.dimensions_count; ++n) {
+                    const auto* dim = info.dimensions[n];
+                    Attribute dim_attr = c->create_attribute(std::string("rocm.dim.").append(dim->name),
+                        CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                    dim_info.emplace_back(CounterDimensionData { *dim, dim_attr });
+                }
+                m_counter_dimension_info_map.emplace(counter.handle, std::move(dim_info));
+            }
+        }
+
+        if (!collect_counters.empty()) {
+            rocprofiler_counter_config_id_t profile = { .handle = 0 };
+            ROCPROFILER_CALL(rocprofiler_create_counter_config(agent, collect_counters.data(), collect_counters.size(), &profile));
+            m_counter_profile_map.insert(std::make_pair(agent.handle, profile));
+            Log(2).stream() << m_channel.name() << ": rocprofiler: Created profile of " << collect_counters.size()
+                << " counter(s)\n";
+        }
+
+        for (const auto& name : names) {
+            Log(0).stream() << m_channel.name() << ": rocprofiler: Counter " << name << " not found for agent " << agent.handle << "\n";
+        }
+    }
+
+    void setup_counter_profiles(Caliper* c, const std::vector<std::string>& counter_names)
+    {
+        for (const auto &it : m_agent_info_map) {
+            if (it.second->type == ROCPROFILER_AGENT_TYPE_GPU) {
+                Log(2).stream() << m_channel.name() << ": rocprofiler: Setting up counters for agent "
+                    << it.second->logical_node_id << " (" << it.second->name << ")\n";
+                setup_counter_profile_for_agent(c, it.second->id, counter_names);
+            }
+        }
+
+        ROCPROFILER_CALL(rocprofiler_configure_buffer_dispatch_counting_service(
+            s_counter_ctx,
+            s_activity_buf,
+            dispatch_counter_config_callback,
+            nullptr
+        ));
+
+        Log(1).stream() << m_channel.name() << ": rocprofiler: Created counter profiles for "
+            << m_counter_profile_map.size() << " agents\n";
+
+        m_enable_counters = !m_counter_profile_map.empty();
+    }
+#endif
 
     RocProfilerService(Caliper* c, Channel* channel) : m_channel { *channel }
     {
@@ -453,9 +675,9 @@ class RocProfilerService
         rocprofiler_query_available_agents_cb_t iterate_agents =
             [](rocprofiler_agent_version_t, const void** agents_arr, size_t num_agents, void* usr) {
                 for (size_t i = 0; i < num_agents; ++i) {
-                    const auto* agent_v = static_cast<const rocprofiler_agent_v0_t*>(agents_arr[i]);
+                    const auto* agent = static_cast<const rocprofiler_agent_v0_t*>(agents_arr[i]);
                     RocProfilerService* instance = static_cast<RocProfilerService*>(usr);
-                    instance->agent_info_map.emplace(agent_v->id.handle, agent_v);
+                    instance->m_agent_info_map.emplace(agent->id.handle, agent);
                 }
                 return ROCPROFILER_STATUS_SUCCESS;
             };
@@ -466,6 +688,15 @@ class RocProfilerService
             sizeof(rocprofiler_agent_t),
             this
         ));
+
+        auto counter_names = config.get("counters").to_stringlist();
+        if (!counter_names.empty()) {
+#ifdef CALI_ROCPROFILER_HAVE_COUNTERS
+            setup_counter_profiles(c, counter_names);
+#else
+            Log(0).stream() << channel->name() << ": rocprofiler: Counter collection is not supported!\n";
+#endif
+        }
     }
 
 public:
@@ -475,29 +706,30 @@ public:
 
     static int tool_init(rocprofiler_client_finalize_t fini_func, void* tool_data)
     {
-        ROCPROFILER_CALL(rocprofiler_create_context(&hip_api_ctx));
-        ROCPROFILER_CALL(rocprofiler_create_context(&activity_ctx));
-        ROCPROFILER_CALL(rocprofiler_create_context(&rocprofiler_ctx));
-        ROCPROFILER_CALL(rocprofiler_create_context(&alloc_tracing_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&s_hip_api_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&s_activity_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&s_rocprofiler_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&s_alloc_tracing_ctx));
+        ROCPROFILER_CALL(rocprofiler_create_context(&s_counter_ctx));
 
         ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
-            hip_api_ctx,
+            s_hip_api_ctx,
             ROCPROFILER_CALLBACK_TRACING_HIP_RUNTIME_API,
             nullptr,
             0,
-            tool_api_cb,
+            tool_api_callback,
             nullptr
         ));
         ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
-            rocprofiler_ctx,
+            s_rocprofiler_ctx,
             ROCPROFILER_CALLBACK_TRACING_CODE_OBJECT,
             nullptr,
             0,
-            tool_api_cb,
+            tool_api_callback,
             nullptr
         ));
         ROCPROFILER_CALL(rocprofiler_configure_callback_tracing_service(
-            alloc_tracing_ctx,
+            s_alloc_tracing_ctx,
             ROCPROFILER_CALLBACK_TRACING_MEMORY_ALLOCATION,
             nullptr,
             0,
@@ -506,32 +738,33 @@ public:
         ));
 
         ROCPROFILER_CALL(rocprofiler_create_buffer(
-            activity_ctx,
-            8 * 1024 * 1024,
-            8 * 1024 * 1024 - 65536,
+            s_activity_ctx,
+            1024 * 1024,
+            1024 * 1024 - 8192,
             ROCPROFILER_BUFFER_POLICY_LOSSLESS,
             tool_tracing_callback,
             nullptr,
-            &activity_buf
+            &s_activity_buf
         ));
 
         // auto kernel_dispatch_cb_ops =
         //     std::array<rocprofiler_tracing_operation_t, 1>{ROCPROFILER_KERNEL_DISPATCH_COMPLETE};
 
         ROCPROFILER_CALL(rocprofiler_configure_buffer_tracing_service(
-            activity_ctx,
+            s_activity_ctx,
             ROCPROFILER_BUFFER_TRACING_KERNEL_DISPATCH,
             nullptr,
             0,
-            activity_buf
+            s_activity_buf
         ));
         ROCPROFILER_CALL(rocprofiler_configure_buffer_tracing_service(
-            activity_ctx,
+            s_activity_ctx,
             ROCPROFILER_BUFFER_TRACING_MEMORY_COPY,
             nullptr,
             0,
-            activity_buf
+            s_activity_buf
         ));
+
         /*
         ROCPROFILER_CALL(
             rocprofiler_configure_buffer_tracing_service(
@@ -545,7 +778,7 @@ public:
         );
 
         ROCPROFILER_CALL(rocprofiler_configure_external_correlation_id_request_service(
-            activity_ctx,
+            s_activity_ctx,
             external_corr_id_request_kinds.data(),
             external_corr_id_request_kinds.size(),
             set_external_correlation_id,
@@ -611,12 +844,13 @@ public:
 
 RocProfilerService* RocProfilerService::s_instance = nullptr;
 
-rocprofiler_context_id_t RocProfilerService::hip_api_ctx       = {};
-rocprofiler_context_id_t RocProfilerService::activity_ctx      = {};
-rocprofiler_context_id_t RocProfilerService::rocprofiler_ctx   = {};
-rocprofiler_context_id_t RocProfilerService::alloc_tracing_ctx = {};
+rocprofiler_context_id_t RocProfilerService::s_hip_api_ctx       = {};
+rocprofiler_context_id_t RocProfilerService::s_activity_ctx      = {};
+rocprofiler_context_id_t RocProfilerService::s_rocprofiler_ctx   = {};
+rocprofiler_context_id_t RocProfilerService::s_alloc_tracing_ctx = {};
+rocprofiler_context_id_t RocProfilerService::s_counter_ctx       = {};
 
-rocprofiler_buffer_id_t RocProfilerService::activity_buf = {};
+rocprofiler_buffer_id_t RocProfilerService::s_activity_buf = {};
 
 const char* RocProfilerService::s_spec = R"json(
 {
@@ -643,6 +877,10 @@ const char* RocProfilerService::s_spec = R"json(
     "type": "bool",
     "description": "Trace HIP memory allocations",
     "value": "false"
+  },
+  { "name": "counters",
+    "type": "string",
+    "description": "List of performance counters to collect"
   }
  ]
 }
