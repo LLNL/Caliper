@@ -119,8 +119,8 @@ class PapiService
             cali_attr_type type = CALI_TYPE_INV;
             switch (info.data_type) {
             case PAPI_DATATYPE_INT64:
-                type = CALI_TYPE_INT;
-                break;
+//                type = CALI_TYPE_INT; // should really use uint I think
+//                break;
             case PAPI_DATATYPE_UINT64:
                 type = CALI_TYPE_UINT;
                 break;
