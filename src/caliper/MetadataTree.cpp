@@ -224,9 +224,7 @@ Node* MetadataTree::get_path(const Attribute& attr, size_t n, const Variant* dat
 
     for (size_t i = 0; i < n; ++i) {
         parent = node;
-
-        for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
-            ;
+        node = parent->find_child_node(attr.id(), data[i]);
 
         if (!node)
             break;
@@ -258,11 +256,7 @@ Node* MetadataTree::get_or_copy_node(const Node* from, Node* parent)
     if (!parent)
         parent = root();
 
-    Node* node = nullptr;
-
-    for (node = parent->first_child(); node && !node->equals(from->attribute(), from->data());
-         node = node->next_sibling())
-        ;
+    Node* node = parent->find_child_node(from->attribute(), from->data());
 
     if (!node) {
         if (!have_free_nodeblock(1))
