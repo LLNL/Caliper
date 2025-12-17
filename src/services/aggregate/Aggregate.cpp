@@ -81,7 +81,7 @@ class Aggregate
         //   we store a pointer to the thread-local aggregation DB for this channel
         // on the thread's blackboard
 
-        ThreadDB* tdb = static_cast<ThreadDB*>(c->get(m_tdb_attr).value().get_ptr());
+        ThreadDB* tdb = static_cast<ThreadDB*>(c->get_blackboard_entry(m_tdb_attr).value().get_ptr());
 
         if (!tdb && can_alloc) {
             tdb = new ThreadDB(c);
