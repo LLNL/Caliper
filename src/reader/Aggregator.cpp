@@ -1027,7 +1027,7 @@ struct Aggregator::AggregatorImpl {
         hash_key.resize((nodes_end - nodes_begin));
 
         std::transform(nodes_begin, nodes_end, hash_key.begin(), [](Node* n){ return Entry(n); });
-        std::copy(immediates.begin(), immediates.end(), std::back_inserter(hash_key));
+        hash_key.insert(hash_key.end(), immediates.begin(), immediates.end());
 
         // --- lookup key
 
@@ -1044,14 +1044,13 @@ struct Aggregator::AggregatorImpl {
 
         std::vector<Entry> key;
         key.reserve(immediates.size() + 1);
+        key.insert(key.end(), immediates.begin(), immediates.end());
 
         if (nodes_begin != nodes_end) {
             std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
             std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
             key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
         }
-
-        std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
 
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
