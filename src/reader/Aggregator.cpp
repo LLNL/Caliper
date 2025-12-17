@@ -26,7 +26,7 @@ using namespace cali;
 namespace
 {
 
-std::size_t hash_key(const std::vector<Entry>& key)
+std::size_t compute_key_hash(const std::vector<Entry>& key)
 {
     std::size_t hash = 0;
     for (const Entry& e : key) {
@@ -914,6 +914,7 @@ struct Aggregator::AggregatorImpl {
 
     struct AggregateEntry {
         std::vector<Entry>                            key;
+        std::vector<Entry>                            hash_key;
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         std::size_t                                   next_entry_idx;
     };
@@ -1013,13 +1014,33 @@ struct Aggregator::AggregatorImpl {
     }
 
     std::shared_ptr<AggregateEntry> get_aggregation_entry(
-        std::vector<const Node*>::const_iterator nodes_begin,
-        std::vector<const Node*>::const_iterator nodes_end,
-        const std::vector<Entry>&                immediates,
-        CaliperMetadataAccessInterface&          db
+        std::vector<Node*>::const_iterator nodes_begin,
+        std::vector<Node*>::const_iterator nodes_end,
+        const std::vector<Entry>&          immediates,
+        CaliperMetadataAccessInterface&    db
     )
     {
-        // --- make key
+        // --- make hash key from key nodes and immediates
+
+        std::vector<Entry> hash_key;
+        hash_key.reserve((nodes_end - nodes_begin) + immediates.size());
+        hash_key.resize((nodes_end - nodes_begin));
+
+        std::transform(nodes_begin, nodes_end, hash_key.begin(), [](Node* n){ return Entry(n); });
+        std::copy(immediates.begin(), immediates.end(), std::back_inserter(hash_key));
+
+        // --- lookup key
+
+        std::size_t hash = compute_key_hash(hash_key) % m_hashmap.size();
+        for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
+            auto e = m_entries[i];
+            if (hash_key == e->hash_key)
+                return e;
+        }
+
+        // --- hash key not found: create a new entry
+
+        //  -- merge key nodes into new tree entry to create compact key
 
         std::vector<Entry> key;
         key.reserve(immediates.size() + 1);
@@ -1032,17 +1053,6 @@ struct Aggregator::AggregatorImpl {
 
         std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
 
-        // --- lookup key
-
-        std::size_t hash = hash_key(key) % m_hashmap.size();
-        for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
-            auto e = m_entries[i];
-            if (key == e->key)
-                return e;
-        }
-
-        // --- key not found: create entry
-
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
 
@@ -1052,6 +1062,7 @@ struct Aggregator::AggregatorImpl {
         auto e = std::make_shared<AggregateEntry>();
 
         e->key            = std::move(key);
+        e->hash_key       = std::move(hash_key);
         e->kernels        = std::move(kernels);
         e->next_entry_idx = m_hashmap[hash];
 
@@ -1068,9 +1079,9 @@ struct Aggregator::AggregatorImpl {
 
         // --- Unravel nodes, filter for key attributes
 
-        std::vector<const Node*> nodes;
-        std::vector<const Node*> non_path_nodes;
-        std::vector<Entry>       immediates;
+        std::vector<Node*> nodes;
+        std::vector<Node*> non_path_nodes;
+        std::vector<Entry> immediates;
 
         nodes.reserve(80);
         non_path_nodes.reserve(20);
@@ -1078,7 +1089,7 @@ struct Aggregator::AggregatorImpl {
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
-                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                for (Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     Attribute attr = db.get_attribute(node->attribute());
                     bool is_nested = attr.is_nested();
                     if (m_select_all || (m_select_nested && is_nested) || is_key(db, key_attrs, attr)) {
