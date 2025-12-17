@@ -17,23 +17,38 @@
 #  LDMS_LIBRARIES          The LDMS library
 #  LDMS_INCLUDE_DIRS       The location of LDMS headers
 
+# Set up search paths based on LDMS_PREFIX
+set(LDMS_SEARCH_PATHS /usr/lib64 /usr/lib /opt/ovis/lib)
+set(LDMS_INCLUDE_SEARCH_PATHS /usr/include /usr/local/include /opt/ovis/include)
+
+if(LDMS_PREFIX)
+    list(INSERT LDMS_SEARCH_PATHS 0 "${LDMS_PREFIX}/lib")
+    list(INSERT LDMS_INCLUDE_SEARCH_PATHS 0 "${LDMS_PREFIX}/include")
+endif()
+
 find_library(LDMS_LIBLDMS
     NAMES ldms
-    PATHS /usr/lib64 /usr/lib /opt/ovis/lib
+    PATHS ${LDMS_SEARCH_PATHS}
 )
 
 find_library(LDMS_LIBSTREAM
     NAMES ldmsd_stream
-    PATHS /usr/lib64 /usr/lib /opt/ovis/lib
+    PATHS ${LDMS_SEARCH_PATHS}
 )
 
 find_path(LDMS_INCLUDE_DIRS
-    NAMES "ldms.h" "ldmsd_stream.h"
-    PATH_SUFFIXES "ldms"
+    NAMES "ldms/ldms.h" "ldms/ldmsd_stream.h"
+    PATHS ${LDMS_INCLUDE_SEARCH_PATHS}
 )
-message(STATUS "libldms.so => ${LDMS_LIBRARIES}")
-message(STATUS "ldmsd_stream.h => ${LDMS_INCLUDE_DIRS}")
-message(STATUS "ldms.h => ${LDMS_INCLUDE_DIRS}")
+
+message(STATUS "libldms.so => ${LDMS_LIBLDMS}")
+message(STATUS "libldmsd_stream.so => ${LDMS_LIBSTREAM}")
+message(STATUS "LDMS include dir => ${LDMS_INCLUDE_DIRS}")
+
+# Set LDMS_LIBRARIES to include both libraries
+if(LDMS_LIBLDMS AND LDMS_LIBSTREAM)
+    set(LDMS_LIBRARIES ${LDMS_LIBLDMS} ${LDMS_LIBSTREAM})
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LDMS DEFAULT_MSG
