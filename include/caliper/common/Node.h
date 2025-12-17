@@ -49,6 +49,13 @@ public:
     Variant data() const { return m_data; }
 
     cali_id_t id() const { return m_id; }
+
+    Node* find_child_node(cali_id_t attr, const Variant& v) {
+        Node* n = first_child();
+        while (n && !n->equals(attr, v))
+            n = n->next_sibling();
+        return n;
+    }
 };
 
 } // namespace cali

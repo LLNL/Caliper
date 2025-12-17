@@ -206,8 +206,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
         {
             std::lock_guard<std::mutex> g(m_node_lock);
 
-            for (node = parent->first_child(); node && !node->equals(attr_id, v_data); node = node->next_sibling())
-                ;
+            node = parent->find_child_node(attr_id, v_data);
 
             if (!node) {
                 node     = create_node(attr_id, v_data, parent);
@@ -336,6 +335,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
         if (!parent)
             parent = &m_root;
 
+        std::lock_guard<std::mutex> g(m_node_lock);
+
         for (size_t i = 0; i < n; ++i) {
             if (attr[i].store_as_value())
                 continue;
@@ -345,10 +346,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
             if (v_data.type() == CALI_TYPE_STRING)
                 v_data = make_string_variant(static_cast<const char*>(data[i].data()), data[i].size());
 
-            std::lock_guard<std::mutex> g(m_node_lock);
-
-            for (node = parent->first_child(); node && !node->equals(attr[i].id(), v_data); node = node->next_sibling())
-                ;
+            node = parent->find_child_node(attr[i].id(), v_data);
 
             if (!node)
                 node = create_node(attr[i].id(), v_data, parent);
@@ -366,12 +364,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
         if (!parent)
             parent = &m_root;
 
-        for (size_t i = 0; i < n; ++i) {
-            std::lock_guard<std::mutex> g(m_node_lock);
+        std::lock_guard<std::mutex> g(m_node_lock);
 
-            for (node = parent->first_child(); node && !node->equals(nodelist[i]->attribute(), nodelist[i]->data());
-                 node = node->next_sibling())
-                ;
+        for (size_t i = 0; i < n; ++i) {
+            node = parent->find_child_node(nodelist[i]->attribute(), nodelist[i]->data());
 
             if (!node)
                 node = create_node(nodelist[i]->attribute(), nodelist[i]->data(), parent);
@@ -495,6 +491,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
 
     CaliperMetadataDBImpl() : m_root { CALI_INV_ID, CALI_INV_ID, {} }
     {
+        m_nodes.reserve(1000);
         setup_bootstrap_nodes();
 
         m_alias_attr =
