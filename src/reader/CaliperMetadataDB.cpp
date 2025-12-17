@@ -70,46 +70,38 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl {
 
     void setup_bootstrap_nodes()
     {
-        // Create initial nodes
+        // Create the bootstrap nodes
 
-        static const struct NodeInfo {
-            cali_id_t id;
-            cali_id_t attr_id;
-            Variant   data;
-            cali_id_t parent;
-        } bootstrap_nodes[] = { { 0, 9, { CALI_TYPE_USR }, CALI_INV_ID },
-                                { 1, 9, { CALI_TYPE_INT }, CALI_INV_ID },
-                                { 2, 9, { CALI_TYPE_UINT }, CALI_INV_ID },
-                                { 3, 9, { CALI_TYPE_STRING }, CALI_INV_ID },
-                                { 4, 9, { CALI_TYPE_ADDR }, CALI_INV_ID },
-                                { 5, 9, { CALI_TYPE_DOUBLE }, CALI_INV_ID },
-                                { 6, 9, { CALI_TYPE_BOOL }, CALI_INV_ID },
-                                { 7, 9, { CALI_TYPE_TYPE }, CALI_INV_ID },
-                                { 8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 19 }, 3 },
-                                { 9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 19 }, 7 },
-                                { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 19 }, 1 },
-                                { 11, 9, { CALI_TYPE_PTR }, CALI_INV_ID },
-                                { CALI_INV_ID, CALI_INV_ID, {}, CALI_INV_ID } };
-
-        // Create nodes
+        static const struct { uint64_t id; cali_attr_type type; } bootstrap_type_nodes[] = {
+            {  0, CALI_TYPE_USR    },
+            {  1, CALI_TYPE_INT    },
+            {  2, CALI_TYPE_UINT   },
+            {  3, CALI_TYPE_STRING },
+            {  4, CALI_TYPE_ADDR   },
+            {  5, CALI_TYPE_DOUBLE },
+            {  6, CALI_TYPE_BOOL   },
+            {  7, CALI_TYPE_TYPE   },
+            { 11, CALI_TYPE_PTR    }
+        };
 
         m_nodes.resize(12);
 
-        for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
-            Node* node = new Node(info->id, info->attr_id, info->data);
-
-            m_nodes[info->id] = node;
-
-            if (info->parent != CALI_INV_ID)
-                m_nodes[info->parent]->append(node);
-            else
-                m_root.append(node);
-
-            if (info->attr_id == 9 /* type node */)
-                m_type_nodes[info->data.to_attr_type()] = node;
-            else if (info->attr_id == 8 /* attribute node*/)
-                m_attributes.insert(make_pair(info->data.to_string(), node));
+        for (const auto &t : bootstrap_type_nodes) {
+            Node* node = new Node(t.id, 9, cali_make_variant_from_type(t.type));
+            m_root.append(node);
+            m_nodes[t.id] = node;
+            m_type_nodes[t.type] = node;
         }
+
+        m_nodes[ 8] = new Node( 8, 8, Variant("cali.attribute.name"));
+        m_nodes[ 9] = new Node( 9, 8, Variant("cali.attribute.type"));
+        m_nodes[10] = new Node(10, 8, Variant("cali.attribute.prop"));
+        
+        m_type_nodes[CALI_TYPE_STRING]->append(m_nodes[ 8]);
+        m_type_nodes[CALI_TYPE_TYPE  ]->append(m_nodes[ 9]);
+        m_type_nodes[CALI_TYPE_INT   ]->append(m_nodes[10]);
+
+        m_attributes.insert(std::make_pair("cali.attribute.name", m_nodes[8]));
     }
 
     Node* create_node(cali_id_t attr_id, const Variant& data, Node* parent)
