@@ -32,36 +32,32 @@ MetadataTree::GlobalData::GlobalData(MemoryPool& pool)
 
     Node* chunk = pool.aligned_alloc<Node>(nodes_per_block);
 
-    static const struct NodeInfo {
-        cali_id_t id;
-        cali_id_t attr_id;
-        Variant   data;
-        cali_id_t parent;
-    } bootstrap_nodes[] = { { 0, 9, { CALI_TYPE_USR }, CALI_INV_ID },
-                            { 1, 9, { CALI_TYPE_INT }, CALI_INV_ID },
-                            { 2, 9, { CALI_TYPE_UINT }, CALI_INV_ID },
-                            { 3, 9, { CALI_TYPE_STRING }, CALI_INV_ID },
-                            { 4, 9, { CALI_TYPE_ADDR }, CALI_INV_ID },
-                            { 5, 9, { CALI_TYPE_DOUBLE }, CALI_INV_ID },
-                            { 6, 9, { CALI_TYPE_BOOL }, CALI_INV_ID },
-                            { 7, 9, { CALI_TYPE_TYPE }, CALI_INV_ID },
-                            { 8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 19 }, 3 },
-                            { 9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 19 }, 7 },
-                            { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 19 }, 1 },
-                            { 11, 9, { CALI_TYPE_PTR }, CALI_INV_ID },
-                            { CALI_INV_ID, CALI_INV_ID, {}, CALI_INV_ID } };
+    // --- make the bootstrap nodes
 
-    for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
-        Node* node = new (chunk + info->id) Node(info->id, info->attr_id, info->data);
+    static const struct { uint64_t id; cali_attr_type type; } bootstrap_type_nodes[] = {
+        {  0, CALI_TYPE_USR    },
+        {  1, CALI_TYPE_INT    },
+        {  2, CALI_TYPE_UINT   },
+        {  3, CALI_TYPE_STRING },
+        {  4, CALI_TYPE_ADDR   },
+        {  5, CALI_TYPE_DOUBLE },
+        {  6, CALI_TYPE_BOOL   },
+        {  7, CALI_TYPE_TYPE   },
+        { 11, CALI_TYPE_PTR    }
+    };
 
-        if (info->parent != CALI_INV_ID)
-            chunk[info->parent].append(node);
-        else
-            root.append(node);
-
-        if (info->attr_id == 9 /* type node */)
-            type_nodes[info->data.to_attr_type()] = node;
+    for (const auto &t : bootstrap_type_nodes) {
+        Node* node = new (chunk + t.id) Node (t.id, 9, cali_make_variant_from_type(t.type));
+        root.append(node);
+        type_nodes[t.type] = node;
     }
+
+    Node* attr_name_node = new (chunk +  8) Node( 8, 8, Variant("cali.attribute.name"));
+    Node* attr_type_node = new (chunk +  9) Node( 9, 8, Variant("cali.attribute.type"));
+    Node* attr_prop_node = new (chunk + 10) Node(10, 8, Variant("cali.attribute.prop"));
+    type_nodes[CALI_TYPE_STRING]->append(attr_name_node);
+    type_nodes[CALI_TYPE_TYPE  ]->append(attr_type_node);
+    type_nodes[CALI_TYPE_INT   ]->append(attr_prop_node);
 
     node_blocks[0].chunk = chunk;
     node_blocks[0].index = 12;

@@ -1083,7 +1083,6 @@ struct Aggregator::AggregatorImpl {
         std::vector<Entry> immediates;
 
         nodes.reserve(80);
-        non_path_nodes.reserve(20);
         immediates.reserve(key_attrs.size());
 
         for (const Entry& e : rec) {
@@ -1098,7 +1097,7 @@ struct Aggregator::AggregatorImpl {
                             non_path_nodes.push_back(node);
                     }
                 }
-            } else if (e.is_immediate() && is_key(db, key_attrs, db.get_attribute(e.attribute()))) {
+            } else if (is_key(db, key_attrs, db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
                 immediates.push_back(e);
             }
