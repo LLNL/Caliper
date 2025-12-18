@@ -914,7 +914,6 @@ struct Aggregator::AggregatorImpl {
 
     struct AggregateEntry {
         std::vector<Entry>                            key;
-        std::vector<Entry>                            hash_key;
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         std::size_t                                   next_entry_idx;
     };
@@ -1020,27 +1019,7 @@ struct Aggregator::AggregatorImpl {
         CaliperMetadataAccessInterface&    db
     )
     {
-        // --- make hash key from key nodes and immediates
-
-        std::vector<Entry> hash_key;
-        hash_key.reserve((nodes_end - nodes_begin) + immediates.size());
-        hash_key.resize((nodes_end - nodes_begin));
-
-        std::transform(nodes_begin, nodes_end, hash_key.begin(), [](Node* n){ return Entry(n); });
-        hash_key.insert(hash_key.end(), immediates.begin(), immediates.end());
-
-        // --- lookup key
-
-        std::size_t hash = compute_key_hash(hash_key) % m_hashmap.size();
-        for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
-            auto e = m_entries[i];
-            if (hash_key == e->hash_key)
-                return e;
-        }
-
-        // --- hash key not found: create a new entry
-
-        //  -- merge key nodes into new tree entry to create compact key
+        // --- make key from key nodes and immediates
 
         std::vector<Entry> key;
         key.reserve(immediates.size() + 1);
@@ -1052,6 +1031,17 @@ struct Aggregator::AggregatorImpl {
             key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
         }
 
+        // --- lookup key
+
+        std::size_t hash = compute_key_hash(key) % m_hashmap.size();
+        for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
+            auto e = m_entries[i];
+            if (key == e->key)
+                return e;
+        }
+
+        // --- hash key not found: create a new entry
+
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
 
@@ -1061,7 +1051,6 @@ struct Aggregator::AggregatorImpl {
         auto e = std::make_shared<AggregateEntry>();
 
         e->key            = std::move(key);
-        e->hash_key       = std::move(hash_key);
         e->kernels        = std::move(kernels);
         e->next_entry_idx = m_hashmap[hash];
 
