@@ -593,11 +593,11 @@ const char* builtin_gotcha_option_specs = R"json(
     max(max#alloc.size) as \"Max Bytes/alloc\"",
   "cross":
   "select
-    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#max#alloc.region.highwatermark) as \"Mem HWM\",
     max(max#alloc.tally) as \"Alloc tMax\",
     sum(sum#alloc.count) as \"Alloc count\",
-    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
-    max(max#alloc.size) as \"Max Bytes/alloc\""
+    avg(avg#avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
  "name": "mem.pages",

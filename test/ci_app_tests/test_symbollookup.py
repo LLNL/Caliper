@@ -36,7 +36,7 @@ class CaliperSamplerTest(unittest.TestCase):
                          'region', 'loop' }))
 
     def test_hatchet_sample_profile_lookup(self):
-        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(use.mpi=false,output.format=json-split,output=stdout,callpath=false,source.location=true,source.module=true)' ]
+        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(use.mpi=false,output.format=json-split,output=stdout,callpath=false,source.location=true,source.module=true,source.function=true)' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY' : '0'
@@ -44,7 +44,7 @@ class CaliperSamplerTest(unittest.TestCase):
 
         obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
-        self.assertEqual(set(obj['columns']), { 'count', 'time', 'Source', 'Module', 'path' } )
+        self.assertEqual(set(obj['columns']), { 'count', 'time', 'Function', 'Source', 'Module', 'path' } )
 
 if __name__ == "__main__":
     unittest.main()

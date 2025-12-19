@@ -56,7 +56,7 @@ class CaliperSampleReportTest(unittest.TestCase):
                 self.fail('%s not found in log' % target)
 
     def test_hatchet_callpath_sample_profile(self):
-        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(use.mpi=false,output=stdout,output.format=cali)' ]
+        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(use.mpi=false,output=stdout)' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
@@ -69,7 +69,7 @@ class CaliperSampleReportTest(unittest.TestCase):
         self.assertTrue(len(snapshots) > 0)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'loop', 'region', 'source.function#callpath.address' }))
+            snapshots, { 'loop', 'region', 'source.function#cali.sampler.pc' }))
 
 if __name__ == "__main__":
     unittest.main()

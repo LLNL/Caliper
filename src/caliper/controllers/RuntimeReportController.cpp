@@ -143,16 +143,10 @@ const char* runtime_report_spec = R"json(
    "type": "bool",
    "description": "Order tree branches by highest exclusive runtime",
    "query":
-   [
-    {
-     "level": "local",
-     "order by": [ "sum#report.time\ desc" ]
-    },{
-     "level": "cross",
-     "aggregate": "sum(sum#report.time)",
-     "order by" : [ "sum#sum#report.time\ desc" ]
-    }
-   ]
+   {
+    "local": "order by sum#report.time desc",
+    "cross": "aggregate sum(sum#report.time) order by sum#sum#report.time desc"
+   }
   },{
    "name": "output.append",
    "type": "bool",
