@@ -59,16 +59,16 @@
         "select" : 
         [
           "scale(flops,1e-6) as Mflops",
-          "ratio(flops,sum#time.duration,1e-6) as Mflops/s"
+          "ratio(flops,sum#time.duration.ns,1e3) as Mflops/s"
         ]
       },
       { "level"  : "cross",
         "select" :
         [
           "sum(scale#flops) as Mflops",
-          "avg(ratio#flops/sum#time.duration) as \"Mflops/s (avg)\"",
-          "max(ratio#flops/sum#time.duration) as \"Mflops/s (max)\"",
-          "sum(ratio#flops/sum#time.duration) as \"Mflops/s (sum)\""
+          "avg(ratio#flops/sum#time.duration.ns) as \"Mflops/s (avg)\"",
+          "max(ratio#flops/sum#time.duration.ns) as \"Mflops/s (max)\"",
+          "sum(ratio#flops/sum#time.duration.ns) as \"Mflops/s (sum)\""
         ]
       }
   ]

@@ -63,7 +63,7 @@ class TimerService
 
     TimerInfo* acquire_timerinfo(Caliper* c)
     {
-        TimerInfo* ti = static_cast<TimerInfo*>(c->get(timerinfo_attr).value().get_ptr());
+        TimerInfo* ti = static_cast<TimerInfo*>(c->get_blackboard_entry(timerinfo_attr).value().get_ptr());
 
         if (!ti && !c->is_signal()) {
             ti = new TimerInfo;

@@ -185,7 +185,7 @@ void cb_work(int wstype, ompt_scope_endpoint_t endpoint, ompt_data_t*, ompt_data
     }
 
     if (endpoint == ompt_scope_begin) {
-        c.begin(work_attr, name);
+        c.begin(work_attr, Variant(name));
     } else if (endpoint == ompt_scope_end) {
         c.end(work_attr);
     }

@@ -22,7 +22,7 @@ struct AttributeExtract::AttributeExtractImpl {
         if (!m_id_attr)
             m_id_attr = db.create_attribute("attribute.id", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
-        EntryList rec { Entry(m_id_attr, node->id()) };
+        EntryList rec { Entry(m_id_attr, cali_make_variant_from_uint(node->id())) };
 
         for (; node && node->id() != CALI_INV_ID; node = node->parent())
             rec.push_back(Entry(db.get_attribute(node->attribute()), node->data()));

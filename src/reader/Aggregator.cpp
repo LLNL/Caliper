@@ -26,7 +26,7 @@ using namespace cali;
 namespace
 {
 
-std::size_t hash_key(const std::vector<Entry>& key)
+std::size_t compute_key_hash(const std::vector<Entry>& key)
 {
     std::size_t hash = 0;
     for (const Entry& e : key) {
@@ -999,14 +999,9 @@ struct Aggregator::AggregatorImpl {
     inline bool is_key(
         const CaliperMetadataAccessInterface& db,
         const std::vector<Attribute>&         key_attrs,
-        cali_id_t                             attr_id
+        Attribute                             attr
     )
     {
-        Attribute attr = db.get_attribute(attr_id);
-
-        if (m_select_nested && attr.is_nested())
-            return true;
-
         for (const Attribute& key_attr : key_attrs) {
             if (key_attr == attr)
                 return true;
@@ -1018,16 +1013,17 @@ struct Aggregator::AggregatorImpl {
     }
 
     std::shared_ptr<AggregateEntry> get_aggregation_entry(
-        std::vector<const Node*>::const_iterator nodes_begin,
-        std::vector<const Node*>::const_iterator nodes_end,
-        const std::vector<Entry>&                immediates,
-        CaliperMetadataAccessInterface&          db
+        std::vector<Node*>::const_iterator nodes_begin,
+        std::vector<Node*>::const_iterator nodes_end,
+        const std::vector<Entry>&          immediates,
+        CaliperMetadataAccessInterface&    db
     )
     {
-        // --- make key
+        // --- make key from key nodes and immediates
 
         std::vector<Entry> key;
         key.reserve(immediates.size() + 1);
+        key.insert(key.end(), immediates.begin(), immediates.end());
 
         if (nodes_begin != nodes_end) {
             std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
@@ -1035,18 +1031,16 @@ struct Aggregator::AggregatorImpl {
             key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
         }
 
-        std::copy(immediates.begin(), immediates.end(), std::back_inserter(key));
-
         // --- lookup key
 
-        std::size_t hash = hash_key(key) % m_hashmap.size();
+        std::size_t hash = compute_key_hash(key) % m_hashmap.size();
         for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
             auto e = m_entries[i];
             if (key == e->key)
                 return e;
         }
 
-        // --- key not found: create entry
+        // --- hash key not found: create a new entry
 
         std::vector<std::unique_ptr<AggregateKernel>> kernels;
         kernels.reserve(m_kernel_configs.size());
@@ -1073,38 +1067,41 @@ struct Aggregator::AggregatorImpl {
 
         // --- Unravel nodes, filter for key attributes
 
-        std::vector<const Node*> nodes;
-        std::vector<Entry>       immediates;
+        std::vector<Node*> nodes;
+        std::vector<Node*> non_path_nodes;
+        std::vector<Entry> immediates;
 
         nodes.reserve(80);
         immediates.reserve(key_attrs.size());
 
-        bool select_all = m_select_all;
-
         for (const Entry& e : rec) {
             if (e.is_reference()) {
-                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                    if (select_all || is_key(db, key_attrs, node->attribute()))
-                        nodes.push_back(node);
-            } else if (e.is_immediate() && is_key(db, key_attrs, e.attribute())) {
+                for (Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                    Attribute attr = db.get_attribute(node->attribute());
+                    bool is_nested = attr.is_nested();
+                    if (m_select_all || (m_select_nested && is_nested) || is_key(db, key_attrs, attr)) {
+                        if (is_nested)
+                            nodes.push_back(node);
+                        else
+                            non_path_nodes.push_back(node);
+                    }
+                }
+            } else if (is_key(db, key_attrs, db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
                 immediates.push_back(e);
             }
         }
 
-        // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
-        //       Keeps nested attributes separate.
+        // --- Canonicalize key by sorting by attribute ids
 
-        auto nonnested_begin = std::stable_partition(nodes.begin(), nodes.end(), [&db](const Node* node) {
-            return db.get_attribute(node->attribute()).is_nested();
-        });
-
-        std::stable_sort(nonnested_begin, nodes.end(), [](const Node* a, const Node* b) {
+        std::stable_sort(non_path_nodes.begin(), non_path_nodes.end(), [](const Node* a, const Node* b) {
             return a->attribute() < b->attribute();
         });
         std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b) {
             return a.attribute() < b.attribute();
         });
+
+        auto nonnested_begin = nodes.insert(nodes.end(), non_path_nodes.begin(), non_path_nodes.end());
 
         std::lock_guard<std::mutex> g(m_entries_lock);
 

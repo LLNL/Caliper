@@ -108,9 +108,37 @@ class PapiService
                 continue;
             }
 
+            PAPI_event_info_t info;
+            memset(&info, 0, sizeof(PAPI_event_info_t));
+            ret = PAPI_get_event_info(code, &info);
+            if (ret != PAPI_OK) {
+                print_papi_error("PAPI_get_event_info()", ret);
+                continue;
+            }
+
+            cali_attr_type type = CALI_TYPE_INV;
+            switch (info.data_type) {
+            case PAPI_DATATYPE_INT64:
+//                type = CALI_TYPE_INT; // should really use uint I think
+//                break;
+            case PAPI_DATATYPE_UINT64:
+                type = CALI_TYPE_UINT;
+                break;
+            case PAPI_DATATYPE_FP64:
+                type = CALI_TYPE_DOUBLE;
+                break;
+            default:
+                break;
+            }
+
+            if (type == CALI_TYPE_INV) {
+                Log(0).stream() << "papi: Unsupported datatype for event " << name << std::endl;
+                continue;
+            }
+
             Attribute attr = c->create_attribute(
                 std::string("papi.") + name,
-                CALI_TYPE_UINT,
+                type,
                 CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE
             );
 
@@ -253,8 +281,10 @@ class PapiService
             return;
         }
 
-        for (int i = 0; i < count; ++i)
-            rec.append(grp.attrs[i], Variant(cali_make_variant_from_uint(values[i])));
+        for (int i = 0; i < count; ++i) {
+            Variant v_val = Variant(grp.attrs[i].type(), reinterpret_cast<const void*>(&values[i]), sizeof(long long));
+            rec.append(grp.attrs[i], v_val);
+        }
     }
 
     bool start_thread_counting(Caliper* c)

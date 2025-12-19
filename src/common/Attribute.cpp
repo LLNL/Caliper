@@ -7,6 +7,8 @@
 
 #include "caliper/common/Node.h"
 
+#include <limits>
+
 using namespace cali;
 
 Attribute Attribute::make_attribute(Node* node)
@@ -45,7 +47,7 @@ int Attribute::properties() const
 {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == PROP_ATTR_ID)
-            return node->data().to_int();
+            return static_cast<int>(node->data().c_variant().value.v_int);
 
     return CALI_ATTR_DEFAULT;
 }

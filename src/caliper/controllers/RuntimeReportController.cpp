@@ -33,7 +33,9 @@ public:
     )
         : ChannelController(name, 0, initial_cfg)
     {
-        std::string q_let = " let report.time=scale(sum#time.duration.ns,1e-9) ";
+        //   Scale time. The "where report.l" hack ensures we only process records with
+        // a path region entry, in particular for the time percent calculation.
+        std::string q_let = " let report.time=scale(sum#time.duration.ns,1e-9),report.l=leaf() where report.l ";
 
         // Query for first aggregation step in MPI mode (process-local aggregation)
         std::string q_local = " select sum(report.time) group by path " + q_let;
