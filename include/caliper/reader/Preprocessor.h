@@ -30,8 +30,6 @@ public:
 
     Preprocessor(const QuerySpec& spec);
 
-    ~Preprocessor();
-
     EntryList process(CaliperMetadataAccessInterface&, const EntryList&);
 
     void operator() (CaliperMetadataAccessInterface& db, const EntryList& rec, SnapshotProcessFn push)

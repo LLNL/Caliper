@@ -48,11 +48,6 @@ struct QueryProcessor::QueryProcessorImpl {
 QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream) : mP(new QueryProcessorImpl(spec, stream))
 {}
 
-QueryProcessor::~QueryProcessor()
-{
-    mP.reset();
-}
-
 void QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
 

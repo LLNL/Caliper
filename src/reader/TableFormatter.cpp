@@ -355,11 +355,6 @@ TableFormatter::TableFormatter(const QuerySpec& spec) : mP { new TableImpl }
     mP->configure(spec);
 }
 
-TableFormatter::~TableFormatter()
-{
-    mP.reset();
-}
-
 void TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);

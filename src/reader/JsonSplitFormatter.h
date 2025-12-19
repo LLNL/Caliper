@@ -27,8 +27,6 @@ public:
 
     JsonSplitFormatter(const QuerySpec& spec);
 
-    ~JsonSplitFormatter();
-
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
     void flush(CaliperMetadataAccessInterface&, std::ostream& os);

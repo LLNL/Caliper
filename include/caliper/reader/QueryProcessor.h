@@ -29,8 +29,6 @@ public:
 
     QueryProcessor(const QuerySpec&, OutputStream& stream);
 
-    ~QueryProcessor();
-
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
     void flush(CaliperMetadataAccessInterface&);
 

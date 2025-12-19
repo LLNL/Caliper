@@ -302,11 +302,6 @@ JsonFormatter::JsonFormatter(OutputStream& os, const QuerySpec& spec) : mP { new
     mP->configure(spec);
 }
 
-JsonFormatter::~JsonFormatter()
-{
-    mP.reset();
-}
-
 void JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);

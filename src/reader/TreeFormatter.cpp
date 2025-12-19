@@ -401,11 +401,6 @@ struct TreeFormatter::TreeFormatterImpl {
 TreeFormatter::TreeFormatter(const QuerySpec& spec) : mP { new TreeFormatterImpl(spec) }
 {}
 
-TreeFormatter::~TreeFormatter()
-{
-    mP.reset();
-}
-
 void TreeFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);

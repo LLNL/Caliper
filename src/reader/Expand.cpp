@@ -149,11 +149,6 @@ Expand::Expand(OutputStream& os, const QuerySpec& spec) : mP { new ExpandImpl(os
     mP->configure(spec);
 }
 
-Expand::~Expand()
-{
-    mP.reset();
-}
-
 void Expand::operator() (CaliperMetadataAccessInterface& db, const EntryList& list) const
 {
     mP->print(db, list);

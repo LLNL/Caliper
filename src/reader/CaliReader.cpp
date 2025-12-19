@@ -142,7 +142,7 @@ struct CaliReader::CaliReaderImpl {
         m_error_msg = msg;
     }
 
-    void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn node_proc)
+    void read_node(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, NodeProcessFn& node_proc)
     {
         cali_id_t   attr_id = CALI_INV_ID;
         cali_id_t   node_id = CALI_INV_ID;
@@ -175,7 +175,7 @@ struct CaliReader::CaliReaderImpl {
             set_error("Invalid node record");
     }
 
-    void read_snapshot(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn snap_proc)
+    void read_snapshot(fast_istringstream& is, CaliperMetadataDB& db, IdMap& idmap, SnapshotProcessFn& snap_proc)
     {
         std::vector<cali_id_t>   refs;
         std::vector<cali_id_t>   attr;
@@ -236,8 +236,8 @@ struct CaliReader::CaliReaderImpl {
         fast_istringstream& is,
         CaliperMetadataDB&  db,
         IdMap&              idmap,
-        NodeProcessFn       node_proc,
-        SnapshotProcessFn   snap_proc
+        NodeProcessFn&      node_proc,
+        SnapshotProcessFn&  snap_proc
     )
     {
         if (is.matches(11, "__rec=node,")) {

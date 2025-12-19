@@ -262,11 +262,6 @@ RecordSelector::RecordSelector(const QuerySpec::Condition& cond) : mP { new Reco
     mP->configure(cond);
 }
 
-RecordSelector::~RecordSelector()
-{
-    mP.reset();
-}
-
 bool RecordSelector::pass(const CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     return mP->pass(db, list);

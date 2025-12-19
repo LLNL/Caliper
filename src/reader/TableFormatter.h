@@ -31,8 +31,6 @@ public:
     TableFormatter(const std::string& fields, const std::string& sort_fields);
     TableFormatter(const QuerySpec& spec);
 
-    ~TableFormatter();
-
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
     void flush(CaliperMetadataAccessInterface&, std::ostream& os);

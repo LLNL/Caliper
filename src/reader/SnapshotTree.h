@@ -142,8 +142,6 @@ public:
     /// \brief Create root node with label (\a attr, \a value).
     SnapshotTree(const Attribute& attr, const Variant& value);
 
-    ~SnapshotTree();
-
     /// A predicate to determine if a given _(attribute,value)_ pair
     /// in a snapshot record belongs to the tree path or not.
     typedef std::function<bool(const Attribute&, const Variant&)> IsPathPredicateFn;

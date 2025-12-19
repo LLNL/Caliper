@@ -31,8 +31,6 @@ public:
     /// \brief Create formatter for given query spec and output stream.
     FormatProcessor(const QuerySpec&, OutputStream&);
 
-    ~FormatProcessor();
-
     /// \brief Add snapshot record to formatter.
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 

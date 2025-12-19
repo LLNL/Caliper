@@ -31,8 +31,6 @@ public:
     RecordSelector(const QuerySpec& spec);
     RecordSelector(const QuerySpec::Condition& cond);
 
-    ~RecordSelector();
-
     bool pass(const CaliperMetadataAccessInterface&, const EntryList&);
 
     void operator() (CaliperMetadataAccessInterface&, const EntryList&, SnapshotProcessFn) const;
