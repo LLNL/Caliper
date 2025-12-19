@@ -30,8 +30,6 @@ public:
 
     Aggregator(const QuerySpec& spec);
 
-    ~Aggregator();
-
     void add(CaliperMetadataAccessInterface&, const EntryList&);
 
     void operator() (CaliperMetadataAccessInterface& db, const EntryList& list) { add(db, list); }

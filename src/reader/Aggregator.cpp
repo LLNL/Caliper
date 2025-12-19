@@ -918,7 +918,7 @@ struct Aggregator::AggregatorImpl {
         std::size_t                                   next_entry_idx;
     };
 
-    std::vector<std::shared_ptr<AggregateEntry>> m_entries;
+    std::vector<std::unique_ptr<AggregateEntry>> m_entries;
 
     std::vector<std::size_t> m_hashmap;
     std::mutex               m_entries_lock;
@@ -1012,7 +1012,7 @@ struct Aggregator::AggregatorImpl {
         return false;
     }
 
-    std::shared_ptr<AggregateEntry> get_aggregation_entry(
+    AggregateEntry* get_aggregation_entry(
         std::vector<Node*>::const_iterator nodes_begin,
         std::vector<Node*>::const_iterator nodes_end,
         const std::vector<Entry>&          immediates,
@@ -1035,9 +1035,8 @@ struct Aggregator::AggregatorImpl {
 
         std::size_t hash = compute_key_hash(key) % m_hashmap.size();
         for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
-            auto e = m_entries[i];
-            if (key == e->key)
-                return e;
+            if (key == m_entries[i]->key)
+                return m_entries[i].get();
         }
 
         // --- hash key not found: create a new entry
@@ -1048,17 +1047,11 @@ struct Aggregator::AggregatorImpl {
         for (AggregateKernelConfig* k_cfg : m_kernel_configs)
             kernels.emplace_back(k_cfg->make_kernel());
 
-        auto e = std::make_shared<AggregateEntry>();
-
-        e->key            = std::move(key);
-        e->kernels        = std::move(kernels);
-        e->next_entry_idx = m_hashmap[hash];
-
         size_t idx = m_entries.size();
-        m_entries.push_back(e);
+        m_entries.emplace_back(new AggregateEntry { std::move(key), std::move(kernels), m_hashmap[hash] });
         m_hashmap[hash] = idx;
 
-        return e;
+        return m_entries[idx].get();
     }
 
     void process(CaliperMetadataAccessInterface& db, const EntryList& rec)
@@ -1105,7 +1098,7 @@ struct Aggregator::AggregatorImpl {
 
         std::lock_guard<std::mutex> g(m_entries_lock);
 
-        auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
+        AggregateEntry* entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
         // --- Aggregate
 
@@ -1117,7 +1110,7 @@ struct Aggregator::AggregatorImpl {
                 auto it = nodes.begin();
 
                 for (++it; it != nonnested_begin; ++it) {
-                    auto p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
+                    AggregateEntry* p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
                     p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
@@ -1149,7 +1142,7 @@ struct Aggregator::AggregatorImpl {
         m_entries.reserve(4096);
         m_hashmap.assign(4096, static_cast<size_t>(0));
         // zero marks the end of the hash chain, so we must block out slot 0 for actual entries
-        m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
+        m_entries.emplace_back(std::unique_ptr<AggregateEntry>());
     }
 
     ~AggregatorImpl()
@@ -1163,11 +1156,6 @@ struct Aggregator::AggregatorImpl {
 
 Aggregator::Aggregator(const QuerySpec& spec) : mP { new AggregatorImpl(spec) }
 {}
-
-Aggregator::~Aggregator()
-{
-    mP.reset();
-}
 
 void Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 {
