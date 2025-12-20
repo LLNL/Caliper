@@ -905,7 +905,6 @@ struct Aggregator::AggregatorImpl {
 
     std::vector<std::string> m_key_strings;
     std::vector<Attribute>   m_key_attrs;
-    std::mutex               m_key_lock;
 
     bool m_select_all;
     bool m_select_nested;
@@ -921,7 +920,8 @@ struct Aggregator::AggregatorImpl {
     std::vector<std::unique_ptr<AggregateEntry>> m_entries;
 
     std::vector<std::size_t> m_hashmap;
-    std::mutex               m_entries_lock;
+
+    std::mutex m_lock;
 
     //
     // --- parse config
@@ -979,10 +979,8 @@ struct Aggregator::AggregatorImpl {
     // --- snapshot processing
     //
 
-    std::vector<Attribute> update_key_attributes(CaliperMetadataAccessInterface& db)
+    void update_key_attributes(CaliperMetadataAccessInterface& db)
     {
-        std::lock_guard<std::mutex> g(m_key_lock);
-
         auto it = m_key_strings.begin();
         while (it != m_key_strings.end()) {
             Attribute attr = db.get_attribute(*it);
@@ -992,8 +990,6 @@ struct Aggregator::AggregatorImpl {
             } else
                 ++it;
         }
-
-        return m_key_attrs;
     }
 
     inline bool is_key(
@@ -1028,7 +1024,7 @@ struct Aggregator::AggregatorImpl {
         if (nodes_begin != nodes_end) {
             std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
             std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
-            key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
+            key.emplace_back(db.make_tree_entry(rv_nodes.size(), rv_nodes.data()));
         }
 
         // --- lookup key
@@ -1056,7 +1052,8 @@ struct Aggregator::AggregatorImpl {
 
     void process(CaliperMetadataAccessInterface& db, const EntryList& rec)
     {
-        std::vector<Attribute> key_attrs = update_key_attributes(db);
+        std::lock_guard<std::mutex> g(m_lock);
+        update_key_attributes(db);
 
         // --- Unravel nodes, filter for key attributes
 
@@ -1065,21 +1062,21 @@ struct Aggregator::AggregatorImpl {
         std::vector<Entry> immediates;
 
         nodes.reserve(80);
-        immediates.reserve(key_attrs.size());
+        immediates.reserve(m_key_attrs.size());
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
                 for (Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     Attribute attr = db.get_attribute(node->attribute());
                     bool is_nested = attr.is_nested();
-                    if (m_select_all || (m_select_nested && is_nested) || is_key(db, key_attrs, attr)) {
+                    if (m_select_all || (m_select_nested && is_nested) || is_key(db, m_key_attrs, attr)) {
                         if (is_nested)
                             nodes.push_back(node);
                         else
                             non_path_nodes.push_back(node);
                     }
                 }
-            } else if (is_key(db, key_attrs, db.get_attribute(e.attribute()))) {
+            } else if (is_key(db, m_key_attrs, db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
                 immediates.push_back(e);
             }
@@ -1095,8 +1092,6 @@ struct Aggregator::AggregatorImpl {
         });
 
         auto nonnested_begin = nodes.insert(nodes.end(), non_path_nodes.begin(), non_path_nodes.end());
-
-        std::lock_guard<std::mutex> g(m_entries_lock);
 
         AggregateEntry* entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
@@ -1123,7 +1118,7 @@ struct Aggregator::AggregatorImpl {
 
     void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push)
     {
-        std::lock_guard<std::mutex> g(m_entries_lock);
+        std::lock_guard<std::mutex> g(m_lock);
 
         for (const auto &entry : m_entries) {
             if (!entry)
