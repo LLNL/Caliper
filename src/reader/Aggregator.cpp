@@ -1014,13 +1014,9 @@ struct Aggregator::AggregatorImpl {
         }
     }
 
-    inline bool is_key(
-        const CaliperMetadataAccessInterface& db,
-        const std::vector<Attribute>&         key_attrs,
-        Attribute                             attr
-    )
+    inline bool is_key(Attribute attr)
     {
-        for (const Attribute& key_attr : key_attrs) {
+        for (const Attribute& key_attr : m_key_attrs) {
             if (key_attr == attr)
                 return true;
             if (!attr.get(key_attr).empty())
@@ -1066,33 +1062,26 @@ struct Aggregator::AggregatorImpl {
         std::vector<const Node*> non_path_nodes;
         std::vector<Entry> key;
 
-        path_nodes.reserve(40);
-        non_path_nodes.reserve(40);
-        key.reserve(1 + m_key_attrs.size());
+        path_nodes.reserve(32);
+        non_path_nodes.reserve(32);
+        key.reserve(2 + m_key_attrs.size());
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
                 for (Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     Attribute attr = db.get_attribute(node->attribute());
                     bool is_nested = attr.is_nested();
-                    if (m_select_all || (m_select_nested && is_nested) || is_key(db, m_key_attrs, attr)) {
+                    if (m_select_all || (m_select_nested && is_nested) || is_key(attr)) {
                         if (is_nested)
                             path_nodes.push_back(node);
                         else
                             non_path_nodes.push_back(node);
                     }
                 }
-            } else if (is_key(db, m_key_attrs, db.get_attribute(e.attribute()))) {
+            } else if (is_key(db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
                 key.emplace_back(e);
             }
-        }
-
-        // --- Make node entry for non-path nodes and put it in the key
-
-        if (!non_path_nodes.empty()) {
-            std::reverse(non_path_nodes.begin(), non_path_nodes.end());
-            key.emplace_back(db.make_tree_entry(non_path_nodes.size(), non_path_nodes.data()));
         }
 
         // --- Canonicalize key by sorting by attribute ids
@@ -1100,6 +1089,13 @@ struct Aggregator::AggregatorImpl {
         std::sort(key.begin(), key.end(), [](const Entry& a, const Entry& b) {
             return a.attribute() < b.attribute();
         });
+
+        // --- Make node entry for non-path nodes and put it in the key
+
+        if (!non_path_nodes.empty()) {
+            std::reverse(non_path_nodes.begin(), non_path_nodes.end());
+            key.emplace_back(db.make_tree_entry(non_path_nodes.size(), non_path_nodes.data()));
+        }
 
         // --- Add path entry to key
 
@@ -1111,9 +1107,9 @@ struct Aggregator::AggregatorImpl {
             key.emplace_back(path_node);
         }
 
-        AggregateEntry* entry = get_aggregation_entry(key);
-
         // --- Aggregate
+
+        AggregateEntry* entry = get_aggregation_entry(key);
 
         for (size_t k = 0; k < entry->kernels.size(); ++k) {
             int matches = entry->kernels[k]->aggregate(db, rec);
