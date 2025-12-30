@@ -92,15 +92,19 @@ public:
     }
 };
 
-inline void apply_to_matching_entries(CaliperMetadataAccessInterface& db, AggregationAttributeManager& attr, const std::vector<Entry>& rec, std::function<void(const Entry&)> F)
+inline int apply_to_matching_entries(CaliperMetadataAccessInterface& db, AggregationAttributeManager& attr, const std::vector<Entry>& rec, std::function<void(const Entry&)> F)
 {
     if (!attr.derived_attr(db))
-        return;
+        return 0;
     cali_id_t tgt_attr_id = attr.target_attr(db).id();
     cali_id_t drv_attr_id = attr.derived_attr(db).id();
+    int count = 0;
     for (const Entry& e : rec)
-        if (e.node()->id() == tgt_attr_id || e.node()->id() == drv_attr_id)
+        if (e.node()->id() == tgt_attr_id || e.node()->id() == drv_attr_id) {
             F(e);
+            ++count;
+        }
+    return count;
 }
 
 class AggregateKernelConfig;
@@ -113,7 +117,7 @@ public:
 
     // For inclusive metrics, parent_aggregate is invoked for parent nodes
     virtual void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) { aggregate(db, list); }
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
+    virtual int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)   = 0;
 };
 
@@ -152,17 +156,18 @@ public:
 
     CountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute count_attr = m_config->attr(db);
         cali_id_t count_attr_id = count_attr.id();
         for (const Entry& e : list)
             if (e.attribute() == count_attr_id) {
                 m_count += e.value().to_uint();
-                return;
+                return 1;
             }
 
         ++m_count;
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -207,16 +212,17 @@ public:
 
     ScaledCountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute count_attr = m_config->m_count_attr.get(db);
         for (const Entry& e : list)
             if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
-                return;
+                return 1;
             }
 
         ++m_count;
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -271,9 +277,9 @@ public:
 
     SumKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -330,9 +336,9 @@ public:
 
     ScaledSumKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
+        return apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -383,9 +389,9 @@ public:
 
     MinKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -434,9 +440,9 @@ public:
 
     MaxKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -478,24 +484,30 @@ public:
 
     AvgKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute tgt_attr = m_config->m_sum_attr.target_attr(db);
         if (!tgt_attr)
-            return;
+            return 0;
         Attribute sum_attr = m_config->m_sum_attr.derived_attr(db);
         Attribute count_attr = m_config->m_count_attr.get(db);
+        int count = 0;
 
         for (const Entry& e : list) {
             if (e.attribute() == tgt_attr.id()) {
                 m_sum += e.value();
                 ++m_count;
+                ++count;
             } else if (e.attribute() == sum_attr.id()) {
                 m_sum += e.value();
+                ++count;
             } else if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
+                ++count;
             }
         }
+
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -565,10 +577,12 @@ public:
 
     ScaledRatioKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
-        apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
+        int count = 0;
+        count += apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
+        count += apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -643,9 +657,9 @@ public:
 
     PercentTotalKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
+        return apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
                 m_sum += e.value();
                 m_isum += e.value();
                 m_config->add(e.value());
@@ -701,10 +715,11 @@ public:
 
     AnyKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         if (m_val.empty())
-            apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
+            return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -778,28 +793,35 @@ public:
 
     VarianceKernel(Config* config) : m_count(0), m_sum(0.0), m_sqsum(0.0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute            target_attr = m_config->get_target_attr(db);
         StatisticsAttributes stat_attr;
 
         if (!m_config->get_statistics_attributes(db, stat_attr))
-            return;
+            return 0;
 
+        int count = 0;
         for (const Entry& e : list) {
             if (e.attribute() == target_attr.id()) {
                 double v = e.value().to_double();
                 m_sum += v;
                 m_sqsum += (v * v);
                 ++m_count;
+                ++count;
             } else if (e.attribute() == stat_attr.sum.id()) {
                 m_sum += e.value().to_double();
+                ++count;
             } else if (e.attribute() == stat_attr.sqsum.id()) {
                 m_sqsum += e.value().to_double();
+                ++count;
             } else if (e.attribute() == stat_attr.count.id()) {
                 m_count += e.value().to_uint();
+                ++count;
             }
         }
+
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -1008,25 +1030,8 @@ struct Aggregator::AggregatorImpl {
         return false;
     }
 
-    AggregateEntry* get_aggregation_entry(
-        std::vector<Node*>::const_iterator nodes_begin,
-        std::vector<Node*>::const_iterator nodes_end,
-        const std::vector<Entry>&          immediates,
-        CaliperMetadataAccessInterface&    db
-    )
+    AggregateEntry* get_aggregation_entry(const std::vector<Entry>& key)
     {
-        // --- make key from key nodes and immediates
-
-        std::vector<Entry> key;
-        key.reserve(immediates.size() + 1);
-        key.insert(key.end(), immediates.begin(), immediates.end());
-
-        if (nodes_begin != nodes_end) {
-            std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
-            std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
-            key.emplace_back(db.make_tree_entry(rv_nodes.size(), rv_nodes.data()));
-        }
-
         // --- lookup key
 
         std::size_t hash = compute_key_hash(key) % m_hashmap.size();
@@ -1057,12 +1062,13 @@ struct Aggregator::AggregatorImpl {
 
         // --- Unravel nodes, filter for key attributes
 
-        std::vector<Node*> nodes;
-        std::vector<Node*> non_path_nodes;
-        std::vector<Entry> immediates;
+        std::vector<const Node*> path_nodes;
+        std::vector<const Node*> non_path_nodes;
+        std::vector<Entry> key;
 
-        nodes.reserve(80);
-        immediates.reserve(m_key_attrs.size());
+        path_nodes.reserve(40);
+        non_path_nodes.reserve(40);
+        key.reserve(1 + m_key_attrs.size());
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
@@ -1071,41 +1077,52 @@ struct Aggregator::AggregatorImpl {
                     bool is_nested = attr.is_nested();
                     if (m_select_all || (m_select_nested && is_nested) || is_key(db, m_key_attrs, attr)) {
                         if (is_nested)
-                            nodes.push_back(node);
+                            path_nodes.push_back(node);
                         else
                             non_path_nodes.push_back(node);
                     }
                 }
             } else if (is_key(db, m_key_attrs, db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
-                immediates.push_back(e);
+                key.emplace_back(e);
             }
+        }
+
+        // --- Make node entry for non-path nodes and put it in the key
+
+        if (!non_path_nodes.empty()) {
+            std::reverse(non_path_nodes.begin(), non_path_nodes.end());
+            key.emplace_back(db.make_tree_entry(non_path_nodes.size(), non_path_nodes.data()));
         }
 
         // --- Canonicalize key by sorting by attribute ids
 
-        std::stable_sort(non_path_nodes.begin(), non_path_nodes.end(), [](const Node* a, const Node* b) {
-            return a->attribute() < b->attribute();
-        });
-        std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b) {
+        std::sort(key.begin(), key.end(), [](const Entry& a, const Entry& b) {
             return a.attribute() < b.attribute();
         });
 
-        auto nonnested_begin = nodes.insert(nodes.end(), non_path_nodes.begin(), non_path_nodes.end());
+        // --- Add path entry to key
 
-        AggregateEntry* entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
+        Node* path_node = nullptr;
+
+        if (!path_nodes.empty()) {
+            std::reverse(path_nodes.begin(), path_nodes.end());
+            path_node = db.make_tree_entry(path_nodes.size(), path_nodes.data());
+            key.emplace_back(path_node);
+        }
+
+        AggregateEntry* entry = get_aggregation_entry(key);
 
         // --- Aggregate
 
         for (size_t k = 0; k < entry->kernels.size(); ++k) {
-            entry->kernels[k]->aggregate(db, rec);
+            int matches = entry->kernels[k]->aggregate(db, rec);
 
             // for inclusive kernels, aggregate for all parent nodes as well
-            if (m_kernel_configs[k]->is_inclusive() && nodes.begin() != nonnested_begin) {
-                auto it = nodes.begin();
-
-                for (++it; it != nonnested_begin; ++it) {
-                    AggregateEntry* p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
+            if (m_kernel_configs[k]->is_inclusive() && (matches > 0) && path_node) {
+                for (Node* node = path_node->parent(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                    key.back() = Entry(node);
+                    AggregateEntry* p_entry = get_aggregation_entry(key);
                     p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
