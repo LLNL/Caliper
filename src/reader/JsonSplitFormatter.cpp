@@ -423,11 +423,6 @@ JsonSplitFormatter::JsonSplitFormatter(const QuerySpec& spec) : mP { new JsonSpl
     mP->configure(spec);
 }
 
-JsonSplitFormatter::~JsonSplitFormatter()
-{
-    mP.reset();
-}
-
 void JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process_record(db, list);

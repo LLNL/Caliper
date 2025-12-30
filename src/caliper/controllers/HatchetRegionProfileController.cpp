@@ -140,12 +140,9 @@ const char* controller_spec = R"json(
    "category": "metric",
    "description": "Add inclusive time metric",
    "query":
-   [
-    {
-     "level"  : "local",
-     "select" : [ "inclusive_scale(sum#time.duration.ns,1e-9) as \"time (inc)\" unit sec" ]
-    }
-   ]
+   {
+    "local": "select inclusive_scale(sum#time.duration.ns,1e-9) as \"time (inc)\" unit sec"
+   }
   }
  ]
 }

@@ -83,7 +83,7 @@ public:
         } else {
             config()["CALI_SERVICES_ENABLE"].append(",report");
             config()["CALI_REPORT_FILENAME"] = output;
-            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", query); 
+            config()["CALI_REPORT_CONFIG"]   = opts.build_query("local", query);
         }
 
         opts.update_channel_config(config());
@@ -143,7 +143,7 @@ const char* controller_spec = R"json(
  "services"    : [ "sampler", "trace" ],
  "categories"  : [ "adiak", "metadata", "sampling", "output" ],
  "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
- "defaults"    : { "callpath": "true", "source.module": "true" },
+ "defaults"    : { "callpath": "false", "source.module": "true", "source.function": "true" },
  "options":
  [
   {
@@ -160,11 +160,9 @@ const char* controller_spec = R"json(
    "description": "Perform call-stack unwinding",
    "services": [ "callpath", "symbollookup" ],
    "query":
-   [
-    { "level": "local", "group by": "source.function#callpath.address",
-      "select": [ "source.function#callpath.address" ]
-    }
-   ]
+   {
+    "local": "select source.function#callpath.address group by source.function#callpath.address"
+   }
   },{
    "name": "use.mpi",
    "type": "bool",

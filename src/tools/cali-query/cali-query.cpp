@@ -171,32 +171,29 @@ int main(int argc, const char* argv[])
 {
     Args args(::option_table);
 
-    // The Caliper config setup must run before Caliper runtime initialization
-    setup_caliper_config(args);
-    ConfigManager mgr;
-
-    //
     // --- Parse command line arguments
-    //
 
     {
         int i = args.parse(argc, argv);
-
         if (i < argc) {
             std::cerr << "cali-query: error: unknown option: " << argv[i] << '\n' << "  Available options: ";
             args.print_available_options(std::cerr);
             return -1;
         }
+    }
 
-        if (args.is_set("help")) {
-            print_caliquery_help(args, usage, mgr);
-            return 0;
-        }
+    // The Caliper config setup must run before Caliper runtime initialization
+    setup_caliper_config(args);
+    ConfigManager mgr;
 
-        if (args.is_set("version")) {
-            std::cerr << cali_caliper_version() << std::endl;
-            return 0;
-        }
+    if (args.is_set("help")) {
+        print_caliquery_help(args, usage, mgr);
+        return 0;
+    }
+
+    if (args.is_set("version")) {
+        std::cerr << cali_caliper_version() << std::endl;
+        return 0;
     }
 
     bool verbose = args.is_set("verbose");
