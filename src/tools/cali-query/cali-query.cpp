@@ -13,13 +13,10 @@
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
-#include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/FormatProcessor.h"
-#include "caliper/reader/Preprocessor.h"
-#include "caliper/reader/RecordProcessor.h"
-#include "caliper/reader/RecordSelector.h"
+#include "caliper/reader/QueryProcessor.h"
 
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
@@ -109,42 +106,8 @@ const Args::Table option_table[] = {
     Args::Terminator
 };
 
-/// A node record filter that filters redundant identical node records.
-/// Redundant node records can occur when merging/unifying two streams.
-class FilterDuplicateNodes
-{
-    cali_id_t m_max_node;
-
-public:
-
-    FilterDuplicateNodes() : m_max_node { 0 } {}
-
-    void operator() (CaliperMetadataAccessInterface& db, const Node* node, NodeProcessFn push)
-    {
-        cali_id_t id = node->id();
-
-        if (id != CALI_INV_ID) {
-            if (id < m_max_node) {
-                return;
-            } else
-                m_max_node = id;
-        }
-
-        push(db, node);
-    }
-};
-
-/// NodeFilterStep helper struct
-/// Basically the chain link in the processing chain.
-/// Passes result of @param m_filter_fn to @param m_push_fn
-struct NodeFilterStep {
-    NodeFilterFn  m_filter_fn; ///< This processing step
-    NodeProcessFn m_push_fn;   ///< Next processing step
-
-    NodeFilterStep(NodeFilterFn filter_fn, NodeProcessFn push_fn) : m_filter_fn { filter_fn }, m_push_fn { push_fn } {}
-
-    void operator() (CaliperMetadataAccessInterface& db, const Node* node) { m_filter_fn(db, node, m_push_fn); }
-};
+void node_proc_noop(CaliperMetadataAccessInterface&,const Node*) {}
+void snap_proc_noop(CaliperMetadataAccessInterface&,const EntryList&) {}
 
 } // namespace
 
@@ -238,41 +201,10 @@ int main(int argc, const char* argv[])
         return -2;
     }
 
-    QuerySpec spec = query_parser.spec();
-
     // setup format spec
 
-    FormatProcessor format(spec, stream);
-
-    NodeProcessFn node_proc = [](CaliperMetadataAccessInterface&, const Node*) {
-        return;
-    };
-    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&, const EntryList&) {
-        return;
-    };
-
-    Aggregator aggregate(spec);
-
-    if (!args.is_set("list-globals")) {
-        if (spec.aggregate.selection == QuerySpec::AggregationSelection::None)
-            snap_proc = format;
-        else
-            snap_proc = aggregate;
-
-        if (spec.filter.selection == QuerySpec::FilterSelection::List)
-            snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
-        if (!spec.preprocess_ops.empty())
-            snap_proc = SnapshotFilterStep(Preprocessor(spec), snap_proc);
-
-        if (args.is_set("list-attributes")) {
-            node_proc = AttributeExtract(snap_proc);
-            snap_proc = [](CaliperMetadataAccessInterface&, const EntryList&) {
-                return;
-            };
-        }
-    }
-
-    node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
+    QuerySpec spec = query_parser.spec();
+    QueryProcessor processor(spec, stream);
 
     std::vector<std::string> files = args.arguments();
 
@@ -299,7 +231,12 @@ int main(int argc, const char* argv[])
             std::cerr << "cali-query: Reading " << file << std::endl;
 
         CaliReader reader;
-        reader.read(file, metadb, node_proc, snap_proc);
+        if (args.is_set("list-attributes"))
+            reader.read(file, metadb, AttributeExtract(processor), snap_proc_noop);
+        else if (args.is_set("list-globals"))
+            reader.read(file, metadb, node_proc_noop, snap_proc_noop);
+        else
+            reader.read(file, metadb, node_proc_noop, processor);
 
         if (reader.error())
             std::cerr << "cali-query: Error reading " << file << ": " << reader.error_msg() << std::endl;
@@ -331,8 +268,7 @@ int main(int argc, const char* argv[])
         global_format.process_record(metadb, metadb.get_globals());
         global_format.flush(metadb);
     } else {
-        aggregate.flush(metadb, format);
-        format.flush(metadb);
+        processor.flush(metadb);
     }
 
     CALI_MARK_END("Writing");

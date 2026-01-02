@@ -19,12 +19,12 @@ struct QueryProcessor::QueryProcessorImpl {
     FormatProcessor formatter;
 
     bool do_aggregate;
+    bool do_filter;
+    bool do_preprocess;
 
-    void process_record(CaliperMetadataAccessInterface& db, const EntryList& in_rec)
+    void process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
     {
-        auto rec = preprocessor.process(db, in_rec);
-        if (filter.pass(db, rec)) {
-
+        if (!do_filter || filter.pass(db, rec)) {
             if (do_aggregate)
                 aggregator.add(db, rec);
             else
@@ -42,6 +42,8 @@ struct QueryProcessor::QueryProcessorImpl {
         : aggregator(spec), preprocessor(spec), filter(spec), formatter(spec, stream)
     {
         do_aggregate = (spec.aggregate.selection != QuerySpec::AggregationSelection::None);
+        do_filter = (spec.filter.selection != QuerySpec::FilterSelection::None);
+        do_preprocess = !spec.preprocess_ops.empty();
     }
 };
 
@@ -50,8 +52,7 @@ QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream) : mP
 
 void QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-
-    mP->process_record(db, rec);
+    mP->process_record(db, mP->do_preprocess ? mP->preprocessor.process(db, rec) : rec);
 }
 
 void QueryProcessor::flush(CaliperMetadataAccessInterface& db)
