@@ -15,6 +15,8 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
+#include "caliper/reader/QuerySpec.h"
+
 #include "../../reader/Expand.h"
 
 #include <atomic>
@@ -39,8 +41,10 @@ std::ostream& print_snapshot(Caliper* c, std::ostream& os)
 
     OutputStream stream;
     stream.set_stream(&os);
+    QuerySpec spec;
+    spec.select.selection = QuerySpec::AttributeSelection::Default;
 
-    cali::Expand exp(stream, "");
+    cali::Expand exp(stream, spec);
     exp.process_record(*c, std::vector<Entry>(snapshot.view().begin(), snapshot.view().end()));
 
     return os << " }";

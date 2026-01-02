@@ -28,7 +28,6 @@ class TableFormatter : public Formatter
 
 public:
 
-    TableFormatter(const std::string& fields, const std::string& sort_fields);
     TableFormatter(const QuerySpec& spec);
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);

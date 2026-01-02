@@ -27,7 +27,7 @@ class QueryProcessor
 
 public:
 
-    QueryProcessor(const QuerySpec&, OutputStream& stream);
+    QueryProcessor(const QuerySpec&, OutputStream&);
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
     void flush(CaliperMetadataAccessInterface&);

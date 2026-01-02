@@ -247,11 +247,6 @@ struct RecordSelector::RecordSelectorImpl {
     }
 }; // RecordSelectorImpl
 
-RecordSelector::RecordSelector(const std::string& filter_string) : mP { new RecordSelectorImpl }
-{
-    mP->m_filters = parse(filter_string);
-}
-
 RecordSelector::RecordSelector(const QuerySpec& spec) : mP { new RecordSelectorImpl }
 {
     mP->configure(spec);
