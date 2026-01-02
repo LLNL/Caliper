@@ -32,12 +32,6 @@ struct QueryProcessor::QueryProcessorImpl {
         }
     }
 
-    void process_with_preprocessor(CaliperMetadataAccessInterface& db, const EntryList& in_rec)
-    {
-        auto rec = preprocessor.process(db, in_rec);
-        process_record(db, rec);
-    }
-
     void flush(CaliperMetadataAccessInterface& db)
     {
         aggregator.flush(db, formatter);
@@ -58,10 +52,7 @@ QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream) : mP
 
 void QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-    if (mP->do_preprocess)
-        mP->process_with_preprocessor(db, rec);
-    else
-        mP->process_record(db, rec);
+    mP->process_record(db, mP->do_preprocess ? mP->preprocessor.process(db, rec) : rec);
 }
 
 void QueryProcessor::flush(CaliperMetadataAccessInterface& db)
