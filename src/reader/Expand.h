@@ -28,10 +28,7 @@ class Expand : public Formatter
 
 public:
 
-    Expand(OutputStream& os, const std::string& filter_string);
     Expand(OutputStream& os, const QuerySpec& spec);
-
-    void operator() (CaliperMetadataAccessInterface&, const EntryList&) const;
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };

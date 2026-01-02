@@ -27,10 +27,8 @@ using namespace cali;
 
 struct JsonFormatter::JsonFormatterImpl {
     std::set<std::string> m_selected;
-    std::set<std::string> m_deselected;
 
     OutputStream m_os;
-
     std::mutex m_os_lock;
 
     unsigned m_num_recs = 0;
@@ -47,23 +45,6 @@ struct JsonFormatter::JsonFormatterImpl {
     std::map<std::string, std::string> m_aliases;
 
     JsonFormatterImpl(OutputStream& os) : m_os(os) {}
-
-    void parse(const std::string& field_string)
-    {
-        std::vector<std::string> fields;
-
-        util::split(field_string, ':', std::back_inserter(fields));
-
-        for (const std::string& s : fields) {
-            if (s.size() == 0)
-                continue;
-
-            if (s[0] == '-')
-                m_deselected.insert(s.substr(1, std::string::npos));
-            else
-                m_selected.insert(s);
-        }
-    }
 
     void configure(const QuerySpec& spec)
     {
@@ -102,7 +83,7 @@ struct JsonFormatter::JsonFormatterImpl {
     {
         std::string name = attr.name();
 
-        bool selected = m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
+        bool selected = m_selected.count(name) > 0;
 
         if (!selected && (!m_selected.empty() || attr.is_hidden() || attr.is_global()))
             return "";
