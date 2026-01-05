@@ -161,7 +161,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             snapshots, { 'cali.caliper.version' } ) )
 
     def test_configmanager_metadata_import(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile(metadata(bla=garbl),output.format=json-split),metadata(file=example_node_info.json,keys=\"host.os,host.name\"),output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'runtime-profile(metadata(bla=garbl),output.format=json-split),metadata(file=example_node_info.json,keys=\"host.os,host.name\"),output=stdout' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY' : '0'
@@ -305,7 +305,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             }))
 
     def test_exclusive_region_filter(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,exclude_regions="before_loop,inner_before_loop",output.format=cali,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'runtime-profile,exclude_regions="before_loop,inner_before_loop",output.format=cali,output=stdout' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
@@ -324,7 +324,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
                 'region' : 'main/before_loop' }))
 
     def test_region_level_filter(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,level=phase,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'runtime-profile,level=phase,output=stdout' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, None)
@@ -344,7 +344,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
                 'phase'  : 'after_loop' }))
 
     def test_branch_filter(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,include_branches=after_loop,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'runtime-profile,include_branches=after_loop,output=stdout' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, None)

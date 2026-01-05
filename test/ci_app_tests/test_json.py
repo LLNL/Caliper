@@ -104,10 +104,10 @@ class CaliperJSONTest(unittest.TestCase):
         self.assertEqual(data[9][iterindex], 3)
 
         
-    def test_hatchetcontroller(self):
-        """ Test hatchet-region-profile controller """
+    def test_runtime_profile(self):
+        """ Test runtime-profile controller """
 
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json-split,node.order=false' ]
+        target_cmd = [ './ci_test_macros', '0', 'runtime-profile,use.mpi=false,output=stdout,output.format=json-split,node.order=false' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

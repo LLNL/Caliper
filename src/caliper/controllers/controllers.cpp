@@ -177,13 +177,13 @@ namespace cali
 
 extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
-extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
-extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo loop_report_controller_info;
 extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_profile_controller_info;
+extern ConfigManager::ConfigInfo runtime_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
+extern ConfigManager::ConfigInfo sample_profile_controller_info;
 extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
@@ -194,13 +194,13 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_
                                                                  &::nvtx_controller_info,
                                                                  &::roctx_controller_info,
                                                                  &::mpireport_controller_info,
-                                                                 &hatchet_region_profile_controller_info,
-                                                                 &hatchet_sample_profile_controller_info,
+                                                                 &runtime_profile_controller_info,
                                                                  &loop_report_controller_info,
                                                                  &openmp_report_controller_info,
                                                                  &rocm_activity_report_controller_info,
                                                                  &rocm_activity_profile_controller_info,
                                                                  &runtime_report_controller_info,
+                                                                 &sample_profile_controller_info,
                                                                  &sample_report_controller_info,
                                                                  &spot_controller_info,
                                                                  nullptr };
