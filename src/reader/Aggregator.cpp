@@ -1045,7 +1045,7 @@ struct Aggregator::AggregatorImpl {
             kernels.emplace_back(k_cfg->make_kernel());
 
         size_t idx = m_entries.size();
-        m_entries.emplace_back(new AggregateEntry { std::move(key), std::move(kernels), m_hashmap[hash] });
+        m_entries.emplace_back(new AggregateEntry { key, std::move(kernels), m_hashmap[hash] });
         m_hashmap[hash] = idx;
 
         return m_entries[idx].get();
