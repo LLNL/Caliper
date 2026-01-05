@@ -82,14 +82,10 @@ endif()
 if (CALIPER_HAVE_LIBPFM)
   list(APPEND PYTHON_SCRIPTS test_libpfm.py)
 endif()
-if (CALIPER_HAVE_SAMPLER)
-  list(APPEND PYTHON_SCRIPTS test_sampler.py)
-  if (CALIPER_HAVE_LIBDW)
-    list(APPEND PYTHON_SCRIPTS test_symbollookup.py)
-    if (CALIPER_HAVE_LIBUNWIND)
-      list(APPEND PYTHON_SCRIPTS test_samplereport.py)
-    endif()
-  endif()
+if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_LIBDW)
+  list(APPEND PYTHON_SCRIPTS 
+    test_sampler.py
+    test_symbollookup.py)
 endif()
 
 if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)

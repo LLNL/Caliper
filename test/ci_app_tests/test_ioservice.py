@@ -54,9 +54,9 @@ class CaliperIoServiceTest(unittest.TestCase):
         self.assertFalse(cat.has_snapshot_with_keys(
             snapshots, { 'io.region' }))
 
-    def test_hatchet_profile_ioservice(self):
+    def test_runtime_profile_ioservice(self):
         # Test the I/O bytes metric in the
-        target_cmd = [ './ci_test_io', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json,io.bytes.read=true' ]
+        target_cmd = [ './ci_test_io', 'runtime-profile,use.mpi=false,output=stdout,output.format=json,io.bytes.read=true' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

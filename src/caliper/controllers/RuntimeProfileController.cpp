@@ -19,11 +19,11 @@ using namespace cali;
 namespace
 {
 
-class HatchetRegionProfileController : public cali::ChannelController
+class RuntimeProfileController : public cali::ChannelController
 {
 public:
 
-    HatchetRegionProfileController(
+    RuntimeProfileController(
         const char*                   name,
         const config_map_t&           initial_cfg,
         const ConfigManager::Options& opts,
@@ -87,7 +87,7 @@ std::string check_args(const cali::ConfigManager::Options& opts)
     std::set<std::string> allowed_formats = { "cali", "json", "json-split", "hatchet" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
-        return std::string("hatchet-region-profile: Invalid output format \"") + format + "\"";
+        return std::string("runtime-profile: Invalid output format \"") + format + "\"";
 
     return "";
 }
@@ -105,17 +105,18 @@ cali::ChannelController* make_controller(
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
         format = "json-split";
-        Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format << "\". Using json-split."
+        Log(0).stream() << "runtime-profile: Unknown output format \"" << format << "\". Using json-split."
                         << std::endl;
     }
 
-    return new HatchetRegionProfileController(name, initial_cfg, opts, format);
+    return new RuntimeProfileController(name, initial_cfg, opts, format);
 }
 
 const char* controller_spec = R"json(
 {
- "name"        : "hatchet-region-profile",
- "description" : "Record a region time profile for processing with hatchet",
+ "name"        : "runtime-profile",
+ "alias"       : [ "hatchet-region-profile" ],
+ "description" : "Record a time profile for annotated regions",
  "categories"  : [ "adiak", "metadata", "metric", "output", "region", "event" ],
  "services"    : [ "aggregate", "event", "timer" ],
  "config"      :
@@ -153,6 +154,6 @@ const char* controller_spec = R"json(
 namespace cali
 {
 
-ConfigManager::ConfigInfo hatchet_region_profile_controller_info { ::controller_spec, ::make_controller, ::check_args };
+ConfigManager::ConfigInfo runtime_profile_controller_info { ::controller_spec, ::make_controller, ::check_args };
 
 }

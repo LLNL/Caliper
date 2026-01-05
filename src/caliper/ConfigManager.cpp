@@ -972,12 +972,21 @@ struct ConfigManager::ConfigManagerImpl {
         if (ok && !m_error && it != dict.end())
             for (const auto& p : it->second.rec_dict(&ok))
                 spec.defaults.push_back(std::make_pair(p.first, p.second.to_string()));
-        ;
+
+        std::vector<std::string> aliases;
+
+        it = dict.find("alias");
+        if (ok && !m_error && it != dict.end())
+            aliases = ::to_stringlist(it->second.rec_list(&ok));
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
-        if (!m_error)
-            m_spec.emplace(spec.name, std::make_shared<config_spec_t>(spec));
+        if (!m_error) {
+            auto spec_p = std::make_shared<config_spec_t>(spec);
+            m_spec.emplace(spec.name, spec_p);
+            for (const std::string& alias : aliases)
+                m_spec.emplace(alias, spec_p);
+        }
     }
 
     void add_global_option_specs(const char* json)

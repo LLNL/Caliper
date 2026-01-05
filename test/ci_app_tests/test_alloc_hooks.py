@@ -81,7 +81,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
 
     def test_allocstats(self):
-        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json,alloc.stats' ]
+        target_cmd = [ './ci_test_macros', '10', 'runtime-profile,use.mpi=false,output=stdout,output.format=json,alloc.stats' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

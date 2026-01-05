@@ -19,11 +19,11 @@ using namespace cali;
 namespace
 {
 
-class HatchetSampleProfileController : public cali::ChannelController
+class SampleProfileController : public cali::ChannelController
 {
 public:
 
-    HatchetSampleProfileController(
+    SampleProfileController(
         const char*                         name,
         const config_map_t&                 initial_cfg,
         const cali::ConfigManager::Options& opts,
@@ -101,7 +101,7 @@ std::string check_args(const cali::ConfigManager::Options& opts)
     //
 
     if (std::find(svcs.begin(), svcs.end(), "sampler") == svcs.end())
-        return "hatchet-sample-profile: sampler service is not available";
+        return "sample-profile: sampler service is not available";
 
     //
     // Check if output.format is valid
@@ -111,7 +111,7 @@ std::string check_args(const cali::ConfigManager::Options& opts)
     std::set<std::string> allowed_formats = { "cali", "json", "json-split" };
 
     if (allowed_formats.find(format) == allowed_formats.end())
-        return std::string("hatchet-sample-profile: Invalid output format \"") + format + "\"";
+        return std::string("sample-profile: Invalid output format \"") + format + "\"";
 
     return "";
 }
@@ -129,17 +129,18 @@ cali::ChannelController* make_controller(
 
     if (!(format == "json-split" || format == "json" || format == "cali")) {
         format = "json-split";
-        Log(0).stream() << "hatchet-region-profile: Unknown output format \"" << format << "\". Using json-split."
+        Log(0).stream() << "sample-profile: Unknown output format \"" << format << "\". Using json-split."
                         << std::endl;
     }
 
-    return new HatchetSampleProfileController(name, initial_cfg, opts, format);
+    return new SampleProfileController(name, initial_cfg, opts, format);
 }
 
 const char* controller_spec = R"json(
 {
- "name"        : "hatchet-sample-profile",
- "description" : "Record a sampling profile for processing with hatchet",
+ "name"        : "sample-profile",
+ "alias"       : [ "hatchet-sample-profile" ],
+ "description" : "Record a sampling profile",
  "services"    : [ "sampler", "trace" ],
  "categories"  : [ "adiak", "metadata", "sampling", "output" ],
  "config"      : { "CALI_CHANNEL_FLUSH_ON_EXIT": "false" },
@@ -177,6 +178,6 @@ const char* controller_spec = R"json(
 namespace cali
 {
 
-ConfigManager::ConfigInfo hatchet_sample_profile_controller_info { ::controller_spec, ::make_controller, ::check_args };
+ConfigManager::ConfigInfo sample_profile_controller_info { ::controller_spec, ::make_controller, ::check_args };
 
 }
