@@ -82,8 +82,8 @@ const char* event_trace_spec = R"json(
    "name": "rocm.activities",
    "description": "Trace ROCm activities",
    "type": "bool",
-   "services": [ "roctracer" ],
-   "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true", "CALI_ROCPROFILER_ENABLE_SNAPSHOT_TIMESTAMPS": "true" }
   },{
    "name": "rocm.counters",
    "description": "Record ROCm counters through rocprofiler-sdk",
