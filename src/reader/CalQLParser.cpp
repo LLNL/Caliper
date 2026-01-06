@@ -370,7 +370,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 
@@ -414,7 +414,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 
@@ -585,7 +585,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 
