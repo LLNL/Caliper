@@ -238,7 +238,7 @@ public:
     /// \name Annotations (across channels)
     /// \{
 
-    /// \brief Push attribute:value pair on the process or thread blackboard.
+    /// \brief Push attribute:value pair onto the process or thread blackboard.
     ///
     /// Adds the given attribute/value pair on the blackboard. Appends the
     /// value to any previous values of the same attribute, creating a
@@ -266,7 +266,9 @@ public:
 
     /// \brief Pop/remove top-most \a attr entry from blackboard
     ///   and check if current value is equal to \a data
-    /// \copydetails Caliper::end(const Attribute&)
+    ///
+    /// Triggers a %Caliper stack error if \a data does not match the
+    /// current entry for \a attr on the blackboard.
     void end_with_value_check(const Attribute& attr, const Variant& data);
 
     /// \brief Set attribute:value pair on the process or thread blackboard
@@ -307,7 +309,7 @@ public:
     /// \param n_extra Number of additional attribute:value pairs to
     ///   record for this memory region
     /// \param extra_attrs Attribute keys for additional attribute:value pairs
-    /// \param estra_vals Values for additional attribute:value pairs
+    /// \param extra_vals Values for additional attribute:value pairs
     void memory_region_begin(
         const void*      ptr,
         const char*      label,
@@ -390,8 +392,12 @@ public:
     /// \name Flush and I/O
     /// \{
 
-    /// \brief Flush aggregation/trace buffer contents into the \a proc_fn
+    /// \brief Flush \a chB's aggregation/trace buffer contents into the \a proc_fn
     ///   processing function.
+    ///
+    /// \param chB The %Caliper channel to flush
+    /// \param flush_info Optional metadata
+    /// \param proc_fn Snapshot processing function
     void flush(ChannelBody* chB, SnapshotView flush_info, SnapshotFlushFn proc_fn);
 
     /// \brief Flush snapshot buffer contents on \a channel into the registered
@@ -401,7 +407,7 @@ public:
     ///
     /// This function is not signal safe.
     ///
-    /// \param channel The channel to flush
+    /// \param chB The channel to flush
     /// \param input_flush_info User-provided flush context information
     void flush_and_write(ChannelBody* chB, SnapshotView flush_info);
 
@@ -438,7 +444,7 @@ public:
     void begin(ChannelBody* chB, const Attribute& attr, const Variant& data);
 
     /// \brief Pop/remove top-most entry with given attribute from
-    ///   the channel blackboard.
+    ///   \a chB's channel blackboard.
     ///
     /// This function invokes the pre_end callbacks, unless the
     /// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
@@ -452,7 +458,7 @@ public:
 
     /// \brief Set attribute:value pair on the channel blackboard.
     ///
-    /// Set the given attribute/value pair on the given channel's blackboard.
+    /// Set the given attribute/value pair on \a chB's channel blackboard.
     /// Overwrites the previous values of the same attribute.
     ///
     /// This function invokes pre_set/post_set callbacks, unless the
@@ -509,7 +515,7 @@ public:
     Entry get(const Attribute& attr);
 
     /// \brief Retrieve top-most entry for the given attribute key from the
-    ///   channel blackboard of the given channel.
+    ///   \a chB's channel blackboard.
     ///
     /// This function is signal safe.
     ///
@@ -524,7 +530,7 @@ public:
     /// A special-purpose function which retrieves the current top-most entry in
     /// \a attr's blackboard slot. This is not necessarily \a attr itself because
     /// reference attributes can share a single blackboard slot. Usually
-    /// \ref Caliper::get(const Attribute) should be used instead.
+    /// \ref Caliper::get(const Attribute&) should be used instead.
     Entry get_blackboard_entry(const Attribute& attr);
 
     /// \brief Retrieve the current path entry from the blackboard.
@@ -549,8 +555,8 @@ public:
     /// \param n      Number of elements in attribute/value lists
     /// \param attr   Attribute list
     /// \param data   Value list
-    /// \param list   Output record builder
-    /// \param parent (Optional) parent node for any treee elements.
+    /// \param rec    Output record builder
+    /// \param parent (Optional) parent node for tree elements.
     void make_record(
         size_t           n,
         const Attribute  attr[],
@@ -605,9 +611,9 @@ public:
         const std::string& name,
         cali_attr_type     type,
         int                prop      = CALI_ATTR_DEFAULT,
-        int                meta      = 0,
+        int                n_meta    = 0,
         const Attribute*   meta_attr = nullptr,
-        const Variant*     meta_data = nullptr
+        const Variant*     meta_val  = nullptr
     );
 
     /// \brief Return node with given \a id
@@ -631,9 +637,9 @@ public:
     ///
     /// This function is signal safe.
     ///
-    /// \param attr   Attribute. Cannot have the AS VALUE property.
-    /// \param data   Value
-    /// \param parent Construct path off this parent node
+    /// \param attr   Attribute. Cannot have the AS_VALUE property.
+    /// \param value  Value
+    /// \param parent (Optional) parent tree node
     ///
     /// \return Node pointing to the end of the new path
     Node* make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
@@ -644,8 +650,8 @@ public:
     ///
     /// \param attr   Attribute. Cannot have the AS VALUE property.
     /// \param n      Number of values in \a data array
-    /// \param data   Array of values
-    /// \param parent Construct path off this parent node
+    /// \param values Array of values
+    /// \param parent (Optional) parent tree node
     ///
     /// \return Node pointing to the end of the new path
     Node* make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
