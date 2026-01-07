@@ -31,7 +31,7 @@ computation time of the program)::
     MPI_Gather                        1           1   0.000020   0.000020   0.000020  0.000594
 
 The `profile.mpi` option is available for most built-in profiling recipes, such as
-`runtime-report` or `hatchet-region-profile`. It shows the time spent in MPI functions
+`runtime-report` or `runtime-profile`. It shows the time spent in MPI functions
 within each Caliper region::
 
     $ CALI_CONFIG=runtime-report,profile.mpi srun -n 8 ./lulesh2.0

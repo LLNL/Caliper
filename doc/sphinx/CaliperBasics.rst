@@ -171,12 +171,11 @@ of exclusive region times:
         foo         0.000624      0.000624      0.000624 52.392947
       init          0.000003      0.000003      0.000003  0.251889
 
-Caliper provides many more performance measurement configurations that
-make use of region annotations. For example,
-`hatchet-region-profile` writes a .cali file with region times for processing
-with `Hatchet <https://github.com/LLNL/hatchet>`_. See
-:ref:`more-on-configurations` below to learn more about different
-configurations and their options.
+Caliper provides many more measurement recipes that make use of region
+annotations. For example, `runtime-profile` writes a .cali file with region
+times for processing with `Hatchet <https://github.com/LLNL/hatchet>`_ or
+Caliper's `cali-query` tool. See :ref:`more-on-configurations` below to learn
+more about different configuration recipes and their options.
 
 Region levels and filtering
 ................................
@@ -411,10 +410,10 @@ event-trace
    Record a trace of region enter/exit events in .cali format.
    See :doc:`EventTracing`.
 
-hatchet-region-profile
+runtime-profile
    Record a region time profile for processing with hatchet or cali-query.
 
-hatchet-sample-profile
+sample-profile
    Record a sampling profile for processing with hatchet or cali-query.
    See :doc:`SampleProfiling`.
 

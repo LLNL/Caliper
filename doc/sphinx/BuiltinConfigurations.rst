@@ -56,8 +56,8 @@ event-trace
    trace.mpi
       Trace I/O events
 
-hatchet-region-profile
-   Record a region time profile for processing with hatchet or cali-query. Options:
+runtime-profile
+   Record a region time profile for processing with Hatchet or cali-query. Options:
 
    adiak.import_categories
       Adiak import categories. Comma-separated list of integers.
@@ -94,8 +94,50 @@ hatchet-region-profile
    use.mpi
       Merge results into a single output stream in MPI programs
 
-hatchet-sample-profile
-   Record a sampling profile for processing with hatchet. Options:
+runtime-report
+   Print a time profile for annotated regions. Options:
+
+   aggregate_across_ranks
+      Aggregate results across MPI ranks
+   calc.inclusive
+      Report inclusive instead of exclusive times
+   io.bytes
+      Report I/O bytes written and read
+   io.bytes.read
+      Report I/O bytes read
+   io.bytes.written
+      Report I/O bytes written
+   io.read.bandwidth
+      Report I/O read bandwidth
+   io.write.bandwidth
+      Report I/O write bandwidth
+   level
+      Minimum region level that triggers snapshots
+   max_column_width
+      Maximum column width in the tree display
+   mem.highwatermark
+      Record memory high-water mark for regions
+   mpi.message.count
+      Number of MPI send/recv/collective operations
+   mpi.message.size
+      MPI message size
+   output
+      Output location ('stdout', 'stderr', or filename)
+   profile.cuda
+      Profile CUDA API functions
+   profile.hip
+      Profile HIP API functions
+   profile.kokkos
+      Profile Kokkos functions
+   profile.mpi
+      Profile MPI functions
+   topdown.all
+      Top-down analysis for Intel CPUs (all levels)
+   topdown.toplevel
+      Top-down analysis for Intel CPUs (top level)
+
+sample-profile
+   Record a sampling profile for processing with hatchet or cali-query. Options:
 
    adiak.import_categories
       Adiak import categories. Comma-separated list of integers.
@@ -176,48 +218,6 @@ loop-report
 
 mpi-report
    Print time spent in MPI functions
-
-runtime-report
-   Print a time profile for annotated regions. Options:
-
-   aggregate_across_ranks
-      Aggregate results across MPI ranks
-   calc.inclusive
-      Report inclusive instead of exclusive times
-   io.bytes
-      Report I/O bytes written and read
-   io.bytes.read
-      Report I/O bytes read
-   io.bytes.written
-      Report I/O bytes written
-   io.read.bandwidth
-      Report I/O read bandwidth
-   io.write.bandwidth
-      Report I/O write bandwidth
-   level
-      Minimum region level that triggers snapshots
-   max_column_width
-      Maximum column width in the tree display
-   mem.highwatermark
-      Record memory high-water mark for regions
-   mpi.message.count
-      Number of MPI send/recv/collective operations
-   mpi.message.size
-      MPI message size
-   output
-      Output location ('stdout', 'stderr', or filename)
-   profile.cuda
-      Profile CUDA API functions
-   profile.hip
-      Profile HIP API functions
-   profile.kokkos
-      Profile Kokkos functions
-   profile.mpi
-      Profile MPI functions
-   topdown.all
-      Top-down analysis for Intel CPUs (all levels)
-   topdown.toplevel
-      Top-down analysis for Intel CPUs (top level)
 
 spot
    Record a time profile for the Spot web visualization framework. Options:
