@@ -266,10 +266,9 @@ struct CalQLParser::CalQLParserImpl {
         //             | *
 
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
-        char                                c    = '\0';
 
-        std::string              next_keyword;
-        std::vector<std::string> selection_list;
+        char c = '\0';
+        std::string next_keyword;
 
         do {
             std::string selection_attr_name;
