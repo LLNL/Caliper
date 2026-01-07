@@ -7,7 +7,7 @@ Build Caliper with ``-DWITH_OMPT=On`` to enable it.
 
 When OMPT support is enabled, Caliper provides the `openmp-report` built-in
 config, as well as the `openmp.times` and `openmp.threads` options for configs
-like `runtime-report` and `hatchet-region-profile`. With manual configurations,
+like `runtime-report` and `runtime-profile`. With manual configurations,
 you can use the :ref:`ompt-service` service.
 
 OpenMP profiling with openmp-report

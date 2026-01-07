@@ -22,8 +22,7 @@ Function annotations export the name of the annotated function, which
 is taken from the ``__FUNC__`` compiler macro. The annotations should
 be placed within a function of interest, ideally near the top. In C,
 the function begin and *all* exit points must be marked. In C++, only
-the begin has to be marked. Caliper exports the hierarchy of annotated
-functions in the `function` attribute.
+the begin has to be marked.
 
 C++ example:
 
@@ -110,7 +109,7 @@ Code-region Annotations
 ................................
 
 Code-region annotations mark and name user-defined source code
-regions. Caliper exports the region names in the `annotation`
+regions. Caliper exports the region names in the `region`
 attribute. Annotated code regions must be properly nested (see
 `Nesting`_).
 
@@ -127,12 +126,11 @@ Example:
 Nesting
 ................................
 
-Annotated source-code regions of any of the pre-defined context
-attributes (`function`, `loop`, and `annotation`) can be nested within
-each other. Caliper preserves this nesting information. Users must
-ensure that the nesting is correct. That is, annotated code regions
-have to be enclosed completely within each other; they cannot
-partially overlap. Example:
+Annotated source-code regions of any of the pre-defined region attributes can
+be nested within each other. Caliper preserves this nesting information. Users
+must ensure that the nesting is correct. That is, annotated code regions have
+to be enclosed completely within each other; they cannot partially overlap.
+Example:
 
 .. code-block:: c++
 
@@ -232,10 +230,10 @@ C++ annotation API
 The C++ annotation API is implemented in the class
 :cpp:class:`cali::Annotation`.
 
-Data tracking API
+Memory region tracking
 --------------------------------
 
-Caliper also supports tracking allocated data. Doing so provides
+Caliper also supports tracking allocated memory regions. Doing so provides
 advanced data-centric attributes, such as recording allocation events
 and determining the containers for memory addresses provided by
 services like libpfm. To take advantage of annotated memory

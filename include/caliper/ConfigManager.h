@@ -282,16 +282,10 @@ public:
     ///   " \"services\"    : [ \"papi\" ],"
     ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
     ///   " \"query\"       : "
-    ///   " ["
-    ///   "  { \"level\": \"local\", \"select\":"
-    ///   "   [ \"sum(sum#papi.PAPI_TOT_INS)\" ]"
-    ///   "  },"
-    ///   "  { \"level\": \"cross\", \"select\":"
-    ///   "   [ \"avg(sum#sum#papi.PAPI_TOT_INS) as \\\"Avg instr./rank\\\",\"
-    ///   "     \"max(sum#sum#papi.PAPI_TOT_INS) as \\\"Max instr./rank\\\"\"
-    ///   "   ]"
-    ///   "  }"
-    ///   " ]"
+    ///   " {"
+    ///   "  \"local\": \"select sum(sum#papi.PAPI_TOT_INS)\","
+    ///   "  \"cross\": \"select avg(sum#sum#papi.PAPI_TOT_INS) as \\\"Avg instr./rank\\\"\""
+    ///   " }"
     ///   "}";
     ///
     /// ConfigManager mgr;
@@ -320,15 +314,13 @@ public:
     ///   variables required for this option. Note that services will be
     ///   added automatically based on the \a services entry.
     /// \li \a query: Defines aggregation operations to compute
-    ///   performance metrics. Specific to "metric" options. There are
+    ///   performance metrics for \e metric options. There are
     ///   two aggregation levels: \e local computes process-local
     ///   metrics, and \e cross computes cross-process
-    ///   metrics in MPI programs. For each level, specify metrics
-    ///   as a list of "select" definitions and aggregations
-    ///   using CalQL expressions. Metrics on the \e serial
-    ///   and \e local levels use runtime aggregation results from
-    ///   the "aggregate" service as input, metrics on the \e cross level
-    ///   use "local" metrics as input.
+    ///   metrics in MPI programs. Specify aggregation operations for each level
+    ///   with a CalQL expression. Metrics on the \e local level use runtime
+    ///   aggregation results from the "aggregate" service as input, while metrics
+    ///   on the \e cross level use output from the \e local level as input.
     void add_option_spec(const char* json);
 
     /// \brief Parse the \a config_string configuration string and create the
@@ -336,7 +328,7 @@ public:
     ///
     /// Parses configuration strings of the following form:
     ///
-    ///   <config> ( <option> = value, ... ), ...
+    ///   config ( option = value, ... ), ...
     ///
     /// e.g., "runtime-report,event-trace(output=trace.cali)"
     ///
@@ -475,7 +467,7 @@ public:
 
     /// \brief Check if the given config string is valid.
     ///
-    /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
+    /// If \a allow_extra_kv_pairs is set to \e false, extra key-value pairs
     /// in the config string that do not represent configurations or parameters
     /// will be marked as errors.
     ///
@@ -507,7 +499,7 @@ public:
     /// \brief Check if given config string is valid for global config specs.
     ///   Deprecated.
     ///
-    /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
+    /// If \a allow_extra_kv_pairs is set to \e false, extra key-value pairs
     /// in the config string that do not represent configurations or parameters
     /// will be marked as errors.
     ///
