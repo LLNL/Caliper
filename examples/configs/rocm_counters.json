@@ -1,0 +1,17 @@
+{
+"options":
+[
+{
+    "name": "sq_waves",
+    "description": "ROCm SQ_WAVES counter",
+    "category": "metric",
+    "services": [ "rocprofiler" ],
+    "config": { "CALI_ROCPROFILER_COUNTERS": "SQ_WAVES" },
+    "query":
+    {
+        "local": "select sum(sum#rocm.SQ_WAVES) as sq_waves",
+        "cross": "select min(sum#sum#rocm.SQ_WAVES) as \"sq_waves (min)\",avg(sum#sum#rocm.SQ_WAVES) as \"sq_waves (avg)\",max(sum#sum#rocm.SQ_WAVES) as \"sq_waves (max)\""
+    }
+}
+]
+}

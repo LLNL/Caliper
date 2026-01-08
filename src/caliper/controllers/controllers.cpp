@@ -82,8 +82,8 @@ const char* event_trace_spec = R"json(
    "name": "rocm.activities",
    "description": "Trace ROCm activities",
    "type": "bool",
-   "services": [ "roctracer" ],
-   "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true", "CALI_ROCPROFILER_ENABLE_SNAPSHOT_TIMESTAMPS": "true" }
   },{
    "name": "rocm.counters",
    "description": "Record ROCm counters through rocprofiler-sdk",
@@ -738,6 +738,38 @@ const char* builtin_rocm_option_specs = R"json(
     sum(sum#alloc.count) as \"Alloc count\",
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\""
+ }
+},{
+ "name": "rocm.activity.stats",
+ "description": "ROCm activity statistics",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "rocprofiler" ],
+ "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true" },
+ "query":
+ {
+  "local":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#rocm.activity.duration) as \"Nsec/invoc (avg)\",
+    max(max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  ",
+  "cross":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#avg#rocm.activity.duration) as \"Nsec/incov (avg)\",
+    max(max#max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  "
  }
 }
 ]
