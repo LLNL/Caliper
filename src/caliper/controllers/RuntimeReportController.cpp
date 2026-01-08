@@ -57,9 +57,11 @@ public:
         }
 
         // Config for second aggregation step in MPI mode (cross-process aggregation)
-        std::string q_cross = std::string(" select min(") + tmetric + ") as \"Min time/rank\"" + std::string(",max(")
-                                   + tmetric + ") as \"Max time/rank\"" + std::string(",avg(") + tmetric
-                                   + ") as \"Avg time/rank\"" + std::string(",") + pmetric + " as \"Time %\" ";
+        std::string q_cross = std::string(" group by path select ");
+        q_cross.append(" min(").append(tmetric).append(") as \"Min time/rank\"");
+        q_cross.append(",max(").append(tmetric).append(") as \"Max time/rank\"");
+        q_cross.append(",avg(").append(tmetric).append(") as \"Avg time/rank\"");
+        q_cross.append(",").append(pmetric).append(" as \"Time %\" ");
 
         std::string format = std::string(" format ") + util::build_tree_format_spec(config(), opts);
 
