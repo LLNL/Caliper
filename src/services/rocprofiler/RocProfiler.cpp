@@ -82,6 +82,7 @@ class RocProfilerService
     Attribute m_activity_device_id_attr;
     Attribute m_activity_queue_id_attr;
     Attribute m_activity_duration_attr;
+    Attribute m_activity_count_attr;
     Attribute m_src_agent_attr;
     Attribute m_dst_agent_attr;
     Attribute m_agent_attr;
@@ -146,6 +147,11 @@ class RocProfilerService
 
         m_activity_duration_attr = c->create_attribute(
             "rocm.activity.duration",
+            CALI_TYPE_UINT,
+            CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
+        );
+        m_activity_count_attr = c->create_attribute(
+            "rocm.activity.count",
             CALI_TYPE_UINT,
             CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE
         );
@@ -244,6 +250,7 @@ class RocProfilerService
                     s_instance->m_activity_start_attr,
                     s_instance->m_activity_end_attr,
                     s_instance->m_activity_duration_attr,
+                    s_instance->m_activity_count_attr,
                     s_instance->m_dispatch_id_attr
                 };
 
@@ -276,13 +283,14 @@ class RocProfilerService
                     Variant(cali_make_variant_from_uint(record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp)),
                     Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
+                    Variant(cali_make_variant_from_uint(1)),
                     Variant(cali_make_variant_from_uint(record->dispatch_info.dispatch_id))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
-                FixedSizeSnapshotRecord<8> snapshot;
-                c.make_record(7, attr, data, snapshot.builder(), correlation);
+                FixedSizeSnapshotRecord<10> snapshot;
+                c.make_record(8, attr, data, snapshot.builder(), correlation);
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
@@ -296,7 +304,7 @@ class RocProfilerService
                 const Attribute attr[] = { s_instance->m_activity_name_attr, s_instance->m_activity_start_attr,
                                            s_instance->m_activity_end_attr,  s_instance->m_activity_duration_attr,
                                            s_instance->m_src_agent_attr,     s_instance->m_dst_agent_attr,
-                                           s_instance->m_bytes_attr
+                                           s_instance->m_bytes_attr,         s_instance->m_activity_count_attr
                                          };
 
                 const char* activity_name = nullptr;
@@ -318,13 +326,14 @@ class RocProfilerService
                     Variant(cali_make_variant_from_uint(record->end_timestamp - record->start_timestamp)),
                     Variant(cali_make_variant_from_uint(src_agent)),
                     Variant(cali_make_variant_from_uint(dst_agent)),
-                    Variant(cali_make_variant_from_uint(record->bytes))
+                    Variant(cali_make_variant_from_uint(record->bytes)),
+                    Variant(cali_make_variant_from_uint(1))
                 };
 
                 cali::Node* correlation = static_cast<cali::Node*>(record->correlation_id.external.ptr);
 
-                FixedSizeSnapshotRecord<8> snapshot;
-                c.make_record(7, attr, data, snapshot.builder(), correlation);
+                FixedSizeSnapshotRecord<10> snapshot;
+                c.make_record(8, attr, data, snapshot.builder(), correlation);
                 if (!mpi_rank_entry.empty())
                     snapshot.builder().append(mpi_rank_entry);
 
