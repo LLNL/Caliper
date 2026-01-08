@@ -739,6 +739,38 @@ const char* builtin_rocm_option_specs = R"json(
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\""
  }
+},{
+ "name": "rocm.activity.stats",
+ "description": "ROCm activity statistics",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "rocprofiler" ],
+ "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true" },
+ "query":
+ {
+  "local":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#rocm.activity.duration) as \"Nsec/invoc (avg)\",
+    max(max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  ",
+  "cross":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#avg#rocm.activity.duration) as \"Nsec/incov (avg)\",
+    max(max#max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  "
+ }
 }
 ]
 )json";
