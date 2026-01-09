@@ -194,7 +194,7 @@ then
     timed_message "Cleaning working directory"
 
     # Map CPU core allocations
-    declare -A core_counts=(["lassen"]=40 ["dane"]=28 ["corona"]=32 ["rzansel"]=48 ["tioga"]=32 ["tuolumne"]=48)
+    declare -A core_counts=(["lassen"]=40 ["dane"]=28 ["matrix"]=28 ["corona"]=32 ["rzansel"]=48 ["tioga"]=32 ["tuolumne"]=48)
 
     # If building, then delete everything first
     # NOTE: 'cmake --build . -j core_counts' attempts to reduce individual build resources.
