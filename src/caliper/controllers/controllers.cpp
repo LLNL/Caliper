@@ -254,8 +254,8 @@ const char* builtin_base_option_specs = R"json(
  },
  "query":
  {
-  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#time.inclusive.duration.ns,sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
-  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#sum#time.inclusive.duration.ns,sum#sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
+  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
+  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
  }
 },{
  "name": "loop.stats",
