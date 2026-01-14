@@ -33,40 +33,35 @@ public:
     )
         : ChannelController(name, 0, initial_cfg)
     {
-        //   Scale time. The "where report.l" hack ensures we only process records with
-        // a path region entry, in particular for the time percent calculation.
-        std::string q_let = " let report.time=scale(sum#time.duration.ns,1e-9),report.l=leaf() where report.l ";
-
         // Query for first aggregation step in MPI mode (process-local aggregation)
-        std::string q_local = " select sum(report.time) group by path " + q_let;
+        //   The "where report.l" hack ensures we only process records with
+        // a path region entry, in particular for the time percent calculation.
+        std::string q_local =
+            " let report.t=scale(sum#time.duration.ns,1e-9),report.l=leaf() where report.l "
+            " group by path "
+            " select sum(report.t),inclusive_sum(report.t) ";
+
         // Query for serial-mode aggregation
         std::string q_serial =
-            " select sum(report.time) as \"Time (E)\""
-            ",inclusive_sum(report.time) as \"Time (I)\""
-            ",percent_total(report.time) as \"Time % (E)\""
-            ",inclusive_percent_total(report.time) as \"Time % (I)\""
-            " group by path " + q_let;
+            " let report.t=scale(sum#time.duration.ns,1e-9),report.l=leaf() where report.l "
+            " group by path "
+            " select sum(report.t) as \"Time (E)\""
+            ",inclusive_sum(report.t) as \"Time (I)\""
+            ",percent_total(report.t) as \"Time % (E)\""
+            ",inclusive_percent_total(report.t) as \"Time % (I)\"";
 
-        std::string tmetric = "sum#report.time";
-        std::string pmetric = "percent_total(sum#report.time)";
+        // Query for cross-process aggregation in MPI mode
+        std::string q_cross =
+            " select min(inclusive#report.t) as \"Min time/rank\""
+            ",avg(inclusive#report.t) as \"Avg time/rank\""
+            ",max(inclusive#report.t) as \"Max time/rank\""
+            ",inclusive_percent_total(sum#report.t) as \"Time %\""
+            " group by path ";
 
-        if (opts.is_enabled("calc.inclusive")) {
-            q_local.append(" select inclusive_sum(report.time) ");
-            tmetric = "inclusive#report.time";
-            pmetric = "inclusive_percent_total(sum#report.time)";
-        }
+        std::string format = util::build_tree_format_spec(config(), opts);
 
-        // Config for second aggregation step in MPI mode (cross-process aggregation)
-        std::string q_cross = std::string(" group by path select ");
-        q_cross.append(" min(").append(tmetric).append(") as \"Min time/rank\"");
-        q_cross.append(",max(").append(tmetric).append(") as \"Max time/rank\"");
-        q_cross.append(",avg(").append(tmetric).append(") as \"Avg time/rank\"");
-        q_cross.append(",").append(pmetric).append(" as \"Time %\" ");
-
-        std::string format = std::string(" format ") + util::build_tree_format_spec(config(), opts);
-
-        q_serial.append(format);
-        q_cross.append(format);
+        q_serial.append(" format ").append(format);
+        q_cross.append(" format ").append(format);
 
         if (use_mpi) {
             config()["CALI_SERVICES_ENABLE"].append(",mpi,mpireport");
@@ -135,7 +130,16 @@ const char* runtime_report_spec = R"json(
   {
    "name": "calc.inclusive",
    "type": "bool",
-   "description": "Report inclusive instead of exclusive times"
+   "description": "Report inclusive instead of exclusive times (deprecated, always on)"
+  },{
+    "name": "time.exclusive",
+    "type": "bool",
+    "description": "Report exclusive times in addition to inclusive times",
+    "query":
+    {
+     "cross":
+     "select min(sum#report.t) as \"Min time/rank (E)\",avg(sum#report.t) as \"Avg time/rank (E)\",max(sum#report.t) as \"Max time/rank (E)\",percent_total(sum#report.t) as \"Time % (E)\""
+    }
   },{
    "name": "aggregate_across_ranks",
    "type": "bool",
