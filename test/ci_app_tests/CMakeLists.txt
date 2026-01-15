@@ -51,20 +51,13 @@ set(PYTHON_SCRIPTS
   test_validator.py
   calipertest.py)
 
-if (CALIPER_HAVE_CPUINFO)
-  list(APPEND PYTHON_SCRIPTS test_cpuinfo.py)
-endif()
-if (CALIPER_HAVE_MEMUSAGE)
-  list(APPEND PYTHON_SCRIPTS test_memusageservice.py)
-endif()
-if (CALIPER_HAVE_LIBUNWIND)
-  list(APPEND PYTHON_SCRIPTS test_callpath.py)
+if (CALIPER_HAVE_CPUINFO AND CALIPER_HAVE_MEMUSAGE)
+  list(APPEND PYTHON_SCRIPTS test_linux_services.py)
 endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS
     test_alloc_hooks.py
-    test_ioservice.py
-    test_pthread.py)
+    test_gotcha_services.py)
 endif()
 if (CALIPER_HAVE_PAPI)
   list(APPEND PYTHON_SCRIPTS test_papi.py)
@@ -72,10 +65,9 @@ endif()
 if (CALIPER_HAVE_LIBPFM)
   list(APPEND PYTHON_SCRIPTS test_libpfm.py)
 endif()
-if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_LIBDW)
+if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_LIBDW AND CALIPER_HAVE_LIBUNWIND)
   list(APPEND PYTHON_SCRIPTS
-    test_sampler.py
-    test_symbollookup.py)
+    test_sampler.py)
 endif()
 
 if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
