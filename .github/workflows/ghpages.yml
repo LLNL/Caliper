@@ -44,12 +44,12 @@ jobs:
     - name: Fix permissions
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: chmod -v -R og+rX "docs/sphinx/html/"
+      run: chmod -v -R og+rX "doc/sphinx/html/"
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v4
       with:
-        path: ${{github.workspace}}/build/docs/sphinx/html/
+        path: ${{github.workspace}}/build/doc/sphinx/html/
 
   deploy:
     environment:
