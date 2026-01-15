@@ -1,8 +1,10 @@
 # Sampler/symbollookup tests
 
+import io
 import json
 import unittest
 
+import caliperreader
 import calipertest as cat
 
 class CaliperSamplerTest(unittest.TestCase):
@@ -10,7 +12,6 @@ class CaliperSamplerTest(unittest.TestCase):
 
     def test_sampler_symbollookup(self):
         target_cmd = [ './ci_test_macros', '5000' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'sampler:symbollookup:trace:recorder',
@@ -18,11 +19,10 @@ class CaliperSamplerTest(unittest.TestCase):
             'CALI_SYMBOLLOOKUP_LOOKUP_LINE'   : 'true',
             'CALI_SYMBOLLOOKUP_LOOKUP_MODULE' : 'true',
             'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) > 1)
 

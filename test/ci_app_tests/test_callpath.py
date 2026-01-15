@@ -1,7 +1,9 @@
 # callpath service tests
 
+import io
 import unittest
 
+import caliperreader
 import calipertest as cat
 
 class CaliperCallpathTest(unittest.TestCase):
@@ -9,17 +11,15 @@ class CaliperCallpathTest(unittest.TestCase):
 
     def test_callpath(self):
         target_cmd = [ './ci_test_alloc' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'callpath,trace,recorder',
             'CALI_CALLPATH_USE_NAME' : 'true',
             'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) == 3)
 

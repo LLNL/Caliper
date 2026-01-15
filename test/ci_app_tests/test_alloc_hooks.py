@@ -1,7 +1,8 @@
 # Tests of the alloc service
 
-import json, unittest
+import io, json, unittest
 
+import caliperreader
 import calipertest as cat
 
 class CaliperAllocServiceTest(unittest.TestCase):
@@ -63,17 +64,15 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
     def test_alloc_hooks(self):
         target_cmd = [ './ci_test_alloc_hooks' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_ALLOC_RESOLVE_ADDRESSES' : 'true',
             'CALI_SERVICES_ENABLE'         : 'alloc:recorder:sysalloc:trace',
             'CALI_RECORDER_FILENAME'       : 'stdout',
-            'CALI_LOG_VERBOSITY'           : '0'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        self.snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        self.snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.helper_test_hook('malloc')
         self.helper_test_hook('calloc')
@@ -83,11 +82,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
     def test_allocstats(self):
         target_cmd = [ './ci_test_macros', '10', 'runtime-profile,use.mpi=false,output=stdout,output.format=json,alloc.stats' ]
 
-        caliper_config = {
-            'CALI_LOG_VERBOSITY'     : '0'
-        }
-
-        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
+        obj = json.loads( cat.run_test(target_cmd, None)[0] )
 
         self.assertEqual(obj[1]['path'], 'main')
         self.assertTrue(int(obj[1]['Mem HWM']) >= 2000)
