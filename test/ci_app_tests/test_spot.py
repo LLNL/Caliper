@@ -13,11 +13,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,region.count)' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-q', 'format json(object)' ]
 
-        caliper_config = {
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, None) )
 
         self.assertIn('globals', obj)
         self.assertIn('records', obj)
@@ -62,11 +58,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries,timeseries.iteration_interval=15)', '75' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'select * where spot.channel=timeseries format json(object)' ]
 
-        caliper_config = {
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, None) )
 
         self.assertIn('globals', obj)
         self.assertIn('records', obj)
@@ -89,15 +81,11 @@ class CaliperSpotControllerTest(unittest.TestCase):
     def test_spot_optioncheck_a(self):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries.iteration_interval=15)' ]
 
-        env = {
-            'CALI_LOG_VERBOSITY' : '0',
-        }
-
         log_targets = [
             'timeseries.iteration_interval is set but the timeseries option is not enabled'
         ]
 
-        target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        target_proc = subprocess.Popen(target_cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         _,report_err = target_proc.communicate()
 
         lines = report_err.decode().splitlines()
@@ -112,15 +100,11 @@ class CaliperSpotControllerTest(unittest.TestCase):
     def test_spot_optioncheck_b(self):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries,timeseries.metrics=blagarbl)' ]
 
-        env = {
-            'CALI_LOG_VERBOSITY' : '0',
-        }
-
         log_targets = [
             'Unknown option: blagarbl'
         ]
 
-        target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        target_proc = subprocess.Popen(target_cmd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         _,report_err = target_proc.communicate()
 
         lines = report_err.decode().splitlines()
