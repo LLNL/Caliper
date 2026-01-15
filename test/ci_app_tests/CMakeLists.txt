@@ -44,20 +44,10 @@ endforeach()
 
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
-  test_allocservice.py
-  test_basictrace.py
-  test_c_api.py
+  test_basic.py
   test_caliquery.py
-  test_file_io.py
-  test_json.py
-  test_log.py
-  test_loopreport.py
-  test_monitor.py
   test_report.py
-  test_runtimereport.py
   test_spot.py
-  test_templateservices.py
-  test_thread.py
   test_validator.py
   calipertest.py)
 
@@ -83,7 +73,7 @@ if (CALIPER_HAVE_LIBPFM)
   list(APPEND PYTHON_SCRIPTS test_libpfm.py)
 endif()
 if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_LIBDW)
-  list(APPEND PYTHON_SCRIPTS 
+  list(APPEND PYTHON_SCRIPTS
     test_sampler.py
     test_symbollookup.py)
 endif()
@@ -151,6 +141,11 @@ foreach(file ${PYTHON_SCRIPTS} ${DATA_FILES})
       ${CMAKE_CURRENT_SOURCE_DIR}/${file}
       ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
+
+add_custom_target(caliperreader_link ALL
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../python/caliper-reader/caliperreader
+    ${CMAKE_CURRENT_BINARY_DIR}/caliperreader)
 
 add_test(NAME CI_app_tests COMMAND ${CALI_PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")
 # if (WITH_PYTHON_BINDINGS)
