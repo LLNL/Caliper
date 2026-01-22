@@ -9,13 +9,9 @@ class CaliperOpenMPMetrics(unittest.TestCase):
     """ Caliper OpenMP/OMPT test case """
 
     def test_ioservice(self):
-        target_cmd = [ './ci_test_openmp', 'hatchet-region-profile,openmp.times,output=stdout,output.format=json-split' ]
+        target_cmd = [ './ci_test_openmp', 'runtime-profile,openmp.times,output=stdout,output.format=json-split' ]
 
-        caliper_config = {
-            'CALI_LOG_VERBOSITY'     : '0'
-        }
-
-        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
+        obj = json.loads( cat.run_test(target_cmd, None)[0] )
 
         self.assertTrue( { 'data', 'columns', 'column_metadata', 'nodes' }.issubset(set(obj.keys())) )
 
@@ -31,15 +27,11 @@ class CaliperOpenMPMetrics(unittest.TestCase):
     def test_openmpreport_regions(self):
         target_cmd = [ './ci_test_openmp', 'openmp-report,output=stdout' ]
 
-        caliper_config = {
-            'CALI_LOG_VERBOSITY'     : '0'
-        }
-
         report_targets = [
             'Path #Threads Time (thread) Time (total) Work %   Barrier % Time (work) Time (barrier)'
         ]
 
-        report_output,_ = cat.run_test(target_cmd, caliper_config)
+        report_output,_ = cat.run_test(target_cmd, None)
         lines = report_output.decode().splitlines()
 
         for target in report_targets:

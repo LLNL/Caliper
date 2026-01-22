@@ -1,9 +1,10 @@
 # Tests of the Python API
 
+import io
 import sys
-
 import unittest
 
+import caliperreader
 import calipertest as cat
 
 
@@ -16,12 +17,9 @@ class CaliperPythonAPITest(unittest.TestCase):
             "./ci_test_py_ann.py",
             "event-trace,output=stdout",
         ]
-        query_cmd = ["../../src/tools/cali-query/cali-query", "-e"]
 
-        caliper_config = {"CALI_LOG_VERBOSITY": "0"}
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, None)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) >= 10)
 
@@ -55,41 +53,19 @@ class CaliperPythonAPITest(unittest.TestCase):
 
     def test_py_ann_globals(self):
         target_cmd = [sys.executable, "./ci_test_py_ann.py"]
-        query_cmd = ["../../src/tools/cali-query/cali-query", "-e", "--list-globals"]
 
-        caliper_config = {
-            "CALI_CONFIG_PROFILE": "serial-trace",
-            "CALI_RECORDER_FILENAME": "stdout",
-            "CALI_LOG_VERBOSITY": "0",
-        }
+        out,_ = cat.run_test(target_cmd, { 'CALI_CONFIG': 'event-trace,output=stdout' })
+        _,globals = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        self.assertIn("global.double", globals)
+        self.assertIn("global.string", globals)
+        self.assertIn("global.int", globals)
+        self.assertIn("global.uint", globals)
+        self.assertIn("cali.caliper.version", globals)
 
-        self.assertTrue(len(snapshots) == 1)
-
-        self.assertTrue(
-            cat.has_snapshot_with_keys(
-                snapshots,
-                {
-                    "global.double",
-                    "global.string",
-                    "global.int",
-                    "global.uint",
-                    "cali.caliper.version",
-                },
-            )
-        )
-        self.assertTrue(
-            cat.has_snapshot_with_attributes(
-                snapshots,
-                {
-                    "global.int": "1337",
-                    "global.string": "my global string",
-                    "global.uint": "42",
-                },
-            )
-        )
+        self.assertEqual(globals['global.int'], '1337')
+        self.assertEqual(globals['global.string'], 'my global string')
+        self.assertEqual(globals['global.uint'], '42')
 
 
 if __name__ == "__main__":

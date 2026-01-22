@@ -2,8 +2,8 @@ Connection to third-party tools
 ================================
 
 Caliper provides bindings to export Caliper annotations to third-party
-tools. Currently, Nvidia's NVProf/NSight and Intel VTune Amplifier are
-supported.
+tools. Currently, Nvidia's NVProf/NSight, AMD's rocprof, and Intel VTune 
+Amplifier are supported.
 
 
 NVidia NVProf/NSight
@@ -24,9 +24,8 @@ target application under nvprof:
 Then, load the measurement result file created by nvprof in nvvp (use
 the -o flag for nvprof to write output into a file).
 
-By default, Caliper exports all regions with the NESTED attribute
-property. This includes the regions created by Caliper's annotation
-macros (CALI_CXX_MARK_FUNCTION, CALI_MARK_BEGIN/END
+By default, Caliper exports all regions created by Caliper's region
+annotations (CALI_CXX_MARK_FUNCTION, CALI_MARK_BEGIN/END
 etc.). Alternatively, the region attributes to export can be specified
 explicitly in the `CALI_NVTX_TRIGGER_ATTRIBUTES` configuration
 variable.
@@ -55,8 +54,8 @@ following:
 Caliper-annotated regions will then be visible as "tasks" in the VTune
 analysis views.
 
-By default, Caliper exports all regions with the NESTED attribute
-property. Alternatively, the region attributes to export can be
+By default, Caliper exports all regions created by Caliper's region
+annotations. Alternatively, the region attributes to export can be
 specified explicitly in the `CALI_VTUNE_TRIGGER_ATTRIBUTES`
 configuration variable.
 

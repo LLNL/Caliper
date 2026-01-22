@@ -90,7 +90,7 @@ void cali_datatracker_untrack(const void* ptr);
  * \a ptr. The array can then be tracked and resolved with the alloc service.
  *
  * \param elem_size Size of the array elements in bytes
- * \param dimension Array of type size_t[] with the sizes of each dimension.
+ * \param dimensions Array of type size_t[] with the sizes of each dimension.
  *    Must have \a num_dimensions entries.
  * \param num_dimensions The number of dimensions
  */

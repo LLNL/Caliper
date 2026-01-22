@@ -74,7 +74,7 @@ class Trace
         //   we store a pointer to the thread-local trace buffer for this channel
         // on the thread's blackboard
 
-        TraceBuffer* tbuf = static_cast<TraceBuffer*>(c->get(tbuf_attr).value().get_ptr());
+        TraceBuffer* tbuf = static_cast<TraceBuffer*>(c->get_blackboard_entry(tbuf_attr).value().get_ptr());
 
         if (!tbuf && can_alloc) {
             tbuf = new TraceBuffer(buffersize);

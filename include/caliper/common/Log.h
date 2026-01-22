@@ -53,8 +53,8 @@ public:
     ///    }
     /// \endcode
     ///
-    /// \param \errnum The errno value
-    /// \param \msg Optional prefix message
+    /// \param errnum The errno value
+    /// \param msg Optional prefix message
     /// \return The log stream's \a std::ostream object
     std::ostream& perror(int errnum, const char* msg = "");
 

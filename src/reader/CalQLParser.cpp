@@ -266,10 +266,9 @@ struct CalQLParser::CalQLParserImpl {
         //             | *
 
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
-        char                                c    = '\0';
 
-        std::string              next_keyword;
-        std::vector<std::string> selection_list;
+        char c = '\0';
+        std::string next_keyword;
 
         do {
             std::string selection_attr_name;
@@ -370,7 +369,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 
@@ -414,7 +413,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 
@@ -585,7 +584,7 @@ struct CalQLParser::CalQLParserImpl {
 
         if (c)
             is.unget();
-        if (!next_keyword.empty())
+        if (!error && !next_keyword.empty())
             parse_clause_from_word(next_keyword, is);
     }
 

@@ -125,6 +125,8 @@ int curious_deregister_file(int fd)
 {
     curious_file_record_t* cur_record = (curious_file_record_t*) get_from_curious_dynamic_array(&file_registry, fd);
 
+    if (cur_record == NULL)
+        return -1;
     //printf("deregistering file %s on %s filesystem as %d\n", cur_record->path, cur_record->filesystem, fd);
 
     free(cur_record->path);

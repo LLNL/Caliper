@@ -106,7 +106,7 @@ public:
         std::string profile_cfg_str = "timeseries.profile";
 
         ConfigSet   cfg          = services::init_config_from_spec(channel->config(), s_spec);
-        std::string profile_opts = cfg.get("profile.options").to_string();
+        std::string profile_opts = cfg.get("profile_options").to_string();
         if (profile_opts.size() > 0)
             profile_cfg_str.append("(").append(profile_opts).append(")");
 

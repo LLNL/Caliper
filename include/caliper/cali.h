@@ -315,9 +315,6 @@ cali_variant_t cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
  *
  * \note This function is async-signal safe
  *
- * \param \a alt String to return if there is no region or the innermost
- *   region is not a string attribute.
- *
  * \return A string pointer to the current innermost %Caliper region, or
  *   \a alt if no region has been set or the innermost path region is
  *   not a string attribute.
@@ -342,7 +339,7 @@ const char* cali_get_current_region_or(const char* alt);
 /**
  * \brief Begin nested region \a name
  *
- * Begins nested region \a name using the built-in \a annotation attribute.
+ * Begins nested region \a name using the built-in \a region attribute.
  * Equivalent to the macro CALI_MARK_REGION_BEGIN.
  *
  * \see cali_end_region()
@@ -352,7 +349,7 @@ void cali_begin_region(const char* name);
 /**
  * \brief End nested region \a name
  *
- * Ends nested region \a name using the built-in \a annotation attribute.
+ * Ends nested region \a name using the built-in \a region attribute.
  * Prints an error if \a name does not match the currently open region.
  * Equivalent to the macro CALI_MARK_REGION_END.
  *
@@ -364,8 +361,8 @@ void cali_end_region(const char* name);
  * \brief Begin phase region \a name
  *
  * A phase marks high-level, long(er)-running code regions. While regular
- * regions use the "region" attribute with annotation level 0, phase regions
- * use the "phase" attribute with annotation level 4. Otherwise phases behave
+ * regions use \a region attribute with annotation level 0, phase regions
+ * use the \a phase attribute with annotation level 4. Otherwise phases behave
  * identical to regular Caliper regions.
  */
 void cali_begin_phase(const char* name);
@@ -588,7 +585,7 @@ void cali_configset_set(cali_configset_t cfg, const char* key, const char* value
  *   in %Caliper log output.
  * \param flags Flags that control channel creation as bitwise-OR of
  *   cali_channel_opt flags.
- * \param keyvallist The channel's runtime configuration.
+ * \param cfg The channel's runtime configuration.
  *
  * \return ID of the created channel.
  */

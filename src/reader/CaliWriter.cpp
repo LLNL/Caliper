@@ -155,11 +155,6 @@ struct CaliWriter::CaliWriterImpl {
 CaliWriter::CaliWriter(OutputStream& os) : mP(new CaliWriterImpl(os))
 {}
 
-CaliWriter::~CaliWriter()
-{
-    mP.reset();
-}
-
 size_t CaliWriter::num_written() const
 {
     return mP ? mP->m_num_written : 0;

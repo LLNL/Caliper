@@ -29,8 +29,6 @@ public:
 
     JsonFormatter(OutputStream& os, const QuerySpec& spec);
 
-    ~JsonFormatter();
-
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
     void flush(CaliperMetadataAccessInterface&, std::ostream& os);

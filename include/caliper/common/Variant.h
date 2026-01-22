@@ -36,14 +36,14 @@ public:
 
     Variant(const cali_variant_t& v) : m_v(v) {}
 
-    Variant(bool val) : m_v(cali_make_variant_from_bool(val)) {}
-    Variant(int val) : m_v(cali_make_variant_from_int(val)) {}
-    Variant(double val) : m_v(cali_make_variant_from_double(val)) {}
-    Variant(const char* val) : m_v(cali_make_variant_from_string(val)) {}
-    Variant(cali_attr_type val) : m_v(cali_make_variant_from_type(val)) {}
+    explicit Variant(bool val) : m_v(cali_make_variant_from_bool(val)) {}
+    explicit Variant(int val) : m_v(cali_make_variant_from_int(val)) {}
+    explicit Variant(double val) : m_v(cali_make_variant_from_double(val)) {}
+    explicit Variant(const char* val) : m_v(cali_make_variant_from_string(val)) {}
+    explicit Variant(cali_attr_type val) : m_v(cali_make_variant_from_type(val)) {}
 
     template <typename U, typename std::enable_if<std::is_unsigned<U>::value, int>::type = 0>
-    Variant(U val) : m_v(cali_make_variant_from_uint(val))
+    explicit Variant(U val) : m_v(cali_make_variant_from_uint(val))
     {}
 
     Variant(cali_attr_type type, const void* data, std::size_t size) { m_v = cali_make_variant(type, data, size); }

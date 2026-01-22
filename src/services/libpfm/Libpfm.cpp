@@ -153,7 +153,7 @@ class LibpfmService
 
         data[num_attributes] = Entry(event_name_nodes[event_index]);
 
-        c.push_snapshot(&sC, SnapshotView(num_attributes + 1, data));
+        c.push_snapshot(sC.body(), SnapshotView(num_attributes + 1, data));
 
         sI->samples_produced++;
     }

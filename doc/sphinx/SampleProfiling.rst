@@ -70,12 +70,12 @@ ranks, just like `runtime-report`::
          |-           0.005000      0.010000      0.007500   0.030000  0.051164 psmi_poll_internal
     ...
 
-The `hatchet-sample-profile` config recipe writes machine-readable profiles for
+The `sample-profile` config recipe writes machine-readable profiles for
 processing with Hatchet or cali-query. The profile contains sampling data for each
 MPI rank. By default, it writes a JSON file for processing with Hatchet, but you
 can use `output.format=cali` to write a .cali file for processing with cali-query,
 the Caliper Python reader library, or Hatchet's .cali importer.
-`hatchet-sample-profile` supports the same options as `sample-report` above.
+`sample-profile` supports the same options as `sample-report` above.
 
 With `output.format=cali` option, the .cali file contains records with the
 following attributes:
@@ -105,7 +105,7 @@ In this example, we collect a sampling profile in .cali format and use
 cali-query to compute a flat profile with the time and number of samples
 in each sampled function::
 
-    $ CALI_CONFIG=hatchet-sample-profile,source.function,output.format=cali ./lulesh2.0
+    $ CALI_CONFIG=sample-profile,source.function,output.format=cali ./lulesh2.0
     $ cat << EOF > query.txt
     > select
     >   source.function#cali.sampler.pc as Function,

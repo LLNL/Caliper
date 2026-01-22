@@ -67,35 +67,6 @@ struct TableFormatter::TableImpl {
         return std::max(m_max_column_width > 0 ? std::min(base, m_max_column_width) : base, 4);
     }
 
-    void parse(const std::string& field_string, const std::string& sort_string)
-    {
-        std::vector<std::string> fields;
-
-        // fill sort columns
-
-        util::split(sort_string, ':', std::back_inserter(fields));
-
-        for (const std::string& s : fields)
-            if (s.size() > 0)
-                m_cols.emplace_back(s, s, s.size(), Attribute(), false);
-
-        fields.clear();
-
-        // fill print columns
-
-        if (field_string.empty()) {
-            m_auto_column = true;
-            return;
-        } else
-            m_auto_column = false;
-
-        util::split(field_string, ':', std::back_inserter(fields));
-
-        for (const std::string& s : fields)
-            if (s.size() > 0)
-                m_cols.emplace_back(s, s, s.size(), Attribute(), true);
-    }
-
     void configure(const QuerySpec& spec)
     {
         m_cols.clear();
@@ -345,19 +316,9 @@ struct TableFormatter::TableImpl {
     TableImpl() : m_max_column_width(60), m_print_globals(false) {}
 };
 
-TableFormatter::TableFormatter(const std::string& fields, const std::string& sort_fields) : mP { new TableImpl }
-{
-    mP->parse(fields, sort_fields);
-}
-
 TableFormatter::TableFormatter(const QuerySpec& spec) : mP { new TableImpl }
 {
     mP->configure(spec);
-}
-
-TableFormatter::~TableFormatter()
-{
-    mP.reset();
 }
 
 void TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)

@@ -1,7 +1,7 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/// \file RuntimeProfile.h
+/// \file RegionProfile.h
 /// RuntimeProfile class
 
 #pragma once

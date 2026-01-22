@@ -36,9 +36,7 @@ extern const char* builtin_rocm_option_specs;
 extern const char* builtin_pcp_option_specs;
 extern const char* builtin_umpire_option_specs;
 extern const char* builtin_kokkos_option_specs;
-
-extern const char* builtin_papi_hsw_option_specs;
-extern const char* builtin_papi_spr_option_specs;
+extern const char* builtin_papi_topdown_option_specs;
 
 extern void add_submodule_controllers_and_services();
 
@@ -974,12 +972,21 @@ struct ConfigManager::ConfigManagerImpl {
         if (ok && !m_error && it != dict.end())
             for (const auto& p : it->second.rec_dict(&ok))
                 spec.defaults.push_back(std::make_pair(p.first, p.second.to_string()));
-        ;
+
+        std::vector<std::string> aliases;
+
+        it = dict.find("alias");
+        if (ok && !m_error && it != dict.end())
+            aliases = ::to_stringlist(it->second.rec_list(&ok));
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
-        if (!m_error)
-            m_spec.emplace(spec.name, std::make_shared<config_spec_t>(spec));
+        if (!m_error) {
+            auto spec_p = std::make_shared<config_spec_t>(spec);
+            m_spec.emplace(spec.name, spec_p);
+            for (const std::string& alias : aliases)
+                m_spec.emplace(alias, spec_p);
+        }
     }
 
     void add_global_option_specs(const char* json)
@@ -1382,20 +1389,12 @@ struct ConfigManager::ConfigManagerImpl {
 #ifdef CALIPER_HAVE_KOKKOS
                   builtin_kokkos_option_specs,
 #endif
+#ifdef CALIPER_HAVE_PAPI
+                  builtin_papi_topdown_option_specs,
+#endif
               builtin_base_option_specs
           })
     {
-#ifdef CALIPER_HAVE_PAPI
-#ifdef CALIPER_HAVE_ARCH
-        if (std::string(CALIPER_HAVE_ARCH) == "sapphirerapids") {
-            builtin_option_specs_list.push_back(builtin_papi_spr_option_specs);
-        } else {
-            builtin_option_specs_list.push_back(builtin_papi_hsw_option_specs);
-        }
-#else
-        builtin_option_specs_list.push_back(builtin_papi_hsw_option_specs);
-#endif
-#endif
         for (const char* spec_p : builtin_option_specs_list)
             add_global_option_specs(spec_p);
     }

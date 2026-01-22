@@ -396,9 +396,6 @@ struct Preprocessor::PreprocessorImpl {
 Preprocessor::Preprocessor(const QuerySpec& spec) : mP(new PreprocessorImpl(spec))
 {}
 
-Preprocessor::~Preprocessor()
-{}
-
 EntryList Preprocessor::process(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
     return mP->process(db, rec);

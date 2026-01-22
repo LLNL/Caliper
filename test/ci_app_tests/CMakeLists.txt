@@ -44,38 +44,20 @@ endforeach()
 
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
-  test_allocservice.py
-  test_basictrace.py
-  test_c_api.py
+  test_basic.py
   test_caliquery.py
-  test_file_io.py
-  test_json.py
-  test_log.py
-  test_loopreport.py
-  test_monitor.py
   test_report.py
-  test_runtimereport.py
   test_spot.py
-  test_templateservices.py
-  test_textlog.py
-  test_thread.py
   test_validator.py
   calipertest.py)
 
-if (CALIPER_HAVE_CPUINFO)
-  list(APPEND PYTHON_SCRIPTS test_cpuinfo.py)
-endif()
-if (CALIPER_HAVE_MEMUSAGE)
-  list(APPEND PYTHON_SCRIPTS test_memusageservice.py)
-endif()
-if (CALIPER_HAVE_LIBUNWIND)
-  list(APPEND PYTHON_SCRIPTS test_callpath.py)
+if (CALIPER_HAVE_CPUINFO AND CALIPER_HAVE_MEMUSAGE)
+  list(APPEND PYTHON_SCRIPTS test_linux_services.py)
 endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS
     test_alloc_hooks.py
-    test_ioservice.py
-    test_pthread.py)
+    test_gotcha_services.py)
 endif()
 if (CALIPER_HAVE_PAPI)
   list(APPEND PYTHON_SCRIPTS test_papi.py)
@@ -83,14 +65,9 @@ endif()
 if (CALIPER_HAVE_LIBPFM)
   list(APPEND PYTHON_SCRIPTS test_libpfm.py)
 endif()
-if (CALIPER_HAVE_SAMPLER)
-  list(APPEND PYTHON_SCRIPTS test_sampler.py)
-  if (CALIPER_HAVE_LIBDW)
-    list(APPEND PYTHON_SCRIPTS test_symbollookup.py)
-    if (CALIPER_HAVE_LIBUNWIND)
-      list(APPEND PYTHON_SCRIPTS test_samplereport.py)
-    endif()
-  endif()
+if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_LIBDW AND CALIPER_HAVE_LIBUNWIND)
+  list(APPEND PYTHON_SCRIPTS
+    test_sampler.py)
 endif()
 
 if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
@@ -156,6 +133,11 @@ foreach(file ${PYTHON_SCRIPTS} ${DATA_FILES})
       ${CMAKE_CURRENT_SOURCE_DIR}/${file}
       ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
+
+add_custom_target(caliperreader_link ALL
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../python/caliper-reader/caliperreader
+    ${CMAKE_CURRENT_BINARY_DIR}/caliperreader)
 
 add_test(NAME CI_app_tests COMMAND ${CALI_PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")
 # if (WITH_PYTHON_BINDINGS)

@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstring>
 #include <cstdlib>
 #include <iostream>
@@ -104,7 +105,7 @@ std::ostream& print_available_services(std::ostream& os)
 std::vector<Entry> get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard, std::mutex& blackboard_lock)
 {
     FixedSizeSnapshotRecord<SNAP_MAX> rec;
-    
+
     {
         std::lock_guard<std::mutex> g(blackboard_lock);
         blackboard.snapshot(rec.builder());
@@ -731,7 +732,6 @@ Attribute Caliper::create_attribute(
         std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
         auto it = sG->attribute_map.lower_bound(name);
-
         if (it == sG->attribute_map.end() || it->first != name)
             sG->attribute_map.insert(it, std::make_pair(name, Attribute::make_attribute(node)));
         else
@@ -754,7 +754,6 @@ Attribute Caliper::get_attribute(const std::string& name) const
     std::lock_guard<std::mutex> ga(sG->attribute_lock);
 
     auto it = sG->attribute_map.find(name);
-
     return it != sG->attribute_map.end() ? it->second : Attribute();
 }
 
@@ -957,9 +956,12 @@ void Caliper::begin(const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_begin_evt(this, channel.body(), attr, data);
+    if (run_events) {
+        for (auto& channel : sG->active_channels) {
+            ChannelBody* chB = channel.body();
+            chB->events.pre_begin_evt(this, chB, attr, data);
+        }
+    }
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_begin(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -969,9 +971,12 @@ void Caliper::begin(const Attribute& attr, const Variant& data)
     }
 
     // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->active_channels)
-            channel.mP->events.post_begin_evt(this, channel.body(), attr, data);
+    if (run_events) {
+        for (auto& channel : sG->active_channels) {
+            ChannelBody* chB = channel.body();
+            chB->events.post_begin_evt(this, chB, attr, data);
+        }
+    }
 }
 
 void Caliper::end(const Attribute& attr)
@@ -985,7 +990,7 @@ void Caliper::end(const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
     cali_id_t   key         = get_blackboard_key(attr.id(), prop);
-    BlackboardEntry current = { Entry(), Entry( ) };
+    BlackboardEntry current = { Entry(), Entry() };
 
     std::lock_guard<::siglock> g(sT->lock);
 
@@ -1003,9 +1008,12 @@ void Caliper::end(const Attribute& attr)
     }
 
     // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
+    if (run_events) {
+        for (auto& channel : sG->active_channels) {
+            ChannelBody* chB = channel.body();
+            chB->events.pre_end_evt(this, chB, attr, current.entry.value());
+        }
+    }
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_end(attr, prop, current, key, sT->thread_blackboard, sT->tree);
@@ -1026,7 +1034,7 @@ void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
-    BlackboardEntry current = { Entry(), Entry( ) };
+    BlackboardEntry current = { Entry(), Entry() };
 
     std::lock_guard<::siglock> g(sT->lock);
 
@@ -1045,9 +1053,12 @@ void Caliper::end_with_value_check(const Attribute& attr, const Variant& data)
     }
 
     // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_end_evt(this, channel.body(), attr, current.entry.value());
+    if (run_events) {
+        for (auto& channel : sG->active_channels) {
+            ChannelBody* chB = channel.body();
+            chB->events.pre_end_evt(this, chB, attr, current.entry.value());
+        }
+    }
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_end(attr, prop, current, key, sT->thread_blackboard, sT->tree);
@@ -1070,9 +1081,12 @@ void Caliper::set(const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock> g(sT->lock);
 
     // invoke callbacks
-    if (run_events)
-        for (auto& channel : sG->active_channels)
-            channel.mP->events.pre_set_evt(this, channel.body(), attr, data);
+    if (run_events) {
+        for (auto& channel : sG->active_channels) {
+            ChannelBody* chB = channel.body();
+            chB->events.pre_set_evt(this, chB, attr, data);
+        }
+    }
 
     if (scope == CALI_ATTR_SCOPE_THREAD)
         handle_set(attr, data, prop, sT->thread_blackboard, sT->tree);
@@ -1117,7 +1131,7 @@ void Caliper::end(ChannelBody* chB, const Attribute& attr)
     bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
 
     cali_id_t key = get_blackboard_key(attr.id(), prop);
-    BlackboardEntry current = { Entry(), Entry( )};
+    BlackboardEntry current = { Entry(), Entry()};
 
     std::lock_guard<::siglock> g(sT->lock);
 
@@ -1273,21 +1287,18 @@ void Caliper::make_record(size_t n, const Attribute attr[], const Variant value[
 Node* Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
     std::lock_guard<::siglock> g(sT->lock);
-
     return sT->tree.get_path(n, nodelist, parent);
 }
 
 Node* Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node* parent)
 {
     std::lock_guard<::siglock> g(sT->lock);
-
     return sT->tree.get_child(attr, data, parent);
 }
 
 Node* Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
 {
     std::lock_guard<::siglock> g(sT->lock);
-
     return sT->tree.get_path(attr, n, data, parent);
 }
 
@@ -1333,12 +1344,25 @@ Channel Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     Channel channel(next_id++, name, cfg);
     sG->all_channels.emplace_back(channel);
 
-    // Create and set key & version attributes
-    begin(
-        channel.body(),
-        create_attribute("cali.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-        Variant(name)
-    );
+    // Create and set name & timestamp attributes
+
+    Attribute channel_attr = create_attribute("cali.channel", CALI_TYPE_STRING,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+    Attribute sec_attr = create_attribute("starttime.sec", CALI_TYPE_UINT,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+    Attribute nsec_attr = create_attribute("starttime.nsec", CALI_TYPE_UINT,
+        CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    const auto t = std::chrono::system_clock::now();
+
+    auto d_sec = std::chrono::duration_cast<std::chrono::seconds>(t.time_since_epoch());
+    auto d_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>((t - d_sec).time_since_epoch());
+
+    set(channel.body(), channel_attr, Variant(name));
+    set(channel.body(), sec_attr, cali_make_variant_from_uint(d_sec.count()));
+    set(channel.body(), nsec_attr, cali_make_variant_from_uint(d_nsec.count()));
+
+    // Initialize services
 
     services::register_configured_services(this, &channel);
 

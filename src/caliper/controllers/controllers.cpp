@@ -82,8 +82,14 @@ const char* event_trace_spec = R"json(
    "name": "rocm.activities",
    "description": "Trace ROCm activities",
    "type": "bool",
-   "services": [ "roctracer" ],
-   "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true", "CALI_ROCPROFILER_ENABLE_SNAPSHOT_TIMESTAMPS": "true" }
+  },{
+   "name": "rocm.counters",
+   "description": "Record ROCm counters through rocprofiler-sdk",
+   "type": "string",
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_COUNTERS": "{}" }
   },{
    "name": "umpire.allocators",
    "description": "Umpire per-allocator allocation statistics",
@@ -171,13 +177,13 @@ namespace cali
 
 extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
-extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
-extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo loop_report_controller_info;
 extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_profile_controller_info;
+extern ConfigManager::ConfigInfo runtime_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
+extern ConfigManager::ConfigInfo sample_profile_controller_info;
 extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
@@ -188,13 +194,13 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_
                                                                  &::nvtx_controller_info,
                                                                  &::roctx_controller_info,
                                                                  &::mpireport_controller_info,
-                                                                 &hatchet_region_profile_controller_info,
-                                                                 &hatchet_sample_profile_controller_info,
+                                                                 &runtime_profile_controller_info,
                                                                  &loop_report_controller_info,
                                                                  &openmp_report_controller_info,
                                                                  &rocm_activity_report_controller_info,
                                                                  &rocm_activity_profile_controller_info,
                                                                  &runtime_report_controller_info,
+                                                                 &sample_profile_controller_info,
                                                                  &sample_report_controller_info,
                                                                  &spot_controller_info,
                                                                  nullptr };
@@ -248,8 +254,8 @@ const char* builtin_base_option_specs = R"json(
  },
  "query":
  {
-  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#time.inclusive.duration.ns,sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
-  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#sum#time.inclusive.duration.ns,sum#sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
+  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
+  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
  }
 },{
  "name": "loop.stats",
@@ -587,11 +593,11 @@ const char* builtin_gotcha_option_specs = R"json(
     max(max#alloc.size) as \"Max Bytes/alloc\"",
   "cross":
   "select
-    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#max#alloc.region.highwatermark) as \"Mem HWM\",
     max(max#alloc.tally) as \"Alloc tMax\",
     sum(sum#alloc.count) as \"Alloc count\",
-    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
-    max(max#alloc.size) as \"Max Bytes/alloc\""
+    avg(avg#avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
  "name": "mem.pages",
@@ -732,6 +738,38 @@ const char* builtin_rocm_option_specs = R"json(
     sum(sum#alloc.count) as \"Alloc count\",
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\""
+ }
+},{
+ "name": "rocm.activity.stats",
+ "description": "ROCm activity statistics",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "rocprofiler" ],
+ "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true" },
+ "query":
+ {
+  "local":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#rocm.activity.duration) as \"Nsec/invoc (avg)\",
+    max(max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  ",
+  "cross":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#avg#rocm.activity.duration) as \"Nsec/incov (avg)\",
+    max(max#max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  "
  }
 }
 ]
@@ -1003,368 +1041,106 @@ const char* builtin_pcp_option_specs = R"json(
 ]
 )json";
 
-const char* builtin_papi_hsw_option_specs = R"json(
+const char* builtin_papi_topdown_option_specs = R"json(
 [
 {
- "name"        : "topdown.toplevel",
- "description" : "Top-down analysis for Intel CPUs (top level)",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "topdown" ],
- "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
- "query"  :
- [
-  { "level": "local", "select":
-   [
-    "any(topdown.retiring) as \"Retiring\"",
-    "any(topdown.backend_bound) as \"Backend bound\"",
-    "any(topdown.frontend_bound) as \"Frontend bound\"",
-    "any(topdown.bad_speculation) as \"Bad speculation\""
-   ]
-  },
-  { "level": "cross", "select":
-   [
-    "any(any#topdown.retiring) as \"Retiring\"",
-    "any(any#topdown.backend_bound) as \"Backend bound\"",
-    "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-    "any(any#topdown.bad_speculation) as \"Bad speculation\""
-   ]
-  }
- ]
+ "name": "topdown.toplevel",
+ "description": "Top-down analysis for Intel CPUs (top level)",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "papi" ],
+ "config":
+ {
+  "CALI_PAPI_COUNTERS":
+   "topdown:::TOPDOWN_RETIRING_PERC,topdown:::TOPDOWN_BAD_SPEC_PERC,topdown:::TOPDOWN_FE_BOUND_PERC,topdown:::TOPDOWN_BE_BOUND_PERC"
+ },
+ "query":
+ {
+  "local":
+  "
+   let
+    td.retiring=first(papi.topdown:::TOPDOWN_RETIRING_PERC,avg#papi.topdown:::TOPDOWN_RETIRING_PERC),
+    td.bad_spec=first(papi.topdown:::TOPDOWN_BAD_SPEC_PERC,avg#papi.topdown:::TOPDOWN_BAD_SPEC_PERC),
+    td.fe_bound=first(papi.topdown:::TOPDOWN_FE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_FE_BOUND_PERC),
+    td.be_bound=first(papi.topdown:::TOPDOWN_BE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_BE_BOUND_PERC)
+   select
+    avg(td.retiring) as \"Retiring\" unit \"%\",
+    avg(td.bad_spec) as \"Bad speculation\" unit \"%\",
+    avg(td.fe_bound) as \"Frontend bound\" unit \"%\",
+    avg(td.be_bound) as \"Backend bound\" unit \"%\"
+  ",
+  "cross":
+  "
+   select
+    avg(avg#td.retiring) as \"Retiring\" unit \"%\",
+    avg(avg#td.bad_spec) as \"Bad speculation\" unit \"%\",
+    avg(avg#td.fe_bound) as \"Frontend bound\" unit \"%\",
+    avg(avg#td.be_bound) as \"Backend bound\" unit \"%\"
+  "
+ }
 },
 {
- "name"        : "topdown.all",
- "description" : "Top-down analysis for Intel CPUs (all levels)",
- "type"        : "bool",
- "category"    : "metric",
- "services"    : [ "topdown" ],
- "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
- "query"  :
- [
-  { "level": "local", "select":
-   [
-    "any(topdown.retiring) as \"Retiring\"",
-    "any(topdown.backend_bound) as \"Backend bound\"",
-    "any(topdown.frontend_bound) as \"Frontend bound\"",
-    "any(topdown.bad_speculation) as \"Bad speculation\"",
-    "any(topdown.branch_mispredict) as \"Branch mispredict\"",
-    "any(topdown.machine_clears) as \"Machine clears\"",
-    "any(topdown.frontend_latency) as \"Frontend latency\"",
-    "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-    "any(topdown.memory_bound) as \"Memory bound\"",
-    "any(topdown.core_bound) as \"Core bound\"",
-    "any(topdown.ext_mem_bound) as \"External Memory\"",
-    "any(topdown.l1_bound) as \"L1 bound\"",
-    "any(topdown.l2_bound) as \"L2 bound\"",
-    "any(topdown.l3_bound) as \"L3 bound\""
-   ]
-  },
-  { "level": "cross", "select":
-   [
-    "any(any#topdown.retiring) as \"Retiring\"",
-    "any(any#topdown.backend_bound) as \"Backend bound\"",
-    "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-    "any(any#topdown.bad_speculation) as \"Bad speculation\"",
-    "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
-    "any(any#topdown.machine_clears) as \"Machine clears\"",
-    "any(any#topdown.frontend_latency) as \"Frontend latency\"",
-    "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-    "any(any#topdown.memory_bound) as \"Memory bound\"",
-    "any(any#topdown.core_bound) as \"Core bound\"",
-    "any(any#topdown.ext_mem_bound) as \"External Memory\"",
-    "any(any#topdown.l1_bound) as \"L1 bound\"",
-    "any(any#topdown.l2_bound) as \"L2 bound\"",
-    "any(any#topdown.l3_bound) as \"L3 bound\""
-   ]
-  }
- ]
+ "name": "topdown.all",
+ "description": "Top-down analysis for Intel CPUs (Level 2)",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "papi" ],
+ "config":
+ {
+  "CALI_PAPI_COUNTERS":
+   "topdown:::TOPDOWN_RETIRING_PERC,topdown:::TOPDOWN_BAD_SPEC_PERC,topdown:::TOPDOWN_FE_BOUND_PERC,topdown:::TOPDOWN_BE_BOUND_PERC,topdown:::TOPDOWN_HEAVY_OPS_PERC,topdown:::TOPDOWN_LIGHT_OPS_PERC,topdown:::TOPDOWN_BR_MISPREDICT_PERC,topdown:::TOPDOWN_FETCH_LAT_PERC,topdown:::TOPDOWN_MEM_BOUND_PERC,topdown:::TOPDOWN_MACHINE_CLEARS_PERC,topdown:::TOPDOWN_FETCH_BAND_PERC,topdown:::TOPDOWN_CORE_BOUND_PERC"
+ },
+ "query":
+ {
+  "local":
+  "
+   let
+    td.retiring=first(papi.topdown:::TOPDOWN_RETIRING_PERC,avg#papi.topdown:::TOPDOWN_RETIRING_PERC),
+    td.bad_spec=first(papi.topdown:::TOPDOWN_BAD_SPEC_PERC,avg#papi.topdown:::TOPDOWN_BAD_SPEC_PERC),
+    td.fe_bound=first(papi.topdown:::TOPDOWN_FE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_FE_BOUND_PERC),
+    td.be_bound=first(papi.topdown:::TOPDOWN_BE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_BE_BOUND_PERC),
+    td.heavy_ops=first(papi.topdown:::TOPDOWN_HEAVY_OPS_PERC,avg#papi.topdown:::TOPDOWN_HEAVY_OPS_PERC),
+    td.light_ops=first(papi.topdown:::TOPDOWN_LIGHT_OPS_PERC,avg#papi.topdown:::TOPDOWN_LIGHT_OPS_PERC),
+    td.br_mispredict=first(papi.topdown:::TOPDOWN_BR_MISPREDICT_PERC,avg#papi.topdown:::TOPDOWN_BR_MISPREDICT_PERC),
+    td.fetch_lat=first(papi.topdown:::TOPDOWN_FETCH_LAT_PERC,avg#papi.topdown:::TOPDOWN_FETCH_LAT_PERC),
+    td.fetch_band=first(papi.topdown:::TOPDOWN_FETCH_BAND_PERC,avg#papi.topdown:::TOPDOWN_FETCH_BAND_PERC),
+    td.core_bound=first(papi.topdown:::TOPDOWN_CORE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_CORE_BOUND_PERC),
+    td.mem_bound=first(papi.topdown:::TOPDOWN_MEM_BOUND_PERC,avg#papi.topdown:::TOPDOWN_MEM_BOUND_PERC),
+    td.machine_clears=first(papi.topdown:::TOPDOWN_MACHINE_CLEARS_PERC,avg#papi.topdown:::TOPDOWN_MACHINE_CLEARS_PERC)
+   select
+    avg(td.retiring) as \"Retiring\" unit \"%\",
+    avg(td.bad_spec) as \"Bad speculation\" unit \"%\",
+    avg(td.fe_bound) as \"Frontend bound\" unit \"%\",
+    avg(td.be_bound) as \"Backend bound\" unit \"%\",
+    avg(td.heavy_ops) as \"Heavy ops\" unit \"%\",
+    avg(td.light_ops) as \"Light ops\" unit \"%\",
+    avg(td.br_mispredict) as \"Branch mispredict\" unit \"%\",
+    avg(td.fetch_lat) as \"Fetch latency\" unit \"%\",
+    avg(td.fetch_band) as \"Fetch bandwidth\" unit \"%\",
+    avg(td.core_bound) as \"Core bound\" unit \"%\",
+    avg(td.mem_bound) as \"Memory bound\" unit \"%\",
+    avg(td.machine_clears) as \"Machine clears\" unit \"%\"
+  ",
+  "cross":
+  "
+   select
+    avg(avg#td.retiring) as \"Retiring\" unit \"%\",
+    avg(avg#td.bad_spec) as \"Bad speculation\" unit \"%\",
+    avg(avg#td.fe_bound) as \"Frontend bound\" unit \"%\",
+    avg(avg#td.be_bound) as \"Backend bound\" unit \"%\",
+    avg(avg#td.heavy_ops) as \"Heavy ops\" unit \"%\",
+    avg(avg#td.light_ops) as \"Light ops\" unit \"%\",
+    avg(avg#td.br_mispredict) as \"Branch mispredict\" unit \"%\",
+    avg(avg#td.fetch_lat) as \"Fetch latency\" unit \"%\",
+    avg(avg#td.fetch_band) as \"Fetch bandwidth\" unit \"%\",
+    avg(avg#td.core_bound) as \"Core bound\" unit \"%\",
+    avg(avg#td.mem_bound) as \"Memory bound\" unit \"%\",
+    avg(avg#td.machine_clears) as \"Machine clears\" unit \"%\"
+  "
+ }
 }
 ]
 )json";
-
-#ifdef CALIPER_WITH_PAPI_RDPMC
-const char* builtin_papi_spr_option_specs = R"json(
-[
-  {
-   "name"        : "topdown.toplevel",
-   "description" : "Top-down analysis for Intel CPUs (top level)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "topdown" ],
-   "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "any(topdown.retiring) as \"Retiring\"",
-      "any(topdown.backend_bound) as \"Backend bound\"",
-      "any(topdown.frontend_bound) as \"Frontend bound\"",
-      "any(topdown.bad_speculation) as \"Bad speculation\""
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "any(any#topdown.retiring) as \"Retiring\"",
-      "any(any#topdown.backend_bound) as \"Backend bound\"",
-      "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-      "any(any#topdown.bad_speculation) as \"Bad speculation\""
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown.all",
-   "description" : "Top-down analysis for Intel CPUs (all levels)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "topdown" ],
-   "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "any(topdown.retiring) as \"Retiring\"",
-      "any(topdown.backend_bound) as \"Backend bound\"",
-      "any(topdown.frontend_bound) as \"Frontend bound\"",
-      "any(topdown.bad_speculation) as \"Bad speculation\"",
-      "any(topdown.branch_mispredict) as \"Branch mispredict\"",
-      "any(topdown.machine_clears) as \"Machine clears\"",
-      "any(topdown.frontend_latency) as \"Frontend latency\"",
-      "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-      "any(topdown.memory_bound) as \"Memory bound\"",
-      "any(topdown.core_bound) as \"Core bound\"",
-      "any(topdown.light_ops) as \"Light operations\"",
-      "any(topdown.heavy_ops) as \"Heavy operations\""
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "any(any#topdown.retiring) as \"Retiring\"",
-      "any(any#topdown.backend_bound) as \"Backend bound\"",
-      "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-      "any(any#topdown.bad_speculation) as \"Bad speculation\"",
-      "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
-      "any(any#topdown.machine_clears) as \"Machine clears\"",
-      "any(any#topdown.frontend_latency) as \"Frontend latency\"",
-      "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-      "any(any#topdown.memory_bound) as \"Memory bound\"",
-      "any(any#topdown.core_bound) as \"Core bound\"",
-      "any(any#topdown.light_ops) as \"Light operations\"",
-      "any(any#topdown.heavy_ops) as \"Heavy operations\""
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown-counters.toplevel",
-   "description" : "Raw counter values for Intel top-down analysis (top level)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "papi" ],
-   "config"      :
-   {
-     "CALI_PAPI_COUNTERS":
-       "perf::slots,perf::topdown-retiring"
-   },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "inclusive_sum(sum#papi.slots) as slots",
-      "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "sum(inclusive#sum#papi.slots) as slots",
-      "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown-counters.all",
-   "description" : "Raw counter values for Intel top-down analysis (all levels)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "papi" ],
-   "config"      :
-   {
-     "CALI_PAPI_COUNTERS":
-       "perf::slots,perf::topdown-retiring"
-   },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "inclusive_sum(sum#papi.slots) as slots",
-      "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring"
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "sum(inclusive#sum#papi.slots) as slots",
-      "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring"
-     ]
-    }
-   ]
-  }
-]
-)json";
-#else
-const char* builtin_papi_spr_option_specs = R"json(
-[
-  {
-   "name"        : "topdown.toplevel",
-   "description" : "Top-down analysis for Intel CPUs (top level)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "topdown" ],
-   "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "any(topdown.retiring) as \"Retiring\"",
-      "any(topdown.backend_bound) as \"Backend bound\"",
-      "any(topdown.frontend_bound) as \"Frontend bound\"",
-      "any(topdown.bad_speculation) as \"Bad speculation\""
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "any(any#topdown.retiring) as \"Retiring\"",
-      "any(any#topdown.backend_bound) as \"Backend bound\"",
-      "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-      "any(any#topdown.bad_speculation) as \"Bad speculation\""
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown.all",
-   "description" : "Top-down analysis for Intel CPUs (all levels)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "topdown" ],
-   "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "any(topdown.retiring) as \"Retiring\"",
-      "any(topdown.backend_bound) as \"Backend bound\"",
-      "any(topdown.frontend_bound) as \"Frontend bound\"",
-      "any(topdown.bad_speculation) as \"Bad speculation\"",
-      "any(topdown.branch_mispredict) as \"Branch mispredict\"",
-      "any(topdown.machine_clears) as \"Machine clears\"",
-      "any(topdown.frontend_latency) as \"Frontend latency\"",
-      "any(topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-      "any(topdown.memory_bound) as \"Memory bound\"",
-      "any(topdown.core_bound) as \"Core bound\"",
-      "any(topdown.light_ops) as \"Light operations\"",
-      "any(topdown.heavy_ops) as \"Heavy operations\""
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "any(any#topdown.retiring) as \"Retiring\"",
-      "any(any#topdown.backend_bound) as \"Backend bound\"",
-      "any(any#topdown.frontend_bound) as \"Frontend bound\"",
-      "any(any#topdown.bad_speculation) as \"Bad speculation\"",
-      "any(any#topdown.branch_mispredict) as \"Branch mispredict\"",
-      "any(any#topdown.machine_clears) as \"Machine clears\"",
-      "any(any#topdown.frontend_latency) as \"Frontend latency\"",
-      "any(any#topdown.frontend_bandwidth) as \"Frontend bandwidth\"",
-      "any(any#topdown.memory_bound) as \"Memory bound\"",
-      "any(any#topdown.core_bound) as \"Core bound\"",
-      "any(any#topdown.light_ops) as \"Light operations\"",
-      "any(any#topdown.heavy_ops) as \"Heavy operations\""
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown-counters.toplevel",
-   "description" : "Raw counter values for Intel top-down analysis (top level)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "papi" ],
-   "config"      :
-   {
-     "CALI_PAPI_COUNTERS":
-       "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING"
-   },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "inclusive_sum(sum#papi.perf::slots) as slots",
-      "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
-      "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-      "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-      "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-      "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "sum(inclusive#sum#papi.perf::slots) as slots",
-      "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
-      "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-      "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-      "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-      "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping"
-     ]
-    }
-   ]
-  },
-  {
-   "name"        : "topdown-counters.all",
-   "description" : "Raw counter values for Intel top-down analysis (all levels)",
-   "type"        : "bool",
-   "category"    : "metric",
-   "services"    : [ "papi" ],
-   "config"      :
-   {
-     "CALI_PAPI_COUNTERS":
-       "perf::slots,perf::topdown-retiring,perf::topdown-bad-spec,perf::topdown-fe-bound,perf::topdown-be-bound,INT_MISC:UOP_DROPPING,perf_raw::r8400,perf_raw::r8500,perf_raw::r8600,perf_raw::r8700"
-   },
-   "query"  :
-   [
-    { "level": "local", "select":
-     [
-      "inclusive_sum(sum#papi.perf::slots) as slots",
-      "inclusive_sum(sum#papi.perf::topdown-retiring) as topdown_retiring",
-      "inclusive_sum(sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-      "inclusive_sum(sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-      "inclusive_sum(sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-      "inclusive_sum(sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
-      "inclusive_sum(sum#papi.perf_raw::r8400) as topdown_heavy_ops",
-      "inclusive_sum(sum#papi.perf_raw::r8500) as topdown_br_mispredict",
-      "inclusive_sum(sum#papi.perf_raw::r8600) as topdown_fetch_lat",
-      "inclusive_sum(sum#papi.perf_raw::r8700) as topdown_mem_bound"
-     ]
-    },
-    { "level": "cross", "select":
-     [
-      "sum(inclusive#sum#papi.perf::slots) as slots",
-      "sum(inclusive#sum#papi.perf::topdown-retiring) as topdown_retiring",
-      "sum(inclusive#sum#papi.perf::topdown-bad-spec) as topdown_bad_spec",
-      "sum(inclusive#sum#papi.perf::topdown-fe-bound) as topdown_fe_bound",
-      "sum(inclusive#sum#papi.perf::topdown-be-bound) as topdown_be_bound",
-      "sum(inclusive#sum#papi.INT_MISC:UOP_DROPPING) as int_mist:uop_dropping",
-      "sum(inclusive#sum#papi.perf_raw::r8400) as topdown_heavy_ops",
-      "sum(inclusive#sum#papi.perf_raw::r8500) as topdown_br_mispredict",
-      "sum(inclusive#sum#papi.perf_raw::r8600) as topdown_fetch_lat",
-      "sum(inclusive#sum#papi.perf_raw::r8700) as topdown_mem_bound"
-     ]
-    }
-   ]
-  }
-]
-)json";
-#endif
 
 const char* builtin_kokkos_option_specs = R"json(
 [

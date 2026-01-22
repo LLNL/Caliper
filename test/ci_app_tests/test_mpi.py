@@ -1,10 +1,11 @@
 # MPI application tests
 # For simplicity, these tests only run on a single rank without mpiexec
 
-import json
+import io
 import os
 import unittest
 
+import caliperreader
 import calipertest as cat
 
 class CaliperMPITest(unittest.TestCase):
@@ -12,7 +13,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_before_cali(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -23,8 +23,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function,mpi.rank format cali'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'       : 'main',
@@ -39,7 +39,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_cali_before_mpi(self):
         target_cmd = [ './ci_test_cali_before_mpi' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -50,8 +49,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function,mpi.rank format cali'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'       : 'main',
@@ -66,7 +65,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_whitelist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -77,8 +75,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
@@ -89,7 +87,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_blacklist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -100,8 +97,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
@@ -112,7 +109,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_whitelist_and_blacklist(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -124,8 +120,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPIREPORT_CONFIG'   : 'select count() group by region,mpi.function format cali'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, { 'region' : 'main', 'mpi.function' : 'MPI_Barrier' }))
@@ -136,7 +132,6 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_msg_trace(self):
         target_cmd = [ './ci_test_mpi_before_cali' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
@@ -147,8 +142,8 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_RECORDER_FILENAME'  : 'stdout'
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'            : 'main',
@@ -170,17 +165,12 @@ class CaliperMPITest(unittest.TestCase):
     def test_mpireport_controller(self):
         target_cmd = [ './ci_test_mpi_before_cali', 'mpi-report' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
         log_targets = [
             'Function',
             'MPI_Bcast'
         ]
 
-        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        report_out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -192,15 +182,9 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_inst_options(self):
         target_cmd = [ './ci_test_mpi_before_cali', 'spot,profile.mpi,mpi.exclude=MPI_Barrier,output=stdout' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'        : 'main',
@@ -216,17 +200,12 @@ class CaliperMPITest(unittest.TestCase):
     def test_collective_output_channel(self):
         target_cmd = [ './ci_test_collective_output_channel', 'mpi-report' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
         log_targets = [
             'Function',
             'MPI_Barrier'
         ]
 
-        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        report_out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -239,17 +218,12 @@ class CaliperMPITest(unittest.TestCase):
     def test_collective_output_channel_with_default_stream(self):
         target_cmd = [ './ci_test_collective_output_channel', 'mpi-report,output=stdout', 'channel_defined_stream' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
         log_targets = [
             'Function',
             'MPI_Barrier'
         ]
 
-        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        report_out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -261,15 +235,9 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_collective_output_channel_spot(self):
         target_cmd = [ './ci_test_collective_output_channel', 'spot' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'        : 'main',
@@ -279,17 +247,12 @@ class CaliperMPITest(unittest.TestCase):
     def test_mpi_channel_manager(self):
         target_cmd = [ './ci_test_mpi_channel_manager', 'mpi-report' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
         log_targets = [
             'Function',
             'MPI_Barrier'
         ]
 
-        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        report_out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -301,15 +264,9 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_mpi_channel_manager_trace(self):
         target_cmd = [ './ci_test_mpi_channel_manager', 'event-trace,trace.mpi,output=stdout' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        out,_ = cat.run_test(target_cmd, { 'PATH': '/usr/bin' })
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'region'        : 'main',
