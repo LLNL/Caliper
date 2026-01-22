@@ -90,6 +90,12 @@ class PerfTopdownService
     Attribute m_thread_info_attr;
 
     Attribute m_slots_attr;
+
+    Attribute m_retiring_slots_attr;
+    Attribute m_bad_spec_slots_attr;
+    Attribute m_fe_bound_slots_attr;
+    Attribute m_be_bound_slots_attr;
+
     Attribute m_retiring_perc_attr;
     Attribute m_bad_spec_perc_attr;
     Attribute m_fe_bound_perc_attr;
@@ -126,6 +132,9 @@ class PerfTopdownService
         uint64_t slots = _rdpmc(rdpmc_bitmask_fixed | rdpmc_bitmask_slots);
         uint64_t td_raw = _rdpmc(rdpmc_bitmask_topdown);
 
+        if (slots < 480'000ull)
+            return std::make_tuple(0ull, 0ull);
+
         ioctl(t->slots_fd, PERF_EVENT_IOC_RESET);
 
         return std::make_tuple(slots, td_raw);
@@ -137,20 +146,48 @@ class PerfTopdownService
 
         if (td == nullptr)
             return;
-        
+
         uint64_t slots = 0, td_raw = 0;
         std::tie(slots, td_raw) = read_topdown(td);
 
-        double retiring_perc = static_cast<double>((td_raw >>  0) & 0xffull) / 255.0 * 100.0;
-        double bad_spec_perc = static_cast<double>((td_raw >>  8) & 0xffull) / 255.0 * 100.0;
-        double fe_bound_perc = static_cast<double>((td_raw >> 16) & 0xffull) / 255.0 * 100.0;
-        double be_bound_perc = static_cast<double>((td_raw >> 24) & 0xffull) / 255.0 * 100.0;
+        if (slots == 0)
+            return;
+
+        uint64_t slots_factor = slots / 255ull;
+
+        uint64_t retiring_slots = ((td_raw >>  0) & 0xffull) * slots_factor;
+        uint64_t bad_spec_slots = ((td_raw >>  8) & 0xffull) * slots_factor;
+        uint64_t fe_bound_slots = ((td_raw >> 16) & 0xffull) * slots_factor;
+        uint64_t be_bound_slots = ((td_raw >> 24) & 0xffull) * slots_factor;
 
         rec.append(m_slots_attr, cali_make_variant_from_uint(slots));
-        rec.append(m_retiring_perc_attr, cali_make_variant_from_double(retiring_perc));
-        rec.append(m_bad_spec_perc_attr, cali_make_variant_from_double(bad_spec_perc));
-        rec.append(m_fe_bound_perc_attr, cali_make_variant_from_double(fe_bound_perc));
-        rec.append(m_be_bound_perc_attr, cali_make_variant_from_double(be_bound_perc));
+
+        rec.append(m_retiring_slots_attr, cali_make_variant_from_uint(retiring_slots));
+        rec.append(m_bad_spec_slots_attr, cali_make_variant_from_uint(bad_spec_slots));
+        rec.append(m_fe_bound_slots_attr, cali_make_variant_from_uint(fe_bound_slots));
+        rec.append(m_be_bound_slots_attr, cali_make_variant_from_uint(be_bound_slots));
+    }
+
+    void postprocess_snapshot_cb(Caliper* /*c*/, std::vector<Entry>& rec)
+    {
+        SnapshotView rec_v(rec.size(), rec.data());
+
+        Entry slots_e = rec_v.get_immediate_entry(m_slots_attr);
+
+        if (slots_e.empty())
+            return;
+
+        double perc_factor = 100.0 / slots_e.value().to_double();
+
+        double retiring = rec_v.get_immediate_entry(m_retiring_slots_attr).value().to_double();
+        double bad_spec = rec_v.get_immediate_entry(m_bad_spec_slots_attr).value().to_double();
+        double fe_bound = rec_v.get_immediate_entry(m_fe_bound_slots_attr).value().to_double();
+        double be_bound = rec_v.get_immediate_entry(m_be_bound_slots_attr).value().to_double();
+
+        rec.push_back(Entry(m_retiring_perc_attr, Variant(retiring * perc_factor)));
+        rec.push_back(Entry(m_bad_spec_perc_attr, Variant(bad_spec * perc_factor)));
+        rec.push_back(Entry(m_fe_bound_perc_attr, Variant(fe_bound * perc_factor)));
+        rec.push_back(Entry(m_be_bound_perc_attr, Variant(be_bound * perc_factor)));
     }
 
     void init_thread(Caliper* c, Channel* channel)
@@ -250,16 +287,25 @@ class PerfTopdownService
                 CALI_TYPE_PTR,
                 CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
 
-        m_slots_attr = 
-            c->create_attribute("topdown.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
+        m_slots_attr =
+            c->create_attribute("topdown.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+        m_retiring_slots_attr =
+            c->create_attribute("topdown.retiring.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+        m_bad_spec_slots_attr =
+            c->create_attribute("topdown.bad_spec.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+        m_fe_bound_slots_attr =
+            c->create_attribute("topdown.fe_bound.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+        m_be_bound_slots_attr =
+            c->create_attribute("topdown.be_bound.slots", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS);
+
         m_retiring_perc_attr =
-            c->create_attribute("topdown.retiring", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("topdown.retiring", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         m_bad_spec_perc_attr =
-            c->create_attribute("topdown.bad_spec", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("topdown.bad_spec", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         m_fe_bound_perc_attr =
-            c->create_attribute("topdown.fe_bound", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("topdown.fe_bound", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
         m_be_bound_perc_attr =
-            c->create_attribute("topdown.be_bound", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
+            c->create_attribute("topdown.be_bound", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 #if 0
         m_heavy_ops_perc_attr =
             c->create_attribute("topdown.heavy_ops", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE);
@@ -305,6 +351,11 @@ public:
         channel->events().snapshot.connect(
             [](Caliper* c, SnapshotView trigger_info, SnapshotBuilder& rec) {
                 s_instance->snapshot_cb(c, trigger_info, rec);
+            }
+        );
+        channel->events().postprocess_snapshot.connect(
+            [](Caliper* c, std::vector<Entry>& rec){
+                s_instance->postprocess_snapshot_cb(c, rec);
             }
         );
         channel->events().finish_evt.connect([](Caliper* c, Channel* channel) {
