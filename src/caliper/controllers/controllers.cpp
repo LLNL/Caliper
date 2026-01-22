@@ -73,6 +73,17 @@ const char* event_trace_spec = R"json(
    "services": [ "papi" ],
    "config": { "CALI_PAPI_COUNTERS": "{}" }
   },{
+   "name": "perf.topdown",
+   "description": "Record level 1 top-down metrics for Intel Sapphire Rapids or higher CPUs",
+   "type": "bool",
+   "services": [ "perf_topdown" ]
+  },{
+   "name": "perf.topdown.all",
+   "description": "Record level 1 and 2 top-down metrics for Intel Sapphire Rapids or higher CPUs",
+   "type": "bool",
+   "services": [ "perf_topdown" ],
+   "config": { "CALI_PERF_TOPDOWN_LEVEL": "all" }
+  },{
    "name": "cuda.activities",
    "description": "Trace CUDA activities",
    "type": "bool",
