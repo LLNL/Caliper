@@ -94,6 +94,7 @@ class PerfTopdownService
     Attribute m_thread_info_attr;
 
     Attribute m_slots_attr;
+    Attribute m_slots_sum_attr;
 
     Attribute m_retiring_slots_attr;
     Attribute m_bad_spec_slots_attr;
@@ -103,6 +104,15 @@ class PerfTopdownService
     Attribute m_br_mispred_slots_attr;
     Attribute m_fetch_lat_slots_attr;
     Attribute m_mem_bound_slots_attr;
+
+    Attribute m_retiring_sum_attr;
+    Attribute m_bad_spec_sum_attr;
+    Attribute m_fe_bound_sum_attr;
+    Attribute m_be_bound_sum_attr;
+    Attribute m_heavy_ops_sum_attr;
+    Attribute m_br_mispred_sum_attr;
+    Attribute m_fetch_lat_sum_attr;
+    Attribute m_mem_bound_sum_attr;
 
     Attribute m_retiring_perc_attr;
     Attribute m_bad_spec_perc_attr;
@@ -193,17 +203,25 @@ class PerfTopdownService
     {
         SnapshotView rec_v(rec.size(), rec.data());
 
-        Entry slots_e = rec_v.get_immediate_entry(m_slots_attr);
-
+        Entry slots_e = rec_v.get_immediate_entry(m_slots_sum_attr);
+        if (slots_e.empty())
+            slots_e = rec_v.get_immediate_entry(m_slots_attr);
         if (slots_e.empty())
             return;
 
         double perc_factor = 100.0 / slots_e.value().to_double();
 
-        double retiring = rec_v.get_immediate_entry(m_retiring_slots_attr).value().to_double() * perc_factor;
-        double bad_spec = rec_v.get_immediate_entry(m_bad_spec_slots_attr).value().to_double() * perc_factor;
-        double fe_bound = rec_v.get_immediate_entry(m_fe_bound_slots_attr).value().to_double() * perc_factor;
-        double be_bound = rec_v.get_immediate_entry(m_be_bound_slots_attr).value().to_double() * perc_factor;
+        auto get_value = [rec_v,perc_factor](Attribute a, Attribute b){
+            Entry e = rec_v.get_immediate_entry(a);
+            if (e.empty())
+                e = rec_v.get_immediate_entry(b);
+            return e.empty() ? 0.0 : e.value().to_double() * perc_factor;
+        };
+
+        double retiring = get_value(m_retiring_sum_attr, m_retiring_slots_attr);
+        double bad_spec = get_value(m_bad_spec_sum_attr, m_bad_spec_slots_attr);
+        double fe_bound = get_value(m_fe_bound_sum_attr, m_fe_bound_slots_attr);
+        double be_bound = get_value(m_be_bound_sum_attr, m_be_bound_slots_attr);
 
         rec.push_back(Entry(m_retiring_perc_attr, Variant(retiring)));
         rec.push_back(Entry(m_bad_spec_perc_attr, Variant(bad_spec)));
@@ -213,10 +231,10 @@ class PerfTopdownService
         if (m_level == Level::Top)
             return;
 
-        double heavy_ops = rec_v.get_immediate_entry(m_heavy_ops_slots_attr).value().to_double() * perc_factor;
-        double br_mispred = rec_v.get_immediate_entry(m_br_mispred_slots_attr).value().to_double() * perc_factor;
-        double fetch_lat = rec_v.get_immediate_entry(m_fetch_lat_slots_attr).value().to_double() * perc_factor;
-        double mem_bound = rec_v.get_immediate_entry(m_mem_bound_slots_attr).value().to_double() * perc_factor;
+        double heavy_ops = get_value(m_heavy_ops_sum_attr, m_heavy_ops_slots_attr);
+        double br_mispred = get_value(m_br_mispred_sum_attr, m_br_mispred_slots_attr);
+        double fetch_lat = get_value(m_fetch_lat_sum_attr, m_fetch_lat_slots_attr);
+        double mem_bound = get_value(m_mem_bound_sum_attr, m_mem_bound_slots_attr);
 
         rec.push_back(Entry(m_heavy_ops_perc_attr, Variant(heavy_ops)));
         rec.push_back(Entry(m_light_ops_perc_attr, Variant(retiring - heavy_ops)));
@@ -326,15 +344,22 @@ class PerfTopdownService
                 CALI_TYPE_PTR,
                 CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
 
-        constexpr int slots_attr_prop = CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS;
+        constexpr int slots_attr_prop = CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE | CALI_ATTR_SKIP_EVENTS;
+        constexpr int sum_attr_prop = CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS;
         constexpr int perc_attr_prop = CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS;
 
         m_slots_attr = c->create_attribute("topdown.slots", CALI_TYPE_UINT, slots_attr_prop);
+        m_slots_sum_attr = c->create_attribute("sum#topdown.slots", CALI_TYPE_UINT, sum_attr_prop);
 
         m_retiring_slots_attr = c->create_attribute("topdown.retiring.slots", CALI_TYPE_UINT, slots_attr_prop);
         m_bad_spec_slots_attr = c->create_attribute("topdown.bad_spec.slots", CALI_TYPE_UINT, slots_attr_prop);
         m_fe_bound_slots_attr = c->create_attribute("topdown.fe_bound.slots", CALI_TYPE_UINT, slots_attr_prop);
         m_be_bound_slots_attr = c->create_attribute("topdown.be_bound.slots", CALI_TYPE_UINT, slots_attr_prop);
+
+        m_retiring_sum_attr = c->create_attribute("sum#topdown.retiring.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_bad_spec_sum_attr = c->create_attribute("sum#topdown.bad_spec.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_fe_bound_sum_attr = c->create_attribute("sum#topdown.fe_bound.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_be_bound_sum_attr = c->create_attribute("sum#topdown.be_bound.slots", CALI_TYPE_UINT, sum_attr_prop);
 
         m_retiring_perc_attr = c->create_attribute("topdown.retiring", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_bad_spec_perc_attr = c->create_attribute("topdown.bad_spec", CALI_TYPE_DOUBLE, perc_attr_prop);
@@ -349,14 +374,19 @@ class PerfTopdownService
         m_fetch_lat_slots_attr = c->create_attribute("topdown.fetch_lat.slots", CALI_TYPE_UINT, slots_attr_prop);
         m_mem_bound_slots_attr = c->create_attribute("topdown.mem_bound.slots", CALI_TYPE_UINT, slots_attr_prop);
 
+        m_heavy_ops_sum_attr = c->create_attribute("sum#topdown.heavy_ops.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_br_mispred_sum_attr = c->create_attribute("sum#topdown.br_mispred.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_fetch_lat_sum_attr = c->create_attribute("sum#topdown.fetch_lat.slots", CALI_TYPE_UINT, sum_attr_prop);
+        m_mem_bound_sum_attr = c->create_attribute("sum#topdown.mem_bound.slots", CALI_TYPE_UINT, sum_attr_prop);
+
         m_heavy_ops_perc_attr = c->create_attribute("topdown.heavy_ops", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_light_ops_perc_attr = c->create_attribute("topdown.light_ops", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_br_mispred_perc_attr = c->create_attribute("topdown.br_mispred", CALI_TYPE_DOUBLE, perc_attr_prop);
+        m_machine_clears_perc_attr = c->create_attribute("topdown.machine_clears", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_fetch_lat_perc_attr = c->create_attribute("topdown.fetch_lat", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_fetch_bw_perc_attr = c->create_attribute("topdown.fetch_bw", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_mem_bound_perc_attr = c->create_attribute("topdown.mem_bound", CALI_TYPE_DOUBLE, perc_attr_prop);
         m_core_bound_perc_attr = c->create_attribute("topdown.core_bound", CALI_TYPE_DOUBLE, perc_attr_prop);
-        m_machine_clears_perc_attr = c->create_attribute("topdown.machine_clears", CALI_TYPE_DOUBLE, perc_attr_prop);
     }
 
     PerfTopdownService(Caliper* c, Channel* channel)
