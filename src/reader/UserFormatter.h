@@ -30,8 +30,6 @@ public:
 
     UserFormatter(OutputStream& os, const QuerySpec& spec);
 
-    ~UserFormatter();
-
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };
 

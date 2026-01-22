@@ -92,15 +92,19 @@ public:
     }
 };
 
-inline void apply_to_matching_entries(CaliperMetadataAccessInterface& db, AggregationAttributeManager& attr, const std::vector<Entry>& rec, std::function<void(const Entry&)> F)
+inline int apply_to_matching_entries(CaliperMetadataAccessInterface& db, AggregationAttributeManager& attr, const std::vector<Entry>& rec, std::function<void(const Entry&)> F)
 {
     if (!attr.derived_attr(db))
-        return;
+        return 0;
     cali_id_t tgt_attr_id = attr.target_attr(db).id();
     cali_id_t drv_attr_id = attr.derived_attr(db).id();
+    int count = 0;
     for (const Entry& e : rec)
-        if (e.node()->id() == tgt_attr_id || e.node()->id() == drv_attr_id)
+        if (e.node()->id() == tgt_attr_id || e.node()->id() == drv_attr_id) {
             F(e);
+            ++count;
+        }
+    return count;
 }
 
 class AggregateKernelConfig;
@@ -113,7 +117,7 @@ public:
 
     // For inclusive metrics, parent_aggregate is invoked for parent nodes
     virtual void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) { aggregate(db, list); }
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
+    virtual int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list)   = 0;
 };
 
@@ -152,17 +156,18 @@ public:
 
     CountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute count_attr = m_config->attr(db);
         cali_id_t count_attr_id = count_attr.id();
         for (const Entry& e : list)
             if (e.attribute() == count_attr_id) {
                 m_count += e.value().to_uint();
-                return;
+                return 1;
             }
 
         ++m_count;
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -207,16 +212,17 @@ public:
 
     ScaledCountKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute count_attr = m_config->m_count_attr.get(db);
         for (const Entry& e : list)
             if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
-                return;
+                return 1;
             }
 
         ++m_count;
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -271,9 +277,9 @@ public:
 
     SumKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -330,9 +336,9 @@ public:
 
     ScaledSumKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
+        return apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){ m_sum += e.value(); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -383,9 +389,9 @@ public:
 
     MinKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_min.min(e.value()); } );
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -434,9 +440,9 @@ public:
 
     MaxKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
+        return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e){ m_max.max(e.value()); });
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -478,24 +484,30 @@ public:
 
     AvgKernel(Config* config) : m_count(0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute tgt_attr = m_config->m_sum_attr.target_attr(db);
         if (!tgt_attr)
-            return;
+            return 0;
         Attribute sum_attr = m_config->m_sum_attr.derived_attr(db);
         Attribute count_attr = m_config->m_count_attr.get(db);
+        int count = 0;
 
         for (const Entry& e : list) {
             if (e.attribute() == tgt_attr.id()) {
                 m_sum += e.value();
                 ++m_count;
+                ++count;
             } else if (e.attribute() == sum_attr.id()) {
                 m_sum += e.value();
+                ++count;
             } else if (e.attribute() == count_attr.id()) {
                 m_count += e.value().to_uint();
+                ++count;
             }
         }
+
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -565,10 +577,12 @@ public:
 
     ScaledRatioKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
-        apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
+        int count = 0;
+        count += apply_to_matching_entries(db, m_config->m_tgt1, rec, [this](const Entry& e){ m_sum1 += e.value(); });
+        count += apply_to_matching_entries(db, m_config->m_tgt2, rec, [this](const Entry& e){ m_sum2 += e.value(); });
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -643,9 +657,9 @@ public:
 
     PercentTotalKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
-        apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
+        return apply_to_matching_entries(db, m_config->sum_attr(), rec, [this](const Entry& e){
                 m_sum += e.value();
                 m_isum += e.value();
                 m_config->add(e.value());
@@ -701,10 +715,11 @@ public:
 
     AnyKernel(Config* config) : m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) override
     {
         if (m_val.empty())
-            apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
+            return apply_to_matching_entries(db, m_config->attr(), rec, [this](const Entry& e) { m_val = e.value(); });
+        return 1;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) override
@@ -778,28 +793,35 @@ public:
 
     VarianceKernel(Config* config) : m_count(0), m_sum(0.0), m_sqsum(0.0), m_config(config) {}
 
-    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
+    int aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) override
     {
         Attribute            target_attr = m_config->get_target_attr(db);
         StatisticsAttributes stat_attr;
 
         if (!m_config->get_statistics_attributes(db, stat_attr))
-            return;
+            return 0;
 
+        int count = 0;
         for (const Entry& e : list) {
             if (e.attribute() == target_attr.id()) {
                 double v = e.value().to_double();
                 m_sum += v;
                 m_sqsum += (v * v);
                 ++m_count;
+                ++count;
             } else if (e.attribute() == stat_attr.sum.id()) {
                 m_sum += e.value().to_double();
+                ++count;
             } else if (e.attribute() == stat_attr.sqsum.id()) {
                 m_sqsum += e.value().to_double();
+                ++count;
             } else if (e.attribute() == stat_attr.count.id()) {
                 m_count += e.value().to_uint();
+                ++count;
             }
         }
+
+        return count;
     }
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) override
@@ -905,7 +927,6 @@ struct Aggregator::AggregatorImpl {
 
     std::vector<std::string> m_key_strings;
     std::vector<Attribute>   m_key_attrs;
-    std::mutex               m_key_lock;
 
     bool m_select_all;
     bool m_select_nested;
@@ -918,10 +939,11 @@ struct Aggregator::AggregatorImpl {
         std::size_t                                   next_entry_idx;
     };
 
-    std::vector<std::shared_ptr<AggregateEntry>> m_entries;
+    std::vector<std::unique_ptr<AggregateEntry>> m_entries;
 
     std::vector<std::size_t> m_hashmap;
-    std::mutex               m_entries_lock;
+
+    std::mutex m_lock;
 
     //
     // --- parse config
@@ -979,10 +1001,8 @@ struct Aggregator::AggregatorImpl {
     // --- snapshot processing
     //
 
-    std::vector<Attribute> update_key_attributes(CaliperMetadataAccessInterface& db)
+    void update_key_attributes(CaliperMetadataAccessInterface& db)
     {
-        std::lock_guard<std::mutex> g(m_key_lock);
-
         auto it = m_key_strings.begin();
         while (it != m_key_strings.end()) {
             Attribute attr = db.get_attribute(*it);
@@ -992,17 +1012,11 @@ struct Aggregator::AggregatorImpl {
             } else
                 ++it;
         }
-
-        return m_key_attrs;
     }
 
-    inline bool is_key(
-        const CaliperMetadataAccessInterface& db,
-        const std::vector<Attribute>&         key_attrs,
-        Attribute                             attr
-    )
+    inline bool is_key(Attribute attr)
     {
-        for (const Attribute& key_attr : key_attrs) {
+        for (const Attribute& key_attr : m_key_attrs) {
             if (key_attr == attr)
                 return true;
             if (!attr.get(key_attr).empty())
@@ -1012,32 +1026,14 @@ struct Aggregator::AggregatorImpl {
         return false;
     }
 
-    std::shared_ptr<AggregateEntry> get_aggregation_entry(
-        std::vector<Node*>::const_iterator nodes_begin,
-        std::vector<Node*>::const_iterator nodes_end,
-        const std::vector<Entry>&          immediates,
-        CaliperMetadataAccessInterface&    db
-    )
+    AggregateEntry* get_aggregation_entry(const std::vector<Entry>& key)
     {
-        // --- make key from key nodes and immediates
-
-        std::vector<Entry> key;
-        key.reserve(immediates.size() + 1);
-        key.insert(key.end(), immediates.begin(), immediates.end());
-
-        if (nodes_begin != nodes_end) {
-            std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
-            std::reverse_copy(nodes_begin, nodes_end, rv_nodes.begin());
-            key.push_back(Entry(db.make_tree_entry(rv_nodes.size(), rv_nodes.data())));
-        }
-
         // --- lookup key
 
         std::size_t hash = compute_key_hash(key) % m_hashmap.size();
         for (size_t i = m_hashmap[hash]; i; i = m_entries[i]->next_entry_idx) {
-            auto e = m_entries[i];
-            if (key == e->key)
-                return e;
+            if (key == m_entries[i]->key)
+                return m_entries[i].get();
         }
 
         // --- hash key not found: create a new entry
@@ -1048,76 +1044,81 @@ struct Aggregator::AggregatorImpl {
         for (AggregateKernelConfig* k_cfg : m_kernel_configs)
             kernels.emplace_back(k_cfg->make_kernel());
 
-        auto e = std::make_shared<AggregateEntry>();
-
-        e->key            = std::move(key);
-        e->kernels        = std::move(kernels);
-        e->next_entry_idx = m_hashmap[hash];
-
         size_t idx = m_entries.size();
-        m_entries.push_back(e);
+        m_entries.emplace_back(new AggregateEntry { key, std::move(kernels), m_hashmap[hash] });
         m_hashmap[hash] = idx;
 
-        return e;
+        return m_entries[idx].get();
     }
 
     void process(CaliperMetadataAccessInterface& db, const EntryList& rec)
     {
-        std::vector<Attribute> key_attrs = update_key_attributes(db);
+        std::lock_guard<std::mutex> g(m_lock);
+        update_key_attributes(db);
 
         // --- Unravel nodes, filter for key attributes
 
-        std::vector<Node*> nodes;
-        std::vector<Node*> non_path_nodes;
-        std::vector<Entry> immediates;
+        std::vector<const Node*> path_nodes;
+        std::vector<const Node*> non_path_nodes;
+        std::vector<Entry> key;
 
-        nodes.reserve(80);
-        immediates.reserve(key_attrs.size());
+        path_nodes.reserve(32);
+        non_path_nodes.reserve(32);
+        key.reserve(2 + m_key_attrs.size());
 
         for (const Entry& e : rec) {
             if (e.is_reference()) {
                 for (Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     Attribute attr = db.get_attribute(node->attribute());
                     bool is_nested = attr.is_nested();
-                    if (m_select_all || (m_select_nested && is_nested) || is_key(db, key_attrs, attr)) {
+                    if (m_select_all || (m_select_nested && is_nested) || is_key(attr)) {
                         if (is_nested)
-                            nodes.push_back(node);
+                            path_nodes.push_back(node);
                         else
                             non_path_nodes.push_back(node);
                     }
                 }
-            } else if (is_key(db, key_attrs, db.get_attribute(e.attribute()))) {
+            } else if (is_key(db.get_attribute(e.attribute()))) {
                 // Only include explicitly selected immediate entries in the key.
-                immediates.push_back(e);
+                key.emplace_back(e);
             }
         }
 
         // --- Canonicalize key by sorting by attribute ids
 
-        std::stable_sort(non_path_nodes.begin(), non_path_nodes.end(), [](const Node* a, const Node* b) {
-            return a->attribute() < b->attribute();
-        });
-        std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b) {
+        std::sort(key.begin(), key.end(), [](const Entry& a, const Entry& b) {
             return a.attribute() < b.attribute();
         });
 
-        auto nonnested_begin = nodes.insert(nodes.end(), non_path_nodes.begin(), non_path_nodes.end());
+        // --- Make node entry for non-path nodes and put it in the key
 
-        std::lock_guard<std::mutex> g(m_entries_lock);
+        if (!non_path_nodes.empty()) {
+            std::reverse(non_path_nodes.begin(), non_path_nodes.end());
+            key.emplace_back(db.make_tree_entry(non_path_nodes.size(), non_path_nodes.data()));
+        }
 
-        auto entry = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
+        // --- Add path entry to key
+
+        Node* path_node = nullptr;
+
+        if (!path_nodes.empty()) {
+            std::reverse(path_nodes.begin(), path_nodes.end());
+            path_node = db.make_tree_entry(path_nodes.size(), path_nodes.data());
+            key.emplace_back(path_node);
+        }
 
         // --- Aggregate
 
+        AggregateEntry* entry = get_aggregation_entry(key);
+
         for (size_t k = 0; k < entry->kernels.size(); ++k) {
-            entry->kernels[k]->aggregate(db, rec);
+            int matches = entry->kernels[k]->aggregate(db, rec);
 
             // for inclusive kernels, aggregate for all parent nodes as well
-            if (m_kernel_configs[k]->is_inclusive() && nodes.begin() != nonnested_begin) {
-                auto it = nodes.begin();
-
-                for (++it; it != nonnested_begin; ++it) {
-                    auto p_entry = get_aggregation_entry(it, nodes.end(), immediates, db);
+            if (m_kernel_configs[k]->is_inclusive() && (matches > 0) && path_node) {
+                for (Node* node = path_node->parent(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                    key.back() = Entry(node);
+                    AggregateEntry* p_entry = get_aggregation_entry(key);
                     p_entry->kernels[k]->parent_aggregate(db, rec);
                 }
             }
@@ -1130,7 +1131,7 @@ struct Aggregator::AggregatorImpl {
 
     void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push)
     {
-        std::lock_guard<std::mutex> g(m_entries_lock);
+        std::lock_guard<std::mutex> g(m_lock);
 
         for (const auto &entry : m_entries) {
             if (!entry)
@@ -1149,7 +1150,7 @@ struct Aggregator::AggregatorImpl {
         m_entries.reserve(4096);
         m_hashmap.assign(4096, static_cast<size_t>(0));
         // zero marks the end of the hash chain, so we must block out slot 0 for actual entries
-        m_entries.push_back(std::shared_ptr<AggregateEntry>(nullptr));
+        m_entries.emplace_back(std::unique_ptr<AggregateEntry>());
     }
 
     ~AggregatorImpl()
@@ -1163,11 +1164,6 @@ struct Aggregator::AggregatorImpl {
 
 Aggregator::Aggregator(const QuerySpec& spec) : mP { new AggregatorImpl(spec) }
 {}
-
-Aggregator::~Aggregator()
-{
-    mP.reset();
-}
 
 void Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 {

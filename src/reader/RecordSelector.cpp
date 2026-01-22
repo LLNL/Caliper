@@ -247,11 +247,6 @@ struct RecordSelector::RecordSelectorImpl {
     }
 }; // RecordSelectorImpl
 
-RecordSelector::RecordSelector(const std::string& filter_string) : mP { new RecordSelectorImpl }
-{
-    mP->m_filters = parse(filter_string);
-}
-
 RecordSelector::RecordSelector(const QuerySpec& spec) : mP { new RecordSelectorImpl }
 {
     mP->configure(spec);
@@ -260,11 +255,6 @@ RecordSelector::RecordSelector(const QuerySpec& spec) : mP { new RecordSelectorI
 RecordSelector::RecordSelector(const QuerySpec::Condition& cond) : mP { new RecordSelectorImpl }
 {
     mP->configure(cond);
-}
-
-RecordSelector::~RecordSelector()
-{
-    mP.reset();
 }
 
 bool RecordSelector::pass(const CaliperMetadataAccessInterface& db, const EntryList& list)

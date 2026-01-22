@@ -27,15 +27,11 @@ class CaliperCaliQueryTest(unittest.TestCase):
     def test_caliquery_list_services(self):
         target_cmd = [ '../../src/tools/cali-query/cali-query', '--help=services' ]
 
-        env = { 
-            'CALI_LOG_VERBOSITY' : '0',
-        }
-
         service_targets = [
             'aggregate', 'event', 'recorder', 'report', 'timestamp', 'trace'
         ]
 
-        report_out,_ = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, None)
         res = report_out.decode().split()
 
         for target in service_targets:

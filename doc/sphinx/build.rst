@@ -233,6 +233,14 @@ with the given Caliper and spack build options.
 |                      |               |               | - Caliper-to-ROCTX region |                    |
 |                      |               |               |   forwarding              |                    |
 +----------------------+---------------+---------------+---------------------------+--------------------+
+| WITH_ROCPROFILER     | False         | +rocprofiler  | - rocm-activity-report,   | rocprofiler, roctx |
+|                      |               |               |   rocm-activity-profile,  |                    |
+|                      |               |               | - profile.hip,            |                    |
+|                      |               |               |   rocm.gputime,           |                    |
+|                      |               |               |   rocm.memcpy options     |                    |
+|                      |               |               | - Caliper-to-roctx region |                    |
+|                      |               |               |   forwarding              |                    |
++----------------------+---------------+---------------+---------------------------+--------------------+
 | WITH_OMPT            | False         | not available | - openmp-report recipe    | ompt               |
 |                      |               | yet           | - openmp.times,           |                    |
 |                      |               |               |   openmp.threads,         |                    |

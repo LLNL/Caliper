@@ -25,7 +25,6 @@ using namespace cali;
 
 struct Expand::ExpandImpl {
     std::set<std::string> m_selected;
-    std::set<std::string> m_deselected;
 
     std::map<std::string, std::string> m_aliases;
 
@@ -34,23 +33,6 @@ struct Expand::ExpandImpl {
     std::mutex m_os_lock;
 
     ExpandImpl(OutputStream& os) : m_os(os) {}
-
-    void parse(const std::string& field_string)
-    {
-        std::vector<std::string> fields;
-
-        util::split(field_string, ':', std::back_inserter(fields));
-
-        for (const std::string& s : fields) {
-            if (s.size() == 0)
-                continue;
-
-            if (s[0] == '-')
-                m_deselected.insert(s.substr(1, std::string::npos));
-            else
-                m_selected.insert(s);
-        }
-    }
 
     void configure(const QuerySpec& spec)
     {
@@ -83,7 +65,7 @@ struct Expand::ExpandImpl {
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     std::string name = db.get_attribute(node->attribute()).name();
 
-                    if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                    if ((!m_selected.empty() && m_selected.count(name) == 0))
                         continue;
 
                     nodes.push_back(node);
@@ -118,7 +100,7 @@ struct Expand::ExpandImpl {
             } else if (e.is_immediate()) {
                 std::string name = db.get_attribute(e.attribute()).name();
 
-                if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                if ((!m_selected.empty() && m_selected.count(name) == 0))
                     continue;
 
                 {
@@ -139,24 +121,9 @@ struct Expand::ExpandImpl {
     }
 };
 
-Expand::Expand(OutputStream& os, const std::string& field_string) : mP { new ExpandImpl(os) }
-{
-    mP->parse(field_string);
-}
-
 Expand::Expand(OutputStream& os, const QuerySpec& spec) : mP { new ExpandImpl(os) }
 {
     mP->configure(spec);
-}
-
-Expand::~Expand()
-{
-    mP.reset();
-}
-
-void Expand::operator() (CaliperMetadataAccessInterface& db, const EntryList& list) const
-{
-    mP->print(db, list);
 }
 
 void Expand::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)

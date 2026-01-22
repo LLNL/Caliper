@@ -118,7 +118,7 @@ ORDER BY
 
 All of the statements are optional; by default cali-query will pass the input
 records through as-is, without any aggregations, and output .cali data.
-statements are case-insensitive and can be provided in any order.
+Statements are case-insensitive and can be provided in any order.
 
 Run "--help [let, select, groupby, where, format]" for more information about
 each CalQL statement.
@@ -148,7 +148,7 @@ The general structure is
 
 The aggregations in the SELECT statement specify how attributes are
 aggregated. Use the GROUP BY statement to specify the output set. Use AS
-to specify an optional custom label/header.
+to specify an optional human-readable label.
 
 Available aggregation operations:
 
@@ -163,7 +163,7 @@ structure is
 
     GROUP BY path | attribute name [, ...]
 
-The "path" value selects all region name attributes for grouping.
+The "path" value selects all region attributes for grouping.
 )helpstr";
 
 const char* s_calql_where_helpstr = R"helpstr(

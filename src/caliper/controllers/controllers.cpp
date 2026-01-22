@@ -82,8 +82,8 @@ const char* event_trace_spec = R"json(
    "name": "rocm.activities",
    "description": "Trace ROCm activities",
    "type": "bool",
-   "services": [ "roctracer" ],
-   "config": { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
+   "services": [ "rocprofiler" ],
+   "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true", "CALI_ROCPROFILER_ENABLE_SNAPSHOT_TIMESTAMPS": "true" }
   },{
    "name": "rocm.counters",
    "description": "Record ROCm counters through rocprofiler-sdk",
@@ -177,13 +177,13 @@ namespace cali
 
 extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
-extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
-extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo loop_report_controller_info;
 extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_report_controller_info;
 extern ConfigManager::ConfigInfo rocm_activity_profile_controller_info;
+extern ConfigManager::ConfigInfo runtime_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
+extern ConfigManager::ConfigInfo sample_profile_controller_info;
 extern ConfigManager::ConfigInfo sample_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
@@ -194,13 +194,13 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = { &cuda_activity_
                                                                  &::nvtx_controller_info,
                                                                  &::roctx_controller_info,
                                                                  &::mpireport_controller_info,
-                                                                 &hatchet_region_profile_controller_info,
-                                                                 &hatchet_sample_profile_controller_info,
+                                                                 &runtime_profile_controller_info,
                                                                  &loop_report_controller_info,
                                                                  &openmp_report_controller_info,
                                                                  &rocm_activity_report_controller_info,
                                                                  &rocm_activity_profile_controller_info,
                                                                  &runtime_report_controller_info,
+                                                                 &sample_profile_controller_info,
                                                                  &sample_report_controller_info,
                                                                  &spot_controller_info,
                                                                  nullptr };
@@ -254,8 +254,8 @@ const char* builtin_base_option_specs = R"json(
  },
  "query":
  {
-  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#time.inclusive.duration.ns,sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
-  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,ratio(sum#sum#time.inclusive.duration.ns,sum#sum#region.count) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
+  "local": "select sum(sum#region.count) as Visits unit count,min(min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec",
+  "cross": "select sum(sum#sum#region.count) as Visits unit count,min(min#min#time.inclusive.duration.ns) as \"Nsec/visit (min)\" unit nsec,avg(avg#avg#time.inclusive.duration.ns) as \"Nsec/visit (avg)\" unit nsec,max(max#max#time.inclusive.duration.ns) as \"Nsec/visit (max)\" unit nsec"
  }
 },{
  "name": "loop.stats",
@@ -593,11 +593,11 @@ const char* builtin_gotcha_option_specs = R"json(
     max(max#alloc.size) as \"Max Bytes/alloc\"",
   "cross":
   "select
-    max(max#alloc.region.highwatermark) as \"Mem HWM\",
+    max(max#max#alloc.region.highwatermark) as \"Mem HWM\",
     max(max#alloc.tally) as \"Alloc tMax\",
     sum(sum#alloc.count) as \"Alloc count\",
-    avg(avg#alloc.size) as \"Avg Bytes/alloc\",
-    max(max#alloc.size) as \"Max Bytes/alloc\""
+    avg(avg#avg#alloc.size) as \"Avg Bytes/alloc\",
+    max(max#max#alloc.size) as \"Max Bytes/alloc\""
  }
 },{
  "name": "mem.pages",
@@ -738,6 +738,38 @@ const char* builtin_rocm_option_specs = R"json(
     sum(sum#alloc.count) as \"Alloc count\",
     avg(avg#alloc.size) as \"Avg Bytes/alloc\",
     max(max#alloc.size) as \"Max Bytes/alloc\""
+ }
+},{
+ "name": "rocm.activity.stats",
+ "description": "ROCm activity statistics",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "rocprofiler" ],
+ "config": { "CALI_ROCPROFILER_ENABLE_ACTIVITY_TRACING": "true" },
+ "query":
+ {
+  "local":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#rocm.activity.duration) as \"Nsec/invoc (avg)\",
+    max(max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  ",
+  "cross":
+  "
+   select
+    rocm.kernel.name as Kernel,
+    sum(sum#sum#rocm.activity.count) as \"GPU invoc.\",
+    min(min#min#rocm.activity.duration) as \"Nsec/invoc (min)\",
+    avg(avg#avg#rocm.activity.duration) as \"Nsec/incov (avg)\",
+    max(max#max#rocm.activity.duration) as \"Nsec/invoc (max)\"
+   group by
+    rocm.kernel.name
+  "
  }
 }
 ]

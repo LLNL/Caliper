@@ -26,10 +26,7 @@ class CaliWriter
 public:
 
     CaliWriter() {}
-
     CaliWriter(OutputStream& os);
-
-    ~CaliWriter();
 
     size_t num_written() const;
 

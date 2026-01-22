@@ -4,7 +4,7 @@ GPU profiling
 Caliper can profile CUDA and ROCm API functions and device-side activities like
 kernel executions and memory copies. This requires Caliper to be built with
 CUpti support (`-DWITH_CUPTI=On`, for CUDA devices) or roctracer support
-(`-DWITH_ROCTRACER=On`, for AMD devices).
+(`-DWITH_ROCPROFILER=On`, for AMD devices).
 
 Profiling host-side API functions
 ---------------------------------------

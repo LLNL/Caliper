@@ -102,11 +102,6 @@ FormatProcessor::FormatProcessor(const QuerySpec& spec, OutputStream& stream)
     : mP(new FormatProcessorImpl(stream, spec))
 {}
 
-FormatProcessor::~FormatProcessor()
-{
-    mP.reset();
-}
-
 const QuerySpec::FunctionSignature* FormatProcessor::formatter_defs()
 {
     return ::formatters;

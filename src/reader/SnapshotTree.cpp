@@ -186,11 +186,6 @@ SnapshotTree::SnapshotTree() : mP(new SnapshotTreeImpl(Attribute(), Variant()))
 SnapshotTree::SnapshotTree(const Attribute& attr, const Variant& value) : mP(new SnapshotTreeImpl(attr, value))
 {}
 
-SnapshotTree::~SnapshotTree()
-{
-    mP.reset();
-}
-
 const SnapshotTreeNode* SnapshotTree::add_snapshot(
     const CaliperMetadataAccessInterface& db,
     const EntryList&                      list,

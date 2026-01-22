@@ -171,11 +171,6 @@ UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec) : mP { new
     }
 }
 
-UserFormatter::~UserFormatter()
-{
-    mP.reset();
-}
-
 void UserFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
