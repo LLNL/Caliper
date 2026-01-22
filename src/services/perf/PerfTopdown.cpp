@@ -202,7 +202,6 @@ class PerfTopdownService
     void postprocess_snapshot_cb(Caliper* /*c*/, std::vector<Entry>& rec)
     {
         SnapshotView rec_v(rec.size(), rec.data());
-
         Entry slots_e = rec_v.get_immediate_entry(m_slots_sum_attr);
         if (slots_e.empty())
             slots_e = rec_v.get_immediate_entry(m_slots_attr);
@@ -211,17 +210,21 @@ class PerfTopdownService
 
         double perc_factor = 100.0 / slots_e.value().to_double();
 
-        auto get_value = [rec_v,perc_factor](Attribute a, Attribute b){
-            Entry e = rec_v.get_immediate_entry(a);
-            if (e.empty())
-                e = rec_v.get_immediate_entry(b);
-            return e.empty() ? 0.0 : e.value().to_double() * perc_factor;
+        auto get_value = [perc_factor](const std::vector<Entry>& rec, Attribute a, Attribute b) -> double {
+            cali_id_t a_id = a.id();
+            cali_id_t b_id = b.id();
+            for (const Entry& e : rec) {
+                cali_id_t n_id = e.node() ? e.node()->id() : CALI_INV_ID;
+                if (n_id == a_id || n_id == b_id)
+                    return e.value().to_double() * perc_factor;
+            }
+            return 0.0;
         };
 
-        double retiring = get_value(m_retiring_sum_attr, m_retiring_slots_attr);
-        double bad_spec = get_value(m_bad_spec_sum_attr, m_bad_spec_slots_attr);
-        double fe_bound = get_value(m_fe_bound_sum_attr, m_fe_bound_slots_attr);
-        double be_bound = get_value(m_be_bound_sum_attr, m_be_bound_slots_attr);
+        double retiring = get_value(rec, m_retiring_sum_attr, m_retiring_slots_attr);
+        double bad_spec = get_value(rec, m_bad_spec_sum_attr, m_bad_spec_slots_attr);
+        double fe_bound = get_value(rec, m_fe_bound_sum_attr, m_fe_bound_slots_attr);
+        double be_bound = get_value(rec, m_be_bound_sum_attr, m_be_bound_slots_attr);
 
         rec.push_back(Entry(m_retiring_perc_attr, Variant(retiring)));
         rec.push_back(Entry(m_bad_spec_perc_attr, Variant(bad_spec)));
@@ -231,10 +234,10 @@ class PerfTopdownService
         if (m_level == Level::Top)
             return;
 
-        double heavy_ops = get_value(m_heavy_ops_sum_attr, m_heavy_ops_slots_attr);
-        double br_mispred = get_value(m_br_mispred_sum_attr, m_br_mispred_slots_attr);
-        double fetch_lat = get_value(m_fetch_lat_sum_attr, m_fetch_lat_slots_attr);
-        double mem_bound = get_value(m_mem_bound_sum_attr, m_mem_bound_slots_attr);
+        double heavy_ops = get_value(rec, m_heavy_ops_sum_attr, m_heavy_ops_slots_attr);
+        double br_mispred = get_value(rec, m_br_mispred_sum_attr, m_br_mispred_slots_attr);
+        double fetch_lat = get_value(rec, m_fetch_lat_sum_attr, m_fetch_lat_slots_attr);
+        double mem_bound = get_value(rec, m_mem_bound_sum_attr, m_mem_bound_slots_attr);
 
         rec.push_back(Entry(m_heavy_ops_perc_attr, Variant(heavy_ops)));
         rec.push_back(Entry(m_light_ops_perc_attr, Variant(retiring - heavy_ops)));
