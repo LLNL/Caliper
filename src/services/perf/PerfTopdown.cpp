@@ -454,7 +454,7 @@ PerfTopdownService* PerfTopdownService::s_instance { nullptr };
 const char* PerfTopdownService::s_spec = R"json(
 {
  "name": "perf_topdown",
- "description": "Intel topdown metrics via perf",
+ "description": "Capture top-down metrics for Intel Sapphire Rapids or later CPUs via perf",
  "config":
  [
   { "name": "level",
