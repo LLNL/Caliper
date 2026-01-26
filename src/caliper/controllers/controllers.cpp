@@ -1055,8 +1055,8 @@ const char* builtin_pcp_option_specs = R"json(
 const char* builtin_papi_topdown_option_specs = R"json(
 [
 {
- "name": "topdown.toplevel",
- "description": "Top-down analysis for Intel CPUs (top level)",
+ "name": "papi.topdown.toplevel",
+ "description": "Level 1 top-down metrics for Intel CPUs using PAPI",
  "type": "bool",
  "category": "metric",
  "services": [ "papi" ],
@@ -1076,23 +1076,23 @@ const char* builtin_papi_topdown_option_specs = R"json(
     td.be_bound=first(papi.topdown:::TOPDOWN_BE_BOUND_PERC,avg#papi.topdown:::TOPDOWN_BE_BOUND_PERC)
    select
     avg(td.retiring) as \"Retiring\" unit \"%\",
-    avg(td.bad_spec) as \"Bad speculation\" unit \"%\",
-    avg(td.fe_bound) as \"Frontend bound\" unit \"%\",
-    avg(td.be_bound) as \"Backend bound\" unit \"%\"
+    avg(td.bad_spec) as \"Bad spec\" unit \"%\",
+    avg(td.fe_bound) as \"FE bound\" unit \"%\",
+    avg(td.be_bound) as \"BE bound\" unit \"%\"
   ",
   "cross":
   "
    select
     avg(avg#td.retiring) as \"Retiring\" unit \"%\",
-    avg(avg#td.bad_spec) as \"Bad speculation\" unit \"%\",
-    avg(avg#td.fe_bound) as \"Frontend bound\" unit \"%\",
-    avg(avg#td.be_bound) as \"Backend bound\" unit \"%\"
+    avg(avg#td.bad_spec) as \"Bad spec\" unit \"%\",
+    avg(avg#td.fe_bound) as \"FE bound\" unit \"%\",
+    avg(avg#td.be_bound) as \"BE bound\" unit \"%\"
   "
  }
 },
 {
- "name": "topdown.all",
- "description": "Top-down analysis for Intel CPUs (Level 2)",
+ "name": "papi.topdown.all",
+ "description": "Level 1 and 2 top-down metrics for Intel CPUs using PAPI",
  "type": "bool",
  "category": "metric",
  "services": [ "papi" ],
@@ -1120,33 +1120,97 @@ const char* builtin_papi_topdown_option_specs = R"json(
     td.machine_clears=first(papi.topdown:::TOPDOWN_MACHINE_CLEARS_PERC,avg#papi.topdown:::TOPDOWN_MACHINE_CLEARS_PERC)
    select
     avg(td.retiring) as \"Retiring\" unit \"%\",
-    avg(td.bad_spec) as \"Bad speculation\" unit \"%\",
-    avg(td.fe_bound) as \"Frontend bound\" unit \"%\",
-    avg(td.be_bound) as \"Backend bound\" unit \"%\",
+    avg(td.bad_spec) as \"Bad spec\" unit \"%\",
+    avg(td.fe_bound) as \"FE boune\" unit \"%\",
+    avg(td.be_bound) as \"BE bound\" unit \"%\",
     avg(td.heavy_ops) as \"Heavy ops\" unit \"%\",
     avg(td.light_ops) as \"Light ops\" unit \"%\",
-    avg(td.br_mispredict) as \"Branch mispredict\" unit \"%\",
-    avg(td.fetch_lat) as \"Fetch latency\" unit \"%\",
-    avg(td.fetch_band) as \"Fetch bandwidth\" unit \"%\",
+    avg(td.br_mispredict) as \"Branch mispr\" unit \"%\",
+    avg(td.machine_clears) as \"Mach clrs\" unit \"%\",
+    avg(td.fetch_lat) as \"Fetch lat\" unit \"%\",
+    avg(td.fetch_band) as \"Fetch BW\" unit \"%\",
     avg(td.core_bound) as \"Core bound\" unit \"%\",
-    avg(td.mem_bound) as \"Memory bound\" unit \"%\",
-    avg(td.machine_clears) as \"Machine clears\" unit \"%\"
+    avg(td.mem_bound) as \"Mem bound\" unit \"%\"
   ",
   "cross":
   "
    select
     avg(avg#td.retiring) as \"Retiring\" unit \"%\",
-    avg(avg#td.bad_spec) as \"Bad speculation\" unit \"%\",
-    avg(avg#td.fe_bound) as \"Frontend bound\" unit \"%\",
-    avg(avg#td.be_bound) as \"Backend bound\" unit \"%\",
+    avg(avg#td.bad_spec) as \"Bad spec\" unit \"%\",
+    avg(avg#td.fe_bound) as \"FE bound\" unit \"%\",
+    avg(avg#td.be_bound) as \"BE bound\" unit \"%\",
     avg(avg#td.heavy_ops) as \"Heavy ops\" unit \"%\",
     avg(avg#td.light_ops) as \"Light ops\" unit \"%\",
-    avg(avg#td.br_mispredict) as \"Branch mispredict\" unit \"%\",
-    avg(avg#td.fetch_lat) as \"Fetch latency\" unit \"%\",
-    avg(avg#td.fetch_band) as \"Fetch bandwidth\" unit \"%\",
+    avg(avg#td.br_mispredict) as \"Branch mispr\" unit \"%\",
+    avg(avg#td.machine_clears) as \"Mach clrs\" unit \"%\",
+    avg(avg#td.fetch_lat) as \"Fetch lat\" unit \"%\",
+    avg(avg#td.fetch_band) as \"Fetch BW\" unit \"%\",
     avg(avg#td.core_bound) as \"Core bound\" unit \"%\",
-    avg(avg#td.mem_bound) as \"Memory bound\" unit \"%\",
-    avg(avg#td.machine_clears) as \"Machine clears\" unit \"%\"
+    avg(avg#td.mem_bound) as \"Mem bound\" unit \"%\"
+  "
+ }
+}
+]
+)json";
+
+const char* builtin_perf_topdown_option_specs = R"json(
+[
+{
+ "name": "perf.topdown.toplevel",
+ "description": "Level 1 top-down metrics for Intel CPUs using perf",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "perf_topdown" ],
+ "query":
+ {
+  "local":
+  "select any(topdown.retiring) as \"Retiring\" unit \"%\",any(topdown.bad_spec) as \"Bad spec\" unit \"%\",any(topdown.fe_bound) as \"FE bound\" unit \"%\",any(topdown.be_bound) as \"BE bound\" unit \"%\"",
+  "cross":
+  "select avg(any#topdown.retiring) as \"Retiring\" unit \"%\",avg(any#topdown.bad_spec) as \"Bad spec\" unit \"%\",avg(any#topdown.fe_bound) as \"FE bound\" unit \"%\",avg(any#topdown.be_bound) as \"BE bound\" unit \"%\""
+ }
+},
+{
+ "name": "perf.topdown.all",
+ "description": "Level 1 and 2 top-down metrics for Intel CPUs using perf",
+ "type": "bool",
+ "category": "metric",
+ "services": [ "perf_topdown" ],
+ "config":
+ {
+  "CALI_PERF_TOPDOWN_LEVEL": "all" },
+ "query":
+ {
+  "local":
+  "
+   select
+    any(topdown.retiring) as \"Retiring\" unit \"%\",
+    any(topdown.bad_spec) as \"Bad spec\" unit \"%\",
+    any(topdown.fe_bound) as \"FE bound\" unit \"%\",
+    any(topdown.be_bound) as \"BE bound\" unit \"%\",
+    any(topdown.heavy_ops) as \"Heavy ops\" unit \"%\",
+    any(topdown.light_ops) as \"Light ops\" unit \"%\",
+    any(topdown.br_mispredict) as \"Branch mispr\" unit \"%\",
+    any(topdown.machine_clears) as \"Mach clrs\" unit \"%\",
+    any(topdown.fetch_lat) as \"Fetch lat\" unit \"%\",
+    any(topdown.fetch_band) as \"Fetch BW\" unit \"%\",
+    any(topdown.core_bound) as \"Core bound\" unit \"%\",
+    any(topdown.mem_bound) as \"Mem bound\" unit \"%\"
+  ",
+  "cross":
+  "
+   select
+    avg(any#topdown.retiring) as \"Retiring\" unit \"%\",
+    avg(any#topdown.bad_spec) as \"Bad spec\" unit \"%\",
+    avg(any#topdown.fe_bound) as \"FE bound\" unit \"%\",
+    avg(any#topdown.be_bound) as \"BE bound\" unit \"%\",
+    avg(any#topdown.heavy_ops) as \"Heavy ops\" unit \"%\",
+    avg(any#topdown.light_ops) as \"Light ops\" unit \"%\",
+    avg(any#topdown.br_mispredict) as \"Branch mispr\" unit \"%\",
+    avg(any#topdown.machine_clears) as \"Mach clrs\" unit \"%\",
+    avg(any#topdown.fetch_lat) as \"Fetch lat\" unit \"%\",
+    avg(any#topdown.fetch_band) as \"Fetch BW\" unit \"%\",
+    avg(any#topdown.core_bound) as \"Core bound\" unit \"%\",
+    avg(any#topdown.mem_bound) as \"Mem bound\" unit \"%\"
   "
  }
 }

@@ -37,6 +37,7 @@ extern const char* builtin_pcp_option_specs;
 extern const char* builtin_umpire_option_specs;
 extern const char* builtin_kokkos_option_specs;
 extern const char* builtin_papi_topdown_option_specs;
+extern const char* builtin_perf_topdown_option_specs;
 
 extern void add_submodule_controllers_and_services();
 
@@ -1391,6 +1392,18 @@ struct ConfigManager::ConfigManagerImpl {
 #endif
 #ifdef CALIPER_HAVE_PAPI
                   builtin_papi_topdown_option_specs,
+#endif
+#ifdef CALIPER_HAVE_LIBPFM
+                  builtin_perf_topdown_option_specs,
+                  "["
+                  "{\"name\": \"topdown.toplevel\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"perf.topdown.toplevel\"},"
+                  "{\"name\": \"topdown.all\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"perf.topdown.all\"}"
+                  "]",
+#elif CALIPER_HAVE_PAPI
+                  "["
+                  "{\"name\": \"topdown.toplevel\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"papi.topdown.toplevel\"},"
+                  "{\"name\": \"topdown.all\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"papi.topdown.all\"}"
+                  "]",
 #endif
               builtin_base_option_specs
           })
