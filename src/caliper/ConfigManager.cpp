@@ -664,9 +664,9 @@ struct ConfigManager::Options::OptionsImpl {
                 auto it = std::find_if(args.begin(), args.end(), [&opt](const std::pair<std::string, std::string>& p) {
                     return opt == p.first;
                 });
-                if (it != args.end())
-                    // replace "{}" variable placeholders in spec with argument, if any
-                    config[kv_p.first] = ::expand_variables(kv_p.second, it->second);
+
+                // expand "{}" placeholder in config variable with argument value, if any
+                config[kv_p.first] = (it == args.end() ? kv_p.second : ::expand_variables(kv_p.second, it->second));
             }
         }
     }
@@ -1393,13 +1393,13 @@ struct ConfigManager::ConfigManagerImpl {
 #ifdef CALIPER_HAVE_PAPI
                   builtin_papi_topdown_option_specs,
 #endif
-#ifdef CALIPER_HAVE_LIBPFM
+#if defined(CALIPER_HAVE_LIBPFM)
                   builtin_perf_topdown_option_specs,
                   "["
                   "{\"name\": \"topdown.toplevel\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"perf.topdown.toplevel\"},"
                   "{\"name\": \"topdown.all\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"perf.topdown.all\"}"
                   "]",
-#elif CALIPER_HAVE_PAPI
+#elif defined(CALIPER_HAVE_PAPI)
                   "["
                   "{\"name\": \"topdown.toplevel\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"papi.topdown.toplevel\"},"
                   "{\"name\": \"topdown.all\", \"category\": \"metric\", \"type\": \"bool\", \"inherit\": \"papi.topdown.all\"}"
