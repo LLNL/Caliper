@@ -38,7 +38,7 @@ find_package_handle_standard_args(PAPI DEFAULT_MSG
 )
 
 mark_as_advanced(
-    PAPI_PREFIX_DIRS
+    PAPI_PREFIX
     PAPI_LIBRARIES
     PAPI_INCLUDE_DIRS
 )

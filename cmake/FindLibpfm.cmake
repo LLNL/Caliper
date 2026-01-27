@@ -19,10 +19,10 @@ if(LIBPFM_INSTALL)
 else()
     # no install dir specified, look in default and PAPI
     find_path(LIBPFM_INCLUDE_DIR "perfmon/pfmlib_perf_event.h"
-            HINTS ${PAPI_INCLUDE_DIRS} ${PAPI_INCLUDE_DIRS}/libpfm4/include)
+            HINTS ${PAPI_PREFIX} ${PAPI_PREFIX}/libpfm4/include)
 
     find_library(LIBPFM_LIBRARY pfm
-            HINTS ${PAPI_LIBRARIES} ${PAPI_LIBRARIES}/libpfm4/include)
+            HINTS ${PAPI_PREFIX} ${PAPI_PREFIX}/lib)
 endif()
 
 include(FindPackageHandleStandardArgs)
