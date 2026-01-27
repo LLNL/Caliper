@@ -22,7 +22,7 @@
  * OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <inttypes.h>

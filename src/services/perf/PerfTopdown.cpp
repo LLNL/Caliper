@@ -11,7 +11,7 @@
 #include "caliper/common/Log.h"
 
 extern "C" {
-#include <linux/perf_event.h>
+#include <perfmon/perf_event.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
@@ -127,8 +127,6 @@ class PerfTopdownService
     Attribute m_mem_bound_perc_attr;
     Attribute m_machine_clears_perc_attr;
 
-    unsigned m_num_errors;
-
     static PerfTopdownService* s_instance;
 
     ThreadInfo* get_thread_info(Caliper* c)
@@ -171,6 +169,12 @@ class PerfTopdownService
         if (slots == 0)
             return;
 
+        //   Extract the topdown ratios from the td_raw counter. The level 1 ratios add
+        // up to 255 = 100%. We scale the ratios by slots so we can accurately compute
+        // per-region percentages from the scaled, aggregated values in postprocessing
+        // in case we do on-line aggregation. Accuracy loss from the division here
+        // should be negligible since we only allow > 480'000 slots.
+
         uint64_t slots_factor = slots / 255ull;
 
         uint64_t retiring_slots = ((td_raw >>  0) & 0xffull) * slots_factor;
@@ -205,7 +209,7 @@ class PerfTopdownService
         Entry slots_e = rec_v.get_immediate_entry(m_slots_sum_attr);
         if (slots_e.empty())
             slots_e = rec_v.get_immediate_entry(m_slots_attr);
-        if (slots_e.empty())
+        if (slots_e.empty() || slots_e.value().to_uint() == 0)
             return;
 
         double perc_factor = 100.0 / slots_e.value().to_double();
@@ -249,7 +253,7 @@ class PerfTopdownService
         rec.push_back(Entry(m_core_bound_perc_attr, Variant(be_bound - mem_bound)));
     }
 
-    void init_thread(Caliper* c, Channel* channel)
+    bool init_thread(Caliper* c, Channel* channel)
     {
         struct perf_event_attr slots_attr = {
             .type = PERF_TYPE_RAW,
@@ -262,7 +266,7 @@ class PerfTopdownService
         int slots_fd = topdown_perf_open(&slots_attr, 0, -1, -1, 0);
         if (slots_fd < 0) {
             Log(0).stream() << ": " << channel->name() << ": perf_topdown: cannot open slots fd";
-            return;
+            return false;
         }
 
         struct perf_event_attr retiring_attr = {
@@ -277,7 +281,7 @@ class PerfTopdownService
         if (retiring_fd < 0) {
             Log(0).stream() << ": " << channel->name() << ": perf_topdown: cannot open retiring fd";
             close(slots_fd);
-            return;
+            return false;
         }
 
         void* rdpmc_ptr = mmap(nullptr, getpagesize(), PROT_READ, MAP_SHARED, retiring_fd, 0);
@@ -285,7 +289,7 @@ class PerfTopdownService
             Log(0).perror(errno, "mmap") << ": perf_topdown: mmap for rdpmc failed";
             close(slots_fd);
             close(retiring_fd);
-            return;
+            return false;
         }
 
         // --- create thread info
@@ -304,12 +308,12 @@ class PerfTopdownService
 
         c->set(m_thread_info_attr, cali_make_variant_from_ptr(td));
 
-        Log(1).stream() << channel->name() << ": perf_topdown active, level=" << (m_level == Level::Top ? "top\n" : "all\n");
-
         // --- reset and start counting
 
         ioctl(slots_fd, PERF_EVENT_IOC_RESET);
         ioctl(slots_fd, PERF_EVENT_IOC_ENABLE);
+
+        return true;
     }
 
     void finish_thread(Caliper* c)
@@ -332,7 +336,14 @@ class PerfTopdownService
 
     void post_init_cb(Caliper* c, Channel* channel)
     {
-        init_thread(c, channel);
+        bool success = init_thread(c, channel);
+
+        if (success)
+            Log(1).stream() << channel->name()
+                << ": perf_topdown active, level="
+                << (m_level == Level::Top ? "top\n" : "all\n");
+        else
+            Log(0).stream() << channel->name() << ": cannot enable perf_topdown\n";
     }
 
     void finish_cb(Caliper* c, Channel* channel)
@@ -394,7 +405,6 @@ class PerfTopdownService
 
     PerfTopdownService(Caliper* c, Channel* channel)
         : m_level { Level::Top }
-        , m_num_errors { 0 }
     {
         auto cfg = services::init_config_from_spec(channel->config(), s_spec);
 
