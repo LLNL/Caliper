@@ -188,9 +188,10 @@ with the given Caliper and spack build options.
 |                      |               |               |   recipe options          |                    |
 |                      |               |               | - Symbol name lookup      |                    |
 +----------------------+---------------+---------------+---------------------------+--------------------+
-| WITH_LIBPFM          | False         | +libpfm       | PerfEvent counter         | libpfm             |
-|                      |               |               | collection and precise    |                    |
-|                      |               |               | event sampling            |                    |
+| WITH_LIBPFM          | False         | +libpfm       | PerfEvent counter         | libpfm,            |
+|                      |               |               | collection and precise    | perf_topdown       |
+|                      |               |               | event sampling, Intel     |                    |
+|                      |               |               | top-down analysis         |                    |
 +----------------------+---------------+---------------+---------------------------+--------------------+
 | WITH_LIBUNWIND       | False         | +libunwind    | - callpath option for     | callpath           |
 |                      |               |               |   sample-report and       |                    |
