@@ -22,8 +22,10 @@ extern "C" {
 #include <x86intrin.h>
 }
 
-#include <chrono>
+#include <iostream>
+#include <fstream>
 #include <mutex>
+#include <sstream>
 #include <tuple>
 #include <vector>
 
@@ -40,6 +42,38 @@ int topdown_perf_open(struct perf_event_attr* attr_ptr, pid_t pid, int cpu, int 
         Log(0).perror(errno, "syscall(SYS_perf_event_open)");
 
     return fd;
+}
+
+bool check_compatibility()
+{
+    //   --- Very primitive compatiblity check. We check if CPU vendor is Intel
+    // but need to check models too.
+
+    std::ifstream cpuinfo_stream("/proc/cpuinfo");
+    if (!cpuinfo_stream) {
+        Log(0).stream() << "perf_topdown: Cannot open /proc/cpuinfo\n";
+        return false;
+    }
+
+    // vendor_id should be in the first 4 lines of /proc/cpuinfo
+    int lines = 0;
+    for (std::string line; lines < 4 && std::getline(cpuinfo_stream, line); ++lines) {
+        std::string k, v;
+        char c;
+        std::istringstream is(line);
+        is >> k >> c >> v;
+        if (k == "vendor_id" && c == ':') {
+            if (v == "GenuineIntel")
+                return true;
+            else {
+                Log(0).stream() << "perf_topown: CPU vendor is " << v << " but perf_topdown is only compatible with Intel CPUs\n";
+                return false;
+            }
+        }
+    }
+
+    Log(0).stream() << "perf_topdown: vendor_id not found in /proc/cpuinfo\n";
+    return false;
 }
 
 class PerfTopdownService
@@ -423,8 +457,12 @@ public:
 
     static void register_perf_topdown(Caliper* c, Channel* channel)
     {
+        if (!check_compatibility()) {
+            Log(0).stream() << channel->name() << ": perf_topdown is not available on this machine\n";
+            return;
+        }
         if (s_instance) {
-            Log(0).stream() << ": " << channel->name() << ": perf_topdown is already active, disabling!";
+            Log(0).stream() << channel->name() << ": perf_topdown is already active, disabling!\n";
             return;
         }
 
