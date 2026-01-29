@@ -84,11 +84,6 @@ add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
 add_caliper_option(WITH_LDMS      "Enable LDMS forwarder" FALSE)
-add_caliper_option(WITH_PAPI_RDPMC "Declare that PAPI is built to use rdpmc for reading counters. Does nothing if PAPI support is not enabled." TRUE)
-
-if (WITH_PAPI_RDPMC)
-  set(CALIPER_WITH_PAPI_RDPMC TRUE)
-endif ()
 
 set(WITH_ARCH "" CACHE STRING "Enable features specific to the provided archspec CPU architecture name")
 if (NOT WITH_ARCH STREQUAL "")
@@ -152,6 +147,10 @@ else()
   # Disable rpaths
   set(CMAKE_SKIP_RPATH TRUE)
 endif(BUILD_SHARED_LIBS)
+
+# pthread handling
+set(THREADS_PREFER_PTHREAD_FLAG On)
+find_package(Threads REQUIRED)
 
 if (${CALIPER_HAVE_LINUX})
   set(CALIPER_HAVE_CPUINFO TRUE)
@@ -232,12 +231,15 @@ if (WITH_LIBPFM)
     message(STATUS "Found libpfm.so in " ${LIBPFM_LIBRARY})
     set(CALIPER_HAVE_LIBPFM TRUE)
     set(CALIPER_Libpfm_CMAKE_MSG "Yes, using ${LIBPFM_LIBRARY}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBPFM_LIBRARY})
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBPFM_LIBRARY} Threads::Threads)
   else()
+    set(CALIPER_HAVE_LIBPFM FALSE)
     message(WARNING "Libpfm support was requested but libpfm.so was not found!\n"
       "Set -DLIBPFM_INSTALL=<path to libpfm src directory (e.g. -DLIBPFM_INSTALL=~/papi/src/libpfm4)"
       "and re-run cmake")
   endif()
+else()
+  set(CALIPER_HAVE_LIBPFM FALSE)
 endif()
 
 if (WITH_LIBDW)
@@ -309,10 +311,6 @@ if (WITH_KOKKOS)
   set(CALIPER_Kokkos_CMAKE_MSG "Yes")
 endif()
 
-# pthread handling
-set(THREADS_PREFER_PTHREAD_FLAG On)
-find_package(Threads REQUIRED)
-
 if (WITH_OMPT)
   set(CALIPER_HAVE_OMPT TRUE)
   set(CALIPER_OMPT_CMAKE_MSG "Yes")
@@ -379,6 +377,8 @@ if (WITH_ROCPROFILER)
       rocprofiler-sdk-roctx::rocprofiler-sdk-roctx)
     list(APPEND CALIPER_rocprofiler_CMAKE_MSG "Yes, using ${rocprofiler-sdk_ROOT_DIR}")
   endif()
+else()
+  set(CALIPER_HAVE_ROCPROFILER FALSE)
 endif()
 
 if (WITH_CRAYPAT)

@@ -1,15 +1,16 @@
 # Libpfm tests
 
+import io
 import unittest
 
-import calipertest as calitest
+import caliperreader
+import calipertest
 
 class CaliperLibpfmTest(unittest.TestCase):
     """ Caliper Libpfm test case """
 
     def test_libpfm_counting(self):
         target_cmd = [ './ci_test_basic' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'          : 'event:libpfm:trace:recorder',
@@ -19,20 +20,18 @@ class CaliperLibpfmTest(unittest.TestCase):
             'CALI_LIBPFM_SAMPLE_PERIOD'     : '10000000',
             'CALI_LIBPFM_SAMPLE_ATTRIBUTES' : 'ip,time',
             'CALI_RECORDER_FILENAME'        : 'stdout',
-            'CALI_LOG_VERBOSITY'            : '0'
         }
 
-        query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = calitest.get_snapshots_from_text(query_output)
+        out,_ = calipertest.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) > 1)
 
-        self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, { 'libpfm.counter.cycles', 'phase', 'iteration' }))
+        self.assertTrue(calipertest.has_snapshot_with_keys(
+            snapshots, { 'libpfm.counter.cycles', 'myphase', 'iteration' }))
 
     def test_libpfm_sampling(self):
         target_cmd = [ './ci_test_macros', '50', 'none', '100' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'        : 'event:libpfm:pthread:trace:recorder',
@@ -40,15 +39,14 @@ class CaliperLibpfmTest(unittest.TestCase):
             'CALI_LIBPFM_RECORD_COUNTERS' : 'false',
             'CALI_LIBPFM_EVENTS'          : 'instructions',
             'CALI_RECORDER_FILENAME'      : 'stdout',
-            'CALI_LOG_VERBOSITY'          : '0'
         }
 
-        query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = calitest.get_snapshots_from_text(query_output)
+        out,_ = calipertest.run_test(target_cmd, caliper_config)
+        snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) > 1)
 
-        self.assertTrue(calitest.has_snapshot_with_keys(
+        self.assertTrue(calipertest.has_snapshot_with_keys(
             snapshots, { 'libpfm.event_sample_name', 'libpfm.ip', 'libpfm.time' }))
 
 if __name__ == "__main__":

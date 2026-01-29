@@ -10,21 +10,15 @@ class CaliperPAPITest(unittest.TestCase):
     """ Caliper PAPI test case """
 
     def test_papi(self):
-        target_cmd = [ './ci_test_basic' ]
+        target_cmd = [ './ci_test_macros', '50', 'event-trace,output=stdout,papi.counters=PAPI_TOT_CYC' ]
 
-        caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'event:papi:trace:recorder',
-            'CALI_PAPI_COUNTERS'     : 'PAPI_TOT_CYC',
-            'CALI_RECORDER_FILENAME' : 'stdout',
-        }
-
-        out,_ = cat.run_test(target_cmd, caliper_config)
+        out,_ = cat.run_test(target_cmd, None)
         snapshots,_ = caliperreader.read_caliper_contents(io.StringIO(out.decode()))
 
         self.assertTrue(len(snapshots) > 1)
 
         self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'papi.PAPI_TOT_CYC', 'myphase', 'iteration' }))
+            snapshots, { 'papi.PAPI_TOT_CYC', 'region', 'iteration#main loop' }))
 
     def test_papi_aggr(self):
         # PAPI counters should be aggregated

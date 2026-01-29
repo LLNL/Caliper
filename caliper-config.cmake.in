@@ -25,4 +25,15 @@ if (@CALIPER_HAVE_ADIAK@)
   endif()
 endif()
 
+# Need -pthread for libpfm support
+if (@CALIPER_HAVE_LIBPFM@)
+  find_dependency(Threads)
+endif()
+
+# Add rocprofiler-sdk target for rocprofiler support
+if (@CALIPER_HAVE_ROCPROFILER@)
+  find_dependency(rocprofiler-sdk)
+  find_dependency(rocprofiler-sdk-roctx)
+endif()
+
 check_required_components(caliper)
