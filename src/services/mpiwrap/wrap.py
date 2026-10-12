@@ -302,19 +302,20 @@ class OuterRegionLexer(LineTrackingLexer):
 class OuterCommentLexer(OuterRegionLexer):
     def __init__(self):
         super(OuterRegionLexer, self).__init__([
-            (r'/\*(.|[\r\n])*?\*/',                self.text),   # multiline comment
-            (r'//(.|[\r\n])*?(?=[\r\n])',          self.text),   # single line comment
+            (r'/\*(?:.|[\r\n])*?\*/',                self.text),   # multiline comment
+            (r'//(?:.|[\r\n])*?(?=[\r\n])',          self.text),   # single line comment
             (r'{{',                                self.lbrace),
             (r'}}',                                self.rbrace),
-            (r'({(?!{)|}(?!})|/(?![/*])|[^{}/])*', self.text)])
+            (r'(?:{(?!{)|}(?!})|/(?![/*])|[^{}/])*', self.text)])
 
 class InnerLexer(OuterRegionLexer):
     def __init__(self):
         super(OuterRegionLexer, self).__init__([
             (r'{{',                               self.lbrace),
             (r'}}',                               self.rbrace),
-            (r'(["\'])?((?:(?!\1)[^\\]|\\.)*)\1', self.quoted_id),
-            (r'([^\s]+)',                         self.identifier),
+            (r'"(?:[^"\\]|\\.)*"',                self.quoted_id),  # double-quoted strings
+            (r"'(?:[^'\\]|\\.)*'",                self.quoted_id),  # single-quoted strings
+            (r'[^\s]+',                           self.identifier),
             (r'\s+', None)])
     def identifier(self, scanner, token): return self.make_token(IDENTIFIER, token)
     def quoted_id(self, scanner, token):
