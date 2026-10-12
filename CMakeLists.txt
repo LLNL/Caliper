@@ -82,6 +82,7 @@ add_caliper_option(WITH_VARIORUM    "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE      "Enable Umpire statistics support" FALSE)
 add_caliper_option(WITH_CRAYPAT     "Enable CrayPAT region forwarding support" FALSE)
 add_caliper_option(WITH_LDMS        "Enable LDMS forwarder" FALSE)
+add_caliper_option(WITH_ARIEL       "Enable SST/Ariel API support" FALSE)
 
 set(WITH_ARCH "" CACHE STRING "Enable features specific to the provided archspec CPU architecture name")
 if (NOT WITH_ARCH STREQUAL "")
@@ -458,6 +459,18 @@ if (WITH_LDMS)
    endif()
 endif()
 
+if (WITH_ARIEL)
+  include(Findarielapi)
+  if (ARIELAPI_FOUND)
+    set(CALIPER_HAVE_ARIEL TRUE)
+    set(CALIPER_Ariel_CMAKE_MSG "Yes, using ${ARIELAPI_LIBRARY}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ARIELAPI_LIBRARY})
+  else()
+    message(WARNING "Ariel support was requested but Ariel was not found!\n"
+      "Set SST_ELEMENTS_INSTALL to the SST-Elements installation path and re-run cmake.")
+  endif()
+endif()
+
 if (BUILD_TESTING)
   set(CALIPER_BUILD_TESTING TRUE)
 endif()
@@ -624,7 +637,8 @@ set(CALIPER_MODULES
   variorum
   umpire
   CrayPAT
-  LDMS)
+  LDMS
+  Ariel)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
