@@ -890,6 +890,7 @@ public:
     {
         if (s_instance) {
             Log(0).stream() << channel->name() << ": rocprofiler service is already active, disabling!" << std::endl;
+            return;
         }
 
         Log(2).stream() << channel->name() << ": rocprofiler: Using rocprofiler-sdk " << ROCPROFILER_VERSION_STRING << std::endl;
