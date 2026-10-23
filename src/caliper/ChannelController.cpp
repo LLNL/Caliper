@@ -27,7 +27,9 @@ struct ChannelController::ChannelControllerImpl {
     {
         if (channel) {
             Caliper c;
-            c.delete_channel(channel);
+            // Static controllers can outlive Caliper's runtime state.
+            if (c)
+                c.delete_channel(channel);
         }
     }
 };
